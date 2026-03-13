@@ -1,0 +1,261 @@
+# Context Project
+
+## Ringkasan Proyek
+
+Proyek ini adalah aplikasi internal `Hub Karyawan` yang dibangun di atas template yang sudah tersedia pada folder `aplikasi-hub-karyawan`, dengan stack utama:
+
+- React JS
+- Vite
+- Material UI
+- PostgreSQL
+- Prisma ORM
+- Docker untuk environment database development
+
+Tujuan aplikasi adalah menjadi pusat pengelolaan data karyawan, history/report, pengajuan cuti, master data, dan dokumen lisensi/sertifikasi.
+
+## Folder Implementasi Aktif
+
+Implementasi aktif saat ini menggunakan folder:
+
+- `app-karyawan`
+
+Folder ini dipilih sebagai basis utama pengembangan karena struktur template-nya lebih ringan dan cocok untuk membangun modul bisnis dari awal.
+
+## Status Folder Template
+
+- `app-karyawan` adalah folder implementasi aktif proyek Hub Karyawan saat ini.
+- `complete-template` hanya digunakan sebagai referensi template bawaan, demo komponen, dan contoh halaman. Folder ini bukan source utama aplikasi yang sedang dikembangkan.
+
+## Tujuan Utama
+
+- Menyediakan aplikasi internal untuk administrasi dan monitoring data karyawan.
+- Menyediakan form dan report yang mengikuti format dokumen/form existing perusahaan.
+- Menyediakan alur approval pengajuan cuti berdasarkan struktur jabatan, department, dan grup shift.
+- Menyediakan master data yang rapi dan mudah dimigrasikan antar perangkat development.
+
+## Keputusan Teknis yang Sudah Disepakati
+
+### Frontend
+
+- Menggunakan template project yang sudah ada di folder proyek.
+- Menggunakan React JS + Vite.
+- Menggunakan Material UI sebagai library UI utama.
+
+### Backend dan Database
+
+- Database menggunakan PostgreSQL.
+- ORM menggunakan Prisma.
+- PostgreSQL pada environment development dijalankan melalui Docker.
+- Port host PostgreSQL untuk proyek ini menggunakan `5434` agar tidak bentrok dengan container lain di perangkat development.
+- Docker Compose project untuk aplikasi aktif menggunakan nama `app-karyawan`.
+- Container PostgreSQL aktif menggunakan nama `app-karyawan-postgres`.
+- Primary key tiap tabel menggunakan `id` auto increment.
+- Kolom `NO` pada tabel UI hanya nomor urut tampilan, bukan kolom utama database.
+- Backend API awal menggunakan Express JS dalam project yang sama dengan frontend.
+
+## Struktur Navigasi yang Sudah Disepakati
+
+- Tab utama: `Data Master`
+- Dropdown: `Master Data Karyawan`
+- Submenu awal:
+  - `Master Work Location`
+  - `Master Department`
+  - `Master Job Role`
+  - `Master Job Level`
+
+## Scope Modul yang Sudah Dibahas
+
+### 1. Data Master
+
+Fokus implementasi awal proyek.
+
+#### Master Karyawan
+
+Struktur `Master Karyawan` mengikuti file Excel:
+
+- File sumber: `D:\Github\aplikasi-hub-karyawan\database master karyawan.xlsx`
+- Sheet sumber: `Data`
+
+Kolom utama yang diimplementasikan:
+
+- `Employee No`
+- `Password`
+- `Fullname`
+- `Employment Type`
+- `Site / Div`
+- `Department`
+- `Length Of Service` (hasil kalkulasi dari `Join Date`, tidak disimpan sebagai kolom fisik)
+- `Age` (hasil kalkulasi dari `Birth Date`, tidak disimpan sebagai kolom fisik)
+- `Birth Date`
+- `Gender`
+- `Work Location`
+- `Job Role`
+- `Job Level`
+- `Education Level`
+- `Grade`
+- `Join Date`
+- `Phone Number`
+- `Email`
+
+Relasi master yang dipakai:
+
+- `Department` -> dari `Master Department`
+- `Work Location` -> dari `Master Work Location`
+- `Job Role` -> dari `Master Job Role`
+- `Job Level` -> dari `Master Job Level`
+
+Catatan implementasi:
+
+- `Employee No` disimpan sebagai unique field.
+- `Site / Div` default awal adalah `CLC`.
+- `Age` dan `Length Of Service` dihitung otomatis dari tanggal pada layer aplikasi/API.
+- Kolom `Password` saat ini masih disimpan sebagai string biasa untuk mengikuti struktur master data awal; hashing/authentication belum diimplementasikan pada fase ini.
+
+#### Master Work Location
+
+- Kolom database utama:
+  - `id` : auto increment
+  - `workLocation` : varchar
+
+#### Master Department
+
+- Kolom database utama:
+  - `id` : auto increment
+  - `department` : varchar
+
+#### Master Job Role
+
+- Kolom database utama:
+  - `id` : auto increment
+  - `jobRole` : varchar
+
+#### Master Job Level
+
+- Kolom database utama:
+  - `id` : auto increment
+  - `jobLevel` : varchar
+
+### 2. History Karyawan (Report)
+
+Modul ini direncanakan untuk menampilkan histori karyawan dan report keseluruhan, mencakup contoh data seperti:
+
+- History konseling karyawan
+- Surat peringatan
+- Pelatihan
+- Sakit berat / rawat inap
+- Instruksi kerja
+- Dan histori lain yang relevan
+
+#### Halaman Konseling Karyawan
+
+- Menyediakan form input konseling karyawan.
+- Terdapat dua form:
+  - `FORMULIR CATATAN BIMBINGAN KARYAWAN`
+  - `FORMULIR CATATAN PENGARAHAN KARYAWAN`
+- Isi kolom harus mengikuti form integrasi existing.
+- Perlu fungsi print dengan format yang sama dengan form aslinya.
+
+#### Halaman Surat Peringatan
+
+- Menyediakan form input surat peringatan.
+- Isi form harus sama dengan `Data Record Warning Letter`.
+- Perlu fungsi print dengan format yang sama dengan form surat peringatan.
+
+### 3. Pengajuan Cuti Karyawan
+
+Modul ini digunakan agar karyawan dapat mengajukan cuti melalui aplikasi.
+
+- Data input harus mengikuti form `QSHE Cuti & Ijin`.
+- Approval harus mengikuti route berdasarkan department, grup shift, dan jabatan.
+
+Aturan approval yang sudah disebutkan:
+
+- Pengajuan cuti masuk ke atasan pada department dan grup shift masing-masing.
+- Jika karyawan tidak memiliki jabatan approval, pengajuan masuk ke Foreman pada department dan grup terkait.
+- Jika pengaju adalah Foreman, approval masuk ke General Foreman pada department terkait.
+- Approval lanjutan mengikuti flow approval route perusahaan.
+
+### 4. Modul Dokumen
+
+#### Daftar Lisensi Unit & Kargo
+
+- Menyediakan daftar data lisensi unit dan kargo.
+- Struktur isian mengikuti form QSHE untuk unit equipment yang disertifikasi.
+- Contoh unit:
+  - Cargo Lift
+  - Omni Lift
+  - Forklift
+  - Genset
+
+#### Daftar Lisensi SDM
+
+- Menyediakan daftar lisensi dan sertifikasi yang dimiliki karyawan.
+- Contoh:
+  - SIO
+  - Lisensi K3
+- Format mengikuti form QSHE.
+
+## Prioritas Implementasi Saat Ini
+
+Prioritas fase awal:
+
+1. Menyiapkan konteks proyek dan keputusan dasar.
+2. Menyiapkan struktur menu `Data Master`.
+3. Menyiapkan schema Prisma dan PostgreSQL untuk master data awal.
+4. Membangun halaman CRUD awal untuk:
+   - Master Work Location
+   - Master Department
+   - Master Job Role
+   - Master Job Level
+
+## Progress Implementasi Saat Ini
+
+Yang sudah selesai:
+
+- Setup environment PostgreSQL development via Docker Compose.
+- Setup Prisma schema untuk:
+  - `WorkLocation`
+  - `Department`
+  - `JobRole`
+  - `JobLevel`
+- Menjalankan migration awal Prisma untuk master data.
+- Menambahkan backend API CRUD generik untuk master data.
+- Menambahkan struktur menu:
+  - `Data Master`
+  - `Master Data Karyawan`
+  - `Master Work Location`
+  - `Master Department`
+  - `Master Job Role`
+  - `Master Job Level`
+- Menambahkan halaman CRUD frontend awal untuk 4 master data tersebut.
+- Menambahkan schema, API, route, menu, dan halaman `Master Karyawan` berdasarkan file Excel sumber.
+- Verifikasi `lint`, `build`, dan smoke test API ke database berhasil.
+
+## Struktur Teknis Awal yang Sudah Dibangun
+
+- Frontend:
+  - React + Vite + Material UI
+  - Routing halaman master data
+  - Komponen reusable untuk:
+    - form dialog master data
+    - delete confirmation
+    - tabel master data
+- Backend:
+  - Express API
+  - Prisma Client
+  - Route CRUD generik `/api/master/:resource`
+- Database:
+  - Docker Compose service PostgreSQL
+  - Prisma migration awal
+
+## Catatan Penting
+
+- Template proyek yang tersedia saat ini sudah cocok dijadikan fondasi aplikasi admin/internal.
+- Detail final field, format print, dan approval matrix untuk modul bisnis lanjutan masih perlu dipastikan dari form atau dokumen resmi perusahaan.
+- File ini adalah dokumen konteks proyek dan harus diperbarui seiring perkembangan implementasi.
+
+## Aturan Pemeliharaan Dokumen Ini
+
+- Dokumen ini menjadi referensi konteks utama selama pengembangan.
+- Jika ada perubahan scope, struktur menu, keputusan teknis, atau modul baru, isi file ini harus diperbarui.
+- Jika ada keputusan yang menggantikan keputusan lama, isi file ini harus disesuaikan agar tetap menjadi sumber konteks yang paling mutakhir.

@@ -1,0 +1,19 @@
+name: app-karyawan
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: app-karyawan-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: hub_karyawan
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
+    name: app-karyawan-postgres-data

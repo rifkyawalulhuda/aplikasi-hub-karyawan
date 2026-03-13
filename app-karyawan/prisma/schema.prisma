@@ -1,0 +1,109 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum EmploymentType {
+  PERMANENT
+  CONTRACT
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum EducationLevel {
+  SMA
+  D3
+  S1
+  S2
+}
+
+enum GradeRank {
+  RANK_1
+  RANK_2
+  RANK_3
+  RANK_4
+  RANK_5
+  RANK_6
+  RANK_7
+  RANK_8
+  RANK_9
+}
+
+model WorkLocation {
+  id        Int        @id @default(autoincrement())
+  name      String     @unique @db.VarChar(255)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  employees Employee[]
+
+  @@map("work_locations")
+}
+
+model Department {
+  id        Int        @id @default(autoincrement())
+  name      String     @unique @db.VarChar(255)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  employees Employee[]
+
+  @@map("departments")
+}
+
+model JobRole {
+  id        Int        @id @default(autoincrement())
+  name      String     @unique @db.VarChar(255)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  employees Employee[]
+
+  @@map("job_roles")
+}
+
+model JobLevel {
+  id        Int        @id @default(autoincrement())
+  name      String     @unique @db.VarChar(255)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  employees Employee[]
+
+  @@map("job_levels")
+}
+
+model Employee {
+  id             Int            @id @default(autoincrement())
+  employeeNo     String         @unique @db.VarChar(100)
+  password       String         @db.VarChar(255)
+  fullName       String         @db.VarChar(255)
+  employmentType EmploymentType
+  siteDiv        String         @default("CLC") @db.VarChar(100)
+  departmentId   Int
+  birthDate      DateTime       @db.Date
+  gender         Gender
+  workLocationId Int
+  jobRoleId      Int
+  jobLevelId     Int
+  educationLevel EducationLevel
+  grade          GradeRank
+  joinDate       DateTime       @db.Date
+  phoneNumber    String         @db.VarChar(50)
+  email          String?        @db.VarChar(255)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  department     Department     @relation(fields: [departmentId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  workLocation   WorkLocation   @relation(fields: [workLocationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  jobRole        JobRole        @relation(fields: [jobRoleId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  jobLevel       JobLevel       @relation(fields: [jobLevelId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([departmentId])
+  @@index([workLocationId])
+  @@index([jobRoleId])
+  @@index([jobLevelId])
+  @@map("employees")
+}
