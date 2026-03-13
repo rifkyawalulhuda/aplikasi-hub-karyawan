@@ -35,7 +35,7 @@ export function LogoLoader({ addSx, ...rest }) {
 				/>
 				<LinearProgress />
 				<Typography my={1} textAlign="center" variant="caption">
-					Cargando Contenido, favor de esperar.
+					Loading content, please wait.
 				</Typography>
 			</Stack>
 		</Card>
