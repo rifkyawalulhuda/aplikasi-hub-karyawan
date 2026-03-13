@@ -2,11 +2,11 @@ import { useState } from 'react';
 import Table from '@mui/material/Table';
 
 import TableBody from '@mui/material/TableBody';
-import TableRow from '@mui/material/TableRow';
 import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TablePagination from '@mui/material/TablePagination';
+import TableRow from '@mui/material/TableRow';
 import TableSortLabel from '@mui/material/TableSortLabel';
 
 function descendingComparator(a, b, orderBy) {
@@ -53,7 +53,7 @@ function EnhancedTableHead(props) {
 										fontSize: '10px',
 									}}
 								>
-									{order === 'desc' ? '•Decendente' : '•Ascendente'}
+									{order === 'desc' ? 'Descending' : 'Ascending'}
 								</span>
 							) : null}
 						</TableSortLabel>
@@ -103,6 +103,8 @@ function EnhancedTable(props) {
 		setPage(0);
 	};
 
+	const formatDisplayedRows = ({ from, to, count }) => `${from}-${to} of ${count !== -1 ? count : `more than ${to}`}`;
+
 	// Avoid a layout jump when reaching the last page with empty rows.
 	const emptyRows = page > 0 ? Math.max(0, (1 + page) * rowsPerPage - rows.length) : 0;
 
@@ -148,7 +150,8 @@ function EnhancedTable(props) {
 				page={page}
 				onPageChange={handleChangePage}
 				onRowsPerPageChange={handleChangeRowsPerPage}
-				labelRowsPerPage="Resultados por Pagina"
+				labelRowsPerPage="Rows per page"
+				labelDisplayedRows={formatDisplayedRows}
 			/>
 		</>
 	);
