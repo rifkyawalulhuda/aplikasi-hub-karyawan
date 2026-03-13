@@ -11,6 +11,15 @@ import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import EnhancedTable from '@/components/dataTable';
 import { formatEmploymentTypeLabel, formatGradeLabel } from '@/constants/employeeMaster';
 
+const stickyActionCellSx = {
+	position: 'sticky',
+	right: 0,
+	minWidth: 128,
+	backgroundColor: 'background.paper',
+	zIndex: 2,
+	boxShadow: '-6px 0 8px -8px rgba(15, 23, 42, 0.35)',
+};
+
 const HEAD_CELLS = [
 	{ id: 'id', label: 'NO' },
 	{ id: 'employeeNo', label: 'EMPLOYEE NO' },
@@ -30,7 +39,7 @@ const HEAD_CELLS = [
 	{ id: 'joinDate', label: 'JOIN DATE' },
 	{ id: 'phoneNumber', label: 'PHONE NUMBER' },
 	{ id: 'email', label: 'EMAIL' },
-	{ id: 'actions', label: 'AKSI' },
+	{ id: 'actions', label: 'AKSI', disableSort: true, sx: { ...stickyActionCellSx, zIndex: 4 } },
 ];
 
 function EmployeeTable({ rows, onEdit, onDelete }) {
@@ -71,7 +80,7 @@ function EmployeeTable({ rows, onEdit, onDelete }) {
 					<TableCell>{row.joinDate}</TableCell>
 					<TableCell>{row.phoneNumber}</TableCell>
 					<TableCell>{row.email || '-'}</TableCell>
-					<TableCell width={120}>
+					<TableCell sx={stickyActionCellSx}>
 						<Stack direction="row" spacing={1}>
 							<Tooltip title="Edit">
 								<IconButton color="primary" onClick={() => onEdit(row)}>

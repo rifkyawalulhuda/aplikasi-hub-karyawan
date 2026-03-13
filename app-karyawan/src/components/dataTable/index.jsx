@@ -40,23 +40,28 @@ function EnhancedTableHead(props) {
 						align={headCell.numeric ? 'right' : 'left'}
 						padding={headCell.disablePadding ? 'none' : 'normal'}
 						sortDirection={orderBy === headCell.id ? order : false}
+						sx={headCell.sx}
 					>
-						<TableSortLabel
-							active={orderBy === headCell.id}
-							direction={orderBy === headCell.id ? order : 'asc'}
-							onClick={createSortHandler(headCell.id)}
-						>
-							{headCell.label}
-							{orderBy === headCell.id ? (
-								<span
-									style={{
-										fontSize: '10px',
-									}}
-								>
-									{order === 'desc' ? 'Descending' : 'Ascending'}
-								</span>
-							) : null}
-						</TableSortLabel>
+						{headCell.disableSort ? (
+							headCell.label
+						) : (
+							<TableSortLabel
+								active={orderBy === headCell.id}
+								direction={orderBy === headCell.id ? order : 'asc'}
+								onClick={createSortHandler(headCell.id)}
+							>
+								{headCell.label}
+								{orderBy === headCell.id ? (
+									<span
+										style={{
+											fontSize: '10px',
+										}}
+									>
+										{order === 'desc' ? 'Descending' : 'Ascending'}
+									</span>
+								) : null}
+							</TableSortLabel>
+						)}
 					</TableCell>
 				))}
 			</TableRow>
