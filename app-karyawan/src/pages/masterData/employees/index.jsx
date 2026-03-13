@@ -10,13 +10,16 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
+import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
+import UploadFileOutlinedIcon from '@mui/icons-material/UploadFileOutlined';
 
 import CardHeader from '@/components/cardHeader';
 import DeleteConfirmDialog from '@/components/masterData/deleteConfirmDialog';
 import PageHeader from '@/components/pageHeader';
-import apiRequest from '@/services/api';
+import apiRequest, { getApiBaseUrl } from '@/services/api';
 
 import EmployeeFormDialog from './employeeFormDialog';
+import EmployeeImportDialog from './employeeImportDialog';
 import EmployeeTable from './employeeTable';
 
 async function fetchEmployees() {
@@ -46,6 +49,7 @@ function EmployeesPage() {
 	const [loading, setLoading] = useState(true);
 	const [submitting, setSubmitting] = useState(false);
 	const [formOpen, setFormOpen] = useState(false);
+	const [importOpen, setImportOpen] = useState(false);
 	const [deleteOpen, setDeleteOpen] = useState(false);
 	const [selectedItem, setSelectedItem] = useState(null);
 
@@ -75,6 +79,24 @@ function EmployeesPage() {
 	const closeDeleteDialog = () => {
 		setDeleteOpen(false);
 		setSelectedItem(null);
+	};
+
+	const mergeImportedRows = (importedRows) => {
+		setRows((currentRows) => {
+			const mergedRows = [...currentRows];
+
+			importedRows.forEach((row) => {
+				const existingIndex = mergedRows.findIndex((item) => item.id === row.id);
+
+				if (existingIndex >= 0) {
+					mergedRows[existingIndex] = row;
+				} else {
+					mergedRows.push(row);
+				}
+			});
+
+			return mergedRows.sort((a, b) => a.id - b.id);
+		});
 	};
 
 	const handleSubmit = async (values) => {
@@ -134,6 +156,53 @@ function EmployeesPage() {
 		}
 	};
 
+	const handleImport = async (file) => {
+		setSubmitting(true);
+
+		try {
+			const formData = new FormData();
+			formData.append('file', file);
+
+			const response = await apiRequest('/master/employees/import', {
+				method: 'POST',
+				body: formData,
+			});
+
+			if (response.rows?.length) {
+				mergeImportedRows(response.rows);
+			}
+
+			setImportOpen(false);
+
+			if (response.errorReportUrl) {
+				const downloadUrl = `${getApiBaseUrl()}${response.errorReportUrl}`;
+				const link = document.createElement('a');
+				link.href = downloadUrl;
+				link.target = '_blank';
+				link.rel = 'noreferrer';
+				document.body.appendChild(link);
+				link.click();
+				document.body.removeChild(link);
+
+				enqueueSnackbar(
+					`${response.message} Berhasil: ${response.importedCount}, gagal: ${response.failedCount}. File error diunduh otomatis.`,
+					{ variant: 'warning' },
+				);
+			} else {
+				enqueueSnackbar(`${response.message} Total import: ${response.importedCount}.`, {
+					variant: 'success',
+				});
+			}
+
+			return true;
+		} catch (error) {
+			enqueueSnackbar(error.message, { variant: 'error' });
+			return false;
+		} finally {
+			setSubmitting(false);
+		}
+	};
+
 	return (
 		<>
 			<PageHeader title="Master Karyawan">
@@ -151,9 +220,27 @@ function EmployeesPage() {
 					subtitle="Kelola data induk karyawan berdasarkan struktur file Excel master karyawan."
 					size="small"
 				>
-					<Button variant="contained" startIcon={<AddOutlinedIcon />} onClick={() => setFormOpen(true)}>
-						Tambah Data
-					</Button>
+					<Stack direction="row" spacing={1} flexWrap="wrap">
+						<Button
+							component="a"
+							href="/templates/master-karyawan-import-template.xlsx"
+							download
+							variant="outlined"
+							startIcon={<DownloadOutlinedIcon />}
+						>
+							Download Template
+						</Button>
+						<Button
+							variant="outlined"
+							startIcon={<UploadFileOutlinedIcon />}
+							onClick={() => setImportOpen(true)}
+						>
+							Import Excel
+						</Button>
+						<Button variant="contained" startIcon={<AddOutlinedIcon />} onClick={() => setFormOpen(true)}>
+							Tambah Data
+						</Button>
+					</Stack>
 				</CardHeader>
 				{loading ? (
 					<Stack alignItems="center" justifyContent="center" py={10}>
@@ -180,6 +267,12 @@ function EmployeesPage() {
 				options={options}
 				onClose={closeFormDialog}
 				onSubmit={handleSubmit}
+			/>
+			<EmployeeImportDialog
+				open={importOpen}
+				loading={submitting}
+				onClose={() => setImportOpen(false)}
+				onImport={handleImport}
 			/>
 			<DeleteConfirmDialog
 				open={deleteOpen}

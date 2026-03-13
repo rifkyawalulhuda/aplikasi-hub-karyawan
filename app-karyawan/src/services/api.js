@@ -1,15 +1,18 @@
 const DEFAULT_API_BASE_URL = '/api';
 
-function getApiBaseUrl() {
+export function getApiBaseUrl() {
 	return import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE_URL;
 }
 
 async function apiRequest(path, options = {}) {
+	const isFormData = options.body instanceof FormData;
 	const response = await fetch(`${getApiBaseUrl()}${path}`, {
-		headers: {
-			'Content-Type': 'application/json',
-			...(options.headers || {}),
-		},
+		headers: isFormData
+			? options.headers || {}
+			: {
+					'Content-Type': 'application/json',
+					...(options.headers || {}),
+			  },
 		...options,
 	});
 

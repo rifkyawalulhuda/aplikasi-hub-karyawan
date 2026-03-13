@@ -11,8 +11,12 @@ import MenuItem from '@mui/material/MenuItem';
 
 import FormInput from '@/components/formInput';
 import {
+	DEFAULT_EMPLOYMENT_TYPE,
+	DEFAULT_GRADE,
 	EDUCATION_LEVEL_OPTIONS,
 	EMPLOYMENT_TYPE_OPTIONS,
+	formatEmploymentTypeLabel,
+	formatGradeLabel,
 	GENDER_OPTIONS,
 	GRADE_OPTIONS,
 } from '@/constants/employeeMaster';
@@ -22,7 +26,7 @@ function toDefaultValues(initialValue) {
 		employeeNo: initialValue?.employeeNo || '',
 		password: initialValue?.password || '',
 		fullName: initialValue?.fullName || '',
-		employmentType: initialValue?.employmentType || 'PERMANENT',
+		employmentType: formatEmploymentTypeLabel(initialValue?.employmentType || DEFAULT_EMPLOYMENT_TYPE),
 		siteDiv: initialValue?.siteDiv || 'CLC',
 		departmentId: initialValue?.departmentId || '',
 		birthDate: initialValue?.birthDate || '',
@@ -31,7 +35,7 @@ function toDefaultValues(initialValue) {
 		jobRoleId: initialValue?.jobRoleId || '',
 		jobLevelId: initialValue?.jobLevelId || '',
 		educationLevel: initialValue?.educationLevel || 'SMA',
-		grade: initialValue?.grade || 'RANK_1',
+		grade: formatGradeLabel(initialValue?.grade || DEFAULT_GRADE),
 		joinDate: initialValue?.joinDate || '',
 		phoneNumber: initialValue?.phoneNumber || '',
 		email: initialValue?.email || '',
