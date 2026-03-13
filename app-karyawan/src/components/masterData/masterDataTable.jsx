@@ -10,6 +10,15 @@ import DeleteOutlineOutlinedIcon from '@mui/icons-material/DeleteOutlineOutlined
 
 import EnhancedTable from '@/components/dataTable';
 
+const stickyActionCellSx = {
+	position: 'sticky',
+	right: 0,
+	minWidth: 128,
+	backgroundColor: 'background.paper',
+	zIndex: 2,
+	boxShadow: '-6px 0 8px -8px rgba(15, 23, 42, 0.35)',
+};
+
 const HEAD_CELLS = [
 	{
 		id: 'id',
@@ -22,6 +31,8 @@ const HEAD_CELLS = [
 	{
 		id: 'actions',
 		label: 'AKSI',
+		disableSort: true,
+		sx: { ...stickyActionCellSx, zIndex: 4 },
 	},
 ];
 
@@ -51,7 +62,7 @@ function MasterDataTable({ rows, loading, onEdit, onDelete }) {
 				<TableRow hover key={row.id}>
 					<TableCell>{row.id}</TableCell>
 					<TableCell>{row.name}</TableCell>
-					<TableCell width={120}>
+					<TableCell sx={stickyActionCellSx}>
 						<Stack direction="row" spacing={1}>
 							<Tooltip title="Edit">
 								<IconButton color="primary" onClick={() => onEdit(row)}>
