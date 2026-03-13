@@ -9,6 +9,7 @@ import DeleteOutlineOutlinedIcon from '@mui/icons-material/DeleteOutlineOutlined
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 
 import EnhancedTable from '@/components/dataTable';
+import { formatEmploymentTypeLabel, formatGradeLabel } from '@/constants/employeeMaster';
 
 const HEAD_CELLS = [
 	{ id: 'id', label: 'NO' },
@@ -55,7 +56,7 @@ function EmployeeTable({ rows, onEdit, onDelete }) {
 					<TableCell>{row.id}</TableCell>
 					<TableCell>{row.employeeNo}</TableCell>
 					<TableCell>{row.fullName}</TableCell>
-					<TableCell>{row.employmentType}</TableCell>
+					<TableCell>{formatEmploymentTypeLabel(row.employmentType)}</TableCell>
 					<TableCell>{row.siteDiv}</TableCell>
 					<TableCell>{row.departmentName}</TableCell>
 					<TableCell>{row.lengthOfService}</TableCell>
@@ -66,7 +67,7 @@ function EmployeeTable({ rows, onEdit, onDelete }) {
 					<TableCell>{row.jobRoleName}</TableCell>
 					<TableCell>{row.jobLevelName}</TableCell>
 					<TableCell>{row.educationLevel}</TableCell>
-					<TableCell>{row.grade}</TableCell>
+					<TableCell>{formatGradeLabel(row.grade)}</TableCell>
 					<TableCell>{row.joinDate}</TableCell>
 					<TableCell>{row.phoneNumber}</TableCell>
 					<TableCell>{row.email || '-'}</TableCell>

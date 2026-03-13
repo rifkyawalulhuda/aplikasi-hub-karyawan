@@ -110,6 +110,14 @@ Catatan implementasi:
 - `Site / Div` default awal adalah `CLC`.
 - `Age` dan `Length Of Service` dihitung otomatis dari tanggal pada layer aplikasi/API.
 - Kolom `Password` saat ini masih disimpan sebagai string biasa untuk mengikuti struktur master data awal; hashing/authentication belum diimplementasikan pada fase ini.
+- Nilai `Employment Type` untuk user-facing UI dan template Excel menggunakan format label `Permanent` dan `Contract`, sedangkan penyimpanan internal database tetap memakai enum teknis.
+- Nilai `Grade` untuk user-facing UI dan template Excel menggunakan format label seperti `Rank 1`, `Rank 2`, dan seterusnya, sedangkan penyimpanan internal database tetap memakai enum teknis.
+- Sudah tersedia template Excel bulk import untuk `Master Karyawan`.
+- Sudah tersedia fitur import bulk dari file Excel pada halaman `Master Karyawan`.
+- Import bulk mendukung partial success:
+  - baris valid tetap diimport
+  - baris gagal menghasilkan file error report `.xlsx`
+- Tombol download template tersedia pada halaman `Master Karyawan`.
 
 #### Master Work Location
 
@@ -229,6 +237,8 @@ Yang sudah selesai:
   - `Master Job Level`
 - Menambahkan halaman CRUD frontend awal untuk 4 master data tersebut.
 - Menambahkan schema, API, route, menu, dan halaman `Master Karyawan` berdasarkan file Excel sumber.
+- Menambahkan template Excel bulk import `Master Karyawan`.
+- Menambahkan fitur upload/import Excel `Master Karyawan` beserta file error report per baris.
 - Verifikasi `lint`, `build`, dan smoke test API ke database berhasil.
 
 ## Struktur Teknis Awal yang Sudah Dibangun
