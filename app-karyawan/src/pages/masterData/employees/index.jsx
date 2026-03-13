@@ -10,7 +10,6 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
-import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
 import UploadFileOutlinedIcon from '@mui/icons-material/UploadFileOutlined';
 
 import CardHeader from '@/components/cardHeader';
@@ -221,15 +220,6 @@ function EmployeesPage() {
 					size="small"
 				>
 					<Stack direction="row" spacing={1} flexWrap="wrap">
-						<Button
-							component="a"
-							href="/templates/master-karyawan-import-template.xlsx"
-							download
-							variant="outlined"
-							startIcon={<DownloadOutlinedIcon />}
-						>
-							Download Template
-						</Button>
 						<Button
 							variant="outlined"
 							startIcon={<UploadFileOutlinedIcon />}
