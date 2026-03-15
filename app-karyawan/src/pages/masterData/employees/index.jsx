@@ -12,6 +12,7 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
+import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
 import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
 import UploadFileOutlinedIcon from '@mui/icons-material/UploadFileOutlined';
 
@@ -19,6 +20,7 @@ import CardHeader from '@/components/cardHeader';
 import DeleteConfirmDialog from '@/components/masterData/deleteConfirmDialog';
 import PageHeader from '@/components/pageHeader';
 import apiRequest, { getApiBaseUrl } from '@/services/api';
+import { formatEmploymentTypeLabel, formatGradeLabel } from '@/constants/employeeMaster';
 
 import EmployeeFormDialog from './employeeFormDialog';
 import EmployeeImportDialog from './employeeImportDialog';
@@ -37,6 +39,22 @@ async function fetchLookupOptions() {
 	]);
 
 	return { departments, workLocations, jobRoles, jobLevels };
+}
+
+function formatEmployeeDate(value) {
+	if (!value) {
+		return '';
+	}
+
+	const raw = String(value).trim();
+	const isoMatch = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+	if (isoMatch) {
+		const [, year, month, day] = isoMatch;
+		return `${day}/${month}/${year}`;
+	}
+
+	return raw;
 }
 
 function EmployeesPage() {
@@ -240,6 +258,99 @@ function EmployeesPage() {
 		}
 	};
 
+	const handleExportExcel = async () => {
+		if (filteredRows.length === 0) {
+			enqueueSnackbar('Tidak ada data master karyawan untuk diexport.', { variant: 'error' });
+			return;
+		}
+
+		const ExcelJS = await import('exceljs');
+		const Workbook = ExcelJS.Workbook || ExcelJS.default?.Workbook;
+		const workbook = new Workbook();
+		const worksheet = workbook.addWorksheet('Master Karyawan');
+
+		worksheet.columns = [
+			{ header: 'NO', key: 'id', width: 10 },
+			{ header: 'Employee No', key: 'employeeNo', width: 18 },
+			{ header: 'Password', key: 'password', width: 18 },
+			{ header: 'Fullname', key: 'fullName', width: 28 },
+			{ header: 'Employment Type', key: 'employmentType', width: 18 },
+			{ header: 'Site / Div', key: 'siteDiv', width: 14 },
+			{ header: 'Department', key: 'departmentName', width: 20 },
+			{ header: 'Length Of Service', key: 'lengthOfService', width: 20 },
+			{ header: 'Age', key: 'age', width: 10 },
+			{ header: 'Birth Date', key: 'birthDate', width: 14 },
+			{ header: 'Gender', key: 'gender', width: 12 },
+			{ header: 'Work Location', key: 'workLocationName', width: 22 },
+			{ header: 'Job Role', key: 'jobRoleName', width: 18 },
+			{ header: 'Job Level', key: 'jobLevelName', width: 18 },
+			{ header: 'Education Level', key: 'educationLevel', width: 18 },
+			{ header: 'Grade', key: 'grade', width: 12 },
+			{ header: 'Join Date', key: 'joinDate', width: 14 },
+			{ header: 'Phone Number', key: 'phoneNumber', width: 18 },
+			{ header: 'Email', key: 'email', width: 28 },
+		];
+
+		worksheet.getRow(1).font = { bold: true };
+		worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
+
+		filteredRows.forEach((row) => {
+			worksheet.addRow({
+				id: row.id,
+				employeeNo: row.employeeNo,
+				password: row.password,
+				fullName: row.fullName,
+				employmentType: formatEmploymentTypeLabel(row.employmentType),
+				siteDiv: row.siteDiv,
+				departmentName: row.departmentName,
+				lengthOfService: row.lengthOfService,
+				age: row.age,
+				birthDate: formatEmployeeDate(row.birthDate),
+				gender: row.gender,
+				workLocationName: row.workLocationName,
+				jobRoleName: row.jobRoleName,
+				jobLevelName: row.jobLevelName,
+				educationLevel: row.educationLevel,
+				grade: formatGradeLabel(row.grade),
+				joinDate: formatEmployeeDate(row.joinDate),
+				phoneNumber: row.phoneNumber,
+				email: row.email || '',
+			});
+		});
+
+		worksheet.eachRow((row, rowNumber) => {
+			const targetRow = row;
+
+			targetRow.alignment = {
+				vertical: rowNumber === 1 ? 'middle' : 'top',
+				horizontal: rowNumber === 1 ? 'center' : 'left',
+				wrapText: true,
+			};
+
+			if (rowNumber === 1) {
+				targetRow.fill = {
+					type: 'pattern',
+					pattern: 'solid',
+					fgColor: { argb: 'DDE4EE' },
+				};
+			}
+		});
+
+		const buffer = await workbook.xlsx.writeBuffer();
+		const blob = new Blob([buffer], {
+			type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+		});
+		const url = window.URL.createObjectURL(blob);
+		const link = document.createElement('a');
+
+		link.href = url;
+		link.download = 'master-karyawan.xlsx';
+		document.body.appendChild(link);
+		link.click();
+		document.body.removeChild(link);
+		window.URL.revokeObjectURL(url);
+	};
+
 	return (
 		<>
 			<PageHeader title="Master Karyawan">
@@ -275,6 +386,9 @@ function EmployeesPage() {
 							}}
 						/>
 						<Stack direction="row" spacing={1} flexWrap="wrap">
+							<Button variant="outlined" startIcon={<DownloadOutlinedIcon />} onClick={handleExportExcel}>
+								Export Excel
+							</Button>
 							<Button
 								variant="outlined"
 								startIcon={<UploadFileOutlinedIcon />}
