@@ -53,6 +53,8 @@ function MasterDataTable({ rows, loading, onEdit, onDelete }) {
 			rows={rows}
 			headCells={HEAD_CELLS}
 			stickyHeader
+			initialRowsPerPage={15}
+			rowsPerPageOptions={[15, 30, 50, 100]}
 			tableContainerProps={{
 				sx: {
 					maxHeight: 480,
