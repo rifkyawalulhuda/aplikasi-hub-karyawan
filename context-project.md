@@ -188,6 +188,26 @@ Modul ini direncanakan untuk menampilkan histori karyawan dan report keseluruhan
     - `B. Penyebab Masalah`
     - `C. Pemecahan Masalah (Oleh Atasan Langsung)`
   - field identitas tersebut terisi otomatis saat user memilih `Nama Karyawan`
+  - halaman daftar sudah memiliki filter:
+    - pencarian no-case sensitive
+    - kategori `Bimbingan` / `Pengarahan`
+    - rentang tanggal `Dari Tanggal` dan `Sampai Tanggal`
+  - halaman daftar sudah memiliki fitur `Export Excel`
+  - file export Excel mencakup seluruh isi form, tidak hanya kolom tabel, termasuk:
+    - kategori
+    - pertemuan ke
+    - tanggal
+    - jam
+    - tempat
+    - nama karyawan
+    - NIK
+    - departemen
+    - jabatan
+    - rank
+    - isi section A
+    - isi section B
+    - isi section C
+  - jika filter tanggal kosong, export akan mengambil seluruh data yang tersedia
 
 #### Halaman Surat Peringatan
 

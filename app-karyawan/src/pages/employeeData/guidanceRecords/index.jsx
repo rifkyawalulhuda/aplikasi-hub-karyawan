@@ -153,6 +153,12 @@ function GuidanceRecordsPage() {
 			{ header: 'NAMA KARYAWAN', key: 'employeeName', width: 28 },
 			{ header: 'NIK', key: 'employeeNo', width: 18 },
 			{ header: 'DEPARTEMEN', key: 'departmentName', width: 20 },
+			{ header: 'JABATAN', key: 'positionName', width: 18 },
+			{ header: 'RANK', key: 'rank', width: 14 },
+			{ header: 'A.1 / PERMASALAHAN', key: 'problemFaced', width: 36 },
+			{ header: 'A.2 / TANGGUNG JAWAB PEKERJAAN', key: 'problemFacedSecondary', width: 36 },
+			{ header: 'B. PENYEBAB MASALAH', key: 'problemCause', width: 36 },
+			{ header: 'C. PEMECAHAN MASALAH', key: 'problemSolving', width: 36 },
 		];
 
 		worksheet.getRow(1).font = { bold: true };
@@ -169,13 +175,23 @@ function GuidanceRecordsPage() {
 				employeeName: row.employeeName,
 				employeeNo: row.employeeNo,
 				departmentName: row.departmentName,
+				positionName: row.positionName,
+				rank: row.rank,
+				problemFaced: row.problemFaced,
+				problemFacedSecondary: row.problemFacedSecondary || '',
+				problemCause: row.problemCause,
+				problemSolving: row.problemSolving,
 			});
 		});
 
 		worksheet.eachRow((row, rowNumber) => {
 			const targetRow = row;
 
-			targetRow.alignment = { vertical: 'middle', horizontal: rowNumber === 1 ? 'center' : 'left' };
+			targetRow.alignment = {
+				vertical: rowNumber === 1 ? 'middle' : 'top',
+				horizontal: rowNumber === 1 ? 'center' : 'left',
+				wrapText: true,
+			};
 
 			if (rowNumber === 1) {
 				targetRow.fill = {
