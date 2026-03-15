@@ -6,14 +6,18 @@ import Breadcrumbs from '@mui/material/Breadcrumbs';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
 import CircularProgress from '@mui/material/CircularProgress';
+import Grid from '@mui/material/Grid';
+import InputAdornment from '@mui/material/InputAdornment';
 import Link from '@mui/material/Link';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import Stack from '@mui/material/Stack';
+import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import ArrowDropDownOutlinedIcon from '@mui/icons-material/ArrowDropDownOutlined';
+import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
 
 import CardHeader from '@/components/cardHeader';
 import DeleteConfirmDialog from '@/components/masterData/deleteConfirmDialog';
@@ -44,6 +48,8 @@ function GuidanceRecordsPage() {
 	const [selectedItem, setSelectedItem] = useState(null);
 	const [formCategory, setFormCategory] = useState(GUIDANCE_RECORD_CATEGORY.GUIDANCE);
 	const [menuAnchorEl, setMenuAnchorEl] = useState(null);
+	const [searchKeyword, setSearchKeyword] = useState('');
+	const [categoryFilter, setCategoryFilter] = useState('ALL');
 
 	useEffect(() => {
 		const init = async () => {
@@ -87,6 +93,39 @@ function GuidanceRecordsPage() {
 		setFormOpen(true);
 		handleCloseCreateMenu();
 	};
+
+	const normalizedKeyword = searchKeyword.trim().toLowerCase();
+	const filteredRows = rows.filter((row) => {
+		const matchesCategory = categoryFilter === 'ALL' ? true : row.category === categoryFilter;
+
+		if (!matchesCategory) {
+			return false;
+		}
+
+		if (!normalizedKeyword) {
+			return true;
+		}
+
+		const searchableValues = [
+			row.categoryLabel,
+			row.employeeName,
+			row.employeeNo,
+			row.departmentName,
+			row.positionName,
+			row.rank,
+			row.location,
+			row.meetingDate,
+			row.meetingTime,
+			String(row.meetingNumber),
+			String(row.id),
+		];
+
+		return searchableValues.some((value) =>
+			String(value || '')
+				.toLowerCase()
+				.includes(normalizedKeyword),
+		);
+	});
 
 	const handleSubmit = async (values) => {
 		setSubmitting(true);
@@ -164,21 +203,56 @@ function GuidanceRecordsPage() {
 					subtitle="Kelola data bimbingan dan pengarahan, lalu pilih formulir yang ingin diinput dari tombol berikut."
 					size="small"
 				>
-					<Button
-						variant="contained"
-						startIcon={<AddOutlinedIcon />}
-						endIcon={<ArrowDropDownOutlinedIcon />}
-						onClick={handleOpenCreateMenu}
-					>
-						Input Formulir
-					</Button>
-					<Menu anchorEl={menuAnchorEl} open={Boolean(menuAnchorEl)} onClose={handleCloseCreateMenu}>
-						{guidanceCategoryOptions.map((option) => (
-							<MenuItem key={option.value} onClick={() => handleOpenCreateForm(option.value)}>
-								{option.formTitle}
-							</MenuItem>
-						))}
-					</Menu>
+					<Grid container spacing={1.5} alignItems="center" justifyContent="flex-end">
+						<Grid item xs={12} md={4}>
+							<TextField
+								fullWidth
+								size="small"
+								label="Cari Data"
+								value={searchKeyword}
+								onChange={(event) => setSearchKeyword(event.target.value)}
+								placeholder="Nama, NIK, departemen, tempat..."
+								InputProps={{
+									startAdornment: (
+										<InputAdornment position="start">
+											<SearchOutlinedIcon fontSize="small" />
+										</InputAdornment>
+									),
+								}}
+							/>
+						</Grid>
+						<Grid item xs={12} md={3}>
+							<TextField
+								fullWidth
+								size="small"
+								select
+								label="Kategori"
+								value={categoryFilter}
+								onChange={(event) => setCategoryFilter(event.target.value)}
+							>
+								<MenuItem value="ALL">Semua</MenuItem>
+								<MenuItem value={GUIDANCE_RECORD_CATEGORY.GUIDANCE}>Bimbingan</MenuItem>
+								<MenuItem value={GUIDANCE_RECORD_CATEGORY.DIRECTION}>Pengarahan</MenuItem>
+							</TextField>
+						</Grid>
+						<Grid item xs={12} md="auto">
+							<Button
+								variant="contained"
+								startIcon={<AddOutlinedIcon />}
+								endIcon={<ArrowDropDownOutlinedIcon />}
+								onClick={handleOpenCreateMenu}
+							>
+								Input Formulir
+							</Button>
+							<Menu anchorEl={menuAnchorEl} open={Boolean(menuAnchorEl)} onClose={handleCloseCreateMenu}>
+								{guidanceCategoryOptions.map((option) => (
+									<MenuItem key={option.value} onClick={() => handleOpenCreateForm(option.value)}>
+										{option.formTitle}
+									</MenuItem>
+								))}
+							</Menu>
+						</Grid>
+					</Grid>
 				</CardHeader>
 				{loading ? (
 					<Stack alignItems="center" justifyContent="center" py={10}>
@@ -186,7 +260,7 @@ function GuidanceRecordsPage() {
 					</Stack>
 				) : (
 					<GuidanceTable
-						rows={rows}
+						rows={filteredRows}
 						onView={(item) => {
 							navigate(`/data-karyawan/bimbingan-pengarahan/${item.id}`);
 						}}
