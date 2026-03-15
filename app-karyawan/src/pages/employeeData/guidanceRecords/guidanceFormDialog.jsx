@@ -6,9 +6,11 @@ import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
+import Divider from '@mui/material/Divider';
 import Grid from '@mui/material/Grid';
 import MenuItem from '@mui/material/MenuItem';
 import TextField from '@mui/material/TextField';
+import Typography from '@mui/material/Typography';
 
 import FormInput from '@/components/formInput';
 
@@ -187,6 +189,15 @@ function GuidanceFormDialog({ open, loading, initialValue, employeeOptions, cate
 					<Grid item xs={12} md={6}>
 						<TextField label="Rank" value={rank || ''} fullWidth disabled />
 					</Grid>
+					{categoryConfig.sectionTwoLabel ? (
+						<Grid item xs={12}>
+							<Divider textAlign="left">
+								<Typography variant="subtitle2" fontWeight={700}>
+									A. PERMASALAHAN YANG DIHADAPI
+								</Typography>
+							</Divider>
+						</Grid>
+					) : null}
 					<Grid item xs={12}>
 						<FormInput
 							name="problemFaced"
