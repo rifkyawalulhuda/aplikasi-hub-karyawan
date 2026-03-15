@@ -3,6 +3,7 @@ import { v4 as uuid } from 'uuid';
 import ApartmentOutlinedIcon from '@mui/icons-material/ApartmentOutlined';
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
 import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined';
+import FeedOutlinedIcon from '@mui/icons-material/FeedOutlined';
 import LayersOutlinedIcon from '@mui/icons-material/LayersOutlined';
 import PeopleAltOutlinedIcon from '@mui/icons-material/PeopleAltOutlined';
 import SettingsApplicationsOutlinedIcon from '@mui/icons-material/SettingsApplicationsOutlined';
@@ -69,6 +70,22 @@ const NAV_LINKS_CONFIG = [
 						href: '/data-master/master-data-karyawan/job-levels',
 					},
 				],
+			},
+		],
+	},
+	{
+		id: uuid(),
+		type: 'group',
+		title: 'Data Karyawan',
+		Icon: PeopleAltOutlinedIcon,
+		menuMinWidth: 240,
+		menuChildren: [
+			{
+				id: uuid(),
+				type: 'item',
+				title: 'Bimbingan & Pengarahan',
+				Icon: FeedOutlinedIcon,
+				href: '/data-karyawan/bimbingan-pengarahan',
 			},
 		],
 	},

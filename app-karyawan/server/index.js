@@ -3,6 +3,7 @@ import cors from 'cors';
 import express from 'express';
 
 import prisma from './lib/prisma.js';
+import guidanceRecordsRouter from './routes/guidanceRecords.js';
 import employeesRouter from './routes/employees.js';
 import masterDataRouter from './routes/masterData.js';
 
@@ -31,6 +32,7 @@ app.get('/api/health', async (req, res) => {
 
 app.use('/api/master/employees', employeesRouter);
 app.use('/api/master', masterDataRouter);
+app.use('/api/data-karyawan/guidance-records', guidanceRecordsRouter);
 
 app.use((error, req, res) => {
 	console.error(error);

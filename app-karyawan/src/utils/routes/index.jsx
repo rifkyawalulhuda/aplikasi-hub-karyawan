@@ -11,6 +11,8 @@ const DepartmentsPage = withLazyLoadably(lazy(() => import('@/pages/masterData/d
 const JobRolesPage = withLazyLoadably(lazy(() => import('@/pages/masterData/jobRoles')));
 const JobLevelsPage = withLazyLoadably(lazy(() => import('@/pages/masterData/jobLevels')));
 const EmployeesPage = withLazyLoadably(lazy(() => import('@/pages/masterData/employees')));
+const GuidanceRecordsPage = withLazyLoadably(lazy(() => import('@/pages/employeeData/guidanceRecords')));
+const GuidanceRecordDetailPage = withLazyLoadably(lazy(() => import('@/pages/employeeData/guidanceRecords/detail')));
 
 function Router() {
 	return (
@@ -24,6 +26,12 @@ function Router() {
 						<Route path="data-master/master-data-karyawan/departments" element={<DepartmentsPage />} />
 						<Route path="data-master/master-data-karyawan/job-roles" element={<JobRolesPage />} />
 						<Route path="data-master/master-data-karyawan/job-levels" element={<JobLevelsPage />} />
+						<Route path="data-karyawan/bimbingan-pengarahan" element={<GuidanceRecordsPage />} />
+						<Route path="data-karyawan/bimbingan-pengarahan/:id" element={<GuidanceRecordDetailPage />} />
+						<Route
+							path="data-karyawan/bimbingan-pengarahan/formulir-catatan-bimbingan-karyawan"
+							element={<Navigate to="/data-karyawan/bimbingan-pengarahan" replace />}
+						/>
 					</Route>
 				</Routes>
 			</ScrollToTopOnRouteChange>
