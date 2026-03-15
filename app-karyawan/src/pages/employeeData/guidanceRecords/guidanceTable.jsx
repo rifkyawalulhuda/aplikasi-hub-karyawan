@@ -11,7 +11,7 @@ import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 
 import EnhancedTable from '@/components/dataTable';
 
-import { guidanceCategoryConfigs } from './constants';
+import { formatGuidanceDate, guidanceCategoryConfigs } from './constants';
 
 const stickyActionCellSx = {
 	position: 'sticky',
@@ -60,7 +60,7 @@ function GuidanceTable({ rows, onView, onEdit, onDelete }) {
 					<TableCell>{row.id}</TableCell>
 					<TableCell>{row.categoryLabel}</TableCell>
 					<TableCell>{row.meetingNumber}</TableCell>
-					<TableCell>{row.meetingDate}</TableCell>
+					<TableCell>{formatGuidanceDate(row.meetingDate)}</TableCell>
 					<TableCell>{row.meetingTime}</TableCell>
 					<TableCell>{row.location}</TableCell>
 					<TableCell>{row.employeeName}</TableCell>
