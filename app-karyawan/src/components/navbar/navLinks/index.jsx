@@ -24,7 +24,16 @@ function NavLinks({ navItems }) {
 		}
 	});
 	return (
-		<Stack width="100%" direction="row" component="nav" borderLeft={1} borderColor="border" flexWrap="wrap">
+		<Stack
+			component="nav"
+			direction="row"
+			flexWrap="wrap"
+			width={{ xs: '100%', md: 'fit-content' }}
+			maxWidth="100%"
+			border={1}
+			borderColor="border"
+			justifyContent="flex-start"
+		>
 			{navMenuItems}
 		</Stack>
 	);
