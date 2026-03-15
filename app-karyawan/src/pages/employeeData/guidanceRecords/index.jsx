@@ -200,11 +200,17 @@ function GuidanceRecordsPage() {
 			<Card sx={{ minHeight: '60vh', p: 3 }}>
 				<CardHeader
 					title="Bimbingan & Pengarahan"
-					subtitle="Kelola data bimbingan dan pengarahan, lalu pilih formulir yang ingin diinput dari tombol berikut."
+					subtitle="Kelola data bimbingan dan pengarahan karyawan"
 					size="small"
+					sx={{
+						flexDirection: 'column',
+						alignItems: 'stretch',
+						gap: 2,
+						mb: 2.5,
+					}}
 				>
-					<Grid container spacing={1.5} alignItems="center" justifyContent="flex-end">
-						<Grid item xs={12} md={4}>
+					<Grid container spacing={1.5} alignItems="center">
+						<Grid item xs={12} lg={5}>
 							<TextField
 								fullWidth
 								size="small"
@@ -221,7 +227,7 @@ function GuidanceRecordsPage() {
 								}}
 							/>
 						</Grid>
-						<Grid item xs={12} md={3}>
+						<Grid item xs={12} sm={6} lg={3}>
 							<TextField
 								fullWidth
 								size="small"
@@ -235,12 +241,13 @@ function GuidanceRecordsPage() {
 								<MenuItem value={GUIDANCE_RECORD_CATEGORY.DIRECTION}>Pengarahan</MenuItem>
 							</TextField>
 						</Grid>
-						<Grid item xs={12} md="auto">
+						<Grid item xs={12} sm={6} lg="auto" sx={{ ml: { lg: 'auto' } }}>
 							<Button
 								variant="contained"
 								startIcon={<AddOutlinedIcon />}
 								endIcon={<ArrowDropDownOutlinedIcon />}
 								onClick={handleOpenCreateMenu}
+								sx={{ minWidth: 190, whiteSpace: 'nowrap' }}
 							>
 								Input Formulir
 							</Button>
