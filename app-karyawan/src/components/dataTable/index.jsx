@@ -77,6 +77,8 @@ function EnhancedTableHead(props) {
  * @param {Object} props.emptyRowsHeight
  * @param {Boolean} props.stickyHeader
  * @param {object} props.tableContainerProps
+ * @param {number=} props.initialRowsPerPage
+ * @param {number[]=} props.rowsPerPageOptions
  */
 function EnhancedTable(props) {
 	const {
@@ -87,11 +89,13 @@ function EnhancedTable(props) {
 		emptyRowsHeight = { default: 76, dense: 43 },
 		stickyHeader,
 		tableContainerProps,
+		initialRowsPerPage = 5,
+		rowsPerPageOptions = [5, 10, 25],
 	} = props;
 	const [order, setOrder] = useState('desc');
 	const [orderBy, setOrderBy] = useState('');
 	const [page, setPage] = useState(0);
-	const [rowsPerPage, setRowsPerPage] = useState(5);
+	const [rowsPerPage, setRowsPerPage] = useState(initialRowsPerPage);
 
 	const handleRequestSort = (event, property) => {
 		const isAsc = orderBy === property && order === 'asc';
@@ -148,7 +152,7 @@ function EnhancedTable(props) {
 				</Table>
 			</TableContainer>
 			<TablePagination
-				rowsPerPageOptions={[5, 10, 25]}
+				rowsPerPageOptions={rowsPerPageOptions}
 				component="div"
 				count={rows.length}
 				rowsPerPage={rowsPerPage}
