@@ -166,16 +166,27 @@ Modul ini direncanakan untuk menampilkan histori karyawan dan report keseluruhan
 - Perlu fungsi print dengan format yang sama dengan form aslinya.
 - Implementasi awal yang sudah dibuat:
   - halaman `Bimbingan & Pengarahan`
-  - tombol form `Formulir Catatan Bimbingan Karyawan`
+  - tombol input dropdown untuk memilih:
+    - `Formulir Catatan Bimbingan Karyawan`
+    - `Formulir Catatan Pengarahan Karyawan`
   - struktur field mengikuti dokumen `SII-QSHE-091-02 Formulir Catatan Bimbingan Karyawan.docx`
   - field `Nama Karyawan`, `NIK`, `Departemen`, `Jabatan`, dan `Rank`
   - `NIK` diisi dari `Employee No`
   - `Departemen` diisi dari `Master Department`
   - `Jabatan` diisi dari `Job Level`
   - `Rank` diisi dari `Grade`
+  - tabel data sekarang memiliki kategori:
+    - `Bimbingan` untuk formulir bimbingan
+    - `Pengarahan` untuk formulir pengarahan
   - halaman `Detail` full-page untuk melihat hasil formulir
   - tombol `Print A4` pada halaman detail
   - layout print sekarang menggunakan template visual dari `SII-QSHE-091-02 Formulir Catatan Bimbingan Karyawan.pdf` sebagai background agar spacing, border, dan proporsi mendekati form resmi
+  - ditambahkan template visual `SII-QSHE-091-01 Catatan Pengarahan Karyawan.pdf` untuk print `Formulir Catatan Pengarahan Karyawan`
+  - `Formulir Catatan Pengarahan Karyawan` memiliki section:
+    - `A.1 Pengetahuan/Keterampilan Kerja`
+    - `A.2 Tanggung Jawab Pekerjaan`
+    - `B. Penyebab Masalah`
+    - `C. Pemecahan Masalah (Oleh Atasan Langsung)`
   - field identitas tersebut terisi otomatis saat user memilih `Nama Karyawan`
 
 #### Halaman Surat Peringatan
@@ -256,6 +267,7 @@ Yang sudah selesai:
 - Menambahkan fitur upload/import Excel `Master Karyawan` beserta file error report per baris.
 - Menambahkan schema, migration, API CRUD, menu, route, halaman tabel, dan form input untuk `Bimbingan & Pengarahan`.
 - Menambahkan halaman detail dan print `Formulir Catatan Bimbingan Karyawan` dengan pendekatan overlay data di atas template PDF resmi.
+- Menambahkan kategori `Bimbingan` dan `Pengarahan` pada modul `Bimbingan & Pengarahan`, beserta form input dan template print A4 untuk `Formulir Catatan Pengarahan Karyawan`.
 - Verifikasi `lint`, `build`, dan smoke test API ke database berhasil.
 
 ## Struktur Teknis Awal yang Sudah Dibangun

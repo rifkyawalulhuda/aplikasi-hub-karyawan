@@ -12,10 +12,13 @@ import TextField from '@mui/material/TextField';
 
 import FormInput from '@/components/formInput';
 
+import { getGuidanceCategoryConfig } from './constants';
+
 const MEETING_OPTIONS = [1, 2, 3, 4];
 
-function toDefaultValues(initialValue) {
+function toDefaultValues(initialValue, category) {
 	return {
+		category: initialValue?.category || category,
 		employeeId: initialValue?.employeeId || '',
 		employeeNo: initialValue?.employeeNo || '',
 		departmentName: initialValue?.departmentName || '',
@@ -26,13 +29,16 @@ function toDefaultValues(initialValue) {
 		meetingTime: initialValue?.meetingTime || '',
 		location: initialValue?.location || '',
 		problemFaced: initialValue?.problemFaced || '',
+		problemFacedSecondary: initialValue?.problemFacedSecondary || '',
 		problemCause: initialValue?.problemCause || '',
 		problemSolving: initialValue?.problemSolving || '',
 	};
 }
 
-function GuidanceFormDialog({ open, loading, initialValue, employeeOptions, onClose, onSubmit }) {
+function GuidanceFormDialog({ open, loading, initialValue, employeeOptions, category, onClose, onSubmit }) {
 	const isEditMode = Boolean(initialValue);
+	const activeCategory = initialValue?.category || category;
+	const categoryConfig = getGuidanceCategoryConfig(activeCategory);
 	const {
 		control,
 		handleSubmit,
@@ -40,7 +46,7 @@ function GuidanceFormDialog({ open, loading, initialValue, employeeOptions, onCl
 		setValue,
 		formState: { errors, dirtyFields },
 	} = useForm({
-		defaultValues: toDefaultValues(initialValue),
+		defaultValues: toDefaultValues(initialValue, activeCategory),
 	});
 
 	const selectedEmployeeId = useWatch({
@@ -65,8 +71,8 @@ function GuidanceFormDialog({ open, loading, initialValue, employeeOptions, onCl
 	});
 
 	useEffect(() => {
-		reset(toDefaultValues(initialValue));
-	}, [initialValue, open, reset]);
+		reset(toDefaultValues(initialValue, activeCategory));
+	}, [activeCategory, initialValue, open, reset]);
 
 	useEffect(() => {
 		const selectedEmployee = employeeOptions.find((item) => item.id === Number(selectedEmployeeId));
@@ -77,11 +83,16 @@ function GuidanceFormDialog({ open, loading, initialValue, employeeOptions, onCl
 		setValue('rank', selectedEmployee?.grade || '');
 	}, [employeeOptions, selectedEmployeeId, setValue]);
 
+	const handleFormSubmit = (values) => {
+		onSubmit({
+			...values,
+			category: activeCategory,
+		});
+	};
+
 	return (
 		<Dialog open={open} onClose={loading ? undefined : onClose} fullWidth maxWidth="lg">
-			<DialogTitle>
-				{isEditMode ? 'Edit Formulir Catatan Bimbingan Karyawan' : 'Formulir Catatan Bimbingan Karyawan'}
-			</DialogTitle>
+			<DialogTitle>{isEditMode ? `Edit ${categoryConfig.formTitle}` : categoryConfig.formTitle}</DialogTitle>
 			<DialogContent>
 				<Grid
 					container
@@ -89,7 +100,7 @@ function GuidanceFormDialog({ open, loading, initialValue, employeeOptions, onCl
 					component="form"
 					id="guidance-record-form"
 					sx={{ pt: 1 }}
-					onSubmit={handleSubmit(onSubmit)}
+					onSubmit={handleSubmit(handleFormSubmit)}
 				>
 					<Grid item xs={12} md={3}>
 						<FormInput
@@ -179,20 +190,40 @@ function GuidanceFormDialog({ open, loading, initialValue, employeeOptions, onCl
 					<Grid item xs={12}>
 						<FormInput
 							name="problemFaced"
-							label="Permasalahan yang Dihadapi"
+							label={categoryConfig.sectionOneLabel}
 							control={control}
 							errors={errors}
 							dirtyFields={dirtyFields}
-							rules={{ required: 'Permasalahan yang dihadapi wajib diisi.' }}
+							rules={{
+								required:
+									activeCategory === 'DIRECTION'
+										? 'A.1 wajib diisi.'
+										: 'Permasalahan yang dihadapi wajib diisi.',
+							}}
 							fullWidth
 							multiline
 							minRows={4}
 						/>
 					</Grid>
+					{categoryConfig.sectionTwoLabel ? (
+						<Grid item xs={12}>
+							<FormInput
+								name="problemFacedSecondary"
+								label={categoryConfig.sectionTwoLabel}
+								control={control}
+								errors={errors}
+								dirtyFields={dirtyFields}
+								rules={{ required: 'A.2 wajib diisi.' }}
+								fullWidth
+								multiline
+								minRows={4}
+							/>
+						</Grid>
+					) : null}
 					<Grid item xs={12}>
 						<FormInput
 							name="problemCause"
-							label="Penyebab Masalah"
+							label={categoryConfig.sectionCauseLabel}
 							control={control}
 							errors={errors}
 							dirtyFields={dirtyFields}
@@ -205,7 +236,7 @@ function GuidanceFormDialog({ open, loading, initialValue, employeeOptions, onCl
 					<Grid item xs={12}>
 						<FormInput
 							name="problemSolving"
-							label="Pemecahan Masalah (Oleh Atasan Langsung)"
+							label={categoryConfig.sectionSolvingLabel}
 							control={control}
 							errors={errors}
 							dirtyFields={dirtyFields}

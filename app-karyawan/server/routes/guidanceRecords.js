@@ -18,6 +18,24 @@ function normalizeMultilineString(value = '') {
 	return String(value).replace(/\r\n/g, '\n').trim();
 }
 
+function normalizeCategory(value = '') {
+	const raw = normalizeString(value).toUpperCase();
+
+	if (raw === 'GUIDANCE' || raw === 'BIMBINGAN') {
+		return 'GUIDANCE';
+	}
+
+	if (raw === 'DIRECTION' || raw === 'PENGARAHAN') {
+		return 'DIRECTION';
+	}
+
+	return '';
+}
+
+function formatCategoryLabel(value = '') {
+	return value === 'DIRECTION' ? 'Pengarahan' : 'Bimbingan';
+}
+
 function normalizeGradeLabel(value = '') {
 	const raw = normalizeString(value);
 	const enumMatch = raw.match(/^RANK_(\d+)$/i);
@@ -66,6 +84,8 @@ function formatDateForClient(value) {
 function mapGuidanceRecord(record) {
 	return {
 		id: record.id,
+		category: record.category,
+		categoryLabel: formatCategoryLabel(record.category),
 		employeeId: record.employeeId,
 		employeeName: record.employee.fullName,
 		employeeNo: record.employee.employeeNo,
@@ -77,6 +97,7 @@ function mapGuidanceRecord(record) {
 		meetingTime: record.meetingTime,
 		location: record.location,
 		problemFaced: record.problemFaced,
+		problemFacedSecondary: record.problemFacedSecondary,
 		problemCause: record.problemCause,
 		problemSolving: record.problemSolving,
 	};
@@ -119,14 +140,20 @@ async function getGuidanceRecordOrThrow(id) {
 }
 
 async function validatePayload(payload) {
+	const category = normalizeCategory(payload.category);
 	const employeeId = Number(payload.employeeId);
 	const meetingNumber = Number(payload.meetingNumber);
 	const meetingDate = toDateOnly(payload.meetingDate);
 	const meetingTime = normalizeString(payload.meetingTime);
 	const location = normalizeString(payload.location);
 	const problemFaced = normalizeMultilineString(payload.problemFaced);
+	const problemFacedSecondary = normalizeMultilineString(payload.problemFacedSecondary);
 	const problemCause = normalizeMultilineString(payload.problemCause);
 	const problemSolving = normalizeMultilineString(payload.problemSolving);
+
+	if (!category) {
+		throw Object.assign(new Error('Kategori formulir wajib dipilih.'), { statusCode: 400 });
+	}
 
 	if (!Number.isInteger(employeeId)) {
 		throw Object.assign(new Error('Nama karyawan wajib dipilih.'), { statusCode: 400 });
@@ -149,7 +176,14 @@ async function validatePayload(payload) {
 	}
 
 	if (!problemFaced) {
-		throw Object.assign(new Error('Permasalahan yang dihadapi wajib diisi.'), { statusCode: 400 });
+		throw Object.assign(
+			new Error(category === 'DIRECTION' ? 'A.1 wajib diisi.' : 'Permasalahan yang dihadapi wajib diisi.'),
+			{ statusCode: 400 },
+		);
+	}
+
+	if (category === 'DIRECTION' && !problemFacedSecondary) {
+		throw Object.assign(new Error('A.2 wajib diisi.'), { statusCode: 400 });
 	}
 
 	if (!problemCause) {
@@ -163,12 +197,14 @@ async function validatePayload(payload) {
 	await getEmployeeOrThrow(employeeId);
 
 	return {
+		category,
 		employeeId,
 		meetingNumber,
 		meetingDate,
 		meetingTime,
 		location,
 		problemFaced,
+		problemFacedSecondary: category === 'DIRECTION' ? problemFacedSecondary : null,
 		problemCause,
 		problemSolving,
 	};

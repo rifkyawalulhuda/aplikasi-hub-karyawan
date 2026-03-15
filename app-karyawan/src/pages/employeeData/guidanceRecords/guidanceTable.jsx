@@ -11,6 +11,8 @@ import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 
 import EnhancedTable from '@/components/dataTable';
 
+import { guidanceCategoryConfigs } from './constants';
+
 const stickyActionCellSx = {
 	position: 'sticky',
 	right: 0,
@@ -22,6 +24,7 @@ const stickyActionCellSx = {
 
 const HEAD_CELLS = [
 	{ id: 'id', label: 'NO' },
+	{ id: 'categoryLabel', label: 'KATEGORI' },
 	{ id: 'meetingNumber', label: 'PERTEMUAN KE' },
 	{ id: 'meetingDate', label: 'TANGGAL' },
 	{ id: 'meetingTime', label: 'JAM' },
@@ -38,9 +41,9 @@ function GuidanceTable({ rows, onView, onEdit, onDelete }) {
 	if (rows.length === 0) {
 		return (
 			<Stack py={8} alignItems="center" spacing={1}>
-				<Typography variant="h6">Belum ada data bimbingan</Typography>
+				<Typography variant="h6">{guidanceCategoryConfigs.GUIDANCE.emptyTitle}</Typography>
 				<Typography variant="body2" color="text.secondary">
-					Tambahkan formulir catatan bimbingan karyawan pertama.
+					{guidanceCategoryConfigs.GUIDANCE.emptyDescription}
 				</Typography>
 			</Stack>
 		);
@@ -55,6 +58,7 @@ function GuidanceTable({ rows, onView, onEdit, onDelete }) {
 			render={(row) => (
 				<TableRow hover key={row.id}>
 					<TableCell>{row.id}</TableCell>
+					<TableCell>{row.categoryLabel}</TableCell>
 					<TableCell>{row.meetingNumber}</TableCell>
 					<TableCell>{row.meetingDate}</TableCell>
 					<TableCell>{row.meetingTime}</TableCell>

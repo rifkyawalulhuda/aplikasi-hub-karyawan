@@ -36,6 +36,11 @@ enum GradeRank {
   RANK_9
 }
 
+enum GuidanceRecordCategory {
+  GUIDANCE
+  DIRECTION
+}
+
 model WorkLocation {
   id        Int        @id @default(autoincrement())
   name      String     @unique @db.VarChar(255)
@@ -110,18 +115,20 @@ model Employee {
 }
 
 model GuidanceRecord {
-  id             Int      @id @default(autoincrement())
-  employeeId     Int
-  meetingNumber  Int
-  meetingDate    DateTime @db.Date
-  meetingTime    String   @db.VarChar(10)
-  location       String   @db.VarChar(255)
-  problemFaced   String   @db.Text
-  problemCause   String   @db.Text
-  problemSolving String   @db.Text
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  employee       Employee @relation(fields: [employeeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  id                    Int                    @id @default(autoincrement())
+  category              GuidanceRecordCategory @default(GUIDANCE)
+  employeeId            Int
+  meetingNumber         Int
+  meetingDate           DateTime               @db.Date
+  meetingTime           String                 @db.VarChar(10)
+  location              String                 @db.VarChar(255)
+  problemFaced          String                 @db.Text
+  problemFacedSecondary String?                @db.Text
+  problemCause          String                 @db.Text
+  problemSolving        String                 @db.Text
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  employee              Employee               @relation(fields: [employeeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
 
   @@index([employeeId])
   @@map("guidance_records")
