@@ -7,16 +7,20 @@ import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
 import CircularProgress from '@mui/material/CircularProgress';
 import Link from '@mui/material/Link';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
+import ArrowDropDownOutlinedIcon from '@mui/icons-material/ArrowDropDownOutlined';
 
 import CardHeader from '@/components/cardHeader';
 import DeleteConfirmDialog from '@/components/masterData/deleteConfirmDialog';
 import PageHeader from '@/components/pageHeader';
 import apiRequest from '@/services/api';
 
+import { guidanceCategoryOptions, getGuidanceCategoryConfig, GUIDANCE_RECORD_CATEGORY } from './constants';
 import GuidanceFormDialog from './guidanceFormDialog';
 import GuidanceTable from './guidanceTable';
 
@@ -38,6 +42,8 @@ function GuidanceRecordsPage() {
 	const [formOpen, setFormOpen] = useState(false);
 	const [deleteOpen, setDeleteOpen] = useState(false);
 	const [selectedItem, setSelectedItem] = useState(null);
+	const [formCategory, setFormCategory] = useState(GUIDANCE_RECORD_CATEGORY.GUIDANCE);
+	const [menuAnchorEl, setMenuAnchorEl] = useState(null);
 
 	useEffect(() => {
 		const init = async () => {
@@ -67,8 +73,24 @@ function GuidanceRecordsPage() {
 		setSelectedItem(null);
 	};
 
+	const handleOpenCreateMenu = (event) => {
+		setMenuAnchorEl(event.currentTarget);
+	};
+
+	const handleCloseCreateMenu = () => {
+		setMenuAnchorEl(null);
+	};
+
+	const handleOpenCreateForm = (category) => {
+		setSelectedItem(null);
+		setFormCategory(category);
+		setFormOpen(true);
+		handleCloseCreateMenu();
+	};
+
 	const handleSubmit = async (values) => {
 		setSubmitting(true);
+		const categoryConfig = getGuidanceCategoryConfig(values.category || selectedItem?.category || formCategory);
 
 		try {
 			let savedItem;
@@ -94,7 +116,7 @@ function GuidanceRecordsPage() {
 			});
 
 			closeFormDialog();
-			enqueueSnackbar(`Data bimbingan berhasil ${selectedItem ? 'diperbarui' : 'ditambahkan'}.`, {
+			enqueueSnackbar(`${categoryConfig.recordTitle} berhasil ${selectedItem ? 'diperbarui' : 'ditambahkan'}.`, {
 				variant: 'success',
 			});
 		} catch (error) {
@@ -110,6 +132,7 @@ function GuidanceRecordsPage() {
 		}
 
 		setSubmitting(true);
+		const categoryConfig = getGuidanceCategoryConfig(selectedItem.category);
 
 		try {
 			await apiRequest(`/data-karyawan/guidance-records/${selectedItem.id}`, {
@@ -117,7 +140,7 @@ function GuidanceRecordsPage() {
 			});
 			setRows((currentRows) => currentRows.filter((item) => item.id !== selectedItem.id));
 			closeDeleteDialog();
-			enqueueSnackbar('Data bimbingan berhasil dihapus.', { variant: 'error' });
+			enqueueSnackbar(`${categoryConfig.recordTitle} berhasil dihapus.`, { variant: 'error' });
 		} catch (error) {
 			enqueueSnackbar(error.message, { variant: 'error' });
 		} finally {
@@ -138,12 +161,24 @@ function GuidanceRecordsPage() {
 			<Card sx={{ minHeight: '60vh', p: 3 }}>
 				<CardHeader
 					title="Bimbingan & Pengarahan"
-					subtitle="Kelola data bimbingan dan buka formulir catatan bimbingan karyawan dari halaman ini."
+					subtitle="Kelola data bimbingan dan pengarahan, lalu pilih formulir yang ingin diinput dari tombol berikut."
 					size="small"
 				>
-					<Button variant="contained" startIcon={<AddOutlinedIcon />} onClick={() => setFormOpen(true)}>
-						Formulir Catatan Bimbingan Karyawan
+					<Button
+						variant="contained"
+						startIcon={<AddOutlinedIcon />}
+						endIcon={<ArrowDropDownOutlinedIcon />}
+						onClick={handleOpenCreateMenu}
+					>
+						Input Formulir
 					</Button>
+					<Menu anchorEl={menuAnchorEl} open={Boolean(menuAnchorEl)} onClose={handleCloseCreateMenu}>
+						{guidanceCategoryOptions.map((option) => (
+							<MenuItem key={option.value} onClick={() => handleOpenCreateForm(option.value)}>
+								{option.formTitle}
+							</MenuItem>
+						))}
+					</Menu>
 				</CardHeader>
 				{loading ? (
 					<Stack alignItems="center" justifyContent="center" py={10}>
@@ -157,6 +192,7 @@ function GuidanceRecordsPage() {
 						}}
 						onEdit={(item) => {
 							setSelectedItem(item);
+							setFormCategory(item.category);
 							setFormOpen(true);
 						}}
 						onDelete={(item) => {
@@ -171,13 +207,14 @@ function GuidanceRecordsPage() {
 				loading={submitting}
 				initialValue={selectedItem}
 				employeeOptions={employeeOptions}
+				category={formCategory}
 				onClose={closeFormDialog}
 				onSubmit={handleSubmit}
 			/>
 			<DeleteConfirmDialog
 				open={deleteOpen}
 				loading={submitting}
-				title="Data Bimbingan"
+				title={getGuidanceCategoryConfig(selectedItem?.category).recordTitle}
 				itemName={selectedItem?.employeeName}
 				onClose={closeDeleteDialog}
 				onConfirm={handleDelete}

@@ -18,6 +18,8 @@ import PrintOutlinedIcon from '@mui/icons-material/PrintOutlined';
 import PageHeader from '@/components/pageHeader';
 import apiRequest from '@/services/api';
 
+import { GUIDANCE_RECORD_CATEGORY } from './constants';
+import DirectionPrintDocument from './directionPrintDocument';
 import GuidancePrintDocument from './guidancePrintDocument';
 
 async function fetchGuidanceRecord(id) {
@@ -60,7 +62,12 @@ function GuidanceRecordDetailPage() {
 			</Stack>
 		);
 	} else if (record) {
-		content = <GuidancePrintDocument record={record} />;
+		content =
+			record.category === GUIDANCE_RECORD_CATEGORY.DIRECTION ? (
+				<DirectionPrintDocument record={record} />
+			) : (
+				<GuidancePrintDocument record={record} />
+			);
 	}
 
 	return (
