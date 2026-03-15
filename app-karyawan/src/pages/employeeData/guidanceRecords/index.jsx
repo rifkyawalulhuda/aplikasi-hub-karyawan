@@ -17,6 +17,7 @@ import Typography from '@mui/material/Typography';
 
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import ArrowDropDownOutlinedIcon from '@mui/icons-material/ArrowDropDownOutlined';
+import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
 import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
 
 import CardHeader from '@/components/cardHeader';
@@ -50,6 +51,8 @@ function GuidanceRecordsPage() {
 	const [menuAnchorEl, setMenuAnchorEl] = useState(null);
 	const [searchKeyword, setSearchKeyword] = useState('');
 	const [categoryFilter, setCategoryFilter] = useState('ALL');
+	const [dateFrom, setDateFrom] = useState('');
+	const [dateTo, setDateTo] = useState('');
 
 	useEffect(() => {
 		const init = async () => {
@@ -97,8 +100,10 @@ function GuidanceRecordsPage() {
 	const normalizedKeyword = searchKeyword.trim().toLowerCase();
 	const filteredRows = rows.filter((row) => {
 		const matchesCategory = categoryFilter === 'ALL' ? true : row.category === categoryFilter;
+		const matchesDateFrom = dateFrom ? row.meetingDate >= dateFrom : true;
+		const matchesDateTo = dateTo ? row.meetingDate <= dateTo : true;
 
-		if (!matchesCategory) {
+		if (!matchesCategory || !matchesDateFrom || !matchesDateTo) {
 			return false;
 		}
 
@@ -126,6 +131,76 @@ function GuidanceRecordsPage() {
 				.includes(normalizedKeyword),
 		);
 	});
+
+	const handleExportExcel = async () => {
+		if (filteredRows.length === 0) {
+			enqueueSnackbar('Tidak ada data untuk diexport.', { variant: 'error' });
+			return;
+		}
+
+		const ExcelJS = await import('exceljs');
+		const Workbook = ExcelJS.Workbook || ExcelJS.default?.Workbook;
+		const workbook = new Workbook();
+		const worksheet = workbook.addWorksheet('Bimbingan & Pengarahan');
+
+		worksheet.columns = [
+			{ header: 'NO', key: 'id', width: 10 },
+			{ header: 'KATEGORI', key: 'categoryLabel', width: 16 },
+			{ header: 'PERTEMUAN KE', key: 'meetingNumber', width: 16 },
+			{ header: 'TANGGAL', key: 'meetingDate', width: 14 },
+			{ header: 'JAM', key: 'meetingTime', width: 12 },
+			{ header: 'TEMPAT', key: 'location', width: 24 },
+			{ header: 'NAMA KARYAWAN', key: 'employeeName', width: 28 },
+			{ header: 'NIK', key: 'employeeNo', width: 18 },
+			{ header: 'DEPARTEMEN', key: 'departmentName', width: 20 },
+		];
+
+		worksheet.getRow(1).font = { bold: true };
+		worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
+
+		filteredRows.forEach((row) => {
+			worksheet.addRow({
+				id: row.id,
+				categoryLabel: row.categoryLabel,
+				meetingNumber: row.meetingNumber,
+				meetingDate: row.meetingDate,
+				meetingTime: row.meetingTime,
+				location: row.location,
+				employeeName: row.employeeName,
+				employeeNo: row.employeeNo,
+				departmentName: row.departmentName,
+			});
+		});
+
+		worksheet.eachRow((row, rowNumber) => {
+			const targetRow = row;
+
+			targetRow.alignment = { vertical: 'middle', horizontal: rowNumber === 1 ? 'center' : 'left' };
+
+			if (rowNumber === 1) {
+				targetRow.fill = {
+					type: 'pattern',
+					pattern: 'solid',
+					fgColor: { argb: 'DDE4EE' },
+				};
+			}
+		});
+
+		const buffer = await workbook.xlsx.writeBuffer();
+		const blob = new Blob([buffer], {
+			type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+		});
+		const url = window.URL.createObjectURL(blob);
+		const link = document.createElement('a');
+		const fileSuffix = dateFrom || dateTo ? `${dateFrom || 'all'}_${dateTo || 'all'}` : 'all-data';
+
+		link.href = url;
+		link.download = `bimbingan-pengarahan-${fileSuffix}.xlsx`;
+		document.body.appendChild(link);
+		link.click();
+		document.body.removeChild(link);
+		window.URL.revokeObjectURL(url);
+	};
 
 	const handleSubmit = async (values) => {
 		setSubmitting(true);
@@ -210,7 +285,7 @@ function GuidanceRecordsPage() {
 					}}
 				>
 					<Grid container spacing={1.5} alignItems="center">
-						<Grid item xs={12} lg={5}>
+						<Grid item xs={12} xl={4}>
 							<TextField
 								fullWidth
 								size="small"
@@ -227,7 +302,29 @@ function GuidanceRecordsPage() {
 								}}
 							/>
 						</Grid>
-						<Grid item xs={12} sm={6} lg={3}>
+						<Grid item xs={12} sm={6} md={4} lg={2} xl={2}>
+							<TextField
+								fullWidth
+								size="small"
+								type="date"
+								label="Dari Tanggal"
+								value={dateFrom}
+								onChange={(event) => setDateFrom(event.target.value)}
+								InputLabelProps={{ shrink: true }}
+							/>
+						</Grid>
+						<Grid item xs={12} sm={6} md={4} lg={2} xl={2}>
+							<TextField
+								fullWidth
+								size="small"
+								type="date"
+								label="Sampai Tanggal"
+								value={dateTo}
+								onChange={(event) => setDateTo(event.target.value)}
+								InputLabelProps={{ shrink: true }}
+							/>
+						</Grid>
+						<Grid item xs={12} sm={6} md={4} lg={2} xl={2}>
 							<TextField
 								fullWidth
 								size="small"
@@ -241,23 +338,37 @@ function GuidanceRecordsPage() {
 								<MenuItem value={GUIDANCE_RECORD_CATEGORY.DIRECTION}>Pengarahan</MenuItem>
 							</TextField>
 						</Grid>
-						<Grid item xs={12} sm={6} lg="auto" sx={{ ml: { lg: 'auto' } }}>
-							<Button
-								variant="contained"
-								startIcon={<AddOutlinedIcon />}
-								endIcon={<ArrowDropDownOutlinedIcon />}
-								onClick={handleOpenCreateMenu}
-								sx={{ minWidth: 190, whiteSpace: 'nowrap' }}
-							>
-								Input Formulir
-							</Button>
-							<Menu anchorEl={menuAnchorEl} open={Boolean(menuAnchorEl)} onClose={handleCloseCreateMenu}>
-								{guidanceCategoryOptions.map((option) => (
-									<MenuItem key={option.value} onClick={() => handleOpenCreateForm(option.value)}>
-										{option.formTitle}
-									</MenuItem>
-								))}
-							</Menu>
+						<Grid item xs={12} lg="auto" sx={{ ml: { lg: 'auto' } }}>
+							<Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
+								<Button
+									variant="outlined"
+									startIcon={<DownloadOutlinedIcon />}
+									onClick={handleExportExcel}
+									sx={{ minWidth: 170, whiteSpace: 'nowrap' }}
+								>
+									Export Excel
+								</Button>
+								<Button
+									variant="contained"
+									startIcon={<AddOutlinedIcon />}
+									endIcon={<ArrowDropDownOutlinedIcon />}
+									onClick={handleOpenCreateMenu}
+									sx={{ minWidth: 190, whiteSpace: 'nowrap' }}
+								>
+									Input Formulir
+								</Button>
+								<Menu
+									anchorEl={menuAnchorEl}
+									open={Boolean(menuAnchorEl)}
+									onClose={handleCloseCreateMenu}
+								>
+									{guidanceCategoryOptions.map((option) => (
+										<MenuItem key={option.value} onClick={() => handleOpenCreateForm(option.value)}>
+											{option.formTitle}
+										</MenuItem>
+									))}
+								</Menu>
+							</Stack>
 						</Grid>
 					</Grid>
 				</CardHeader>
