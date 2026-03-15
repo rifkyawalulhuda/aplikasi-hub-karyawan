@@ -16,7 +16,7 @@ import { guidanceCategoryConfigs } from './constants';
 const stickyActionCellSx = {
 	position: 'sticky',
 	right: 0,
-	minWidth: 170,
+	minWidth: 136,
 	backgroundColor: 'background.paper',
 	zIndex: 2,
 	boxShadow: '-6px 0 8px -8px rgba(15, 23, 42, 0.35)',
@@ -68,21 +68,21 @@ function GuidanceTable({ rows, onView, onEdit, onDelete }) {
 					<TableCell>{row.departmentName}</TableCell>
 					<TableCell>{row.positionName}</TableCell>
 					<TableCell>{row.rank}</TableCell>
-					<TableCell sx={stickyActionCellSx}>
-						<Stack direction="row" spacing={1}>
+					<TableCell sx={{ ...stickyActionCellSx, py: 1.25 }}>
+						<Stack direction="row" spacing={0.25} justifyContent="center">
 							<Tooltip title="Detail">
-								<IconButton color="info" onClick={() => onView(row)}>
-									<VisibilityOutlinedIcon />
+								<IconButton color="info" size="small" onClick={() => onView(row)}>
+									<VisibilityOutlinedIcon fontSize="small" />
 								</IconButton>
 							</Tooltip>
 							<Tooltip title="Edit">
-								<IconButton color="primary" onClick={() => onEdit(row)}>
-									<EditOutlinedIcon />
+								<IconButton color="primary" size="small" onClick={() => onEdit(row)}>
+									<EditOutlinedIcon fontSize="small" />
 								</IconButton>
 							</Tooltip>
 							<Tooltip title="Hapus">
-								<IconButton color="error" onClick={() => onDelete(row)}>
-									<DeleteOutlineOutlinedIcon />
+								<IconButton color="error" size="small" onClick={() => onDelete(row)}>
+									<DeleteOutlineOutlinedIcon fontSize="small" />
 								</IconButton>
 							</Tooltip>
 						</Stack>
