@@ -287,6 +287,7 @@ Yang sudah selesai:
 - Menambahkan schema, API, route, menu, dan halaman `Master Karyawan` berdasarkan file Excel sumber.
 - Menambahkan template Excel bulk import `Master Karyawan`.
 - Menambahkan fitur upload/import Excel `Master Karyawan` beserta file error report per baris.
+- Menambahkan kolom filter pencarian no-case sensitive pada seluruh halaman `Data Master`, termasuk `Master Karyawan`.
 - Menambahkan schema, migration, API CRUD, menu, route, halaman tabel, dan form input untuk `Bimbingan & Pengarahan`.
 - Menambahkan halaman detail dan print `Formulir Catatan Bimbingan Karyawan` dengan pendekatan overlay data di atas template PDF resmi.
 - Menambahkan kategori `Bimbingan` dan `Pengarahan` pada modul `Bimbingan & Pengarahan`, beserta form input dan template print A4 untuk `Formulir Catatan Pengarahan Karyawan`.

@@ -5,11 +5,14 @@ import Breadcrumbs from '@mui/material/Breadcrumbs';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
 import CircularProgress from '@mui/material/CircularProgress';
+import InputAdornment from '@mui/material/InputAdornment';
 import Link from '@mui/material/Link';
 import Stack from '@mui/material/Stack';
+import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
+import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
 
 import CardHeader from '@/components/cardHeader';
 import PageHeader from '@/components/pageHeader';
@@ -30,6 +33,7 @@ function MasterDataPage({ config }) {
 	const [selectedItem, setSelectedItem] = useState(null);
 	const [formOpen, setFormOpen] = useState(false);
 	const [deleteOpen, setDeleteOpen] = useState(false);
+	const [searchKeyword, setSearchKeyword] = useState('');
 
 	const closeFormDialog = () => {
 		setFormOpen(false);
@@ -59,6 +63,19 @@ function MasterDataPage({ config }) {
 	useEffect(() => {
 		loadData();
 	}, [config.resource]);
+
+	const normalizedKeyword = searchKeyword.trim().toLowerCase();
+	const filteredRows = rows.filter((row) => {
+		if (!normalizedKeyword) {
+			return true;
+		}
+
+		return [row.name, String(row.id)].some((value) =>
+			String(value || '')
+				.toLowerCase()
+				.includes(normalizedKeyword),
+		);
+	});
 
 	const handleCreate = () => {
 		setSelectedItem(null);
@@ -161,17 +178,44 @@ function MasterDataPage({ config }) {
 					p: 3,
 				}}
 			>
-				<CardHeader title={config.title} subtitle={config.description} size="small">
-					<Button variant="contained" startIcon={<AddOutlinedIcon />} onClick={handleCreate}>
-						Tambah Data
-					</Button>
+				<CardHeader
+					title={config.title}
+					subtitle={config.description}
+					size="small"
+					sx={{ mb: 2.5, alignItems: 'flex-start', gap: 1.5 }}
+				>
+					<Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5} alignItems={{ md: 'center' }}>
+						<TextField
+							size="small"
+							label="Cari Data"
+							value={searchKeyword}
+							onChange={(event) => setSearchKeyword(event.target.value)}
+							placeholder={`${config.fieldLabel}, nomor...`}
+							sx={{ minWidth: { xs: '100%', md: 320 } }}
+							InputProps={{
+								startAdornment: (
+									<InputAdornment position="start">
+										<SearchOutlinedIcon fontSize="small" />
+									</InputAdornment>
+								),
+							}}
+						/>
+						<Button variant="contained" startIcon={<AddOutlinedIcon />} onClick={handleCreate}>
+							Tambah Data
+						</Button>
+					</Stack>
 				</CardHeader>
 				{loading ? (
 					<Stack alignItems="center" justifyContent="center" py={10}>
 						<CircularProgress />
 					</Stack>
 				) : (
-					<MasterDataTable rows={rows} loading={loading} onEdit={handleEdit} onDelete={handleDelete} />
+					<MasterDataTable
+						rows={filteredRows}
+						loading={loading}
+						onEdit={handleEdit}
+						onDelete={handleDelete}
+					/>
 				)}
 			</Card>
 			<MasterDataFormDialog

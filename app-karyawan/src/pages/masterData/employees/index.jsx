@@ -5,11 +5,14 @@ import Breadcrumbs from '@mui/material/Breadcrumbs';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
 import CircularProgress from '@mui/material/CircularProgress';
+import InputAdornment from '@mui/material/InputAdornment';
 import Link from '@mui/material/Link';
 import Stack from '@mui/material/Stack';
+import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
+import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
 import UploadFileOutlinedIcon from '@mui/icons-material/UploadFileOutlined';
 
 import CardHeader from '@/components/cardHeader';
@@ -51,6 +54,7 @@ function EmployeesPage() {
 	const [importOpen, setImportOpen] = useState(false);
 	const [deleteOpen, setDeleteOpen] = useState(false);
 	const [selectedItem, setSelectedItem] = useState(null);
+	const [searchKeyword, setSearchKeyword] = useState('');
 
 	useEffect(() => {
 		const init = async () => {
@@ -69,6 +73,40 @@ function EmployeesPage() {
 
 		init();
 	}, []);
+
+	const normalizedKeyword = searchKeyword.trim().toLowerCase();
+	const filteredRows = rows.filter((row) => {
+		if (!normalizedKeyword) {
+			return true;
+		}
+
+		const searchableValues = [
+			row.id,
+			row.employeeNo,
+			row.fullName,
+			row.employmentType,
+			row.siteDiv,
+			row.departmentName,
+			row.lengthOfService,
+			row.age,
+			row.birthDate,
+			row.gender,
+			row.workLocationName,
+			row.jobRoleName,
+			row.jobLevelName,
+			row.educationLevel,
+			row.grade,
+			row.joinDate,
+			row.phoneNumber,
+			row.email,
+		];
+
+		return searchableValues.some((value) =>
+			String(value || '')
+				.toLowerCase()
+				.includes(normalizedKeyword),
+		);
+	});
 
 	const closeFormDialog = () => {
 		setFormOpen(false);
@@ -218,18 +256,40 @@ function EmployeesPage() {
 					title="Master Karyawan"
 					subtitle="Kelola data induk karyawan berdasarkan struktur file Excel master karyawan."
 					size="small"
+					sx={{ mb: 2.5, alignItems: 'flex-start', gap: 1.5 }}
 				>
-					<Stack direction="row" spacing={1} flexWrap="wrap">
-						<Button
-							variant="outlined"
-							startIcon={<UploadFileOutlinedIcon />}
-							onClick={() => setImportOpen(true)}
-						>
-							Import Excel
-						</Button>
-						<Button variant="contained" startIcon={<AddOutlinedIcon />} onClick={() => setFormOpen(true)}>
-							Tambah Data
-						</Button>
+					<Stack direction={{ xs: 'column', lg: 'row' }} spacing={1.5} alignItems={{ lg: 'center' }}>
+						<TextField
+							size="small"
+							label="Cari Data"
+							value={searchKeyword}
+							onChange={(event) => setSearchKeyword(event.target.value)}
+							placeholder="Nama, NIK, department, lokasi..."
+							sx={{ minWidth: { xs: '100%', lg: 340 } }}
+							InputProps={{
+								startAdornment: (
+									<InputAdornment position="start">
+										<SearchOutlinedIcon fontSize="small" />
+									</InputAdornment>
+								),
+							}}
+						/>
+						<Stack direction="row" spacing={1} flexWrap="wrap">
+							<Button
+								variant="outlined"
+								startIcon={<UploadFileOutlinedIcon />}
+								onClick={() => setImportOpen(true)}
+							>
+								Import Excel
+							</Button>
+							<Button
+								variant="contained"
+								startIcon={<AddOutlinedIcon />}
+								onClick={() => setFormOpen(true)}
+							>
+								Tambah Data
+							</Button>
+						</Stack>
 					</Stack>
 				</CardHeader>
 				{loading ? (
@@ -238,7 +298,7 @@ function EmployeesPage() {
 					</Stack>
 				) : (
 					<EmployeeTable
-						rows={rows}
+						rows={filteredRows}
 						onEdit={(item) => {
 							setSelectedItem(item);
 							setFormOpen(true);
