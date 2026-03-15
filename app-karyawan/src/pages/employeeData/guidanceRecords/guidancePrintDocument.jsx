@@ -98,15 +98,22 @@ function GuidancePrintDocument({ record }) {
 			className="guidance-print-page"
 			sx={{
 				width: PAGE_WIDTH,
-				minHeight: PAGE_HEIGHT,
+				height: PAGE_HEIGHT,
 				mx: 'auto',
 				bgcolor: 'common.white',
 				color: 'common.black',
 				boxShadow: '0 12px 30px rgba(15, 23, 42, 0.12)',
 				overflow: 'hidden',
+				breakInside: 'avoid-page',
+				breakAfter: 'avoid-page',
+				pageBreakInside: 'avoid',
+				pageBreakAfter: 'avoid',
 				'@media print': {
+					width: PAGE_WIDTH,
+					height: PAGE_HEIGHT,
 					boxShadow: 'none',
 					m: 0,
+					overflow: 'hidden',
 				},
 			}}
 		>
