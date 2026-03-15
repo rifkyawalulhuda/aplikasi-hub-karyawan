@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
-import { useForm, useWatch } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 
+import Autocomplete from '@mui/material/Autocomplete';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
@@ -160,22 +161,36 @@ function GuidanceFormDialog({ open, loading, initialValue, employeeOptions, cate
 						/>
 					</Grid>
 					<Grid item xs={12} md={6}>
-						<FormInput
+						<Controller
 							name="employeeId"
-							label="Nama Karyawan"
 							control={control}
-							errors={errors}
-							dirtyFields={dirtyFields}
 							rules={{ required: 'Nama karyawan wajib dipilih.' }}
-							fullWidth
-							select
-						>
-							{employeeOptions.map((option) => (
-								<MenuItem key={option.id} value={option.id}>
-									{option.fullName}
-								</MenuItem>
-							))}
-						</FormInput>
+							render={({ field }) => (
+								<Autocomplete
+									options={employeeOptions}
+									value={employeeOptions.find((option) => option.id === Number(field.value)) || null}
+									onChange={(_, selectedOption) => {
+										field.onChange(selectedOption?.id || '');
+									}}
+									isOptionEqualToValue={(option, value) => option.id === value.id}
+									getOptionLabel={(option) => option?.fullName || ''}
+									renderOption={(props, option) => (
+										<li {...props} key={option.id}>
+											{option.fullName}
+										</li>
+									)}
+									renderInput={(params) => (
+										<TextField
+											{...params}
+											label="Nama Karyawan"
+											error={Boolean(errors.employeeId)}
+											helperText={errors.employeeId?.message}
+										/>
+									)}
+									fullWidth
+								/>
+							)}
+						/>
 					</Grid>
 					<Grid item xs={12} md={3}>
 						<TextField label="NIK" value={employeeNo || ''} fullWidth disabled />
