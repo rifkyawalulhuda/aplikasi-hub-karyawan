@@ -9,7 +9,7 @@ function Navbar({ navItems, position = 'sticky' }) {
 	return (
 		<AppBar position={position} elevation={26} sx={{ borderLeft: 0, borderRight: 0 }}>
 			<Box bgcolor="background.paper" py={2}>
-				<Container maxWidth="lg">
+				<Container maxWidth="lg" sx={{ display: 'flex', justifyContent: 'flex-start' }}>
 					<NavLinks navItems={navItems} />
 				</Container>
 			</Box>

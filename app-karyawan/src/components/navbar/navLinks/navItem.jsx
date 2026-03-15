@@ -12,20 +12,26 @@ export function NavItem({ Icon, title, showExpand = false, selected = false }) {
 		<Stack
 			width="100%"
 			direction="row"
-			p={1.5}
+			px={{ xs: 1.5, md: 2.5 }}
+			py={1.5}
 			border={1}
-			borderLeft={0}
 			borderColor="border"
 			alignItems="center"
 			alignContent="center"
 			justifyContent="center"
-			spacing={0.5}
+			spacing={0.75}
 			title={title}
+			sx={{
+				borderLeftWidth: { xs: 0, md: 1 },
+				borderTopWidth: { xs: 0, md: 1 },
+				borderBottomWidth: 0,
+				borderRightWidth: 0,
+			}}
 		>
 			{Icon && (
 				<Icon
 					sx={{
-						fontSize: 18,
+						fontSize: 17,
 						color: (theme) => (selected ? theme.palette.primary.contrastText : theme.palette.primary[300]),
 					}}
 				/>
@@ -38,7 +44,8 @@ export function NavItem({ Icon, title, showExpand = false, selected = false }) {
 				}}
 				textTransform="uppercase"
 				fontWeight="500"
-				fontSize="13px"
+				fontSize="12.5px"
+				letterSpacing={0.2}
 				color={selected ? 'primary.contrastText' : 'text.tertiary'}
 			>
 				{title}
@@ -60,7 +67,9 @@ export function NavItemButton({ children, selected, sx, ...rest }) {
 	return (
 		<ButtonBase
 			sx={{
-				flexGrow: 1,
+				flexGrow: { xs: 1, md: 0 },
+				flexShrink: 0,
+				minWidth: { xs: '50%', sm: '50%', md: 260 },
 				...(selected && {
 					backgroundImage: (theme) =>
 						`linear-gradient(90deg, ${theme.palette.primary[300]} 0%,${theme.palette.primary.dark} 100% )`,
