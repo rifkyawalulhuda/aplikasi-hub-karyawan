@@ -32,6 +32,7 @@ function CustomizationLayout() {
 			<Tooltip title="Live Customize">
 				<Fab
 					component="div"
+					className="app-customization-fab no-print"
 					size="medium"
 					variant="circular"
 					color="primary"
@@ -45,6 +46,9 @@ function CustomizationLayout() {
 						position: 'fixed',
 						right: 10,
 						zIndex: 1,
+						'@media print': {
+							display: 'none !important',
+						},
 					}}
 				>
 					<IconButton color="inherit" size="large" disableRipple onClick={openDrawer}>
@@ -62,7 +66,19 @@ function CustomizationLayout() {
 					</IconButton>
 				</Fab>
 			</Tooltip>
-			<Drawer anchor="right" open={showDrawer} onClose={() => setshowDrawer(false)}>
+			<Drawer
+				anchor="right"
+				open={showDrawer}
+				onClose={() => setshowDrawer(false)}
+				className="app-customization-drawer no-print"
+				PaperProps={{
+					sx: {
+						'@media print': {
+							display: 'none !important',
+						},
+					},
+				}}
+			>
 				<Stack maxWidth={400} width="100%" minWidth={300} px={3} my={1} spacing={5}>
 					<Stack
 						direction="row"

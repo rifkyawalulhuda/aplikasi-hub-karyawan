@@ -92,12 +92,18 @@ function GuidanceRecordDetailPage() {
 						'.guidance-detail-root': {
 							margin: '0 !important',
 							padding: '0 !important',
+							display: 'block !important',
+							gap: '0 !important',
+						},
+						'.guidance-detail-root > *': {
+							margin: '0 !important',
 						},
 						'.guidance-detail-card': {
 							boxShadow: 'none !important',
 							background: 'transparent !important',
 							padding: '0 !important',
 							border: '0 !important',
+							margin: '0 !important',
 						},
 					},
 				}}
