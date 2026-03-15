@@ -100,10 +100,29 @@ model Employee {
   workLocation   WorkLocation   @relation(fields: [workLocationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   jobRole        JobRole        @relation(fields: [jobRoleId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   jobLevel       JobLevel       @relation(fields: [jobLevelId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  guidanceRecords GuidanceRecord[]
 
   @@index([departmentId])
   @@index([workLocationId])
   @@index([jobRoleId])
   @@index([jobLevelId])
   @@map("employees")
+}
+
+model GuidanceRecord {
+  id             Int      @id @default(autoincrement())
+  employeeId     Int
+  meetingNumber  Int
+  meetingDate    DateTime @db.Date
+  meetingTime    String   @db.VarChar(10)
+  location       String   @db.VarChar(255)
+  problemFaced   String   @db.Text
+  problemCause   String   @db.Text
+  problemSolving String   @db.Text
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  employee       Employee @relation(fields: [employeeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([employeeId])
+  @@map("guidance_records")
 }

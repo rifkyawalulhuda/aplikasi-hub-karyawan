@@ -37,11 +37,14 @@ function MainLayout({ container = 'lg', pb = true }) {
 	const { pageTransitions } = useSelector(selectThemeConfig);
 
 	return (
-		<Box display="flex" minHeight="100vh" flexDirection="column">
-			<Header />
+		<Box display="flex" minHeight="100vh" flexDirection="column" className="app-shell-root">
+			<Box className="app-shell-header no-print">
+				<Header />
+			</Box>
 			<Container
 				maxWidth={container}
 				component="main"
+				className="app-shell-main"
 				sx={{
 					flex: '1 0 auto',
 					...(pb && {
@@ -57,8 +60,10 @@ function MainLayout({ container = 'lg', pb = true }) {
 					<Outlet />
 				)}
 			</Container>
-			{withScrollTopFabButton(FabButton)}
-			<Footer />
+			<Box className="app-shell-fab no-print">{withScrollTopFabButton(FabButton)}</Box>
+			<Box className="app-shell-footer no-print">
+				<Footer />
+			</Box>
 		</Box>
 	);
 }

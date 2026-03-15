@@ -62,6 +62,8 @@ Folder ini dipilih sebagai basis utama pengembangan karena struktur template-nya
   - `Master Department`
   - `Master Job Role`
   - `Master Job Level`
+- Tab utama tambahan: `Data Karyawan`
+- Menu utama: `Bimbingan & Pengarahan`
 
 ## Scope Modul yang Sudah Dibahas
 
@@ -162,6 +164,19 @@ Modul ini direncanakan untuk menampilkan histori karyawan dan report keseluruhan
   - `FORMULIR CATATAN PENGARAHAN KARYAWAN`
 - Isi kolom harus mengikuti form integrasi existing.
 - Perlu fungsi print dengan format yang sama dengan form aslinya.
+- Implementasi awal yang sudah dibuat:
+  - halaman `Bimbingan & Pengarahan`
+  - tombol form `Formulir Catatan Bimbingan Karyawan`
+  - struktur field mengikuti dokumen `SII-QSHE-091-02 Formulir Catatan Bimbingan Karyawan.docx`
+  - field `Nama Karyawan`, `NIK`, `Departemen`, `Jabatan`, dan `Rank`
+  - `NIK` diisi dari `Employee No`
+  - `Departemen` diisi dari `Master Department`
+  - `Jabatan` diisi dari `Job Level`
+  - `Rank` diisi dari `Grade`
+  - halaman `Detail` full-page untuk melihat hasil formulir
+  - tombol `Print A4` pada halaman detail
+  - layout print sekarang menggunakan template visual dari `SII-QSHE-091-02 Formulir Catatan Bimbingan Karyawan.pdf` sebagai background agar spacing, border, dan proporsi mendekati form resmi
+  - field identitas tersebut terisi otomatis saat user memilih `Nama Karyawan`
 
 #### Halaman Surat Peringatan
 
@@ -239,6 +254,8 @@ Yang sudah selesai:
 - Menambahkan schema, API, route, menu, dan halaman `Master Karyawan` berdasarkan file Excel sumber.
 - Menambahkan template Excel bulk import `Master Karyawan`.
 - Menambahkan fitur upload/import Excel `Master Karyawan` beserta file error report per baris.
+- Menambahkan schema, migration, API CRUD, menu, route, halaman tabel, dan form input untuk `Bimbingan & Pengarahan`.
+- Menambahkan halaman detail dan print `Formulir Catatan Bimbingan Karyawan` dengan pendekatan overlay data di atas template PDF resmi.
 - Verifikasi `lint`, `build`, dan smoke test API ke database berhasil.
 
 ## Struktur Teknis Awal yang Sudah Dibangun

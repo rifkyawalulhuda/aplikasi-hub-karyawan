@@ -1,0 +1,92 @@
+import IconButton from '@mui/material/IconButton';
+import Stack from '@mui/material/Stack';
+import TableCell from '@mui/material/TableCell';
+import TableRow from '@mui/material/TableRow';
+import Tooltip from '@mui/material/Tooltip';
+import Typography from '@mui/material/Typography';
+
+import DeleteOutlineOutlinedIcon from '@mui/icons-material/DeleteOutlineOutlined';
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
+import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
+
+import EnhancedTable from '@/components/dataTable';
+
+const stickyActionCellSx = {
+	position: 'sticky',
+	right: 0,
+	minWidth: 170,
+	backgroundColor: 'background.paper',
+	zIndex: 2,
+	boxShadow: '-6px 0 8px -8px rgba(15, 23, 42, 0.35)',
+};
+
+const HEAD_CELLS = [
+	{ id: 'id', label: 'NO' },
+	{ id: 'meetingNumber', label: 'PERTEMUAN KE' },
+	{ id: 'meetingDate', label: 'TANGGAL' },
+	{ id: 'meetingTime', label: 'JAM' },
+	{ id: 'location', label: 'TEMPAT' },
+	{ id: 'employeeName', label: 'NAMA KARYAWAN' },
+	{ id: 'employeeNo', label: 'NIK' },
+	{ id: 'departmentName', label: 'DEPARTEMEN' },
+	{ id: 'positionName', label: 'JABATAN' },
+	{ id: 'rank', label: 'RANK' },
+	{ id: 'actions', label: 'AKSI', disableSort: true, sx: { ...stickyActionCellSx, zIndex: 4 } },
+];
+
+function GuidanceTable({ rows, onView, onEdit, onDelete }) {
+	if (rows.length === 0) {
+		return (
+			<Stack py={8} alignItems="center" spacing={1}>
+				<Typography variant="h6">Belum ada data bimbingan</Typography>
+				<Typography variant="body2" color="text.secondary">
+					Tambahkan formulir catatan bimbingan karyawan pertama.
+				</Typography>
+			</Stack>
+		);
+	}
+
+	return (
+		<EnhancedTable
+			rows={rows}
+			headCells={HEAD_CELLS}
+			stickyHeader
+			tableContainerProps={{ sx: { maxHeight: 520 } }}
+			render={(row) => (
+				<TableRow hover key={row.id}>
+					<TableCell>{row.id}</TableCell>
+					<TableCell>{row.meetingNumber}</TableCell>
+					<TableCell>{row.meetingDate}</TableCell>
+					<TableCell>{row.meetingTime}</TableCell>
+					<TableCell>{row.location}</TableCell>
+					<TableCell>{row.employeeName}</TableCell>
+					<TableCell>{row.employeeNo}</TableCell>
+					<TableCell>{row.departmentName}</TableCell>
+					<TableCell>{row.positionName}</TableCell>
+					<TableCell>{row.rank}</TableCell>
+					<TableCell sx={stickyActionCellSx}>
+						<Stack direction="row" spacing={1}>
+							<Tooltip title="Detail">
+								<IconButton color="info" onClick={() => onView(row)}>
+									<VisibilityOutlinedIcon />
+								</IconButton>
+							</Tooltip>
+							<Tooltip title="Edit">
+								<IconButton color="primary" onClick={() => onEdit(row)}>
+									<EditOutlinedIcon />
+								</IconButton>
+							</Tooltip>
+							<Tooltip title="Hapus">
+								<IconButton color="error" onClick={() => onDelete(row)}>
+									<DeleteOutlineOutlinedIcon />
+								</IconButton>
+							</Tooltip>
+						</Stack>
+					</TableCell>
+				</TableRow>
+			)}
+		/>
+	);
+}
+
+export default GuidanceTable;
