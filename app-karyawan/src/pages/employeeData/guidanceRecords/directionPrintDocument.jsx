@@ -1,6 +1,8 @@
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 
+import { formatGuidanceDate } from './constants';
+
 const PAGE_WIDTH = '210mm';
 const PAGE_HEIGHT = '297mm';
 const FONT_FAMILY = '"Arial", "Helvetica", sans-serif';
@@ -131,7 +133,7 @@ function DirectionPrintDocument({ record }) {
 			>
 				<MeetingNumberMarker value={record.meetingNumber} />
 
-				<InfoValue value={record.meetingDate} left={160.22} top={146.36} width={120} />
+				<InfoValue value={formatGuidanceDate(record.meetingDate)} left={160.22} top={146.36} width={120} />
 				<InfoValue value={record.meetingTime} left={160.22} top={158.6} width={120} />
 				<InfoValue value={record.location} left={160.22} top={170.72} width={120} />
 

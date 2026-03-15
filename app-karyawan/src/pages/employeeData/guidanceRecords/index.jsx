@@ -25,7 +25,12 @@ import DeleteConfirmDialog from '@/components/masterData/deleteConfirmDialog';
 import PageHeader from '@/components/pageHeader';
 import apiRequest from '@/services/api';
 
-import { guidanceCategoryOptions, getGuidanceCategoryConfig, GUIDANCE_RECORD_CATEGORY } from './constants';
+import {
+	formatGuidanceDate,
+	guidanceCategoryOptions,
+	getGuidanceCategoryConfig,
+	GUIDANCE_RECORD_CATEGORY,
+} from './constants';
 import GuidanceFormDialog from './guidanceFormDialog';
 import GuidanceTable from './guidanceTable';
 
@@ -169,7 +174,7 @@ function GuidanceRecordsPage() {
 				id: row.id,
 				categoryLabel: row.categoryLabel,
 				meetingNumber: row.meetingNumber,
-				meetingDate: row.meetingDate,
+				meetingDate: formatGuidanceDate(row.meetingDate),
 				meetingTime: row.meetingTime,
 				location: row.location,
 				employeeName: row.employeeName,
