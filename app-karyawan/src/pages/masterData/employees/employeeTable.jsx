@@ -59,6 +59,8 @@ function EmployeeTable({ rows, onEdit, onDelete }) {
 			rows={rows}
 			headCells={HEAD_CELLS}
 			stickyHeader
+			initialRowsPerPage={15}
+			rowsPerPageOptions={[15, 30, 50, 100]}
 			tableContainerProps={{ sx: { maxHeight: 520 } }}
 			render={(row) => (
 				<TableRow hover key={row.id}>
