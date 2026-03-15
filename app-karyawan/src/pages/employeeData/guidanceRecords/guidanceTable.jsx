@@ -16,7 +16,7 @@ import { guidanceCategoryConfigs } from './constants';
 const stickyActionCellSx = {
 	position: 'sticky',
 	right: 0,
-	minWidth: 136,
+	minWidth: 124,
 	backgroundColor: 'background.paper',
 	zIndex: 2,
 	boxShadow: '-6px 0 8px -8px rgba(15, 23, 42, 0.35)',
@@ -32,8 +32,6 @@ const HEAD_CELLS = [
 	{ id: 'employeeName', label: 'NAMA KARYAWAN' },
 	{ id: 'employeeNo', label: 'NIK' },
 	{ id: 'departmentName', label: 'DEPARTEMEN' },
-	{ id: 'positionName', label: 'JABATAN' },
-	{ id: 'rank', label: 'RANK' },
 	{ id: 'actions', label: 'AKSI', disableSort: true, sx: { ...stickyActionCellSx, zIndex: 4 } },
 ];
 
@@ -66,8 +64,6 @@ function GuidanceTable({ rows, onView, onEdit, onDelete }) {
 					<TableCell>{row.employeeName}</TableCell>
 					<TableCell>{row.employeeNo}</TableCell>
 					<TableCell>{row.departmentName}</TableCell>
-					<TableCell>{row.positionName}</TableCell>
-					<TableCell>{row.rank}</TableCell>
 					<TableCell sx={{ ...stickyActionCellSx, py: 1.25 }}>
 						<Stack direction="row" spacing={0.25} justifyContent="center">
 							<Tooltip title="Detail">
