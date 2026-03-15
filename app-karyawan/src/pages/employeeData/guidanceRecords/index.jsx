@@ -18,6 +18,7 @@ import Typography from '@mui/material/Typography';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import ArrowDropDownOutlinedIcon from '@mui/icons-material/ArrowDropDownOutlined';
 import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
+import PrintOutlinedIcon from '@mui/icons-material/PrintOutlined';
 import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
 
 import CardHeader from '@/components/cardHeader';
@@ -58,6 +59,7 @@ function GuidanceRecordsPage() {
 	const [categoryFilter, setCategoryFilter] = useState('ALL');
 	const [dateFrom, setDateFrom] = useState('');
 	const [dateTo, setDateTo] = useState('');
+	const [selectedRowIds, setSelectedRowIds] = useState([]);
 
 	useEffect(() => {
 		const init = async () => {
@@ -136,6 +138,38 @@ function GuidanceRecordsPage() {
 				.includes(normalizedKeyword),
 		);
 	});
+
+	useEffect(() => {
+		const filteredRowIdSet = new Set(filteredRows.map((row) => row.id));
+
+		setSelectedRowIds((currentIds) => {
+			const nextIds = currentIds.filter((id) => filteredRowIdSet.has(id));
+
+			if (nextIds.length === currentIds.length && nextIds.every((id, index) => id === currentIds[index])) {
+				return currentIds;
+			}
+
+			return nextIds;
+		});
+	}, [filteredRows]);
+
+	const selectedRows = filteredRows.filter((row) => selectedRowIds.includes(row.id));
+	const allRowsSelected = filteredRows.length > 0 && selectedRows.length === filteredRows.length;
+	const someRowsSelected = selectedRows.length > 0 && selectedRows.length < filteredRows.length;
+
+	const handleToggleSelectRow = (id, checked) => {
+		setSelectedRowIds((currentIds) => {
+			if (checked) {
+				return currentIds.includes(id) ? currentIds : [...currentIds, id];
+			}
+
+			return currentIds.filter((currentId) => currentId !== id);
+		});
+	};
+
+	const handleToggleSelectAll = (checked) => {
+		setSelectedRowIds(checked ? filteredRows.map((row) => row.id) : []);
+	};
 
 	const handleExportExcel = async () => {
 		if (filteredRows.length === 0) {
@@ -221,6 +255,20 @@ function GuidanceRecordsPage() {
 		link.click();
 		document.body.removeChild(link);
 		window.URL.revokeObjectURL(url);
+	};
+
+	const handleBulkPrint = () => {
+		if (selectedRows.length === 0) {
+			enqueueSnackbar('Pilih minimal satu data atau gunakan checkbox pilih semua untuk print A4.', {
+				variant: 'error',
+			});
+			return;
+		}
+
+		const selectedIds = selectedRows.map((row) => row.id).join(',');
+		const printUrl = `/print/data-karyawan/bimbingan-pengarahan?ids=${selectedIds}`;
+
+		window.open(printUrl, '_blank', 'noopener,noreferrer');
 	};
 
 	const handleSubmit = async (values) => {
@@ -361,6 +409,24 @@ function GuidanceRecordsPage() {
 						</Grid>
 						<Grid item xs={12} lg="auto" sx={{ ml: { lg: 'auto' } }}>
 							<Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
+								{selectedRows.length > 0 && (
+									<Typography
+										variant="body2"
+										color="text.secondary"
+										sx={{ alignSelf: 'center', minWidth: { sm: 120 } }}
+									>
+										{selectedRows.length} data dipilih
+									</Typography>
+								)}
+								<Button
+									variant="outlined"
+									color="secondary"
+									startIcon={<PrintOutlinedIcon />}
+									onClick={handleBulkPrint}
+									sx={{ minWidth: 170, whiteSpace: 'nowrap' }}
+								>
+									Print A4 Terpilih
+								</Button>
 								<Button
 									variant="outlined"
 									startIcon={<DownloadOutlinedIcon />}
@@ -400,6 +466,11 @@ function GuidanceRecordsPage() {
 				) : (
 					<GuidanceTable
 						rows={filteredRows}
+						selectedRowIds={selectedRowIds}
+						allRowsSelected={allRowsSelected}
+						someRowsSelected={someRowsSelected}
+						onToggleSelectAll={handleToggleSelectAll}
+						onToggleSelectRow={handleToggleSelectRow}
 						onView={(item) => {
 							navigate(`/data-karyawan/bimbingan-pengarahan/${item.id}`);
 						}}

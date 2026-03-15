@@ -192,6 +192,8 @@ Modul ini direncanakan untuk menampilkan histori karyawan dan report keseluruhan
     - pencarian no-case sensitive
     - kategori `Bimbingan` / `Pengarahan`
     - rentang tanggal `Dari Tanggal` dan `Sampai Tanggal`
+  - halaman daftar sudah mendukung seleksi data satu per satu dan `pilih semua`
+  - data yang dipilih dapat dicetak bulk dalam format `A4` dengan layout form asli masing-masing kategori
   - halaman daftar sudah memiliki fitur `Export Excel`
   - file export Excel mencakup seluruh isi form, tidak hanya kolom tabel, termasuk:
     - kategori

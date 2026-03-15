@@ -13,12 +13,16 @@ const JobLevelsPage = withLazyLoadably(lazy(() => import('@/pages/masterData/job
 const EmployeesPage = withLazyLoadably(lazy(() => import('@/pages/masterData/employees')));
 const GuidanceRecordsPage = withLazyLoadably(lazy(() => import('@/pages/employeeData/guidanceRecords')));
 const GuidanceRecordDetailPage = withLazyLoadably(lazy(() => import('@/pages/employeeData/guidanceRecords/detail')));
+const GuidanceRecordBulkPrintPage = withLazyLoadably(
+	lazy(() => import('@/pages/employeeData/guidanceRecords/bulkPrint')),
+);
 
 function Router() {
 	return (
 		<BrowserRouter>
 			<ScrollToTopOnRouteChange>
 				<Routes>
+					<Route path="/print/data-karyawan/bimbingan-pengarahan" element={<GuidanceRecordBulkPrintPage />} />
 					<Route path="/" element={<MainLayout />}>
 						<Route index element={<Navigate to="/data-master/master-data-karyawan/employees" replace />} />
 						<Route path="data-master/master-data-karyawan/employees" element={<EmployeesPage />} />
