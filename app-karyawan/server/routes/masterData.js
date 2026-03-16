@@ -1,9 +1,22 @@
+import { randomUUID } from 'crypto';
+import fs from 'fs/promises';
+import path from 'path';
+
+import ExcelJS from 'exceljs';
 import { Router } from 'express';
+import multer from 'multer';
 
 import prisma from '../lib/prisma.js';
 import MASTER_DATA_CONFIG from '../config/masterDataConfig.js';
 
 const router = Router();
+const upload = multer({
+	storage: multer.memoryStorage(),
+	limits: {
+		fileSize: 10 * 1024 * 1024,
+	},
+});
+const ERROR_REPORT_DIR = path.resolve(process.cwd(), 'tmp', 'import-results');
 
 function withAsync(handler) {
 	return (req, res, next) => {
@@ -81,6 +94,190 @@ async function buildPayload(config, body = {}, currentId = null) {
 
 	return payload;
 }
+
+function worksheetRowToPayload(row, headerMap) {
+	const payload = {};
+
+	headerMap.forEach((columnNumber, header) => {
+		const cellValue = row.getCell(columnNumber).value;
+		payload[header] = typeof cellValue === 'object' && cellValue?.text ? cellValue.text : cellValue;
+	});
+
+	return payload;
+}
+
+function isInstructionRow(config, importHeaders, raw) {
+	const instructionRowValues = config.import?.instructionRowValues;
+
+	if (!instructionRowValues) {
+		return false;
+	}
+
+	return importHeaders.every((header) => {
+		const expectedValue = instructionRowValues[header];
+
+		if (!expectedValue) {
+			return false;
+		}
+
+		return normalizeString(raw[header] || '') === normalizeString(expectedValue);
+	});
+}
+
+async function createErrorReport(config, rows) {
+	await fs.mkdir(ERROR_REPORT_DIR, { recursive: true });
+
+	const workbook = new ExcelJS.Workbook();
+	const worksheet = workbook.addWorksheet('Import Errors');
+	const importHeaders = config.import.headers || [];
+
+	worksheet.addRow([...importHeaders, 'Error Message']);
+
+	rows.forEach((row) => {
+		worksheet.addRow([...importHeaders.map((header) => row.raw[header] || ''), row.error]);
+	});
+
+	const headerRow = worksheet.getRow(1);
+	headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+	headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFB71C1C' } };
+	worksheet.columns.forEach((column) => {
+		column.width = 28;
+	});
+
+	const fileName = `${config.import.errorFilePrefix || 'master-data-import-errors'}-${randomUUID()}.xlsx`;
+	const filePath = path.join(ERROR_REPORT_DIR, fileName);
+	await workbook.xlsx.writeFile(filePath);
+
+	return fileName;
+}
+
+router.post(
+	'/:resource/import',
+	upload.single('file'),
+	withAsync(async (req, res) => {
+		const config = getConfig(req.params.resource);
+
+		if (!config) {
+			return res.status(404).json({ message: 'Master data resource not found.' });
+		}
+
+		if (!config.import) {
+			return res.status(404).json({ message: 'Import Excel tidak tersedia untuk master data ini.' });
+		}
+
+		if (!req.file) {
+			return res.status(400).json({ message: 'File Excel wajib dipilih.' });
+		}
+
+		const workbook = new ExcelJS.Workbook();
+		await workbook.xlsx.load(req.file.buffer);
+		const worksheet = workbook.getWorksheet(config.import.worksheetName || 'Data Import') || workbook.worksheets[0];
+
+		if (!worksheet) {
+			return res.status(400).json({ message: 'Sheet Excel tidak ditemukan.' });
+		}
+
+		const importHeaders = config.import.headers || [];
+		const headerMap = new Map();
+		worksheet.getRow(1).eachCell((cell, colNumber) => {
+			headerMap.set(normalizeString(cell.value), colNumber);
+		});
+
+		const missingHeaders = importHeaders.filter((header) => !headerMap.has(header));
+		if (missingHeaders.length > 0) {
+			return res.status(400).json({
+				message: `Template Excel tidak valid. Header tidak ditemukan: ${missingHeaders.join(', ')}`,
+			});
+		}
+
+		const fields = getFields(config);
+		const delegate = getDelegate(config.model);
+		const importedRows = [];
+		const errorRows = [];
+
+		for (
+			let rowNumber = config.import.dataStartRow || 2;
+			rowNumber <= worksheet.rowCount;
+			rowNumber += 1
+		) {
+			const row = worksheet.getRow(rowNumber);
+			const raw = worksheetRowToPayload(row, headerMap);
+			const isEmpty = importHeaders.every((header) => !normalizeFieldValue({ type: 'string' }, raw[header] || ''));
+
+			if (isEmpty || isInstructionRow(config, importHeaders, raw)) {
+				continue;
+			}
+
+			try {
+				const body = fields.reduce((accumulator, fieldConfig) => {
+					accumulator[fieldConfig.name] = raw[fieldConfig.label];
+					return accumulator;
+				}, {});
+				const data = await buildPayload(config, body);
+				const item = await delegate.create({ data });
+
+				importedRows.push(item);
+			} catch (error) {
+				errorRows.push({
+					rowNumber,
+					raw,
+					error: error.message || 'Terjadi kesalahan saat memproses baris.',
+				});
+			}
+		}
+
+		if (importedRows.length === 0 && errorRows.length === 0) {
+			return res.status(400).json({
+				message: 'Tidak ada data yang terbaca dari file import. Isi data mulai dari baris setelah header template.',
+			});
+		}
+
+		if (errorRows.length > 0) {
+			const fileName = await createErrorReport(config, errorRows);
+
+			return res.json({
+				message:
+					importedRows.length > 0
+						? 'Import selesai sebagian. Beberapa baris gagal diproses.'
+						: 'Import gagal. Periksa file hasil error.',
+				importedCount: importedRows.length,
+				failedCount: errorRows.length,
+				rows: importedRows,
+				errorReportUrl: `/master/${req.params.resource}/import-errors/${fileName}`,
+			});
+		}
+
+		return res.json({
+			message: `Import ${config.label} berhasil.`,
+			importedCount: importedRows.length,
+			failedCount: 0,
+			rows: importedRows,
+			errorReportUrl: null,
+		});
+	}),
+);
+
+router.get(
+	'/:resource/import-errors/:fileName',
+	withAsync(async (req, res) => {
+		const config = getConfig(req.params.resource);
+
+		if (!config || !config.import) {
+			return res.status(404).json({ message: 'File error report tidak ditemukan.' });
+		}
+
+		const safeFileName = path.basename(req.params.fileName);
+		const filePath = path.join(ERROR_REPORT_DIR, safeFileName);
+
+		try {
+			await fs.access(filePath);
+		} catch {
+			return res.status(404).json({ message: 'File error report tidak ditemukan.' });
+		}
+
+		return res.download(filePath, safeFileName);
+	}),
+);
 
 router.get(
 	'/:resource',

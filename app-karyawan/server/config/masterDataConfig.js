@@ -76,6 +76,16 @@ const MASTER_DATA_CONFIG = {
 				searchable: true,
 			},
 		],
+		import: {
+			worksheetName: 'Data Import',
+			dataStartRow: 2,
+			headers: ['(PKB) Pasal', 'Isi'],
+			instructionRowValues: {
+				'(PKB) Pasal': 'Isi pasal PKB, contoh: Pasal 14 ayat 16',
+				Isi: 'Isi lengkap dokumen PKB. Baris kosong akan dilewati saat import.',
+			},
+			errorFilePrefix: 'master-dok-pkb-import-errors',
+		},
 	},
 };
 

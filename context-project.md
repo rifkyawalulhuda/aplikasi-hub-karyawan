@@ -159,6 +159,11 @@ Catatan implementasi:
 - Form input mengikuti pola halaman master yang sudah ada, dengan field:
   - `(PKB) Pasal`
   - `Isi` sebagai textarea
+- Sudah tersedia template Excel bulk import untuk `Master Dok PKB`.
+- Sudah tersedia fitur import bulk dari file Excel pada halaman `Master Dok PKB`.
+- Import bulk mendukung partial success:
+  - baris valid tetap diimport
+  - baris gagal menghasilkan file error report `.xlsx`
 
 ### 2. History Karyawan (Report)
 
