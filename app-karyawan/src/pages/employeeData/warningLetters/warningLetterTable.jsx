@@ -78,6 +78,16 @@ function WarningLetterTable({
 			stickyHeader
 			initialRowsPerPage={15}
 			rowsPerPageOptions={[15, 30, 50, 100]}
+			resizableColumns
+			columnResizeKey="warning-letters-table"
+			tableSx={{
+				'& th, & td': {
+					borderRight: '1px solid rgba(15, 23, 42, 0.08)',
+				},
+				'& th:last-of-type, & td:last-of-type': {
+					borderRight: 'none',
+				},
+			}}
 			tableContainerProps={{ sx: { maxHeight: 520 } }}
 			render={(row, _index, meta) => {
 				const isSelected = selectedRowIds.includes(row.id);
