@@ -95,17 +95,17 @@ function WarningLetterPrintDocument({ record }) {
 				<Stack direction="row" justifyContent="space-between" alignItems="flex-start">
 					<Stack spacing={0.15}>
 						<Typography
-							sx={{ fontFamily: FONT_FAMILY, fontSize: '10.5pt', fontWeight: 700, color: '#0837d7' }}
+							sx={{ fontFamily: FONT_FAMILY, fontSize: '9.4pt', fontWeight: 700, color: '#0837d7' }}
 						>
 							PT SANKYU INDONESIA INTERNATIONAL
 						</Typography>
 						<Typography
-							sx={{ fontFamily: FONT_FAMILY, fontSize: '10.5pt', fontWeight: 700, color: '#0837d7' }}
+							sx={{ fontFamily: FONT_FAMILY, fontSize: '9.4pt', fontWeight: 700, color: '#0837d7' }}
 						>
 							QUALITY, SAFETY, HEALTH, AND ENVIRONMENTAL DIVISION
 						</Typography>
 						<Typography
-							sx={{ fontFamily: FONT_FAMILY, fontSize: '10.5pt', fontWeight: 700, color: '#0837d7' }}
+							sx={{ fontFamily: FONT_FAMILY, fontSize: '9.4pt', fontWeight: 700, color: '#0837d7' }}
 						>
 							SISTEM MANAJEMEN TERINTEGRASI
 						</Typography>
