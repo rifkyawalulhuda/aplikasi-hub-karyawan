@@ -319,7 +319,7 @@ function WarningLettersPage() {
 			<Card sx={{ minHeight: '60vh', p: 3 }}>
 				<CardHeader
 					title="Data Surat Peringatan"
-					subtitle="Kelola data surat peringatan karyawan dan cetak dokumen A4 dari halaman ini."
+					subtitle="Kelola data surat peringatan karyawan."
 					size="small"
 					sx={{
 						flexDirection: 'column',
