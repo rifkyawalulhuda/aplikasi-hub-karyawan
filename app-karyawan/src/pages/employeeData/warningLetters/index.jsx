@@ -24,7 +24,7 @@ import DeleteConfirmDialog from '@/components/masterData/deleteConfirmDialog';
 import PageHeader from '@/components/pageHeader';
 import apiRequest from '@/services/api';
 
-import { formatWarningDate } from './utils';
+import { formatWarningDate, getWarningEndDate } from './utils';
 import WarningLetterFormDialog from './warningLetterFormDialog';
 import WarningLetterTable from './warningLetterTable';
 
@@ -248,6 +248,7 @@ function WarningLettersPage() {
 			{ header: 'SURAT PERINGATAN KE', key: 'warningLevel', width: 22 },
 			{ header: 'NOMOR SURAT', key: 'letterNumber', width: 26 },
 			{ header: 'TANGGAL SURAT PERINGATAN', key: 'letterDate', width: 18 },
+			{ header: 'SAMPAI TANGGAL', key: 'warningEndDate', width: 18 },
 			{ header: 'PELANGGARAN', key: 'violation', width: 42 },
 			{ header: 'PASAL PKB', key: 'articleLabel', width: 20 },
 			{ header: 'ISI PASAL', key: 'articleContent', width: 46 },
@@ -265,6 +266,7 @@ function WarningLettersPage() {
 				warningLevel: row.warningLevel,
 				letterNumber: row.letterNumber,
 				letterDate: formatWarningDate(row.letterDate),
+				warningEndDate: getWarningEndDate(row.letterDate),
 				violation: row.violation,
 				articleLabel: row.articleLabel,
 				articleContent: row.articleContent,

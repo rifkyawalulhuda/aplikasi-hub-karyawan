@@ -12,7 +12,7 @@ import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 
 import EnhancedTable from '@/components/dataTable';
 
-import { formatWarningDate } from './utils';
+import { formatWarningDate, getWarningEndDate } from './utils';
 
 const stickyActionCellSx = {
 	position: 'sticky',
@@ -66,6 +66,7 @@ function WarningLetterTable({
 		{ id: 'warningLevel', label: 'SURAT PERINGATAN KE' },
 		{ id: 'letterNumber', label: 'NOMOR SURAT' },
 		{ id: 'letterDate', label: 'TANGGAL SURAT PERINGATAN' },
+		{ id: 'warningEndDate', label: 'SAMPAI TANGGAL' },
 		{ id: 'articleLabel', label: 'PASAL PKB' },
 		{ id: 'superiorName', label: 'SUPERIOR' },
 		{ id: 'actions', label: 'AKSI', disableSort: true, sx: { ...stickyActionCellSx, zIndex: 4 } },
@@ -108,6 +109,7 @@ function WarningLetterTable({
 						<TableCell>{row.warningLevel}</TableCell>
 						<TableCell>{row.letterNumber}</TableCell>
 						<TableCell>{formatWarningDate(row.letterDate)}</TableCell>
+						<TableCell>{getWarningEndDate(row.letterDate)}</TableCell>
 						<TableCell>{row.articleLabel}</TableCell>
 						<TableCell>{row.superiorName}</TableCell>
 						<TableCell sx={{ ...stickyActionCellSx, py: 1.25 }}>
