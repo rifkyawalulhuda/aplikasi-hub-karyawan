@@ -49,7 +49,7 @@ function formatLongWarningDate(value) {
 
 function DecisionRow({ label, children, contentSx }) {
 	return (
-		<Box sx={{ display: 'grid', gridTemplateColumns: '92px 12px 1fr', columnGap: 6 }}>
+		<Box sx={{ display: 'grid', gridTemplateColumns: '92px 8px 1fr', columnGap: 2 }}>
 			<Typography sx={{ fontFamily: FONT_FAMILY, fontSize: '10pt', lineHeight: 1.45 }}>{label}</Typography>
 			<Typography sx={{ fontFamily: FONT_FAMILY, fontSize: '10pt', lineHeight: 1.45 }}>:</Typography>
 			<Box sx={contentSx}>{children}</Box>
@@ -252,7 +252,14 @@ function WarningLetterPrintDocument({ record }) {
 								<Typography sx={{ fontFamily: FONT_FAMILY, fontSize: '10pt', lineHeight: 1.45 }}>
 									{`Perusahaan memberikan Surat Peringatan ${warningLevelLabel} (${record.warningLevel}), kepada;`}
 								</Typography>
-								<Box sx={{ display: 'grid', gridTemplateColumns: '84px 12px 1fr', mt: 0.25 }}>
+								<Box
+									sx={{
+										display: 'grid',
+										gridTemplateColumns: '78px 8px 1fr',
+										mt: 0.25,
+										columnGap: 2,
+									}}
+								>
 									<Typography sx={{ fontFamily: FONT_FAMILY, fontSize: '10pt', lineHeight: 1.35 }}>
 										Nama
 									</Typography>
@@ -263,7 +270,7 @@ function WarningLetterPrintDocument({ record }) {
 										{record.employeeName}
 									</Typography>
 								</Box>
-								<Box sx={{ display: 'grid', gridTemplateColumns: '84px 12px 1fr' }}>
+								<Box sx={{ display: 'grid', gridTemplateColumns: '78px 8px 1fr', columnGap: 2 }}>
 									<Typography sx={{ fontFamily: FONT_FAMILY, fontSize: '10pt', lineHeight: 1.35 }}>
 										Nik
 									</Typography>
@@ -292,7 +299,7 @@ function WarningLetterPrintDocument({ record }) {
 
 					<Box sx={{ mt: 1 }}>
 						<Stack spacing={0.3}>
-							<Box sx={{ display: 'grid', gridTemplateColumns: '130px 12px 1fr' }}>
+							<Box sx={{ display: 'grid', gridTemplateColumns: '130px 8px 1fr', columnGap: 2 }}>
 								<Typography sx={{ fontFamily: FONT_FAMILY, fontSize: '10pt', lineHeight: 1.35 }}>
 									Tanggal
 								</Typography>
@@ -303,7 +310,7 @@ function WarningLetterPrintDocument({ record }) {
 									{formatLongWarningDate(record.letterDate)}
 								</Typography>
 							</Box>
-							<Box sx={{ display: 'grid', gridTemplateColumns: '130px 12px 1fr' }}>
+							<Box sx={{ display: 'grid', gridTemplateColumns: '130px 8px 1fr', columnGap: 2 }}>
 								<Typography sx={{ fontFamily: FONT_FAMILY, fontSize: '10pt', lineHeight: 1.35 }}>
 									Dikeluarkan di
 								</Typography>
