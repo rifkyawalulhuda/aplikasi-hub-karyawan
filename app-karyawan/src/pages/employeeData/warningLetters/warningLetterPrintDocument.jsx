@@ -125,12 +125,13 @@ function WarningLetterPrintDocument({ record }) {
 						sx={{
 							border: '1px solid #222',
 							borderRight: 0,
-							minHeight: '20mm',
+							minHeight: '16.5mm',
 							display: 'flex',
 							alignItems: 'center',
 							justifyContent: 'center',
 							flexDirection: 'column',
 							px: 2,
+							py: 0.4,
 						}}
 					>
 						<Typography
@@ -164,12 +165,12 @@ function WarningLetterPrintDocument({ record }) {
 									borderBottom: index < 2 ? '1px solid #222' : 0,
 								}}
 							>
-								<Box sx={{ borderRight: '1px solid #222', px: 1, py: 0.25 }}>
+								<Box sx={{ borderRight: '1px solid #222', px: 1, py: 0.1 }}>
 									<Typography sx={{ fontFamily: FONT_FAMILY, fontSize: '9pt', lineHeight: 1.25 }}>
 										{label}
 									</Typography>
 								</Box>
-								<Box sx={{ px: 1, py: 0.25 }}>
+								<Box sx={{ px: 1, py: 0.1 }}>
 									<Typography sx={{ fontFamily: FONT_FAMILY, fontSize: '9pt', lineHeight: 1.25 }}>
 										{value}
 									</Typography>
