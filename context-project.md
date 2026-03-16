@@ -251,6 +251,12 @@ Modul ini direncanakan untuk menampilkan histori karyawan dan report keseluruhan
   - halaman detail dengan tombol `Print A4`
   - layout print A4 mengikuti `sample Warning Letter.pdf` dengan pendekatan overlay data di atas template visual PDF
   - nama superior dan nama karyawan tampil pada area tanda tangan di hasil print
+  - form input/edit memiliki rule eskalasi otomatis berdasarkan surat peringatan aktif 6 bulan:
+    - jika masih ada `Surat Peringatan ke 1` yang aktif, form otomatis mengarahkan ke `Surat Peringatan ke 2` dan menonaktifkan pilihan level sebelumnya
+    - pada kondisi `Surat Peringatan ke 1` masih aktif, user tetap boleh langsung memilih `Surat Peringatan ke 3`
+    - jika masih ada `Surat Peringatan ke 2` yang aktif, form otomatis mengarahkan ke `Surat Peringatan ke 3`
+    - jika karyawan sebelumnya langsung mendapat `Surat Peringatan ke 2`, maka surat aktif berikutnya tetap diarahkan ke `Surat Peringatan ke 3`
+  - form input/edit menampilkan notifikasi peringatan jika karyawan yang dipilih masih memiliki surat peringatan aktif yang belum melewati 6 bulan
   - halaman daftar sudah mendukung seleksi data satu per satu dan `pilih semua` untuk `Print A4` terpilih
   - halaman daftar sudah memiliki fitur `Export Excel`
   - file export Excel mencakup seluruh isi form surat peringatan, termasuk:

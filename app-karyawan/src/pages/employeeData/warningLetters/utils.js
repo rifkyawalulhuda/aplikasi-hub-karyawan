@@ -1,5 +1,6 @@
 export const WARNING_LEVEL_OPTIONS = [1, 2, 3];
 export const SUPERIOR_JOB_LEVEL = 'Department Manager';
+const DEFAULT_WARNING_LEVEL = 1;
 
 export function formatWarningDate(value) {
 	if (!value) {
@@ -26,9 +27,13 @@ export function formatWarningDate(value) {
 	)}/${parsed.getFullYear()}`;
 }
 
-function parseWarningDate(value) {
+export function parseWarningDate(value) {
 	if (!value) {
 		return null;
+	}
+
+	if (value instanceof Date) {
+		return Number.isNaN(value.getTime()) ? null : value;
 	}
 
 	const raw = String(value).trim();
@@ -43,11 +48,11 @@ function parseWarningDate(value) {
 	return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
-export function getWarningEndDate(value) {
+function addSixMonths(value) {
 	const parsed = parseWarningDate(value);
 
 	if (!parsed) {
-		return '';
+		return null;
 	}
 
 	const sourceDay = parsed.getUTCDate();
@@ -57,6 +62,16 @@ export function getWarningEndDate(value) {
 	).getUTCDate();
 
 	target.setUTCDate(Math.min(sourceDay, lastDayOfTargetMonth));
+
+	return target;
+}
+
+export function getWarningEndDate(value) {
+	const target = addSixMonths(value);
+
+	if (!target) {
+		return '';
+	}
 
 	return formatWarningDate(target);
 }
@@ -68,4 +83,70 @@ export function getSuperiorOptions(employeeOptions = []) {
 				.trim()
 				.toLowerCase() === SUPERIOR_JOB_LEVEL.toLowerCase(),
 	);
+}
+
+function toComparableUtcDate(value) {
+	const parsed = parseWarningDate(value);
+
+	if (!parsed) {
+		return null;
+	}
+
+	return Date.UTC(parsed.getUTCFullYear(), parsed.getUTCMonth(), parsed.getUTCDate());
+}
+
+export function getActiveWarningLetterSummary({ rows = [], employeeId, excludeId, referenceDate }) {
+	if (!employeeId) {
+		return {
+			activeLetters: [],
+			highestActiveLevel: 0,
+			recommendedLevel: DEFAULT_WARNING_LEVEL,
+			disabledLevels: [],
+			nextLevelReason: '',
+		};
+	}
+
+	const comparableReferenceDate = toComparableUtcDate(referenceDate) ?? toComparableUtcDate(new Date());
+
+	const activeLetters = rows
+		.filter((row) => row.employeeId === Number(employeeId) && row.id !== Number(excludeId))
+		.filter((row) => {
+			const startDate = toComparableUtcDate(row.letterDate);
+			const endDate = toComparableUtcDate(addSixMonths(row.letterDate));
+
+			if (!startDate || !endDate || !comparableReferenceDate) {
+				return false;
+			}
+
+			return comparableReferenceDate >= startDate && comparableReferenceDate <= endDate;
+		})
+		.sort((left, right) => {
+			const leftDate = toComparableUtcDate(left.letterDate) ?? 0;
+			const rightDate = toComparableUtcDate(right.letterDate) ?? 0;
+			return rightDate - leftDate;
+		});
+
+	const highestActiveLevel = activeLetters.reduce(
+		(highestLevel, row) => Math.max(highestLevel, Number(row.warningLevel) || 0),
+		0,
+	);
+	const recommendedLevel = highestActiveLevel <= 0 ? DEFAULT_WARNING_LEVEL : Math.min(highestActiveLevel + 1, 3);
+	const disabledLevels = WARNING_LEVEL_OPTIONS.filter((option) => option < recommendedLevel);
+
+	let nextLevelReason = '';
+	if (highestActiveLevel > 0) {
+		const highestActiveLetter = activeLetters.find((row) => Number(row.warningLevel) === highestActiveLevel);
+		const validUntil = highestActiveLetter ? getWarningEndDate(highestActiveLetter.letterDate) : '';
+		nextLevelReason = `Karyawan ini masih memiliki Surat Peringatan ke ${highestActiveLevel}${
+			validUntil ? ` yang berlaku sampai ${validUntil}` : ''
+		}.`;
+	}
+
+	return {
+		activeLetters,
+		highestActiveLevel,
+		recommendedLevel,
+		disabledLevels,
+		nextLevelReason,
+	};
 }

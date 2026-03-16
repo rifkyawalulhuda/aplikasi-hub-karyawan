@@ -5,6 +5,7 @@ import prisma from '../lib/prisma.js';
 const router = Router();
 const WARNING_LEVELS = [1, 2, 3];
 const SUPERIOR_JOB_LEVEL = 'Department Manager';
+const DEFAULT_WARNING_LEVEL = 1;
 
 function withAsync(handler) {
 	return (req, res, next) => {
@@ -47,6 +48,23 @@ function formatDateForClient(value) {
 	}
 
 	return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(2, '0')}`;
+}
+
+function addSixMonths(value) {
+	const parsed = toDateOnly(value);
+
+	if (!parsed) {
+		return null;
+	}
+
+	const sourceDay = parsed.getUTCDate();
+	const target = new Date(Date.UTC(parsed.getUTCFullYear(), parsed.getUTCMonth() + 6, 1, 12));
+	const lastDayOfTargetMonth = new Date(
+		Date.UTC(target.getUTCFullYear(), target.getUTCMonth() + 1, 0, 12),
+	).getUTCDate();
+
+	target.setUTCDate(Math.min(sourceDay, lastDayOfTargetMonth));
+	return target;
 }
 
 function mapWarningLetter(record) {
@@ -115,7 +133,41 @@ async function getWarningLetterOrThrow(id) {
 	return record;
 }
 
-async function validatePayload(payload) {
+async function getActiveWarningRule({ employeeId, referenceDate, excludeId }) {
+	const warningLetters = await prisma.warningLetter.findMany({
+		where: {
+			employeeId,
+			...(excludeId ? { id: { not: excludeId } } : {}),
+		},
+		orderBy: { letterDate: 'desc' },
+	});
+
+	const comparableReferenceDate = referenceDate?.getTime();
+	const activeLetters = warningLetters.filter((row) => {
+		const startDate = toDateOnly(row.letterDate)?.getTime();
+		const endDate = addSixMonths(row.letterDate)?.getTime();
+
+		if (!startDate || !endDate || !comparableReferenceDate) {
+			return false;
+		}
+
+		return comparableReferenceDate >= startDate && comparableReferenceDate <= endDate;
+	});
+
+	const highestActiveLevel = activeLetters.reduce(
+		(highestLevel, row) => Math.max(highestLevel, Number(row.warningLevel) || 0),
+		0,
+	);
+
+	return {
+		activeLetters,
+		highestActiveLevel,
+		recommendedLevel:
+			highestActiveLevel <= 0 ? DEFAULT_WARNING_LEVEL : Math.min(highestActiveLevel + 1, 3),
+	};
+}
+
+async function validatePayload(payload, currentId) {
 	const employeeId = Number(payload.employeeId);
 	const superiorEmployeeId = Number(payload.superiorEmployeeId);
 	const masterDokPkbId = Number(payload.masterDokPkbId);
@@ -162,8 +214,23 @@ async function validatePayload(payload) {
 		getMasterDokPkbOrThrow(masterDokPkbId),
 	]);
 
+	const warningRule = await getActiveWarningRule({
+		employeeId: employee.id,
+		referenceDate: letterDate,
+		excludeId: currentId,
+	});
+
 	if (normalizeString(superiorEmployee.jobLevel?.name).toLowerCase() !== SUPERIOR_JOB_LEVEL.toLowerCase()) {
 		throw Object.assign(new Error('Superior harus memiliki Job Level Department Manager.'), { statusCode: 400 });
+	}
+
+	if (warningLevel < warningRule.recommendedLevel) {
+		throw Object.assign(
+			new Error(
+				`Karyawan ini masih memiliki Surat Peringatan aktif. Level minimal yang dapat dipilih adalah Surat Peringatan ke ${warningRule.recommendedLevel}.`,
+			),
+			{ statusCode: 400 },
+		);
 	}
 
 	return {
@@ -243,7 +310,7 @@ router.put(
 
 		await getWarningLetterOrThrow(id);
 
-		const data = await validatePayload(req.body);
+		const data = await validatePayload(req.body, id);
 		const record = await prisma.warningLetter.update({
 			where: { id },
 			data,
