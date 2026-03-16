@@ -125,7 +125,7 @@ function WarningLetterPrintDocument({ record }) {
 						sx={{
 							border: '1px solid #222',
 							borderRight: 0,
-							minHeight: '22mm',
+							minHeight: '20mm',
 							display: 'flex',
 							alignItems: 'center',
 							justifyContent: 'center',
@@ -134,17 +134,17 @@ function WarningLetterPrintDocument({ record }) {
 						}}
 					>
 						<Typography
-							sx={{ fontFamily: FONT_FAMILY, fontSize: '16pt', fontWeight: 700, lineHeight: 1.1 }}
+							sx={{ fontFamily: FONT_FAMILY, fontSize: '14.2pt', fontWeight: 700, lineHeight: 1.08 }}
 						>
 							FORM SURAT PERINGATAN
 						</Typography>
 						<Typography
 							sx={{
 								fontFamily: FONT_FAMILY,
-								fontSize: '12pt',
+								fontSize: '10.7pt',
 								fontWeight: 700,
 								lineHeight: 1.15,
-								mt: 0.6,
+								mt: 0.45,
 							}}
 						>
 							{`Nomor: ${record.letterNumber}`}
@@ -218,7 +218,7 @@ function WarningLetterPrintDocument({ record }) {
 										ml: 0.2,
 									}}
 								>
-									{`“${record.articleContent}”`}
+									{`"${record.articleContent}"`}
 								</Typography>
 							</Box>
 							<Box component="li" sx={{ pl: 1 }}>
@@ -323,7 +323,7 @@ function WarningLetterPrintDocument({ record }) {
 					</Box>
 				</Stack>
 
-				<Box sx={{ mt: '18mm', display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: '34mm' }}>
+				<Box sx={{ mt: '14mm', display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: '34mm' }}>
 					<Stack alignItems="flex-start">
 						<Box sx={{ width: '58mm', borderTop: '2px dotted #111', mb: 0.8 }} />
 						<Typography sx={{ fontFamily: FONT_FAMILY, fontSize: '10pt', lineHeight: 1.2 }}>
@@ -343,7 +343,7 @@ function WarningLetterPrintDocument({ record }) {
 					</Stack>
 				</Box>
 
-				<Box sx={{ mt: '18mm' }}>
+				<Box sx={{ mt: '12mm' }}>
 					<Typography sx={{ fontFamily: FONT_FAMILY, fontSize: '10pt', lineHeight: 1.45 }}>
 						Surat Keputusan ini disampaikan kepada:
 					</Typography>
@@ -363,7 +363,7 @@ function WarningLetterPrintDocument({ record }) {
 						position: 'absolute',
 						left: '15mm',
 						right: '15mm',
-						bottom: '10mm',
+						bottom: '8mm',
 						borderTop: '1px solid #79a5ff',
 					}}
 				/>
@@ -371,7 +371,7 @@ function WarningLetterPrintDocument({ record }) {
 					sx={{
 						position: 'absolute',
 						right: '15mm',
-						bottom: '5.2mm',
+						bottom: '3.6mm',
 						fontFamily: FONT_FAMILY,
 						fontSize: '9pt',
 						fontWeight: 700,
