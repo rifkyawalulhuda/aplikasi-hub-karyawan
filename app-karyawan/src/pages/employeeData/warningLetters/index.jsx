@@ -458,6 +458,7 @@ function WarningLettersPage() {
 				initialValue={selectedItem}
 				employeeOptions={employeeOptions}
 				masterDokPkbOptions={masterDokPkbOptions}
+				warningLetterRows={rows}
 				onClose={closeFormDialog}
 				onSubmit={handleSubmit}
 			/>

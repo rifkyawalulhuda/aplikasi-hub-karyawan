@@ -1,6 +1,7 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 
+import Alert from '@mui/material/Alert';
 import Autocomplete from '@mui/material/Autocomplete';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -19,7 +20,7 @@ import TextField from '@mui/material/TextField';
 
 import FormInput from '@/components/formInput';
 
-import { getSuperiorOptions, WARNING_LEVEL_OPTIONS } from './utils';
+import { getActiveWarningLetterSummary, getSuperiorOptions, WARNING_LEVEL_OPTIONS } from './utils';
 
 function toDefaultValues(initialValue) {
 	return {
@@ -41,6 +42,7 @@ function WarningLetterFormDialog({
 	initialValue,
 	employeeOptions,
 	masterDokPkbOptions,
+	warningLetterRows,
 	onClose,
 	onSubmit,
 }) {
@@ -68,9 +70,21 @@ function WarningLetterFormDialog({
 		control,
 		name: 'employeeNo',
 	});
+	const selectedLetterDate = useWatch({
+		control,
+		name: 'letterDate',
+	});
+	const selectedWarningLevel = useWatch({
+		control,
+		name: 'warningLevel',
+	});
 	const articleContent = useWatch({
 		control,
 		name: 'articleContent',
+	});
+	const previousSelectionRef = useRef({
+		employeeId: '',
+		letterDate: '',
 	});
 
 	useEffect(() => {
@@ -87,10 +101,73 @@ function WarningLetterFormDialog({
 		setValue('articleContent', selectedArticle?.content || '');
 	}, [masterDokPkbOptions, selectedArticleId, setValue]);
 
+	const warningRule = useMemo(
+		() =>
+			getActiveWarningLetterSummary({
+				rows: warningLetterRows,
+				employeeId: selectedEmployeeId,
+				excludeId: initialValue?.id,
+				referenceDate: selectedLetterDate,
+			}),
+		[initialValue?.id, selectedEmployeeId, selectedLetterDate, warningLetterRows],
+	);
+
+	useEffect(() => {
+		const previousSelection = previousSelectionRef.current;
+		const selectionChanged =
+			previousSelection.employeeId !== selectedEmployeeId || previousSelection.letterDate !== selectedLetterDate;
+		if (!selectedEmployeeId) {
+			previousSelectionRef.current = {
+				employeeId: selectedEmployeeId,
+				letterDate: selectedLetterDate,
+			};
+			return;
+		}
+
+		const currentLevel = Number(selectedWarningLevel) || 0;
+		const shouldAutoAdjust =
+			!currentLevel || warningRule.disabledLevels.includes(currentLevel) || (!isEditMode && selectionChanged);
+
+		if (shouldAutoAdjust && currentLevel !== warningRule.recommendedLevel) {
+			setValue('warningLevel', warningRule.recommendedLevel, {
+				shouldDirty: true,
+				shouldValidate: true,
+			});
+		}
+
+		previousSelectionRef.current = {
+			employeeId: selectedEmployeeId,
+			letterDate: selectedLetterDate,
+		};
+	}, [
+		isEditMode,
+		selectedEmployeeId,
+		selectedLetterDate,
+		selectedWarningLevel,
+		setValue,
+		warningRule.disabledLevels,
+		warningRule.recommendedLevel,
+	]);
+
+	let warningAlertMessage = '';
+	if (warningRule.highestActiveLevel > 0) {
+		const canEscalateHigherThanRecommended = warningRule.recommendedLevel < 3;
+		warningAlertMessage = `${warningRule.nextLevelReason} Form otomatis diarahkan ke Surat Peringatan ke ${warningRule.recommendedLevel}.`;
+
+		if (canEscalateHigherThanRecommended) {
+			warningAlertMessage += ` Anda masih dapat memilih Surat Peringatan ke 3 jika diperlukan.`;
+		}
+	}
+
 	return (
 		<Dialog open={open} onClose={loading ? undefined : onClose} fullWidth maxWidth="lg">
 			<DialogTitle>{isEditMode ? 'Edit Data Surat Peringatan' : 'Form Surat Peringatan'}</DialogTitle>
 			<DialogContent>
+				{warningAlertMessage ? (
+					<Alert severity="warning" sx={{ mb: 2, mt: 1 }}>
+						{warningAlertMessage}
+					</Alert>
+				) : null}
 				<Grid
 					container
 					spacing={2}
@@ -148,6 +225,7 @@ function WarningLetterFormDialog({
 												value={String(option)}
 												control={<Radio />}
 												label={String(option)}
+												disabled={warningRule.disabledLevels.includes(option)}
 											/>
 										))}
 									</RadioGroup>
