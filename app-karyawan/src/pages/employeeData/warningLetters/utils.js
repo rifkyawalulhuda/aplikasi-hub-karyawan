@@ -26,6 +26,41 @@ export function formatWarningDate(value) {
 	)}/${parsed.getFullYear()}`;
 }
 
+function parseWarningDate(value) {
+	if (!value) {
+		return null;
+	}
+
+	const raw = String(value).trim();
+	const isoMatch = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+	if (isoMatch) {
+		const [, year, month, day] = isoMatch;
+		return new Date(Date.UTC(Number(year), Number(month) - 1, Number(day), 12));
+	}
+
+	const parsed = new Date(raw);
+	return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+export function getWarningEndDate(value) {
+	const parsed = parseWarningDate(value);
+
+	if (!parsed) {
+		return '';
+	}
+
+	const sourceDay = parsed.getUTCDate();
+	const target = new Date(Date.UTC(parsed.getUTCFullYear(), parsed.getUTCMonth() + 6, 1, 12));
+	const lastDayOfTargetMonth = new Date(
+		Date.UTC(target.getUTCFullYear(), target.getUTCMonth() + 1, 0, 12),
+	).getUTCDate();
+
+	target.setUTCDate(Math.min(sourceDay, lastDayOfTargetMonth));
+
+	return formatWarningDate(target);
+}
+
 export function getSuperiorOptions(employeeOptions = []) {
 	return employeeOptions.filter(
 		(item) =>
