@@ -67,6 +67,7 @@ Folder ini dipilih sebagai basis utama pengembangan karena struktur template-nya
   - `Master Dok PKB`
 - Tab utama tambahan: `Data Karyawan`
 - Menu utama: `Bimbingan & Pengarahan`
+- Menu tambahan: `Data Surat Peringatan`
 
 ## Scope Modul yang Sudah Dibahas
 
@@ -230,6 +231,21 @@ Modul ini direncanakan untuk menampilkan histori karyawan dan report keseluruhan
 - Menyediakan form input surat peringatan.
 - Isi form harus sama dengan `Data Record Warning Letter`.
 - Perlu fungsi print dengan format yang sama dengan form surat peringatan.
+- Implementasi awal yang sudah dibuat:
+  - halaman `Data Surat Peringatan` di bawah menu `Data Karyawan`
+  - struktur input:
+    - `Nama` dari `Master Karyawan`
+    - `NIK` autofill dari `Employee No`
+    - `Surat Peringatan ke` dengan pilihan `1`, `2`, `3`
+    - `Nomor Surat` dengan batas maksimal 25 karakter
+    - `Tanggal Surat Peringatan`
+    - `Pelanggaran`
+    - `Pasal PKB` dari `Master Dok PKB`
+    - `Isi Pasal` autofill dari master dokumen
+    - `Superior` hanya menampilkan karyawan dengan `Job Level = Department Manager`
+  - halaman detail dengan tombol `Print A4`
+  - layout print A4 mengikuti `sample Warning Letter.pdf` dengan pendekatan overlay data di atas template visual PDF
+  - nama superior dan nama karyawan tampil pada area tanda tangan di hasil print
 
 ### 3. Pengajuan Cuti Karyawan
 
@@ -306,6 +322,7 @@ Yang sudah selesai:
 - Menambahkan schema, migration, API CRUD, menu, route, halaman tabel, dan form input untuk `Bimbingan & Pengarahan`.
 - Menambahkan halaman detail dan print `Formulir Catatan Bimbingan Karyawan` dengan pendekatan overlay data di atas template PDF resmi.
 - Menambahkan kategori `Bimbingan` dan `Pengarahan` pada modul `Bimbingan & Pengarahan`, beserta form input dan template print A4 untuk `Formulir Catatan Pengarahan Karyawan`.
+- Menambahkan schema, migration, API CRUD, route, menu, halaman tabel, form input/edit, halaman detail, dan print A4 untuk modul `Data Surat Peringatan`.
 - Verifikasi `lint`, `build`, dan smoke test API ke database berhasil.
 
 ## Struktur Teknis Awal yang Sudah Dibangun

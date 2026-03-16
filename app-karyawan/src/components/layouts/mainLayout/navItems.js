@@ -7,6 +7,7 @@ import FeedOutlinedIcon from '@mui/icons-material/FeedOutlined';
 import LayersOutlinedIcon from '@mui/icons-material/LayersOutlined';
 import PeopleAltOutlinedIcon from '@mui/icons-material/PeopleAltOutlined';
 import ReceiptLongOutlinedIcon from '@mui/icons-material/ReceiptLongOutlined';
+import ReportGmailerrorredOutlinedIcon from '@mui/icons-material/ReportGmailerrorredOutlined';
 import SettingsApplicationsOutlinedIcon from '@mui/icons-material/SettingsApplicationsOutlined';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 
@@ -103,6 +104,13 @@ const NAV_LINKS_CONFIG = [
 				title: 'Bimbingan & Pengarahan',
 				Icon: FeedOutlinedIcon,
 				href: '/data-karyawan/bimbingan-pengarahan',
+			},
+			{
+				id: uuid(),
+				type: 'item',
+				title: 'Data Surat Peringatan',
+				Icon: ReportGmailerrorredOutlinedIcon,
+				href: '/data-karyawan/data-surat-peringatan',
 			},
 		],
 	},

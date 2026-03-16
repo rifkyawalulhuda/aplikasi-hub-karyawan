@@ -87,6 +87,7 @@ model MasterDokPkb {
   content   String   @db.Text
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  warningLetters WarningLetter[]
 
   @@map("master_dok_pkb")
 }
@@ -115,7 +116,9 @@ model Employee {
   workLocation   WorkLocation   @relation(fields: [workLocationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   jobRole        JobRole        @relation(fields: [jobRoleId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   jobLevel       JobLevel       @relation(fields: [jobLevelId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  guidanceRecords GuidanceRecord[]
+  guidanceRecords         GuidanceRecord[]
+  warningLetters          WarningLetter[] @relation("WarningLetterEmployee")
+  warningLetterApprovals WarningLetter[] @relation("WarningLetterSuperior")
 
   @@index([departmentId])
   @@index([workLocationId])
@@ -142,4 +145,27 @@ model GuidanceRecord {
 
   @@index([employeeId])
   @@map("guidance_records")
+}
+
+model WarningLetter {
+  id                 Int      @id @default(autoincrement())
+  employeeId         Int
+  superiorEmployeeId Int
+  masterDokPkbId     Int
+  warningLevel       Int
+  letterNumber       String   @db.VarChar(25)
+  letterDate         DateTime @db.Date
+  violation          String   @db.Text
+  articleLabel       String   @db.VarChar(255)
+  articleContent     String   @db.Text
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  employee           Employee     @relation("WarningLetterEmployee", fields: [employeeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  superiorEmployee   Employee     @relation("WarningLetterSuperior", fields: [superiorEmployeeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  masterDokPkb       MasterDokPkb @relation(fields: [masterDokPkbId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([employeeId])
+  @@index([superiorEmployeeId])
+  @@index([masterDokPkbId])
+  @@map("warning_letters")
 }
