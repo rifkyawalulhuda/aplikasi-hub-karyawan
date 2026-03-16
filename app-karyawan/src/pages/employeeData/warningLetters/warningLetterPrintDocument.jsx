@@ -52,7 +52,7 @@ function DecisionRow({ label, children, contentSx }) {
 		<Box sx={{ display: 'grid', gridTemplateColumns: '92px 8px 1fr', columnGap: 2 }}>
 			<Typography sx={{ fontFamily: FONT_FAMILY, fontSize: '10pt', lineHeight: 1.45 }}>{label}</Typography>
 			<Typography sx={{ fontFamily: FONT_FAMILY, fontSize: '10pt', lineHeight: 1.45 }}>:</Typography>
-			<Box sx={contentSx}>{children}</Box>
+			<Box sx={{ textAlign: 'justify', ...contentSx }}>{children}</Box>
 		</Box>
 	);
 }
@@ -191,7 +191,14 @@ function WarningLetterPrintDocument({ record }) {
 								record.violation,
 							].map((item) => (
 								<Box component="li" key={item} sx={{ pl: 1, mb: 0.35 }}>
-									<Typography sx={{ fontFamily: FONT_FAMILY, fontSize: '10pt', lineHeight: 1.45 }}>
+									<Typography
+										sx={{
+											fontFamily: FONT_FAMILY,
+											fontSize: '10pt',
+											lineHeight: 1.45,
+											textAlign: 'justify',
+										}}
+									>
 										{item}
 									</Typography>
 								</Box>
@@ -205,7 +212,14 @@ function WarningLetterPrintDocument({ record }) {
 						</Typography>
 						<Box component="ol" start={4} sx={{ m: 0, pl: '24px' }}>
 							<Box component="li" sx={{ pl: 1, mb: 0.65 }}>
-								<Typography sx={{ fontFamily: FONT_FAMILY, fontSize: '10pt', lineHeight: 1.45 }}>
+								<Typography
+									sx={{
+										fontFamily: FONT_FAMILY,
+										fontSize: '10pt',
+										lineHeight: 1.45,
+										textAlign: 'justify',
+									}}
+								>
 									{`Perjanjian Kerja Bersama (PKB) ${record.articleLabel}`}
 								</Typography>
 								<Typography
@@ -216,13 +230,21 @@ function WarningLetterPrintDocument({ record }) {
 										fontWeight: 700,
 										fontStyle: 'italic',
 										ml: 0.2,
+										textAlign: 'justify',
 									}}
 								>
 									{`"${record.articleContent}"`}
 								</Typography>
 							</Box>
 							<Box component="li" sx={{ pl: 1 }}>
-								<Typography sx={{ fontFamily: FONT_FAMILY, fontSize: '10pt', lineHeight: 1.45 }}>
+								<Typography
+									sx={{
+										fontFamily: FONT_FAMILY,
+										fontSize: '10pt',
+										lineHeight: 1.45,
+										textAlign: 'justify',
+									}}
+								>
 									Bahwa setiap karyawan harus melakukan pekerjaan sesuai dengan ketentuan yang ada.
 								</Typography>
 							</Box>
@@ -249,7 +271,14 @@ function WarningLetterPrintDocument({ record }) {
 								label="Pertama"
 								contentSx={{ display: 'flex', flexDirection: 'column', gap: 0.1 }}
 							>
-								<Typography sx={{ fontFamily: FONT_FAMILY, fontSize: '10pt', lineHeight: 1.45 }}>
+								<Typography
+									sx={{
+										fontFamily: FONT_FAMILY,
+										fontSize: '10pt',
+										lineHeight: 1.45,
+										textAlign: 'justify',
+									}}
+								>
 									{`Perusahaan memberikan Surat Peringatan ${warningLevelLabel} (${record.warningLevel}), kepada;`}
 								</Typography>
 								<Box
@@ -283,12 +312,26 @@ function WarningLetterPrintDocument({ record }) {
 								</Box>
 							</DecisionRow>
 							<DecisionRow label="Kedua">
-								<Typography sx={{ fontFamily: FONT_FAMILY, fontSize: '10pt', lineHeight: 1.45 }}>
+								<Typography
+									sx={{
+										fontFamily: FONT_FAMILY,
+										fontSize: '10pt',
+										lineHeight: 1.45,
+										textAlign: 'justify',
+									}}
+								>
 									Keputusan ini berlaku sejak surat ini dikeluarkan sampai dengan 6 bulan kedepan.
 								</Typography>
 							</DecisionRow>
 							<DecisionRow label="Ketiga">
-								<Typography sx={{ fontFamily: FONT_FAMILY, fontSize: '10pt', lineHeight: 1.45 }}>
+								<Typography
+									sx={{
+										fontFamily: FONT_FAMILY,
+										fontSize: '10pt',
+										lineHeight: 1.45,
+										textAlign: 'justify',
+									}}
+								>
 									Apabila dikemudian hari yang bersangkutan melanggar kembali peraturan / PKB, maka
 									Perusahaan akan mengeluarkan sanksi berikutnya sesuai dengan peraturan / PKB yang
 									berlaku.
@@ -357,7 +400,14 @@ function WarningLetterPrintDocument({ record }) {
 					<Box component="ol" sx={{ m: 0, pl: '24px' }}>
 						{['Karyawan yang bersangkutan', 'Kepala Departemen yang bersangkutan', 'Arsip'].map((item) => (
 							<Box component="li" key={item} sx={{ pl: 1 }}>
-								<Typography sx={{ fontFamily: FONT_FAMILY, fontSize: '10pt', lineHeight: 1.35 }}>
+								<Typography
+									sx={{
+										fontFamily: FONT_FAMILY,
+										fontSize: '10pt',
+										lineHeight: 1.35,
+										textAlign: 'justify',
+									}}
+								>
 									{item}
 								</Typography>
 							</Box>
