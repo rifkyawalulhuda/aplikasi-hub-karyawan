@@ -62,11 +62,11 @@ function GuidanceTable({
 		},
 		{ id: 'id', label: 'NO' },
 		{ id: 'categoryLabel', label: 'KATEGORI' },
+		{ id: 'employeeName', label: 'NAMA KARYAWAN' },
 		{ id: 'meetingNumber', label: 'PERTEMUAN KE' },
 		{ id: 'meetingDate', label: 'TANGGAL' },
 		{ id: 'meetingTime', label: 'JAM' },
 		{ id: 'location', label: 'TEMPAT' },
-		{ id: 'employeeName', label: 'NAMA KARYAWAN' },
 		{ id: 'employeeNo', label: 'NIK' },
 		{ id: 'departmentName', label: 'DEPARTEMEN' },
 		{ id: 'actions', label: 'AKSI', disableSort: true, sx: { ...stickyActionCellSx, zIndex: 4 } },
@@ -95,11 +95,11 @@ function GuidanceTable({
 						</TableCell>
 						<TableCell>{meta?.rowNumber || 1}</TableCell>
 						<TableCell>{row.categoryLabel}</TableCell>
+						<TableCell>{row.employeeName}</TableCell>
 						<TableCell>{row.meetingNumber}</TableCell>
 						<TableCell>{formatGuidanceDate(row.meetingDate)}</TableCell>
 						<TableCell>{row.meetingTime}</TableCell>
 						<TableCell>{row.location}</TableCell>
-						<TableCell>{row.employeeName}</TableCell>
 						<TableCell>{row.employeeNo}</TableCell>
 						<TableCell>{row.departmentName}</TableCell>
 						<TableCell sx={{ ...stickyActionCellSx, py: 1.25 }}>
