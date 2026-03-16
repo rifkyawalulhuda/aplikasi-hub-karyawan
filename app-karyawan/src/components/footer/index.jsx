@@ -10,7 +10,7 @@ function Footer() {
 			<Container maxWidth="lg">
 				<Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}>
 					<Typography variant="body1" textAlign="center">
-						Copyright 2023. All rights reserved. Slim React MUI Template
+						Copyright 2026. All rights reserved. PT. Sankyu Indonesia International
 					</Typography>
 					<Typography variant="subtitle1" textAlign="center">
 						Built by{' '}
@@ -19,12 +19,12 @@ function Footer() {
 							sx={{
 								cursor: 'pointer',
 							}}
-							href="https://antonioayola.netlify.app/"
+							href="https://sankyuidn.co.id"
 							target="_blank"
 							rel="noreferrer noopener"
 							fontWeight="medium"
 						>
-							@Antonio Ayola
+							Sankyu Indonesia
 						</Link>{' '}
 						with care.
 					</Typography>
