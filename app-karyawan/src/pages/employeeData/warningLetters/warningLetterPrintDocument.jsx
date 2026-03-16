@@ -299,7 +299,7 @@ function WarningLetterPrintDocument({ record }) {
 
 					<Box sx={{ mt: 1 }}>
 						<Stack spacing={0.3}>
-							<Box sx={{ display: 'grid', gridTemplateColumns: '130px 8px 1fr', columnGap: 2 }}>
+							<Box sx={{ display: 'grid', gridTemplateColumns: '118px 8px 1fr', columnGap: 1 }}>
 								<Typography sx={{ fontFamily: FONT_FAMILY, fontSize: '10pt', lineHeight: 1.35 }}>
 									Tanggal
 								</Typography>
@@ -310,7 +310,7 @@ function WarningLetterPrintDocument({ record }) {
 									{formatLongWarningDate(record.letterDate)}
 								</Typography>
 							</Box>
-							<Box sx={{ display: 'grid', gridTemplateColumns: '130px 8px 1fr', columnGap: 2 }}>
+							<Box sx={{ display: 'grid', gridTemplateColumns: '118px 8px 1fr', columnGap: 1 }}>
 								<Typography sx={{ fontFamily: FONT_FAMILY, fontSize: '10pt', lineHeight: 1.35 }}>
 									Dikeluarkan di
 								</Typography>
@@ -321,7 +321,7 @@ function WarningLetterPrintDocument({ record }) {
 									Cikarang
 								</Typography>
 							</Box>
-							<Box sx={{ display: 'grid', gridTemplateColumns: '130px 12px 1fr' }}>
+							<Box sx={{ display: 'grid', gridTemplateColumns: '118px 8px 1fr', columnGap: 1 }}>
 								<Typography sx={{ fontFamily: FONT_FAMILY, fontSize: '10pt', lineHeight: 1.35 }}>
 									Mengetahui
 								</Typography>
