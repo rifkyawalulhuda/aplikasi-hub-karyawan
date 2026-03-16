@@ -80,7 +80,7 @@ function GuidanceTable({
 			initialRowsPerPage={15}
 			rowsPerPageOptions={[15, 30, 50, 100]}
 			tableContainerProps={{ sx: { maxHeight: 520 } }}
-			render={(row) => {
+			render={(row, _index, meta) => {
 				const isSelected = selectedRowIds.includes(row.id);
 
 				return (
@@ -93,7 +93,7 @@ function GuidanceTable({
 								inputProps={{ 'aria-label': `Pilih data ${row.employeeName}` }}
 							/>
 						</TableCell>
-						<TableCell>{row.id}</TableCell>
+						<TableCell>{meta?.rowNumber || 1}</TableCell>
 						<TableCell>{row.categoryLabel}</TableCell>
 						<TableCell>{row.meetingNumber}</TableCell>
 						<TableCell>{formatGuidanceDate(row.meetingDate)}</TableCell>

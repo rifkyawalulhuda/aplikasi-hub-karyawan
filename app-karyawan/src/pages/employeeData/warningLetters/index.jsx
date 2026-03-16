@@ -257,9 +257,9 @@ function WarningLettersPage() {
 		worksheet.getRow(1).font = { bold: true };
 		worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
 
-		filteredRows.forEach((row) => {
+		filteredRows.forEach((row, index) => {
 			worksheet.addRow({
-				id: row.id,
+				id: index + 1,
 				employeeName: row.employeeName,
 				employeeNo: row.employeeNo,
 				warningLevel: row.warningLevel,

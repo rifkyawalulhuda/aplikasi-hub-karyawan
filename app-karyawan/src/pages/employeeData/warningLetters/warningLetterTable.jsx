@@ -79,7 +79,7 @@ function WarningLetterTable({
 			initialRowsPerPage={15}
 			rowsPerPageOptions={[15, 30, 50, 100]}
 			tableContainerProps={{ sx: { maxHeight: 520 } }}
-			render={(row) => {
+			render={(row, _index, meta) => {
 				const isSelected = selectedRowIds.includes(row.id);
 
 				return (
@@ -92,7 +92,7 @@ function WarningLetterTable({
 								inputProps={{ 'aria-label': `Pilih data surat peringatan ${row.employeeName}` }}
 							/>
 						</TableCell>
-						<TableCell>{row.id}</TableCell>
+						<TableCell>{meta?.rowNumber || 1}</TableCell>
 						<TableCell>{row.employeeName}</TableCell>
 						<TableCell>{row.employeeNo}</TableCell>
 						<TableCell>{row.warningLevel}</TableCell>
