@@ -12,14 +12,16 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
+import UploadFileOutlinedIcon from '@mui/icons-material/UploadFileOutlined';
 import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
 
 import CardHeader from '@/components/cardHeader';
 import PageHeader from '@/components/pageHeader';
 import DeleteConfirmDialog from '@/components/masterData/deleteConfirmDialog';
 import MasterDataFormDialog from '@/components/masterData/masterDataFormDialog';
+import MasterDataImportDialog from '@/components/masterData/masterDataImportDialog';
 import MasterDataTable from '@/components/masterData/masterDataTable';
-import apiRequest from '@/services/api';
+import apiRequest, { getApiBaseUrl } from '@/services/api';
 
 async function fetchMasterData(resource) {
 	return apiRequest(`/master/${resource}`);
@@ -32,6 +34,7 @@ function MasterDataPage({ config }) {
 	const [submitting, setSubmitting] = useState(false);
 	const [selectedItem, setSelectedItem] = useState(null);
 	const [formOpen, setFormOpen] = useState(false);
+	const [importOpen, setImportOpen] = useState(false);
 	const [deleteOpen, setDeleteOpen] = useState(false);
 	const [searchKeyword, setSearchKeyword] = useState('');
 
@@ -84,6 +87,69 @@ function MasterDataPage({ config }) {
 	const handleCreate = () => {
 		setSelectedItem(null);
 		setFormOpen(true);
+	};
+
+	const handleImport = async (file) => {
+		setSubmitting(true);
+
+		try {
+			const formData = new FormData();
+			formData.append('file', file);
+
+			const response = await apiRequest(`/master/${config.resource}/import`, {
+				method: 'POST',
+				body: formData,
+			});
+
+			if (response.rows?.length) {
+				setRows((currentRows) => {
+					const mergedRows = [...currentRows];
+
+					response.rows.forEach((row) => {
+						const existingIndex = mergedRows.findIndex((item) => item.id === row.id);
+
+						if (existingIndex >= 0) {
+							mergedRows[existingIndex] = row;
+						} else {
+							mergedRows.push(row);
+						}
+					});
+
+					return mergedRows.sort((a, b) => a.id - b.id);
+				});
+			}
+
+			setImportOpen(false);
+
+			if (response.errorReportUrl) {
+				const downloadUrl = `${getApiBaseUrl()}${response.errorReportUrl}`;
+				const link = document.createElement('a');
+				link.href = downloadUrl;
+				link.target = '_blank';
+				link.rel = 'noreferrer';
+				document.body.appendChild(link);
+				link.click();
+				document.body.removeChild(link);
+
+				enqueueSnackbar(
+					`${response.message} Berhasil: ${response.importedCount}, gagal: ${response.failedCount}. File error diunduh otomatis.`,
+					{ variant: 'warning' },
+				);
+			} else {
+				enqueueSnackbar(`${response.message} Total import: ${response.importedCount}.`, {
+					variant: 'success',
+				});
+			}
+
+			return true;
+		} catch (error) {
+			enqueueSnackbar(error.message, {
+				variant: 'error',
+			});
+			return false;
+		} finally {
+			setSubmitting(false);
+		}
 	};
 
 	const handleEdit = (item) => {
@@ -204,6 +270,15 @@ function MasterDataPage({ config }) {
 								),
 							}}
 						/>
+						{config.import ? (
+							<Button
+								variant="outlined"
+								startIcon={<UploadFileOutlinedIcon />}
+								onClick={() => setImportOpen(true)}
+							>
+								Import Excel
+							</Button>
+						) : null}
 						<Button variant="contained" startIcon={<AddOutlinedIcon />} onClick={handleCreate}>
 							Tambah Data
 						</Button>
@@ -231,6 +306,17 @@ function MasterDataPage({ config }) {
 				onClose={closeFormDialog}
 				onSubmit={handleFormSubmit}
 			/>
+			{config.import ? (
+				<MasterDataImportDialog
+					open={importOpen}
+					loading={submitting}
+					title={config.import.title}
+					description={config.import.description}
+					templateHref={config.import.templateHref}
+					onClose={() => setImportOpen(false)}
+					onImport={handleImport}
+				/>
+			) : null}
 			<DeleteConfirmDialog
 				open={deleteOpen}
 				loading={submitting}

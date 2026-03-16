@@ -113,6 +113,12 @@ const MASTER_DATA_PAGE_CONFIG = {
 			{ id: 'article', label: '(PKB) PASAL' },
 			{ id: 'content', label: 'ISI' },
 		],
+		import: {
+			title: 'Import Master Dok PKB',
+			description:
+				'Unduh template Excel resmi, isi data pasal dan isi dokumen PKB secara bulk, lalu upload file `.xlsx` untuk import.',
+			templateHref: '/templates/master-dok-pkb-import-template.xlsx',
+		},
 	},
 };
 
