@@ -11,6 +11,7 @@ const DepartmentsPage = withLazyLoadably(lazy(() => import('@/pages/masterData/d
 const JobRolesPage = withLazyLoadably(lazy(() => import('@/pages/masterData/jobRoles')));
 const JobLevelsPage = withLazyLoadably(lazy(() => import('@/pages/masterData/jobLevels')));
 const EmployeesPage = withLazyLoadably(lazy(() => import('@/pages/masterData/employees')));
+const MasterDokPkbPage = withLazyLoadably(lazy(() => import('@/pages/masterData/masterDokPkb')));
 const GuidanceRecordsPage = withLazyLoadably(lazy(() => import('@/pages/employeeData/guidanceRecords')));
 const GuidanceRecordDetailPage = withLazyLoadably(lazy(() => import('@/pages/employeeData/guidanceRecords/detail')));
 const GuidanceRecordBulkPrintPage = withLazyLoadably(
@@ -30,6 +31,7 @@ function Router() {
 						<Route path="data-master/master-data-karyawan/departments" element={<DepartmentsPage />} />
 						<Route path="data-master/master-data-karyawan/job-roles" element={<JobRolesPage />} />
 						<Route path="data-master/master-data-karyawan/job-levels" element={<JobLevelsPage />} />
+						<Route path="data-master/master-data-dokumen/master-dok-pkb" element={<MasterDokPkbPage />} />
 						<Route path="data-karyawan/bimbingan-pengarahan" element={<GuidanceRecordsPage />} />
 						<Route path="data-karyawan/bimbingan-pengarahan/:id" element={<GuidanceRecordDetailPage />} />
 						<Route

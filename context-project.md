@@ -62,6 +62,9 @@ Folder ini dipilih sebagai basis utama pengembangan karena struktur template-nya
   - `Master Department`
   - `Master Job Role`
   - `Master Job Level`
+- Dropdown tambahan: `Master Data Dokumen`
+- Submenu dokumen:
+  - `Master Dok PKB`
 - Tab utama tambahan: `Data Karyawan`
 - Menu utama: `Bimbingan & Pengarahan`
 
@@ -144,6 +147,17 @@ Catatan implementasi:
 - Kolom database utama:
   - `id` : auto increment
   - `jobLevel` : varchar
+
+#### Master Dok PKB
+
+- Kolom database utama:
+  - `id` : auto increment
+  - `article` : varchar
+  - `content` : text
+- Ditempatkan pada grup menu `Master Data Dokumen`
+- Form input mengikuti pola halaman master yang sudah ada, dengan field:
+  - `(PKB) Pasal`
+  - `Isi` sebagai textarea
 
 ### 2. History Karyawan (Report)
 

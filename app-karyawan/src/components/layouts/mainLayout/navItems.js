@@ -6,7 +6,9 @@ import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined';
 import FeedOutlinedIcon from '@mui/icons-material/FeedOutlined';
 import LayersOutlinedIcon from '@mui/icons-material/LayersOutlined';
 import PeopleAltOutlinedIcon from '@mui/icons-material/PeopleAltOutlined';
+import ReceiptLongOutlinedIcon from '@mui/icons-material/ReceiptLongOutlined';
 import SettingsApplicationsOutlinedIcon from '@mui/icons-material/SettingsApplicationsOutlined';
+import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 
 /**
  * @example
@@ -68,6 +70,21 @@ const NAV_LINKS_CONFIG = [
 						title: 'Master Job Level',
 						Icon: LayersOutlinedIcon,
 						href: '/data-master/master-data-karyawan/job-levels',
+					},
+				],
+			},
+			{
+				id: uuid(),
+				type: 'group',
+				title: 'Master Data Dokumen',
+				Icon: DescriptionOutlinedIcon,
+				menuChildren: [
+					{
+						id: uuid(),
+						type: 'item',
+						title: 'Master Dok PKB',
+						Icon: ReceiptLongOutlinedIcon,
+						href: '/data-master/master-data-dokumen/master-dok-pkb',
 					},
 				],
 			},

@@ -19,24 +19,7 @@ const stickyActionCellSx = {
 	boxShadow: '-6px 0 8px -8px rgba(15, 23, 42, 0.35)',
 };
 
-const HEAD_CELLS = [
-	{
-		id: 'id',
-		label: 'NO',
-	},
-	{
-		id: 'name',
-		label: 'NAMA',
-	},
-	{
-		id: 'actions',
-		label: 'AKSI',
-		disableSort: true,
-		sx: { ...stickyActionCellSx, zIndex: 4 },
-	},
-];
-
-function MasterDataTable({ rows, loading, onEdit, onDelete }) {
+function MasterDataTable({ rows, loading, config, onEdit, onDelete }) {
 	if (!loading && rows.length === 0) {
 		return (
 			<Stack py={8} alignItems="center" spacing={1}>
@@ -48,10 +31,31 @@ function MasterDataTable({ rows, loading, onEdit, onDelete }) {
 		);
 	}
 
+	const dataColumns = config.tableColumns || [
+		{
+			id: 'id',
+			label: 'NO',
+		},
+		{
+			id: 'name',
+			label: 'NAMA',
+		},
+	];
+
+	const headCells = [
+		...dataColumns,
+		{
+			id: 'actions',
+			label: 'AKSI',
+			disableSort: true,
+			sx: { ...stickyActionCellSx, zIndex: 4 },
+		},
+	];
+
 	return (
 		<EnhancedTable
 			rows={rows}
-			headCells={HEAD_CELLS}
+			headCells={headCells}
 			stickyHeader
 			initialRowsPerPage={15}
 			rowsPerPageOptions={[15, 30, 50, 100]}
@@ -62,8 +66,23 @@ function MasterDataTable({ rows, loading, onEdit, onDelete }) {
 			}}
 			render={(row) => (
 				<TableRow hover key={row.id}>
-					<TableCell>{row.id}</TableCell>
-					<TableCell>{row.name}</TableCell>
+					{dataColumns.map((column) => (
+						<TableCell
+							key={`${row.id}-${column.id}`}
+							sx={
+								column.id === 'content'
+									? {
+											minWidth: 360,
+											maxWidth: 560,
+											whiteSpace: 'pre-wrap',
+											wordBreak: 'break-word',
+									  }
+									: undefined
+							}
+						>
+							{row[column.id]}
+						</TableCell>
+					))}
 					<TableCell sx={stickyActionCellSx}>
 						<Stack direction="row" spacing={1}>
 							<Tooltip title="Edit">

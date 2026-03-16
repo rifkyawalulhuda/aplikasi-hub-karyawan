@@ -70,7 +70,11 @@ function MasterDataPage({ config }) {
 			return true;
 		}
 
-		return [row.name, String(row.id)].some((value) =>
+		const searchableFields = config.fields?.filter((field) => field.searchable).map((field) => row[field.name]) || [
+			row.name,
+		];
+
+		return [...searchableFields, String(row.id)].some((value) =>
 			String(value || '')
 				.toLowerCase()
 				.includes(normalizedKeyword),
@@ -167,7 +171,7 @@ function MasterDataPage({ config }) {
 					<Link underline="hover" href="#!">
 						Data Master
 					</Link>
-					<Typography color="text.tertiary">Master Data Karyawan</Typography>
+					<Typography color="text.tertiary">{config.groupBreadcrumb || 'Master Data Karyawan'}</Typography>
 					<Typography color="text.tertiary">{config.breadcrumb}</Typography>
 				</Breadcrumbs>
 			</PageHeader>
@@ -190,7 +194,7 @@ function MasterDataPage({ config }) {
 							label="Cari Data"
 							value={searchKeyword}
 							onChange={(event) => setSearchKeyword(event.target.value)}
-							placeholder={`${config.fieldLabel}, nomor...`}
+							placeholder={config.searchPlaceholder || `${config.fieldLabel}, nomor...`}
 							sx={{ minWidth: { xs: '100%', md: 320 } }}
 							InputProps={{
 								startAdornment: (
@@ -213,6 +217,7 @@ function MasterDataPage({ config }) {
 					<MasterDataTable
 						rows={filteredRows}
 						loading={loading}
+						config={config}
 						onEdit={handleEdit}
 						onDelete={handleDelete}
 					/>

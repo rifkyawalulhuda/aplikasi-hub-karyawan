@@ -12,22 +12,39 @@ import FormInput from '@/components/formInput';
 
 function MasterDataFormDialog({ config, open, loading, initialValue, onClose, onSubmit }) {
 	const isEditMode = Boolean(initialValue);
+	const fields = config.fields || [
+		{
+			name: 'name',
+			label: config.fieldLabel,
+			placeholder: config.fieldPlaceholder,
+		},
+	];
 	const {
 		control,
 		handleSubmit,
 		reset,
 		formState: { errors, dirtyFields },
 	} = useForm({
-		defaultValues: {
-			name: initialValue?.name || '',
-		},
+		defaultValues: fields.reduce(
+			(defaultValues, field) => ({
+				...defaultValues,
+				[field.name]: initialValue?.[field.name] || '',
+			}),
+			{},
+		),
 	});
 
 	useEffect(() => {
-		reset({
-			name: initialValue?.name || '',
-		});
-	}, [initialValue, open, reset]);
+		reset(
+			fields.reduce(
+				(defaultValues, field) => ({
+					...defaultValues,
+					[field.name]: initialValue?.[field.name] || '',
+				}),
+				{},
+			),
+		);
+	}, [fields, initialValue, open, reset]);
 
 	return (
 		<Dialog open={open} onClose={loading ? undefined : onClose} fullWidth maxWidth="sm">
@@ -40,20 +57,25 @@ function MasterDataFormDialog({ config, open, loading, initialValue, onClose, on
 					pt={1}
 					onSubmit={handleSubmit(onSubmit)}
 				>
-					<FormInput
-						name="name"
-						label={config.fieldLabel}
-						placeholder={config.fieldPlaceholder}
-						control={control}
-						errors={errors}
-						dirtyFields={dirtyFields}
-						rules={{
-							required: `${config.fieldLabel} wajib diisi.`,
-							validate: (value) => value.trim().length > 0 || `${config.fieldLabel} wajib diisi.`,
-						}}
-						fullWidth
-						autoFocus
-					/>
+					{fields.map((field, index) => (
+						<FormInput
+							key={field.name}
+							name={field.name}
+							label={field.label}
+							placeholder={field.placeholder}
+							control={control}
+							errors={errors}
+							dirtyFields={dirtyFields}
+							rules={{
+								required: `${field.label} wajib diisi.`,
+								validate: (value) => value.trim().length > 0 || `${field.label} wajib diisi.`,
+							}}
+							fullWidth
+							autoFocus={index === 0}
+							multiline={field.type === 'multiline'}
+							rows={field.rows}
+						/>
+					))}
 				</Stack>
 			</DialogContent>
 			<DialogActions sx={{ px: 3, pb: 3 }}>
