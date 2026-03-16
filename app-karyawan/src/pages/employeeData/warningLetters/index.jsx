@@ -9,6 +9,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import Grid from '@mui/material/Grid';
 import InputAdornment from '@mui/material/InputAdornment';
 import Link from '@mui/material/Link';
+import MenuItem from '@mui/material/MenuItem';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
@@ -53,6 +54,7 @@ function WarningLettersPage() {
 	const [searchKeyword, setSearchKeyword] = useState('');
 	const [dateFrom, setDateFrom] = useState('');
 	const [dateTo, setDateTo] = useState('');
+	const [warningLevelFilter, setWarningLevelFilter] = useState('ALL');
 	const [selectedRowIds, setSelectedRowIds] = useState([]);
 
 	useEffect(() => {
@@ -93,8 +95,10 @@ function WarningLettersPage() {
 	const filteredRows = rows.filter((row) => {
 		const matchesDateFrom = dateFrom ? row.letterDate >= dateFrom : true;
 		const matchesDateTo = dateTo ? row.letterDate <= dateTo : true;
+		const matchesWarningLevel =
+			warningLevelFilter === 'ALL' ? true : String(row.warningLevel) === warningLevelFilter;
 
-		if (!matchesDateFrom || !matchesDateTo) {
+		if (!matchesDateFrom || !matchesDateTo || !matchesWarningLevel) {
 			return false;
 		}
 
@@ -363,6 +367,21 @@ function WarningLettersPage() {
 								onChange={(event) => setDateTo(event.target.value)}
 								InputLabelProps={{ shrink: true }}
 							/>
+						</Grid>
+						<Grid item xs={12} sm={6} md={3} lg={2}>
+							<TextField
+								fullWidth
+								size="small"
+								select
+								label="Surat Peringatan ke"
+								value={warningLevelFilter}
+								onChange={(event) => setWarningLevelFilter(event.target.value)}
+							>
+								<MenuItem value="ALL">Semua</MenuItem>
+								<MenuItem value="1">1</MenuItem>
+								<MenuItem value="2">2</MenuItem>
+								<MenuItem value="3">3</MenuItem>
+							</TextField>
 						</Grid>
 						<Grid item xs={12} md="auto" sx={{ ml: { md: 'auto' } }}>
 							<Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
