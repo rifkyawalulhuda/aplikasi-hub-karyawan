@@ -14,6 +14,7 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
+import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
 import PrintOutlinedIcon from '@mui/icons-material/PrintOutlined';
 import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
 
@@ -22,6 +23,7 @@ import DeleteConfirmDialog from '@/components/masterData/deleteConfirmDialog';
 import PageHeader from '@/components/pageHeader';
 import apiRequest from '@/services/api';
 
+import { formatWarningDate } from './utils';
 import WarningLetterFormDialog from './warningLetterFormDialog';
 import WarningLetterTable from './warningLetterTable';
 
@@ -224,6 +226,82 @@ function WarningLettersPage() {
 		window.open(printUrl, '_blank', 'noopener,noreferrer');
 	};
 
+	const handleExportExcel = async () => {
+		if (filteredRows.length === 0) {
+			enqueueSnackbar('Tidak ada data untuk diexport.', { variant: 'error' });
+			return;
+		}
+
+		const ExcelJS = await import('exceljs');
+		const Workbook = ExcelJS.Workbook || ExcelJS.default?.Workbook;
+		const workbook = new Workbook();
+		const worksheet = workbook.addWorksheet('Warning Letter');
+
+		worksheet.columns = [
+			{ header: 'NO', key: 'id', width: 10 },
+			{ header: 'NAMA', key: 'employeeName', width: 28 },
+			{ header: 'NIK', key: 'employeeNo', width: 18 },
+			{ header: 'SURAT PERINGATAN KE', key: 'warningLevel', width: 22 },
+			{ header: 'NOMOR SURAT', key: 'letterNumber', width: 26 },
+			{ header: 'TANGGAL SURAT PERINGATAN', key: 'letterDate', width: 18 },
+			{ header: 'PELANGGARAN', key: 'violation', width: 42 },
+			{ header: 'PASAL PKB', key: 'articleLabel', width: 20 },
+			{ header: 'ISI PASAL', key: 'articleContent', width: 46 },
+			{ header: 'SUPERIOR', key: 'superiorName', width: 28 },
+		];
+
+		worksheet.getRow(1).font = { bold: true };
+		worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
+
+		filteredRows.forEach((row) => {
+			worksheet.addRow({
+				id: row.id,
+				employeeName: row.employeeName,
+				employeeNo: row.employeeNo,
+				warningLevel: row.warningLevel,
+				letterNumber: row.letterNumber,
+				letterDate: formatWarningDate(row.letterDate),
+				violation: row.violation,
+				articleLabel: row.articleLabel,
+				articleContent: row.articleContent,
+				superiorName: row.superiorName,
+			});
+		});
+
+		worksheet.eachRow((row, rowNumber) => {
+			const targetRow = row;
+
+			targetRow.alignment = {
+				vertical: rowNumber === 1 ? 'middle' : 'top',
+				horizontal: rowNumber === 1 ? 'center' : 'left',
+				wrapText: true,
+			};
+
+			if (rowNumber === 1) {
+				targetRow.fill = {
+					type: 'pattern',
+					pattern: 'solid',
+					fgColor: { argb: 'DDE4EE' },
+				};
+			}
+		});
+
+		const buffer = await workbook.xlsx.writeBuffer();
+		const blob = new Blob([buffer], {
+			type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+		});
+		const url = window.URL.createObjectURL(blob);
+		const link = document.createElement('a');
+		const fileSuffix = dateFrom || dateTo ? `${dateFrom || 'all'}_${dateTo || 'all'}` : 'all-data';
+
+		link.href = url;
+		link.download = `warning-letter-${fileSuffix}.xlsx`;
+		document.body.appendChild(link);
+		link.click();
+		document.body.removeChild(link);
+		window.URL.revokeObjectURL(url);
+	};
+
 	return (
 		<>
 			<PageHeader title="Data Surat Peringatan">
@@ -305,6 +383,14 @@ function WarningLettersPage() {
 									sx={{ minWidth: 170, whiteSpace: 'nowrap' }}
 								>
 									Print A4 Terpilih
+								</Button>
+								<Button
+									variant="outlined"
+									startIcon={<DownloadOutlinedIcon />}
+									onClick={handleExportExcel}
+									sx={{ minWidth: 170, whiteSpace: 'nowrap' }}
+								>
+									Export Excel
 								</Button>
 								<Button
 									variant="contained"

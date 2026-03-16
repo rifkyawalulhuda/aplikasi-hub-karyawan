@@ -246,6 +246,19 @@ Modul ini direncanakan untuk menampilkan histori karyawan dan report keseluruhan
   - halaman detail dengan tombol `Print A4`
   - layout print A4 mengikuti `sample Warning Letter.pdf` dengan pendekatan overlay data di atas template visual PDF
   - nama superior dan nama karyawan tampil pada area tanda tangan di hasil print
+  - halaman daftar sudah mendukung seleksi data satu per satu dan `pilih semua` untuk `Print A4` terpilih
+  - halaman daftar sudah memiliki fitur `Export Excel`
+  - file export Excel mencakup seluruh isi form surat peringatan, termasuk:
+    - nama
+    - NIK
+    - surat peringatan ke
+    - nomor surat
+    - tanggal surat peringatan
+    - pelanggaran
+    - pasal PKB
+    - isi pasal
+    - superior
+  - jika filter tanggal kosong, export akan mengambil seluruh data yang tersedia
 
 ### 3. Pengajuan Cuti Karyawan
 
