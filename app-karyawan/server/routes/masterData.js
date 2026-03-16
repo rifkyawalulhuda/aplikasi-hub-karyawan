@@ -19,8 +19,67 @@ function getDelegate(model) {
 	return prisma[model];
 }
 
-function normalizeName(name = '') {
-	return name.trim().replace(/\s+/g, ' ');
+function normalizeString(value = '') {
+	return String(value).trim().replace(/\s+/g, ' ');
+}
+
+function normalizeMultilineString(value = '') {
+	return String(value).replace(/\r\n/g, '\n').trim();
+}
+
+function getFields(config) {
+	return config?.fields?.length
+		? config.fields
+		: [
+				{
+					name: 'name',
+					label: config.label,
+					required: true,
+					unique: true,
+				},
+		  ];
+}
+
+function normalizeFieldValue(fieldConfig, value) {
+	if (fieldConfig.type === 'multiline') {
+		return normalizeMultilineString(value);
+	}
+
+	return normalizeString(value);
+}
+
+async function buildPayload(config, body = {}, currentId = null) {
+	const delegate = getDelegate(config.model);
+	const fields = getFields(config);
+	const payload = {};
+
+	for (const fieldConfig of fields) {
+		const value = normalizeFieldValue(fieldConfig, body?.[fieldConfig.name]);
+
+		if (fieldConfig.required && !value) {
+			throw Object.assign(new Error(`${fieldConfig.label} wajib diisi.`), { statusCode: 400 });
+		}
+
+		if (fieldConfig.unique && value) {
+			const duplicate = await delegate.findFirst({
+				where: {
+					[fieldConfig.name]: {
+						equals: value,
+						mode: 'insensitive',
+					},
+					...(currentId ? { NOT: { id: currentId } } : {}),
+				},
+			});
+
+			if (duplicate) {
+				throw Object.assign(new Error(`${fieldConfig.label} sudah ada.`), { statusCode: 409 });
+			}
+		}
+
+		payload[fieldConfig.name] = value;
+	}
+
+	return payload;
 }
 
 router.get(
@@ -50,30 +109,10 @@ router.post(
 	if (!config) {
 		return res.status(404).json({ message: 'Master data resource not found.' });
 	}
-
-	const name = normalizeName(req.body?.name);
-
-	if (!name) {
-		return res.status(400).json({ message: `${config.label} wajib diisi.` });
-	}
-
-	const duplicate = await getDelegate(config.model).findFirst({
-		where: {
-			name: {
-				equals: name,
-				mode: 'insensitive',
-			},
-		},
-	});
-
-	if (duplicate) {
-		return res.status(409).json({ message: `${config.label} sudah ada.` });
-	}
+	const data = await buildPayload(config, req.body);
 
 	const item = await getDelegate(config.model).create({
-		data: {
-			name,
-		},
+		data,
 	});
 
 	return res.status(201).json(item);
@@ -94,12 +133,6 @@ router.put(
 		return res.status(400).json({ message: 'ID tidak valid.' });
 	}
 
-	const name = normalizeName(req.body?.name);
-
-	if (!name) {
-		return res.status(400).json({ message: `${config.label} wajib diisi.` });
-	}
-
 	const existing = await getDelegate(config.model).findUnique({
 		where: {
 			id,
@@ -109,30 +142,13 @@ router.put(
 	if (!existing) {
 		return res.status(404).json({ message: `${config.label} tidak ditemukan.` });
 	}
-
-	const duplicate = await getDelegate(config.model).findFirst({
-		where: {
-			name: {
-				equals: name,
-				mode: 'insensitive',
-			},
-			NOT: {
-				id,
-			},
-		},
-	});
-
-	if (duplicate) {
-		return res.status(409).json({ message: `${config.label} sudah ada.` });
-	}
+	const data = await buildPayload(config, req.body, id);
 
 	const item = await getDelegate(config.model).update({
 		where: {
 			id,
 		},
-		data: {
-			name,
-		},
+		data,
 	});
 
 	return res.json(item);

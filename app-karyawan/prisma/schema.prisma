@@ -81,6 +81,16 @@ model JobLevel {
   @@map("job_levels")
 }
 
+model MasterDokPkb {
+  id        Int      @id @default(autoincrement())
+  article   String   @unique @db.VarChar(255)
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("master_dok_pkb")
+}
+
 model Employee {
   id             Int            @id @default(autoincrement())
   employeeNo     String         @unique @db.VarChar(100)
