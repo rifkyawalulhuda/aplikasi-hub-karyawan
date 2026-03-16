@@ -19,6 +19,9 @@ const GuidanceRecordBulkPrintPage = withLazyLoadably(
 );
 const WarningLettersPage = withLazyLoadably(lazy(() => import('@/pages/employeeData/warningLetters')));
 const WarningLetterDetailPage = withLazyLoadably(lazy(() => import('@/pages/employeeData/warningLetters/detail')));
+const WarningLetterBulkPrintPage = withLazyLoadably(
+	lazy(() => import('@/pages/employeeData/warningLetters/bulkPrint')),
+);
 
 function Router() {
 	return (
@@ -26,6 +29,7 @@ function Router() {
 			<ScrollToTopOnRouteChange>
 				<Routes>
 					<Route path="/print/data-karyawan/bimbingan-pengarahan" element={<GuidanceRecordBulkPrintPage />} />
+					<Route path="/print/data-karyawan/data-surat-peringatan" element={<WarningLetterBulkPrintPage />} />
 					<Route path="/" element={<MainLayout />}>
 						<Route index element={<Navigate to="/data-master/master-data-karyawan/employees" replace />} />
 						<Route path="data-master/master-data-karyawan/employees" element={<EmployeesPage />} />
