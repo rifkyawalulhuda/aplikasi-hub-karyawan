@@ -17,6 +17,8 @@ const GuidanceRecordDetailPage = withLazyLoadably(lazy(() => import('@/pages/emp
 const GuidanceRecordBulkPrintPage = withLazyLoadably(
 	lazy(() => import('@/pages/employeeData/guidanceRecords/bulkPrint')),
 );
+const WarningLettersPage = withLazyLoadably(lazy(() => import('@/pages/employeeData/warningLetters')));
+const WarningLetterDetailPage = withLazyLoadably(lazy(() => import('@/pages/employeeData/warningLetters/detail')));
 
 function Router() {
 	return (
@@ -34,6 +36,8 @@ function Router() {
 						<Route path="data-master/master-data-dokumen/master-dok-pkb" element={<MasterDokPkbPage />} />
 						<Route path="data-karyawan/bimbingan-pengarahan" element={<GuidanceRecordsPage />} />
 						<Route path="data-karyawan/bimbingan-pengarahan/:id" element={<GuidanceRecordDetailPage />} />
+						<Route path="data-karyawan/data-surat-peringatan" element={<WarningLettersPage />} />
+						<Route path="data-karyawan/data-surat-peringatan/:id" element={<WarningLetterDetailPage />} />
 						<Route
 							path="data-karyawan/bimbingan-pengarahan/formulir-catatan-bimbingan-karyawan"
 							element={<Navigate to="/data-karyawan/bimbingan-pengarahan" replace />}

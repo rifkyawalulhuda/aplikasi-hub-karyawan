@@ -6,6 +6,7 @@ import prisma from './lib/prisma.js';
 import guidanceRecordsRouter from './routes/guidanceRecords.js';
 import employeesRouter from './routes/employees.js';
 import masterDataRouter from './routes/masterData.js';
+import warningLettersRouter from './routes/warningLetters.js';
 
 const app = express();
 const port = Number(process.env.PORT || 4000);
@@ -33,6 +34,7 @@ app.get('/api/health', async (req, res) => {
 app.use('/api/master/employees', employeesRouter);
 app.use('/api/master', masterDataRouter);
 app.use('/api/data-karyawan/guidance-records', guidanceRecordsRouter);
+app.use('/api/data-karyawan/warning-letters', warningLettersRouter);
 
 app.use((error, req, res) => {
 	console.error(error);
