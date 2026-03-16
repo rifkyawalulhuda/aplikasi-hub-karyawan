@@ -14,6 +14,7 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
+import PrintOutlinedIcon from '@mui/icons-material/PrintOutlined';
 import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
 
 import CardHeader from '@/components/cardHeader';
@@ -50,6 +51,7 @@ function WarningLettersPage() {
 	const [searchKeyword, setSearchKeyword] = useState('');
 	const [dateFrom, setDateFrom] = useState('');
 	const [dateTo, setDateTo] = useState('');
+	const [selectedRowIds, setSelectedRowIds] = useState([]);
 
 	useEffect(() => {
 		const init = async () => {
@@ -118,6 +120,38 @@ function WarningLettersPage() {
 		);
 	});
 
+	useEffect(() => {
+		const filteredRowIdSet = new Set(filteredRows.map((row) => row.id));
+
+		setSelectedRowIds((currentIds) => {
+			const nextIds = currentIds.filter((id) => filteredRowIdSet.has(id));
+
+			if (nextIds.length === currentIds.length && nextIds.every((id, index) => id === currentIds[index])) {
+				return currentIds;
+			}
+
+			return nextIds;
+		});
+	}, [filteredRows]);
+
+	const selectedRows = filteredRows.filter((row) => selectedRowIds.includes(row.id));
+	const allRowsSelected = filteredRows.length > 0 && selectedRows.length === filteredRows.length;
+	const someRowsSelected = selectedRows.length > 0 && selectedRows.length < filteredRows.length;
+
+	const handleToggleSelectRow = (id, checked) => {
+		setSelectedRowIds((currentIds) => {
+			if (checked) {
+				return currentIds.includes(id) ? currentIds : [...currentIds, id];
+			}
+
+			return currentIds.filter((currentId) => currentId !== id);
+		});
+	};
+
+	const handleToggleSelectAll = (checked) => {
+		setSelectedRowIds(checked ? filteredRows.map((row) => row.id) : []);
+	};
+
 	const handleSubmit = async (values) => {
 		setSubmitting(true);
 
@@ -174,6 +208,20 @@ function WarningLettersPage() {
 		} finally {
 			setSubmitting(false);
 		}
+	};
+
+	const handleBulkPrint = () => {
+		if (selectedRows.length === 0) {
+			enqueueSnackbar('Pilih minimal satu data atau gunakan checkbox pilih semua untuk print A4.', {
+				variant: 'error',
+			});
+			return;
+		}
+
+		const selectedIds = selectedRows.map((row) => row.id).join(',');
+		const printUrl = `/print/data-karyawan/data-surat-peringatan?ids=${selectedIds}`;
+
+		window.open(printUrl, '_blank', 'noopener,noreferrer');
 	};
 
 	return (
@@ -239,17 +287,37 @@ function WarningLettersPage() {
 							/>
 						</Grid>
 						<Grid item xs={12} md="auto" sx={{ ml: { md: 'auto' } }}>
-							<Button
-								variant="contained"
-								startIcon={<AddOutlinedIcon />}
-								onClick={() => {
-									setSelectedItem(null);
-									setFormOpen(true);
-								}}
-								sx={{ minWidth: 220 }}
-							>
-								Form Surat Peringatan
-							</Button>
+							<Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
+								{selectedRows.length > 0 && (
+									<Typography
+										variant="body2"
+										color="text.secondary"
+										sx={{ alignSelf: 'center', minWidth: { sm: 120 } }}
+									>
+										{selectedRows.length} data dipilih
+									</Typography>
+								)}
+								<Button
+									variant="outlined"
+									color="secondary"
+									startIcon={<PrintOutlinedIcon />}
+									onClick={handleBulkPrint}
+									sx={{ minWidth: 170, whiteSpace: 'nowrap' }}
+								>
+									Print A4 Terpilih
+								</Button>
+								<Button
+									variant="contained"
+									startIcon={<AddOutlinedIcon />}
+									onClick={() => {
+										setSelectedItem(null);
+										setFormOpen(true);
+									}}
+									sx={{ minWidth: 220 }}
+								>
+									Form Surat Peringatan
+								</Button>
+							</Stack>
 						</Grid>
 					</Grid>
 				</CardHeader>
@@ -260,6 +328,11 @@ function WarningLettersPage() {
 				) : (
 					<WarningLetterTable
 						rows={filteredRows}
+						selectedRowIds={selectedRowIds}
+						allRowsSelected={allRowsSelected}
+						someRowsSelected={someRowsSelected}
+						onToggleSelectAll={handleToggleSelectAll}
+						onToggleSelectRow={handleToggleSelectRow}
 						onView={(item) => navigate(`/data-karyawan/data-surat-peringatan/${item.id}`)}
 						onEdit={(item) => {
 							setSelectedItem(item);
