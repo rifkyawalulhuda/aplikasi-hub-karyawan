@@ -116,6 +116,8 @@ function EnhancedTable(props) {
 
 	// Avoid a layout jump when reaching the last page with empty rows.
 	const emptyRows = page > 0 ? Math.max(0, (1 + page) * rowsPerPage - rows.length) : 0;
+	const sortedRows = rows.slice().sort(getComparator(order, orderBy));
+	const paginatedRows = sortedRows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
 	return (
 		<>
@@ -134,11 +136,11 @@ function EnhancedTable(props) {
 						headCells={headCells}
 					/>
 					<TableBody>
-						{rows
-							.slice()
-							.sort(getComparator(order, orderBy))
-							.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-							.map((row, i) => render(row, i))}
+						{paginatedRows.map((row, i) =>
+							render(row, i, {
+								rowNumber: page * rowsPerPage + i + 1,
+							}),
+						)}
 						{emptyRows > 0 && (
 							<TableRow
 								style={{
