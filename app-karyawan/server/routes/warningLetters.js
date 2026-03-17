@@ -84,6 +84,7 @@ function mapWarningLetter(record) {
 		employeeName: record.employee.fullName,
 		employeeNo: record.employee.employeeNo,
 		departmentName: record.departmentName || record.employee.department?.name || '',
+		jobRoleName: record.employee.jobRole?.name || '',
 		jobLevelName: record.jobLevelName || record.employee.jobLevel?.name || '',
 		warningLevel: record.warningLevel,
 		letterNumber: record.letterNumber,
@@ -103,6 +104,7 @@ async function getEmployeeOrThrow(id) {
 		where: { id },
 		include: {
 			department: true,
+			jobRole: true,
 			jobLevel: true,
 		},
 	});
@@ -133,6 +135,7 @@ async function getWarningLetterOrThrow(id) {
 			employee: {
 				include: {
 					department: true,
+					jobRole: true,
 					jobLevel: true,
 				},
 			},
@@ -288,6 +291,7 @@ router.get(
 				employee: {
 					include: {
 						department: true,
+						jobRole: true,
 						jobLevel: true,
 					},
 				},
@@ -328,6 +332,7 @@ router.post(
 				employee: {
 					include: {
 						department: true,
+						jobRole: true,
 						jobLevel: true,
 					},
 				},
@@ -362,6 +367,7 @@ router.put(
 				employee: {
 					include: {
 						department: true,
+						jobRole: true,
 						jobLevel: true,
 					},
 				},

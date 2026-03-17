@@ -156,7 +156,7 @@ function ReprimandPrintDocument({ record }) {
 							}}
 						>
 							{`Sehubungan dengan tindakan saudara yang tidak mengikuti peraturan yang telah ditetapkan Perusahaan terkait dengan pekerjaan sebagai ${
-								record.jobLevelName || '-'
+								record.jobRoleName || record.jobLevelName || '-'
 							} di PT. Sankyu Indonesia International - Cikarang Logistic Center. ${
 								record.violation
 							}. Perusahaan menganggap bahwa saudara telah melakukan tindakan yang merugikan perusahaan, oleh karena itu perusahaan memberikan "Surat Teguran" kepada saudara sebagai kompensasi atas tindakan yang saudara lakukan. Diharapkan dengan adanya teguran ini, saudara dapat merubah perilaku dan cara kerja saudara menjadi lebih baik lagi.`}
