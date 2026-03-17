@@ -367,6 +367,8 @@ Yang sudah selesai:
 - Menambahkan schema, migration, API CRUD, route, menu, dan halaman `Master Admin` dengan field `Nama`, `NIK`, `Password`, dan `Role`.
 - Menambahkan fitur login aplikasi menggunakan kredensial `Master Admin` (`NIK` + `Password`).
 - Menambahkan halaman login, proteksi route frontend, dan logout dari header aplikasi.
+- Menyesuaikan desain halaman login menjadi gaya corporate-modern dengan tema dominan biru dan palet warna yang lebih minimal.
+- Menyempurnakan tone biru halaman login ke warna yang lebih kalem dan elegan dengan basis warna `RGB(58, 147, 242)`.
 - Menambahkan template Excel bulk import `Master Karyawan`.
 - Menambahkan fitur upload/import Excel `Master Karyawan` beserta file error report per baris.
 - Menambahkan fitur `Export Excel` pada halaman `Master Karyawan`.
