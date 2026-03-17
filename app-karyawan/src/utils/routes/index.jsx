@@ -4,8 +4,12 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import ScrollToTopOnRouteChange from '@hocs/withScrollTopOnRouteChange';
 import withLazyLoadably from '@hocs/withLazyLoadably';
 
+import ProtectedRoute from '@/components/auth/protectedRoute';
+import PublicOnlyRoute from '@/components/auth/publicOnlyRoute';
+import MinimalLayout from '@/components/layouts/minimalLayout';
 import MainLayout from '@/components/layouts/mainLayout';
 
+const LoginPage = withLazyLoadably(lazy(() => import('@/pages/login')));
 const WorkLocationsPage = withLazyLoadably(lazy(() => import('@/pages/masterData/workLocations')));
 const DepartmentsPage = withLazyLoadably(lazy(() => import('@/pages/masterData/departments')));
 const JobRolesPage = withLazyLoadably(lazy(() => import('@/pages/masterData/jobRoles')));
@@ -29,26 +33,55 @@ function Router() {
 		<BrowserRouter>
 			<ScrollToTopOnRouteChange>
 				<Routes>
-					<Route path="/print/data-karyawan/bimbingan-pengarahan" element={<GuidanceRecordBulkPrintPage />} />
-					<Route path="/print/data-karyawan/data-surat-peringatan" element={<WarningLetterBulkPrintPage />} />
-					<Route path="/" element={<MainLayout />}>
-						<Route index element={<Navigate to="/data-master/master-data-karyawan/employees" replace />} />
-						<Route path="data-master/master-data-karyawan/employees" element={<EmployeesPage />} />
-						<Route path="data-master/master-data-karyawan/admins" element={<AdminsPage />} />
-						<Route path="data-master/master-data-karyawan/work-locations" element={<WorkLocationsPage />} />
-						<Route path="data-master/master-data-karyawan/departments" element={<DepartmentsPage />} />
-						<Route path="data-master/master-data-karyawan/job-roles" element={<JobRolesPage />} />
-						<Route path="data-master/master-data-karyawan/job-levels" element={<JobLevelsPage />} />
-						<Route path="data-master/master-data-dokumen/master-dok-pkb" element={<MasterDokPkbPage />} />
-						<Route path="data-karyawan/bimbingan-pengarahan" element={<GuidanceRecordsPage />} />
-						<Route path="data-karyawan/bimbingan-pengarahan/:id" element={<GuidanceRecordDetailPage />} />
-						<Route path="data-karyawan/data-surat-peringatan" element={<WarningLettersPage />} />
-						<Route path="data-karyawan/data-surat-peringatan/:id" element={<WarningLetterDetailPage />} />
-						<Route
-							path="data-karyawan/bimbingan-pengarahan/formulir-catatan-bimbingan-karyawan"
-							element={<Navigate to="/data-karyawan/bimbingan-pengarahan" replace />}
-						/>
+					<Route element={<PublicOnlyRoute />}>
+						<Route element={<MinimalLayout />}>
+							<Route path="/login" element={<LoginPage />} />
+						</Route>
 					</Route>
+					<Route element={<ProtectedRoute />}>
+						<Route
+							path="/print/data-karyawan/bimbingan-pengarahan"
+							element={<GuidanceRecordBulkPrintPage />}
+						/>
+						<Route
+							path="/print/data-karyawan/data-surat-peringatan"
+							element={<WarningLetterBulkPrintPage />}
+						/>
+						<Route path="/" element={<MainLayout />}>
+							<Route
+								index
+								element={<Navigate to="/data-master/master-data-karyawan/employees" replace />}
+							/>
+							<Route path="data-master/master-data-karyawan/employees" element={<EmployeesPage />} />
+							<Route path="data-master/master-data-karyawan/admins" element={<AdminsPage />} />
+							<Route
+								path="data-master/master-data-karyawan/work-locations"
+								element={<WorkLocationsPage />}
+							/>
+							<Route path="data-master/master-data-karyawan/departments" element={<DepartmentsPage />} />
+							<Route path="data-master/master-data-karyawan/job-roles" element={<JobRolesPage />} />
+							<Route path="data-master/master-data-karyawan/job-levels" element={<JobLevelsPage />} />
+							<Route
+								path="data-master/master-data-dokumen/master-dok-pkb"
+								element={<MasterDokPkbPage />}
+							/>
+							<Route path="data-karyawan/bimbingan-pengarahan" element={<GuidanceRecordsPage />} />
+							<Route
+								path="data-karyawan/bimbingan-pengarahan/:id"
+								element={<GuidanceRecordDetailPage />}
+							/>
+							<Route path="data-karyawan/data-surat-peringatan" element={<WarningLettersPage />} />
+							<Route
+								path="data-karyawan/data-surat-peringatan/:id"
+								element={<WarningLetterDetailPage />}
+							/>
+							<Route
+								path="data-karyawan/bimbingan-pengarahan/formulir-catatan-bimbingan-karyawan"
+								element={<Navigate to="/data-karyawan/bimbingan-pengarahan" replace />}
+							/>
+						</Route>
+					</Route>
+					<Route path="*" element={<Navigate to="/" replace />} />
 				</Routes>
 			</ScrollToTopOnRouteChange>
 		</BrowserRouter>
