@@ -62,9 +62,9 @@ function EmployeeTable({ rows, onEdit, onDelete }) {
 			initialRowsPerPage={15}
 			rowsPerPageOptions={[15, 30, 50, 100]}
 			tableContainerProps={{ sx: { maxHeight: 520 } }}
-			render={(row) => (
+			render={(row, _index, { rowNumber }) => (
 				<TableRow hover key={row.id}>
-					<TableCell>{row.id}</TableCell>
+					<TableCell>{rowNumber}</TableCell>
 					<TableCell>{row.employeeNo}</TableCell>
 					<TableCell>{row.fullName}</TableCell>
 					<TableCell>{formatEmploymentTypeLabel(row.employmentType)}</TableCell>
