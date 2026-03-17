@@ -179,14 +179,14 @@ function ReprimandPrintDocument({ record }) {
 								fontSize: '10pt',
 								lineHeight: 1.55,
 								textAlign: 'justify',
-								textIndent: '10mm',
+								textIndent: '0mm',
 							}}
 						>
 							Demikian surat teguran ini kami berikan untuk saudara maklumi dan perhatikan.
 						</Typography>
 					</Stack>
 
-					<Box sx={{ mt: 2 }}>
+					<Box sx={{ mt: '11mm' }}>
 						<Stack spacing={0.3}>
 							<InfoRow label="Tanggal" value={formatLongDate(record.letterDate)} />
 							<InfoRow label="Dikeluarkan di" value="Cikarang" />
@@ -211,11 +211,11 @@ function ReprimandPrintDocument({ record }) {
 					</Stack>
 				</Box>
 
-				<Box sx={{ mt: '18mm', ml: 'auto', maxWidth: '58mm' }}>
-					<Typography sx={{ fontFamily: FONT_FAMILY, fontSize: '10pt', lineHeight: 1.4 }}>
+				<Box sx={{ mt: '-10mm', ml: 'auto', maxWidth: '58mm' }}>
+					<Typography sx={{ fontFamily: FONT_FAMILY, fontSize: '10pt', lineHeight: 2.4 }}>
 						Surat Keputusan ini disampaikan kepada :
 					</Typography>
-					<Box component="ol" sx={{ m: 0, pl: '22px' }}>
+					<Box component="ol" sx={{ mb: 8, pl: '22px' }}>
 						{['Karyawan yang bersangkutan', 'Kepala Departemen yang bersangkutan', 'Arsip'].map((item) => (
 							<Box component="li" key={item} sx={{ pl: 0.5 }}>
 								<Typography sx={{ fontFamily: FONT_FAMILY, fontSize: '10pt', lineHeight: 1.35 }}>
