@@ -23,7 +23,7 @@ import ShieldOutlinedIcon from '@mui/icons-material/ShieldOutlined';
 
 import { useAuth } from '@/contexts/authContext';
 import apiRequest from '@/services/api';
-import logo from '@/assets/images/logo/png/Sankyu_logo_16221.jpg';
+import logo from '@/assets/images/logo/png/Sankyu_logo_redicon_whitetext.png';
 
 const ACCENT_BLUE = 'rgb(58, 147, 242)';
 const ACCENT_BLUE_DARK = 'rgb(26, 76, 130)';
@@ -124,7 +124,7 @@ function LoginPage() {
 							component="img"
 							src={logo}
 							alt="Sankyu Hub Karyawan"
-							sx={{ width: 300, maxWidth: '100%' }}
+							sx={{ width: 280, maxWidth: '100%' }}
 						/>
 						<Stack spacing={1.5}>
 							<Typography variant="h2" sx={{ fontWeight: 700, lineHeight: 1.15, color: '#FFFFFF' }}>

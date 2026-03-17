@@ -369,6 +369,8 @@ Yang sudah selesai:
 - Menambahkan halaman login, proteksi route frontend, dan logout dari header aplikasi.
 - Menyesuaikan desain halaman login menjadi gaya corporate-modern dengan tema dominan biru dan palet warna yang lebih minimal.
 - Menyempurnakan tone biru halaman login ke warna yang lebih kalem dan elegan dengan basis warna `RGB(58, 147, 242)`.
+- Menyesuaikan aset logo pada panel kiri halaman login agar tulisan `SANKYU` tampil putih dan lebih kontras di atas background biru.
+- Menambahkan aset logo khusus login dengan simbol merah dan tulisan `SANKYU` putih agar mengikuti kebutuhan visual panel kiri.
 - Menambahkan template Excel bulk import `Master Karyawan`.
 - Menambahkan fitur upload/import Excel `Master Karyawan` beserta file error report per baris.
 - Menambahkan fitur `Export Excel` pada halaman `Master Karyawan`.
