@@ -10,6 +10,7 @@ const WorkLocationsPage = withLazyLoadably(lazy(() => import('@/pages/masterData
 const DepartmentsPage = withLazyLoadably(lazy(() => import('@/pages/masterData/departments')));
 const JobRolesPage = withLazyLoadably(lazy(() => import('@/pages/masterData/jobRoles')));
 const JobLevelsPage = withLazyLoadably(lazy(() => import('@/pages/masterData/jobLevels')));
+const AdminsPage = withLazyLoadably(lazy(() => import('@/pages/masterData/admins')));
 const EmployeesPage = withLazyLoadably(lazy(() => import('@/pages/masterData/employees')));
 const MasterDokPkbPage = withLazyLoadably(lazy(() => import('@/pages/masterData/masterDokPkb')));
 const GuidanceRecordsPage = withLazyLoadably(lazy(() => import('@/pages/employeeData/guidanceRecords')));
@@ -33,6 +34,7 @@ function Router() {
 					<Route path="/" element={<MainLayout />}>
 						<Route index element={<Navigate to="/data-master/master-data-karyawan/employees" replace />} />
 						<Route path="data-master/master-data-karyawan/employees" element={<EmployeesPage />} />
+						<Route path="data-master/master-data-karyawan/admins" element={<AdminsPage />} />
 						<Route path="data-master/master-data-karyawan/work-locations" element={<WorkLocationsPage />} />
 						<Route path="data-master/master-data-karyawan/departments" element={<DepartmentsPage />} />
 						<Route path="data-master/master-data-karyawan/job-roles" element={<JobRolesPage />} />

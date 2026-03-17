@@ -124,12 +124,26 @@ model Employee {
   guidanceRecords         GuidanceRecord[]
   warningLetters          WarningLetter[] @relation("WarningLetterEmployee")
   warningLetterApprovals WarningLetter[] @relation("WarningLetterSuperior")
+  adminAccounts          MasterAdmin[]
 
   @@index([departmentId])
   @@index([workLocationId])
   @@index([jobRoleId])
   @@index([jobLevelId])
   @@map("employees")
+}
+
+model MasterAdmin {
+  id        Int      @id @default(autoincrement())
+  employeeId Int     @unique
+  password  String   @db.VarChar(255)
+  role      String   @db.VarChar(20)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([employeeId])
+  @@map("master_admins")
 }
 
 model GuidanceRecord {
