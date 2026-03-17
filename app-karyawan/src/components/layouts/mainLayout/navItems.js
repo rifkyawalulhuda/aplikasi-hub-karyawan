@@ -40,6 +40,13 @@ const NAV_LINKS_CONFIG = [
 					{
 						id: uuid(),
 						type: 'item',
+						title: 'Master Admin',
+						Icon: BadgeOutlinedIcon,
+						href: '/data-master/master-data-karyawan/admins',
+					},
+					{
+						id: uuid(),
+						type: 'item',
 						title: 'Master Karyawan',
 						Icon: PeopleAltOutlinedIcon,
 						href: '/data-master/master-data-karyawan/employees',

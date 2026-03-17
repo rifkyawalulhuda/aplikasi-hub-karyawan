@@ -58,6 +58,7 @@ Folder ini dipilih sebagai basis utama pengembangan karena struktur template-nya
 - Tab utama: `Data Master`
 - Dropdown: `Master Data Karyawan`
 - Submenu awal:
+  - `Master Admin`
   - `Master Work Location`
   - `Master Department`
   - `Master Job Role`
@@ -355,6 +356,7 @@ Yang sudah selesai:
   - `Master Job Level`
 - Menambahkan halaman CRUD frontend awal untuk 4 master data tersebut.
 - Menambahkan schema, API, route, menu, dan halaman `Master Karyawan` berdasarkan file Excel sumber.
+- Menambahkan schema, migration, API CRUD, route, menu, dan halaman `Master Admin` dengan field `Nama`, `NIK`, `Password`, dan `Role`.
 - Menambahkan template Excel bulk import `Master Karyawan`.
 - Menambahkan fitur upload/import Excel `Master Karyawan` beserta file error report per baris.
 - Menambahkan fitur `Export Excel` pada halaman `Master Karyawan`.
