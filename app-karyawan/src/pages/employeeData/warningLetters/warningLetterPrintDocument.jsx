@@ -383,7 +383,7 @@ function WarningLetterPrintDocument({ record }) {
 						<Typography
 							sx={{ fontFamily: FONT_FAMILY, fontSize: '9.5pt', fontStyle: 'italic', lineHeight: 1.2 }}
 						>
-							Dept. Manager
+							{record.superiorJobLevelName || '-'}
 						</Typography>
 					</Stack>
 					<Stack alignItems="flex-start" sx={{ justifySelf: 'end' }}>
