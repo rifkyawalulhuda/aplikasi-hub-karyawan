@@ -41,6 +41,11 @@ enum GuidanceRecordCategory {
   DIRECTION
 }
 
+enum DisciplineLetterCategory {
+  WARNING_LETTER
+  REPRIMAND
+}
+
 model WorkLocation {
   id        Int        @id @default(autoincrement())
   name      String     @unique @db.VarChar(255)
@@ -148,21 +153,24 @@ model GuidanceRecord {
 }
 
 model WarningLetter {
+  category           DisciplineLetterCategory @default(WARNING_LETTER)
   id                 Int      @id @default(autoincrement())
   employeeId         Int
   superiorEmployeeId Int
-  masterDokPkbId     Int
-  warningLevel       Int
+  masterDokPkbId     Int?
+  warningLevel       Int?
   letterNumber       String   @db.VarChar(25)
   letterDate         DateTime @db.Date
+  departmentName     String?  @db.VarChar(255)
+  jobLevelName       String?  @db.VarChar(255)
   violation          String   @db.Text
-  articleLabel       String   @db.VarChar(255)
-  articleContent     String   @db.Text
+  articleLabel       String?  @db.VarChar(255)
+  articleContent     String?  @db.Text
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
   employee           Employee     @relation("WarningLetterEmployee", fields: [employeeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   superiorEmployee   Employee     @relation("WarningLetterSuperior", fields: [superiorEmployeeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  masterDokPkb       MasterDokPkb @relation(fields: [masterDokPkbId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  masterDokPkb       MasterDokPkb? @relation(fields: [masterDokPkbId], references: [id], onDelete: Restrict, onUpdate: Cascade)
 
   @@index([employeeId])
   @@index([superiorEmployeeId])

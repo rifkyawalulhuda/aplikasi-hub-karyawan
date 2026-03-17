@@ -6,6 +6,10 @@ const router = Router();
 const WARNING_LEVELS = [1, 2, 3];
 const SUPERIOR_JOB_LEVEL = 'Department Manager';
 const DEFAULT_WARNING_LEVEL = 1;
+const DISCIPLINE_LETTER_CATEGORIES = {
+	WARNING_LETTER: 'WARNING_LETTER',
+	REPRIMAND: 'REPRIMAND',
+};
 
 function withAsync(handler) {
 	return (req, res, next) => {
@@ -19,6 +23,11 @@ function normalizeString(value = '') {
 
 function normalizeMultilineString(value = '') {
 	return String(value).replace(/\r\n/g, '\n').trim();
+}
+
+function normalizeCategory(value = '') {
+	const normalizedValue = normalizeString(value).toUpperCase();
+	return DISCIPLINE_LETTER_CATEGORIES[normalizedValue] || DISCIPLINE_LETTER_CATEGORIES.WARNING_LETTER;
 }
 
 function toDateOnly(value) {
@@ -70,9 +79,12 @@ function addSixMonths(value) {
 function mapWarningLetter(record) {
 	return {
 		id: record.id,
+		category: record.category,
 		employeeId: record.employeeId,
 		employeeName: record.employee.fullName,
 		employeeNo: record.employee.employeeNo,
+		departmentName: record.departmentName || record.employee.department?.name || '',
+		jobLevelName: record.jobLevelName || record.employee.jobLevel?.name || '',
 		warningLevel: record.warningLevel,
 		letterNumber: record.letterNumber,
 		letterDate: formatDateForClient(record.letterDate),
@@ -90,6 +102,7 @@ async function getEmployeeOrThrow(id) {
 	const employee = await prisma.employee.findUnique({
 		where: { id },
 		include: {
+			department: true,
 			jobLevel: true,
 		},
 	});
@@ -117,7 +130,12 @@ async function getWarningLetterOrThrow(id) {
 	const record = await prisma.warningLetter.findUnique({
 		where: { id },
 		include: {
-			employee: true,
+			employee: {
+				include: {
+					department: true,
+					jobLevel: true,
+				},
+			},
 			superiorEmployee: {
 				include: {
 					jobLevel: true,
@@ -168,6 +186,7 @@ async function getActiveWarningRule({ employeeId, referenceDate, excludeId }) {
 }
 
 async function validatePayload(payload, currentId) {
+	const category = normalizeCategory(payload.category);
 	const employeeId = Number(payload.employeeId);
 	const superiorEmployeeId = Number(payload.superiorEmployeeId);
 	const masterDokPkbId = Number(payload.masterDokPkbId);
@@ -178,10 +197,6 @@ async function validatePayload(payload, currentId) {
 
 	if (!Number.isInteger(employeeId)) {
 		throw Object.assign(new Error('Nama wajib dipilih.'), { statusCode: 400 });
-	}
-
-	if (!WARNING_LEVELS.includes(warningLevel)) {
-		throw Object.assign(new Error('Surat Peringatan ke harus dipilih.'), { statusCode: 400 });
 	}
 
 	if (!letterNumber) {
@@ -200,31 +215,47 @@ async function validatePayload(payload, currentId) {
 		throw Object.assign(new Error('Pelanggaran wajib diisi.'), { statusCode: 400 });
 	}
 
-	if (!Number.isInteger(masterDokPkbId)) {
-		throw Object.assign(new Error('Pasal PKB wajib dipilih.'), { statusCode: 400 });
-	}
-
 	if (!Number.isInteger(superiorEmployeeId)) {
 		throw Object.assign(new Error('Superior wajib dipilih.'), { statusCode: 400 });
+	}
+
+	if (
+		category === DISCIPLINE_LETTER_CATEGORIES.WARNING_LETTER &&
+		!WARNING_LEVELS.includes(warningLevel)
+	) {
+		throw Object.assign(new Error('Surat Peringatan ke harus dipilih.'), { statusCode: 400 });
+	}
+
+	if (category === DISCIPLINE_LETTER_CATEGORIES.WARNING_LETTER && !Number.isInteger(masterDokPkbId)) {
+		throw Object.assign(new Error('Pasal PKB wajib dipilih.'), { statusCode: 400 });
 	}
 
 	const [employee, superiorEmployee, masterDokPkb] = await Promise.all([
 		getEmployeeOrThrow(employeeId),
 		getEmployeeOrThrow(superiorEmployeeId),
-		getMasterDokPkbOrThrow(masterDokPkbId),
+		category === DISCIPLINE_LETTER_CATEGORIES.WARNING_LETTER
+			? getMasterDokPkbOrThrow(masterDokPkbId)
+			: Promise.resolve(null),
 	]);
 
-	const warningRule = await getActiveWarningRule({
-		employeeId: employee.id,
-		referenceDate: letterDate,
-		excludeId: currentId,
-	});
+	const warningRule =
+		category === DISCIPLINE_LETTER_CATEGORIES.WARNING_LETTER
+			? await getActiveWarningRule({
+					employeeId: employee.id,
+					referenceDate: letterDate,
+					excludeId: currentId,
+			  })
+			: null;
 
 	if (normalizeString(superiorEmployee.jobLevel?.name).toLowerCase() !== SUPERIOR_JOB_LEVEL.toLowerCase()) {
 		throw Object.assign(new Error('Superior harus memiliki Job Level Department Manager.'), { statusCode: 400 });
 	}
 
-	if (warningLevel < warningRule.recommendedLevel) {
+	if (
+		category === DISCIPLINE_LETTER_CATEGORIES.WARNING_LETTER &&
+		warningRule &&
+		warningLevel < warningRule.recommendedLevel
+	) {
 		throw Object.assign(
 			new Error(
 				`Karyawan ini masih memiliki Surat Peringatan aktif. Level minimal yang dapat dipilih adalah Surat Peringatan ke ${warningRule.recommendedLevel}.`,
@@ -234,15 +265,18 @@ async function validatePayload(payload, currentId) {
 	}
 
 	return {
+		category,
 		employeeId: employee.id,
 		superiorEmployeeId: superiorEmployee.id,
-		masterDokPkbId: masterDokPkb.id,
-		warningLevel,
+		masterDokPkbId: masterDokPkb?.id || null,
+		warningLevel: category === DISCIPLINE_LETTER_CATEGORIES.WARNING_LETTER ? warningLevel : null,
 		letterNumber,
 		letterDate,
+		departmentName: employee.department?.name || null,
+		jobLevelName: employee.jobLevel?.name || null,
 		violation,
-		articleLabel: masterDokPkb.article,
-		articleContent: masterDokPkb.content,
+		articleLabel: masterDokPkb?.article || null,
+		articleContent: masterDokPkb?.content || null,
 	};
 }
 
@@ -251,7 +285,12 @@ router.get(
 	withAsync(async (req, res) => {
 		const records = await prisma.warningLetter.findMany({
 			include: {
-				employee: true,
+				employee: {
+					include: {
+						department: true,
+						jobLevel: true,
+					},
+				},
 				superiorEmployee: {
 					include: {
 						jobLevel: true,
@@ -286,7 +325,12 @@ router.post(
 		const record = await prisma.warningLetter.create({
 			data,
 			include: {
-				employee: true,
+				employee: {
+					include: {
+						department: true,
+						jobLevel: true,
+					},
+				},
 				superiorEmployee: {
 					include: {
 						jobLevel: true,
@@ -315,7 +359,12 @@ router.put(
 			where: { id },
 			data,
 			include: {
-				employee: true,
+				employee: {
+					include: {
+						department: true,
+						jobLevel: true,
+					},
+				},
 				superiorEmployee: {
 					include: {
 						jobLevel: true,

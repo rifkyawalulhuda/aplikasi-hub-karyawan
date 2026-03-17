@@ -1,6 +1,14 @@
 export const WARNING_LEVEL_OPTIONS = [1, 2, 3];
 export const SUPERIOR_JOB_LEVEL = 'Department Manager';
 const DEFAULT_WARNING_LEVEL = 1;
+export const DISCIPLINE_LETTER_CATEGORIES = {
+	WARNING_LETTER: 'WARNING_LETTER',
+	REPRIMAND: 'REPRIMAND',
+};
+export const DISCIPLINE_LETTER_CATEGORY_LABELS = {
+	[DISCIPLINE_LETTER_CATEGORIES.WARNING_LETTER]: 'Surat Peringatan',
+	[DISCIPLINE_LETTER_CATEGORIES.REPRIMAND]: 'Surat Teguran',
+};
 
 export function formatWarningDate(value) {
 	if (!value) {
@@ -95,6 +103,10 @@ function toComparableUtcDate(value) {
 	return Date.UTC(parsed.getUTCFullYear(), parsed.getUTCMonth(), parsed.getUTCDate());
 }
 
+export function getDisciplineCategoryLabel(category) {
+	return DISCIPLINE_LETTER_CATEGORY_LABELS[category] || DISCIPLINE_LETTER_CATEGORY_LABELS.WARNING_LETTER;
+}
+
 export function getActiveWarningLetterSummary({ rows = [], employeeId, excludeId, referenceDate }) {
 	if (!employeeId) {
 		return {
@@ -109,7 +121,12 @@ export function getActiveWarningLetterSummary({ rows = [], employeeId, excludeId
 	const comparableReferenceDate = toComparableUtcDate(referenceDate) ?? toComparableUtcDate(new Date());
 
 	const activeLetters = rows
-		.filter((row) => row.employeeId === Number(employeeId) && row.id !== Number(excludeId))
+		.filter(
+			(row) =>
+				row.category === DISCIPLINE_LETTER_CATEGORIES.WARNING_LETTER &&
+				row.employeeId === Number(employeeId) &&
+				row.id !== Number(excludeId),
+		)
 		.filter((row) => {
 			const startDate = toComparableUtcDate(row.letterDate);
 			const endDate = toComparableUtcDate(addSixMonths(row.letterDate));

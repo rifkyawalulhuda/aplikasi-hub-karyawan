@@ -9,6 +9,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import Grid from '@mui/material/Grid';
 import InputAdornment from '@mui/material/InputAdornment';
 import Link from '@mui/material/Link';
+import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
@@ -16,6 +17,7 @@ import Typography from '@mui/material/Typography';
 
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
+import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined';
 import PrintOutlinedIcon from '@mui/icons-material/PrintOutlined';
 import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
 
@@ -24,7 +26,12 @@ import DeleteConfirmDialog from '@/components/masterData/deleteConfirmDialog';
 import PageHeader from '@/components/pageHeader';
 import apiRequest from '@/services/api';
 
-import { formatWarningDate, getWarningEndDate } from './utils';
+import {
+	formatWarningDate,
+	getDisciplineCategoryLabel,
+	getWarningEndDate,
+	DISCIPLINE_LETTER_CATEGORIES,
+} from './utils';
 import WarningLetterFormDialog from './warningLetterFormDialog';
 import WarningLetterTable from './warningLetterTable';
 
@@ -51,6 +58,8 @@ function WarningLettersPage() {
 	const [formOpen, setFormOpen] = useState(false);
 	const [deleteOpen, setDeleteOpen] = useState(false);
 	const [selectedItem, setSelectedItem] = useState(null);
+	const [createCategory, setCreateCategory] = useState(DISCIPLINE_LETTER_CATEGORIES.WARNING_LETTER);
+	const [createMenuAnchorEl, setCreateMenuAnchorEl] = useState(null);
 	const [searchKeyword, setSearchKeyword] = useState('');
 	const [dateFrom, setDateFrom] = useState('');
 	const [dateTo, setDateTo] = useState('');
@@ -108,8 +117,11 @@ function WarningLettersPage() {
 
 		const searchableValues = [
 			row.id,
+			row.category,
 			row.employeeName,
 			row.employeeNo,
+			row.departmentName,
+			row.jobLevelName,
 			row.warningLevel,
 			row.letterNumber,
 			row.letterDate,
@@ -143,6 +155,14 @@ function WarningLettersPage() {
 	const selectedRows = filteredRows.filter((row) => selectedRowIds.includes(row.id));
 	const allRowsSelected = filteredRows.length > 0 && selectedRows.length === filteredRows.length;
 	const someRowsSelected = selectedRows.length > 0 && selectedRows.length < filteredRows.length;
+	const isCreateMenuOpen = Boolean(createMenuAnchorEl);
+
+	const handleOpenCreateForm = (category) => {
+		setCreateCategory(category);
+		setSelectedItem(null);
+		setFormOpen(true);
+		setCreateMenuAnchorEl(null);
+	};
 
 	const handleToggleSelectRow = (id, checked) => {
 		setSelectedRowIds((currentIds) => {
@@ -162,17 +182,21 @@ function WarningLettersPage() {
 		setSubmitting(true);
 
 		try {
+			const payload = {
+				...values,
+				category: values.category || createCategory,
+			};
 			let savedItem;
 
 			if (selectedItem) {
 				savedItem = await apiRequest(`/data-karyawan/warning-letters/${selectedItem.id}`, {
 					method: 'PUT',
-					body: JSON.stringify(values),
+					body: JSON.stringify(payload),
 				});
 			} else {
 				savedItem = await apiRequest('/data-karyawan/warning-letters', {
 					method: 'POST',
-					body: JSON.stringify(values),
+					body: JSON.stringify(payload),
 				});
 			}
 
@@ -185,9 +209,14 @@ function WarningLettersPage() {
 			});
 
 			closeFormDialog();
-			enqueueSnackbar(`Data Surat Peringatan berhasil ${selectedItem ? 'diperbarui' : 'ditambahkan'}.`, {
-				variant: 'success',
-			});
+			enqueueSnackbar(
+				`${getDisciplineCategoryLabel(payload.category)} berhasil ${
+					selectedItem ? 'diperbarui' : 'ditambahkan'
+				}.`,
+				{
+					variant: 'success',
+				},
+			);
 		} catch (error) {
 			enqueueSnackbar(error.message, { variant: 'error' });
 		} finally {
@@ -243,8 +272,11 @@ function WarningLettersPage() {
 
 		worksheet.columns = [
 			{ header: 'NO', key: 'id', width: 10 },
+			{ header: 'KATEGORI', key: 'categoryLabel', width: 20 },
 			{ header: 'NAMA', key: 'employeeName', width: 28 },
 			{ header: 'NIK', key: 'employeeNo', width: 18 },
+			{ header: 'DEPARTEMENT', key: 'departmentName', width: 24 },
+			{ header: 'JABATAN', key: 'jobLevelName', width: 24 },
 			{ header: 'SURAT PERINGATAN KE', key: 'warningLevel', width: 22 },
 			{ header: 'NOMOR SURAT', key: 'letterNumber', width: 26 },
 			{ header: 'TANGGAL SURAT PERINGATAN', key: 'letterDate', width: 18 },
@@ -261,15 +293,21 @@ function WarningLettersPage() {
 		filteredRows.forEach((row, index) => {
 			worksheet.addRow({
 				id: index + 1,
+				categoryLabel: getDisciplineCategoryLabel(row.category),
 				employeeName: row.employeeName,
 				employeeNo: row.employeeNo,
-				warningLevel: row.warningLevel,
+				departmentName: row.departmentName,
+				jobLevelName: row.jobLevelName,
+				warningLevel: row.warningLevel || '',
 				letterNumber: row.letterNumber,
 				letterDate: formatWarningDate(row.letterDate),
-				warningEndDate: getWarningEndDate(row.letterDate),
+				warningEndDate:
+					row.category === DISCIPLINE_LETTER_CATEGORIES.WARNING_LETTER
+						? getWarningEndDate(row.letterDate)
+						: '',
 				violation: row.violation,
-				articleLabel: row.articleLabel,
-				articleContent: row.articleContent,
+				articleLabel: row.articleLabel || '',
+				articleContent: row.articleContent || '',
 				superiorName: row.superiorName,
 			});
 		});
@@ -321,7 +359,7 @@ function WarningLettersPage() {
 			<Card sx={{ minHeight: '60vh', p: 3 }}>
 				<CardHeader
 					title="Data Surat Peringatan"
-					subtitle="Kelola data surat peringatan karyawan."
+					subtitle="Kelola data surat peringatan dan surat teguran karyawan."
 					size="small"
 					sx={{
 						flexDirection: 'column',
@@ -416,14 +454,30 @@ function WarningLettersPage() {
 								<Button
 									variant="contained"
 									startIcon={<AddOutlinedIcon />}
-									onClick={() => {
-										setSelectedItem(null);
-										setFormOpen(true);
-									}}
+									endIcon={<KeyboardArrowDownOutlinedIcon />}
+									onClick={(event) => setCreateMenuAnchorEl(event.currentTarget)}
 									sx={{ minWidth: 220 }}
 								>
-									Form Surat Peringatan
+									Tambah Input Form
 								</Button>
+								<Menu
+									anchorEl={createMenuAnchorEl}
+									open={isCreateMenuOpen}
+									onClose={() => setCreateMenuAnchorEl(null)}
+								>
+									<MenuItem
+										onClick={() =>
+											handleOpenCreateForm(DISCIPLINE_LETTER_CATEGORIES.WARNING_LETTER)
+										}
+									>
+										Form Surat Peringatan
+									</MenuItem>
+									<MenuItem
+										onClick={() => handleOpenCreateForm(DISCIPLINE_LETTER_CATEGORIES.REPRIMAND)}
+									>
+										Surat Teguran
+									</MenuItem>
+								</Menu>
 							</Stack>
 						</Grid>
 					</Grid>
@@ -443,6 +497,7 @@ function WarningLettersPage() {
 						onView={(item) => navigate(`/data-karyawan/data-surat-peringatan/${item.id}`)}
 						onEdit={(item) => {
 							setSelectedItem(item);
+							setCreateCategory(item.category || DISCIPLINE_LETTER_CATEGORIES.WARNING_LETTER);
 							setFormOpen(true);
 						}}
 						onDelete={(item) => {
@@ -456,6 +511,7 @@ function WarningLettersPage() {
 				open={formOpen}
 				loading={submitting}
 				initialValue={selectedItem}
+				createCategory={createCategory}
 				employeeOptions={employeeOptions}
 				masterDokPkbOptions={masterDokPkbOptions}
 				warningLetterRows={rows}
