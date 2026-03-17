@@ -11,17 +11,35 @@ function MinimalLayout() {
 			justifyContent="center"
 			alignItems="center"
 			sx={{
-				backgroundImage: (theme) =>
-					theme.palette.mode === 'dark'
-						? `linear-gradient(45deg, ${theme.palette.primary.dark}  0%, ${theme.palette.secondary[300]}  33%, ${theme.palette.tertiary.dark}  66%, ${theme.palette.cuaternary.dark} 100%)`
-						: `linear-gradient(45deg, ${theme.palette.primary[400]}  0%, ${theme.palette.secondary[300]}  33%, ${theme.palette.tertiary[100]}  66%, ${theme.palette.cuaternary.main} 100%)`,
-
-				/* backgroundImage: (theme) =>
-					`linear-gradient(45deg, ${theme.palette.primary[400]}  0%, ${theme.palette.secondary[300]}  33%, ${theme.palette.tertiary[100]}  66%, ${theme.palette.cuaternary.main} 100%)`,
-			 */
+				position: 'relative',
+				overflow: 'hidden',
+				px: 2,
+				py: 4,
+				backgroundColor: '#10335A',
+				backgroundImage:
+					'linear-gradient(135deg, rgb(16, 51, 90) 0%, rgb(26, 76, 130) 48%, rgb(58, 147, 242) 100%)',
+				'&::before': {
+					content: '""',
+					position: 'absolute',
+					inset: 0,
+					backgroundImage:
+						'radial-gradient(circle at 18% 20%, rgba(151, 206, 255, 0.18), transparent 28%), radial-gradient(circle at 82% 18%, rgba(58, 147, 242, 0.18), transparent 24%), radial-gradient(circle at 50% 82%, rgba(255, 255, 255, 0.07), transparent 34%)',
+				},
+				'&::after': {
+					content: '""',
+					position: 'absolute',
+					inset: 0,
+					backgroundImage:
+						'linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)',
+					backgroundSize: '64px 64px',
+					opacity: 0.18,
+					maskImage: 'linear-gradient(180deg, rgba(0,0,0,0.7), rgba(0,0,0,0.2))',
+				},
 			}}
 		>
-			<Outlet />
+			<Box position="relative" zIndex={1} width="100%" display="flex" justifyContent="center">
+				<Outlet />
+			</Box>
 		</Box>
 	);
 }
