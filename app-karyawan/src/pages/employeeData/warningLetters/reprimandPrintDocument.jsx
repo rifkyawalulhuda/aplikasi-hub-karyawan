@@ -2,6 +2,8 @@ import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
+import sankyuLogo from '@/assets/images/logo/png/Color_logotext2_nobg.png';
+
 const PAGE_WIDTH = '210mm';
 const PAGE_HEIGHT = '297mm';
 const FONT_FAMILY = '"Arial", "Helvetica", sans-serif';
@@ -84,32 +86,42 @@ function ReprimandPrintDocument({ record }) {
 				}}
 			>
 				<Stack direction="row" justifyContent="space-between" alignItems="flex-start">
-					<Stack spacing={0.15}>
+					<Box
+						component="img"
+						src={sankyuLogo}
+						alt="Sankyu"
+						sx={{ width: '60mm', height: 'auto', objectFit: 'contain', mt: 0.4 }}
+					/>
+					<Stack spacing={0.1} sx={{ textAlign: 'right', pt: 0.5 }}>
 						<Typography
-							sx={{ fontFamily: FONT_FAMILY, fontSize: '9.4pt', fontWeight: 700, color: '#0837d7' }}
+							sx={{
+								fontFamily: FONT_FAMILY,
+								fontSize: '8.7pt',
+								fontWeight: 900,
+								letterSpacing: '0.15pt',
+							}}
 						>
 							PT SANKYU INDONESIA INTERNATIONAL
 						</Typography>
-						<Typography
-							sx={{ fontFamily: FONT_FAMILY, fontSize: '9.4pt', fontWeight: 700, color: '#0837d7' }}
-						>
-							QUALITY, SAFETY, HEALTH, AND ENVIRONMENTAL DIVISION
+						<Typography sx={{ fontFamily: FONT_FAMILY, fontSize: '6.7pt', fontWeight: 500 }}>
+							Plant Engineering, Logistics Solution &amp; Business Solution
 						</Typography>
-						<Typography
-							sx={{ fontFamily: FONT_FAMILY, fontSize: '9.4pt', fontWeight: 700, color: '#0837d7' }}
-						>
-							SISTEM MANAJEMEN TERINTEGRASI
+						<Typography sx={{ fontFamily: FONT_FAMILY, fontSize: '6.6pt', fontWeight: 700, mt: 0.4 }}>
+							HEAD OFFICE
+						</Typography>
+						<Typography sx={{ fontFamily: FONT_FAMILY, fontSize: '5.8pt', lineHeight: 1.18 }}>
+							Kawasan Industri Terpadu Indonesia China (KITIC), Kav. 20
+						</Typography>
+						<Typography sx={{ fontFamily: FONT_FAMILY, fontSize: '5.8pt', lineHeight: 1.18 }}>
+							Desa Nagasari, Kec. Serang Baru, Kab. Bekasi - Jawa Barat 17330
+						</Typography>
+						<Typography sx={{ fontFamily: FONT_FAMILY, fontSize: '5.8pt', lineHeight: 1.18 }}>
+							Phone : (+62 21) 50555340 Facsimile: (+62 21) 50555341
 						</Typography>
 					</Stack>
-					<Box
-						component="img"
-						src="/forms/warning-letter-logos.png"
-						alt="Certification logos"
-						sx={{ width: '44mm', height: 'auto', objectFit: 'contain' }}
-					/>
 				</Stack>
 
-				<Box sx={{ borderTop: '1px solid #8e8e8e', mt: 0.7, mb: 4.2 }} />
+				<Box sx={{ borderTop: '1px solid #8e8e8e', mt: 1.2, mb: 4.2 }} />
 
 				<Stack spacing={0.25} alignItems="center" sx={{ mb: 3.5 }}>
 					<Typography sx={{ fontFamily: FONT_FAMILY, fontSize: '14pt', fontWeight: 700 }}>
@@ -199,7 +211,7 @@ function ReprimandPrintDocument({ record }) {
 					</Stack>
 				</Box>
 
-				<Box sx={{ mt: '18mm', maxWidth: '55mm' }}>
+				<Box sx={{ mt: '18mm', ml: 'auto', maxWidth: '58mm' }}>
 					<Typography sx={{ fontFamily: FONT_FAMILY, fontSize: '10pt', lineHeight: 1.4 }}>
 						Surat Keputusan ini disampaikan kepada :
 					</Typography>
@@ -219,22 +231,80 @@ function ReprimandPrintDocument({ record }) {
 						position: 'absolute',
 						left: '15mm',
 						right: '15mm',
-						bottom: '8mm',
-						borderTop: '1px solid #79a5ff',
-					}}
-				/>
-				<Typography
-					sx={{
-						position: 'absolute',
-						right: '15mm',
-						bottom: '3.6mm',
-						fontFamily: FONT_FAMILY,
-						fontSize: '9pt',
-						fontWeight: 700,
+						bottom: '7mm',
+						height: '28mm',
+						overflow: 'hidden',
 					}}
 				>
-					Page 1 of 1
-				</Typography>
+					<Typography
+						sx={{
+							position: 'absolute',
+							left: '4mm',
+							top: '-2mm',
+							fontFamily: FONT_FAMILY,
+							fontSize: '34mm',
+							fontWeight: 800,
+							letterSpacing: '1.2mm',
+							color: 'rgba(86, 120, 196, 0.10)',
+							lineHeight: 1,
+							userSelect: 'none',
+						}}
+					>
+						SANKYU
+					</Typography>
+					<Box
+						sx={{
+							position: 'absolute',
+							left: 0,
+							right: 0,
+							top: '11mm',
+							display: 'grid',
+							gridTemplateColumns: '1fr 1fr',
+							columnGap: '14mm',
+						}}
+					>
+						<Box>
+							<Typography
+								sx={{ fontFamily: FONT_FAMILY, fontSize: '5.7pt', fontWeight: 700, lineHeight: 1.15 }}
+							>
+								JAKARTA OFFICE
+							</Typography>
+							<Typography sx={{ fontFamily: FONT_FAMILY, fontSize: '4.8pt', lineHeight: 1.15 }}>
+								Summitmas I, 6th Floor, Jl. Jenderal Sudirman Kav. 61-62, Jakarta 12190
+							</Typography>
+							<Typography sx={{ fontFamily: FONT_FAMILY, fontSize: '4.8pt', lineHeight: 1.15 }}>
+								Phone : (+62 21) 5201255 Facsimile : (+62 21) 5200741
+							</Typography>
+						</Box>
+						<Box sx={{ textAlign: 'right' }}>
+							<Typography
+								sx={{ fontFamily: FONT_FAMILY, fontSize: '5.7pt', fontWeight: 700, lineHeight: 1.15 }}
+							>
+								CILEGON OFFICE
+							</Typography>
+							<Typography sx={{ fontFamily: FONT_FAMILY, fontSize: '4.8pt', lineHeight: 1.15 }}>
+								Jl. Brigjen Katamso Km.121, Ciwandan, Cilegon - Banten 42447
+							</Typography>
+							<Typography sx={{ fontFamily: FONT_FAMILY, fontSize: '4.8pt', lineHeight: 1.15 }}>
+								Phone : (+62 254) 601071 Facsimile : (+62 254) 601070
+							</Typography>
+						</Box>
+					</Box>
+					<Box
+						sx={{
+							position: 'absolute',
+							left: 0,
+							right: 0,
+							bottom: '1.6mm',
+							height: '2.1mm',
+							display: 'grid',
+							gridTemplateColumns: '1fr 0.9fr',
+						}}
+					>
+						<Box sx={{ bgcolor: '#232d63' }} />
+						<Box sx={{ bgcolor: '#be5050' }} />
+					</Box>
+				</Box>
 			</Box>
 		</Box>
 	);
