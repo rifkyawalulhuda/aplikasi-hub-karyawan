@@ -104,8 +104,15 @@ function WarningLettersPage() {
 	const filteredRows = rows.filter((row) => {
 		const matchesDateFrom = dateFrom ? row.letterDate >= dateFrom : true;
 		const matchesDateTo = dateTo ? row.letterDate <= dateTo : true;
-		const matchesWarningLevel =
-			warningLevelFilter === 'ALL' ? true : String(row.warningLevel) === warningLevelFilter;
+		let matchesWarningLevel = true;
+
+		if (warningLevelFilter === DISCIPLINE_LETTER_CATEGORIES.REPRIMAND) {
+			matchesWarningLevel = row.category === DISCIPLINE_LETTER_CATEGORIES.REPRIMAND;
+		} else if (warningLevelFilter !== 'ALL') {
+			matchesWarningLevel =
+				row.category === DISCIPLINE_LETTER_CATEGORIES.WARNING_LETTER &&
+				String(row.warningLevel) === warningLevelFilter;
+		}
 
 		if (!matchesDateFrom || !matchesDateTo || !matchesWarningLevel) {
 			return false;
@@ -413,14 +420,15 @@ function WarningLettersPage() {
 								fullWidth
 								size="small"
 								select
-								label="Surat Peringatan ke"
+								label="Kategori Surat"
 								value={warningLevelFilter}
 								onChange={(event) => setWarningLevelFilter(event.target.value)}
 							>
 								<MenuItem value="ALL">Semua</MenuItem>
-								<MenuItem value="1">1</MenuItem>
-								<MenuItem value="2">2</MenuItem>
-								<MenuItem value="3">3</MenuItem>
+								<MenuItem value={DISCIPLINE_LETTER_CATEGORIES.REPRIMAND}>Surat Teguran</MenuItem>
+								<MenuItem value="1">Surat Peringatan 1</MenuItem>
+								<MenuItem value="2">Surat Peringatan 2</MenuItem>
+								<MenuItem value="3">Surat Peringatan 3</MenuItem>
 							</TextField>
 						</Grid>
 						<Grid item xs={12} md="auto" sx={{ ml: { md: 'auto' } }}>
