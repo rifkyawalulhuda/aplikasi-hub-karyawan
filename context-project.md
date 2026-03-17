@@ -117,6 +117,14 @@ Catatan implementasi:
 - `Site / Div` default awal adalah `CLC`.
 - `Age` dan `Length Of Service` dihitung otomatis dari tanggal pada layer aplikasi/API.
 - Kolom `Password` saat ini masih disimpan sebagai string biasa untuk mengikuti struktur master data awal; hashing/authentication belum diimplementasikan pada fase ini.
+- Kolom `Password` saat ini masih disimpan sebagai string biasa untuk mengikuti struktur master data awal.
+- Login aplikasi sekarang menggunakan data `Master Admin` dengan rule:
+  - input `NIK` divalidasi ke `Master Admin -> Employee -> employeeNo`
+  - input `password` divalidasi ke `Master Admin -> password`
+  - user yang belum terdaftar di `Master Admin` tidak bisa mengakses aplikasi
+- Proteksi akses halaman frontend sekarang mewajibkan login terlebih dahulu.
+- Session login frontend saat ini disimpan di `localStorage` browser.
+- Hashing password dan session backend persisten belum diimplementasikan pada fase ini.
 - Nilai `Employment Type` untuk user-facing UI dan template Excel menggunakan format label `Permanent` dan `Contract`, sedangkan penyimpanan internal database tetap memakai enum teknis.
 - Nilai `Grade` untuk user-facing UI dan template Excel menggunakan format label seperti `Rank 1`, `Rank 2`, dan seterusnya, sedangkan penyimpanan internal database tetap memakai enum teknis.
 - Sudah tersedia template Excel bulk import untuk `Master Karyawan`.
@@ -357,6 +365,8 @@ Yang sudah selesai:
 - Menambahkan halaman CRUD frontend awal untuk 4 master data tersebut.
 - Menambahkan schema, API, route, menu, dan halaman `Master Karyawan` berdasarkan file Excel sumber.
 - Menambahkan schema, migration, API CRUD, route, menu, dan halaman `Master Admin` dengan field `Nama`, `NIK`, `Password`, dan `Role`.
+- Menambahkan fitur login aplikasi menggunakan kredensial `Master Admin` (`NIK` + `Password`).
+- Menambahkan halaman login, proteksi route frontend, dan logout dari header aplikasi.
 - Menambahkan template Excel bulk import `Master Karyawan`.
 - Menambahkan fitur upload/import Excel `Master Karyawan` beserta file error report per baris.
 - Menambahkan fitur `Export Excel` pada halaman `Master Karyawan`.
