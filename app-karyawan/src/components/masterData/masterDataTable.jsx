@@ -64,7 +64,7 @@ function MasterDataTable({ rows, loading, config, onEdit, onDelete }) {
 					maxHeight: 480,
 				},
 			}}
-			render={(row) => (
+			render={(row, _index, { rowNumber }) => (
 				<TableRow hover key={row.id}>
 					{dataColumns.map((column) => (
 						<TableCell
@@ -80,7 +80,7 @@ function MasterDataTable({ rows, loading, config, onEdit, onDelete }) {
 									: undefined
 							}
 						>
-							{row[column.id]}
+							{column.id === 'id' ? rowNumber : row[column.id]}
 						</TableCell>
 					))}
 					<TableCell sx={stickyActionCellSx}>
