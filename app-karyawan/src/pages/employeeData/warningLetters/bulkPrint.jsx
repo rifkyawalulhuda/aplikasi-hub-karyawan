@@ -14,6 +14,8 @@ import PrintOutlinedIcon from '@mui/icons-material/PrintOutlined';
 
 import apiRequest from '@/services/api';
 
+import ReprimandPrintDocument from './reprimandPrintDocument';
+import { DISCIPLINE_LETTER_CATEGORIES } from './utils';
 import WarningLetterPrintDocument from './warningLetterPrintDocument';
 
 async function fetchWarningLetters() {
@@ -79,7 +81,7 @@ function WarningLetterBulkPrintPage() {
 
 	let content = (
 		<Stack alignItems="center" spacing={1} py={10}>
-			<Typography variant="h6">Tidak ada data surat peringatan untuk dicetak.</Typography>
+			<Typography variant="h6">Tidak ada data surat peringatan atau surat teguran untuk dicetak.</Typography>
 			<Typography variant="body2" color="text.secondary">
 				Pilih data dari halaman daftar terlebih dahulu.
 			</Typography>
@@ -97,7 +99,11 @@ function WarningLetterBulkPrintPage() {
 			<Stack className="bulk-print-stack" spacing={3}>
 				{records.map((record) => (
 					<Box key={record.id} className="bulk-print-page-wrapper">
-						<WarningLetterPrintDocument record={record} />
+						{record.category === DISCIPLINE_LETTER_CATEGORIES.REPRIMAND ? (
+							<ReprimandPrintDocument record={record} />
+						) : (
+							<WarningLetterPrintDocument record={record} />
+						)}
 					</Box>
 				))}
 			</Stack>
@@ -169,10 +175,10 @@ function WarningLetterBulkPrintPage() {
 				>
 					<Box>
 						<Typography variant="h5" fontWeight={700}>
-							Print A4 Surat Peringatan
+							Print A4 Dokumen Disipliner
 						</Typography>
 						<Typography variant="body2" color="text.secondary">
-							{records.length} surat peringatan siap dicetak.
+							{records.length} dokumen siap dicetak.
 						</Typography>
 					</Box>
 					<Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>

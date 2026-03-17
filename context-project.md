@@ -238,6 +238,12 @@ Modul ini direncanakan untuk menampilkan histori karyawan dan report keseluruhan
 - Perlu fungsi print dengan format yang sama dengan form surat peringatan.
 - Implementasi awal yang sudah dibuat:
   - halaman `Data Surat Peringatan` di bawah menu `Data Karyawan`
+  - halaman ini sekarang menampung 2 kategori dokumen disipliner:
+    - `Surat Peringatan`
+    - `Surat Teguran`
+  - tombol input dibuat menjadi dropdown `Tambah Input Form` dengan pilihan:
+    - `Form Surat Peringatan`
+    - `Surat Teguran`
   - struktur input:
     - `Nama` dari `Master Karyawan`
     - `NIK` autofill dari `Employee No`
@@ -248,8 +254,18 @@ Modul ini direncanakan untuk menampilkan histori karyawan dan report keseluruhan
     - `Pasal PKB` dari `Master Dok PKB`
     - `Isi Pasal` autofill dari master dokumen
     - `Superior` hanya menampilkan karyawan dengan `Job Level = Department Manager`
+  - struktur input `Surat Teguran`:
+    - `Nama` dari `Master Karyawan`
+    - `NIK` autofill dari `Employee No`
+    - `Departement` autofill dari master karyawan
+    - `Jabatan` autofill dari master karyawan
+    - `Nomor Surat` maksimal 25 karakter
+    - `Tanggal`
+    - `Pelanggaran`
+    - `Superior` hanya menampilkan karyawan dengan `Job Level = Department Manager`
   - halaman detail dengan tombol `Print A4`
   - layout print A4 mengikuti `sample Warning Letter.pdf` dengan pendekatan overlay data di atas template visual PDF
+  - layout print A4 `Surat Teguran` mengikuti dokumen `Surat Teguran.pdf` dengan komposisi manual A4 berbasis struktur PDF
   - nama superior dan nama karyawan tampil pada area tanda tangan di hasil print
   - form input/edit memiliki rule eskalasi otomatis berdasarkan surat peringatan aktif 6 bulan:
     - jika masih ada `Surat Peringatan ke 1` yang aktif, form otomatis mengarahkan ke `Surat Peringatan ke 2` dan menonaktifkan pilihan level sebelumnya

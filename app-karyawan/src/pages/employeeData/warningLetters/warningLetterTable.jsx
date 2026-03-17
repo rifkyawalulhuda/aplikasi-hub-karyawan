@@ -12,7 +12,12 @@ import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 
 import EnhancedTable from '@/components/dataTable';
 
-import { formatWarningDate, getWarningEndDate } from './utils';
+import {
+	DISCIPLINE_LETTER_CATEGORIES,
+	formatWarningDate,
+	getDisciplineCategoryLabel,
+	getWarningEndDate,
+} from './utils';
 
 const stickyActionCellSx = {
 	position: 'sticky',
@@ -37,9 +42,9 @@ function WarningLetterTable({
 	if (rows.length === 0) {
 		return (
 			<Stack py={8} alignItems="center" spacing={1}>
-				<Typography variant="h6">Belum ada data surat peringatan</Typography>
+				<Typography variant="h6">Belum ada data surat peringatan atau surat teguran</Typography>
 				<Typography variant="body2" color="text.secondary">
-					Tambahkan form surat peringatan pertama dari halaman ini.
+					Tambahkan form surat peringatan atau surat teguran pertama dari halaman ini.
 				</Typography>
 			</Stack>
 		);
@@ -61,6 +66,7 @@ function WarningLetterTable({
 			sx: { width: 56, px: 1.5 },
 		},
 		{ id: 'id', label: 'NO' },
+		{ id: 'category', label: 'KATEGORI' },
 		{ id: 'employeeName', label: 'NAMA' },
 		{ id: 'employeeNo', label: 'NIK' },
 		{ id: 'warningLevel', label: 'SURAT PERINGATAN KE' },
@@ -104,13 +110,20 @@ function WarningLetterTable({
 							/>
 						</TableCell>
 						<TableCell>{meta?.rowNumber || 1}</TableCell>
+						<TableCell>{getDisciplineCategoryLabel(row.category)}</TableCell>
 						<TableCell>{row.employeeName}</TableCell>
 						<TableCell>{row.employeeNo}</TableCell>
-						<TableCell>{row.warningLevel}</TableCell>
+						<TableCell>
+							{row.category === DISCIPLINE_LETTER_CATEGORIES.WARNING_LETTER ? row.warningLevel : '-'}
+						</TableCell>
 						<TableCell>{row.letterNumber}</TableCell>
 						<TableCell>{formatWarningDate(row.letterDate)}</TableCell>
-						<TableCell>{getWarningEndDate(row.letterDate)}</TableCell>
-						<TableCell>{row.articleLabel}</TableCell>
+						<TableCell>
+							{row.category === DISCIPLINE_LETTER_CATEGORIES.WARNING_LETTER
+								? getWarningEndDate(row.letterDate)
+								: '-'}
+						</TableCell>
+						<TableCell>{row.articleLabel || '-'}</TableCell>
 						<TableCell>{row.superiorName}</TableCell>
 						<TableCell sx={{ ...stickyActionCellSx, py: 1.25 }}>
 							<Stack direction="row" spacing={0.25} justifyContent="center">

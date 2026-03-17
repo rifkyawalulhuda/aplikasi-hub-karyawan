@@ -18,6 +18,8 @@ import PrintOutlinedIcon from '@mui/icons-material/PrintOutlined';
 import PageHeader from '@/components/pageHeader';
 import apiRequest from '@/services/api';
 
+import ReprimandPrintDocument from './reprimandPrintDocument';
+import { DISCIPLINE_LETTER_CATEGORIES, getDisciplineCategoryLabel } from './utils';
 import WarningLetterPrintDocument from './warningLetterPrintDocument';
 
 async function fetchWarningLetter(id) {
@@ -51,7 +53,7 @@ function WarningLetterDetailPage() {
 		window.print();
 	};
 
-	let content = <Typography color="text.secondary">Data surat peringatan tidak ditemukan.</Typography>;
+	let content = <Typography color="text.secondary">Data dokumen tidak ditemukan.</Typography>;
 
 	if (loading) {
 		content = (
@@ -60,7 +62,12 @@ function WarningLetterDetailPage() {
 			</Stack>
 		);
 	} else if (record) {
-		content = <WarningLetterPrintDocument record={record} />;
+		content =
+			record.category === DISCIPLINE_LETTER_CATEGORIES.REPRIMAND ? (
+				<ReprimandPrintDocument record={record} />
+			) : (
+				<WarningLetterPrintDocument record={record} />
+			);
 	}
 
 	return (
@@ -110,7 +117,12 @@ function WarningLetterDetailPage() {
 			/>
 			<Stack className="warning-letter-detail-root" spacing={3}>
 				<Box className="no-print">
-					<PageHeader title="Detail Surat Peringatan" sx={{ mb: 0 }}>
+					<PageHeader
+						title={
+							record ? `Detail ${getDisciplineCategoryLabel(record.category)}` : 'Detail Surat Peringatan'
+						}
+						sx={{ mb: 0 }}
+					>
 						<Stack direction="row" spacing={1} flexWrap="wrap">
 							<Button
 								component={RouterLink}
@@ -133,7 +145,9 @@ function WarningLetterDetailPage() {
 					<Link underline="hover" component={RouterLink} to="/data-karyawan/data-surat-peringatan">
 						Data Surat Peringatan
 					</Link>
-					<Typography color="text.tertiary">Detail</Typography>
+					<Typography color="text.tertiary">
+						{record ? getDisciplineCategoryLabel(record.category) : 'Detail'}
+					</Typography>
 				</Breadcrumbs>
 				<Card className="warning-letter-detail-card" sx={{ p: 3, bgcolor: 'transparent', boxShadow: 'none' }}>
 					{content}

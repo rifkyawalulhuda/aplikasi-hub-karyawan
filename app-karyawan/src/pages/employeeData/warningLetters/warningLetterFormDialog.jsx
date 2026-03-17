@@ -20,12 +20,23 @@ import TextField from '@mui/material/TextField';
 
 import FormInput from '@/components/formInput';
 
-import { getActiveWarningLetterSummary, getSuperiorOptions, WARNING_LEVEL_OPTIONS } from './utils';
+import {
+	DISCIPLINE_LETTER_CATEGORIES,
+	getActiveWarningLetterSummary,
+	getDisciplineCategoryLabel,
+	getSuperiorOptions,
+	WARNING_LEVEL_OPTIONS,
+} from './utils';
 
-function toDefaultValues(initialValue) {
+function toDefaultValues(initialValue, createCategory) {
+	const category = initialValue?.category || createCategory || DISCIPLINE_LETTER_CATEGORIES.WARNING_LETTER;
+
 	return {
+		category,
 		employeeId: initialValue?.employeeId || '',
 		employeeNo: initialValue?.employeeNo || '',
+		departmentName: initialValue?.departmentName || '',
+		jobLevelName: initialValue?.jobLevelName || '',
 		warningLevel: initialValue?.warningLevel || 1,
 		letterNumber: initialValue?.letterNumber || '',
 		letterDate: initialValue?.letterDate || '',
@@ -40,13 +51,16 @@ function WarningLetterFormDialog({
 	open,
 	loading,
 	initialValue,
+	createCategory,
 	employeeOptions,
 	masterDokPkbOptions,
 	warningLetterRows,
 	onClose,
 	onSubmit,
 }) {
+	const resolvedCategory = initialValue?.category || createCategory || DISCIPLINE_LETTER_CATEGORIES.WARNING_LETTER;
 	const isEditMode = Boolean(initialValue);
+	const isWarningLetter = resolvedCategory === DISCIPLINE_LETTER_CATEGORIES.WARNING_LETTER;
 	const superiorOptions = getSuperiorOptions(employeeOptions);
 	const {
 		control,
@@ -55,7 +69,7 @@ function WarningLetterFormDialog({
 		setValue,
 		formState: { errors, dirtyFields },
 	} = useForm({
-		defaultValues: toDefaultValues(initialValue),
+		defaultValues: toDefaultValues(initialValue, createCategory),
 	});
 
 	const selectedEmployeeId = useWatch({
@@ -69,6 +83,14 @@ function WarningLetterFormDialog({
 	const employeeNo = useWatch({
 		control,
 		name: 'employeeNo',
+	});
+	const departmentName = useWatch({
+		control,
+		name: 'departmentName',
+	});
+	const jobLevelName = useWatch({
+		control,
+		name: 'jobLevelName',
 	});
 	const selectedLetterDate = useWatch({
 		control,
@@ -88,34 +110,58 @@ function WarningLetterFormDialog({
 	});
 
 	useEffect(() => {
-		reset(toDefaultValues(initialValue));
-	}, [initialValue, open, reset]);
+		reset(toDefaultValues(initialValue, createCategory));
+		previousSelectionRef.current = {
+			employeeId: '',
+			letterDate: '',
+		};
+	}, [createCategory, initialValue, open, reset]);
 
 	useEffect(() => {
 		const selectedEmployee = employeeOptions.find((item) => item.id === Number(selectedEmployeeId));
 		setValue('employeeNo', selectedEmployee?.employeeNo || '');
+		setValue('departmentName', selectedEmployee?.departmentName || '');
+		setValue('jobLevelName', selectedEmployee?.jobLevelName || '');
 	}, [employeeOptions, selectedEmployeeId, setValue]);
 
 	useEffect(() => {
+		if (!isWarningLetter) {
+			setValue('masterDokPkbId', '');
+			setValue('articleContent', '');
+			return;
+		}
+
 		const selectedArticle = masterDokPkbOptions.find((item) => item.id === Number(selectedArticleId));
 		setValue('articleContent', selectedArticle?.content || '');
-	}, [masterDokPkbOptions, selectedArticleId, setValue]);
+	}, [isWarningLetter, masterDokPkbOptions, selectedArticleId, setValue]);
 
 	const warningRule = useMemo(
 		() =>
-			getActiveWarningLetterSummary({
-				rows: warningLetterRows,
-				employeeId: selectedEmployeeId,
-				excludeId: initialValue?.id,
-				referenceDate: selectedLetterDate,
-			}),
-		[initialValue?.id, selectedEmployeeId, selectedLetterDate, warningLetterRows],
+			isWarningLetter
+				? getActiveWarningLetterSummary({
+						rows: warningLetterRows,
+						employeeId: selectedEmployeeId,
+						excludeId: initialValue?.id,
+						referenceDate: selectedLetterDate,
+				  })
+				: {
+						highestActiveLevel: 0,
+						recommendedLevel: 1,
+						disabledLevels: [],
+						nextLevelReason: '',
+				  },
+		[initialValue?.id, isWarningLetter, selectedEmployeeId, selectedLetterDate, warningLetterRows],
 	);
 
 	useEffect(() => {
+		if (!isWarningLetter) {
+			return;
+		}
+
 		const previousSelection = previousSelectionRef.current;
 		const selectionChanged =
 			previousSelection.employeeId !== selectedEmployeeId || previousSelection.letterDate !== selectedLetterDate;
+
 		if (!selectedEmployeeId) {
 			previousSelectionRef.current = {
 				employeeId: selectedEmployeeId,
@@ -141,6 +187,7 @@ function WarningLetterFormDialog({
 		};
 	}, [
 		isEditMode,
+		isWarningLetter,
 		selectedEmployeeId,
 		selectedLetterDate,
 		selectedWarningLevel,
@@ -150,18 +197,20 @@ function WarningLetterFormDialog({
 	]);
 
 	let warningAlertMessage = '';
-	if (warningRule.highestActiveLevel > 0) {
+	if (isWarningLetter && warningRule.highestActiveLevel > 0) {
 		const canEscalateHigherThanRecommended = warningRule.recommendedLevel < 3;
 		warningAlertMessage = `${warningRule.nextLevelReason} Form otomatis diarahkan ke Surat Peringatan ke ${warningRule.recommendedLevel}.`;
 
 		if (canEscalateHigherThanRecommended) {
-			warningAlertMessage += ` Anda masih dapat memilih Surat Peringatan ke 3 jika diperlukan.`;
+			warningAlertMessage += ' Anda masih dapat memilih Surat Peringatan ke 3 jika diperlukan.';
 		}
 	}
 
+	const titleLabel = `${isEditMode ? 'Edit' : 'Form'} ${getDisciplineCategoryLabel(resolvedCategory)}`;
+
 	return (
 		<Dialog open={open} onClose={loading ? undefined : onClose} fullWidth maxWidth="lg">
-			<DialogTitle>{isEditMode ? 'Edit Data Surat Peringatan' : 'Form Surat Peringatan'}</DialogTitle>
+			<DialogTitle>{titleLabel}</DialogTitle>
 			<DialogContent>
 				{warningAlertMessage ? (
 					<Alert severity="warning" sx={{ mb: 2, mt: 1 }}>
@@ -174,7 +223,7 @@ function WarningLetterFormDialog({
 					component="form"
 					id="warning-letter-form"
 					sx={{ pt: 1 }}
-					onSubmit={handleSubmit(onSubmit)}
+					onSubmit={handleSubmit((values) => onSubmit({ ...values, category: resolvedCategory }))}
 				>
 					<Grid item xs={12} md={8}>
 						<Controller
@@ -206,34 +255,47 @@ function WarningLetterFormDialog({
 					<Grid item xs={12} md={4}>
 						<TextField label="NIK" value={employeeNo || ''} fullWidth disabled />
 					</Grid>
-					<Grid item xs={12}>
-						<Controller
-							name="warningLevel"
-							control={control}
-							rules={{ required: 'Surat Peringatan ke wajib dipilih.' }}
-							render={({ field }) => (
-								<FormControl error={Boolean(errors.warningLevel)}>
-									<FormLabel>Surat Peringatan ke</FormLabel>
-									<RadioGroup
-										row
-										value={String(field.value)}
-										onChange={(event) => field.onChange(Number(event.target.value))}
-									>
-										{WARNING_LEVEL_OPTIONS.map((option) => (
-											<FormControlLabel
-												key={option}
-												value={String(option)}
-												control={<Radio />}
-												label={String(option)}
-												disabled={warningRule.disabledLevels.includes(option)}
-											/>
-										))}
-									</RadioGroup>
-									<FormHelperText>{errors.warningLevel?.message}</FormHelperText>
-								</FormControl>
-							)}
-						/>
-					</Grid>
+
+					{isWarningLetter ? (
+						<Grid item xs={12}>
+							<Controller
+								name="warningLevel"
+								control={control}
+								rules={{ required: 'Surat Peringatan ke wajib dipilih.' }}
+								render={({ field }) => (
+									<FormControl error={Boolean(errors.warningLevel)}>
+										<FormLabel>Surat Peringatan ke</FormLabel>
+										<RadioGroup
+											row
+											value={String(field.value)}
+											onChange={(event) => field.onChange(Number(event.target.value))}
+										>
+											{WARNING_LEVEL_OPTIONS.map((option) => (
+												<FormControlLabel
+													key={option}
+													value={String(option)}
+													control={<Radio />}
+													label={String(option)}
+													disabled={warningRule.disabledLevels.includes(option)}
+												/>
+											))}
+										</RadioGroup>
+										<FormHelperText>{errors.warningLevel?.message}</FormHelperText>
+									</FormControl>
+								)}
+							/>
+						</Grid>
+					) : (
+						<>
+							<Grid item xs={12} md={6}>
+								<TextField label="Departement" value={departmentName || ''} fullWidth disabled />
+							</Grid>
+							<Grid item xs={12} md={6}>
+								<TextField label="Jabatan" value={jobLevelName || ''} fullWidth disabled />
+							</Grid>
+						</>
+					)}
+
 					<Grid item xs={12} md={6}>
 						<FormInput
 							name="letterNumber"
@@ -257,12 +319,16 @@ function WarningLetterFormDialog({
 					<Grid item xs={12} md={6}>
 						<FormInput
 							name="letterDate"
-							label="Tanggal Surat Peringatan"
+							label={isWarningLetter ? 'Tanggal Surat Peringatan' : 'Tanggal'}
 							type="date"
 							control={control}
 							errors={errors}
 							dirtyFields={dirtyFields}
-							rules={{ required: 'Tanggal Surat Peringatan wajib diisi.' }}
+							rules={{
+								required: isWarningLetter
+									? 'Tanggal Surat Peringatan wajib diisi.'
+									: 'Tanggal wajib diisi.',
+							}}
 							fullWidth
 							InputLabelProps={{ shrink: true }}
 						/>
@@ -280,45 +346,53 @@ function WarningLetterFormDialog({
 							minRows={4}
 						/>
 					</Grid>
-					<Grid item xs={12} md={5}>
-						<Controller
-							name="masterDokPkbId"
-							control={control}
-							rules={{ required: 'Pasal PKB wajib dipilih.' }}
-							render={({ field }) => (
-								<Autocomplete
-									options={masterDokPkbOptions}
-									value={
-										masterDokPkbOptions.find((option) => option.id === Number(field.value)) || null
-									}
-									onChange={(_, selectedOption) => {
-										field.onChange(selectedOption?.id || '');
-									}}
-									isOptionEqualToValue={(option, value) => option.id === value.id}
-									getOptionLabel={(option) => option?.article || ''}
-									renderInput={(params) => (
-										<TextField
-											{...params}
-											label="Pasal PKB"
-											error={Boolean(errors.masterDokPkbId)}
-											helperText={errors.masterDokPkbId?.message || ' '}
+
+					{isWarningLetter ? (
+						<>
+							<Grid item xs={12} md={5}>
+								<Controller
+									name="masterDokPkbId"
+									control={control}
+									rules={{ required: 'Pasal PKB wajib dipilih.' }}
+									render={({ field }) => (
+										<Autocomplete
+											options={masterDokPkbOptions}
+											value={
+												masterDokPkbOptions.find(
+													(option) => option.id === Number(field.value),
+												) || null
+											}
+											onChange={(_, selectedOption) => {
+												field.onChange(selectedOption?.id || '');
+											}}
+											isOptionEqualToValue={(option, value) => option.id === value.id}
+											getOptionLabel={(option) => option?.article || ''}
+											renderInput={(params) => (
+												<TextField
+													{...params}
+													label="Pasal PKB"
+													error={Boolean(errors.masterDokPkbId)}
+													helperText={errors.masterDokPkbId?.message || ' '}
+												/>
+											)}
+											fullWidth
 										/>
 									)}
-									fullWidth
 								/>
-							)}
-						/>
-					</Grid>
-					<Grid item xs={12} md={7}>
-						<TextField
-							label="ISI Pasal"
-							value={articleContent || ''}
-							fullWidth
-							disabled
-							multiline
-							minRows={4}
-						/>
-					</Grid>
+							</Grid>
+							<Grid item xs={12} md={7}>
+								<TextField
+									label="ISI Pasal"
+									value={articleContent || ''}
+									fullWidth
+									disabled
+									multiline
+									minRows={4}
+								/>
+							</Grid>
+						</>
+					) : null}
+
 					<Grid item xs={12}>
 						<Controller
 							name="superiorEmployeeId"
