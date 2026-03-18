@@ -76,6 +76,7 @@ Folder ini dipilih sebagai basis utama pengembangan karena struktur template-nya
 - Tab utama tambahan: `Data Karyawan`
 - Menu utama: `Bimbingan & Pengarahan`
 - Menu tambahan: `Data Surat Peringatan`
+- Menu tambahan: `Lisensi & Sertifikasi`
 
 ## Scope Modul yang Sudah Dibahas
 
@@ -397,6 +398,30 @@ Aturan approval yang sudah disebutkan:
   - SIO
   - Lisensi K3
 - Format mengikuti form QSHE.
+- Implementasi awal yang sudah direncanakan dan disetujui:
+  - halaman `Lisensi & Sertifikasi` di bawah menu `Data Karyawan`
+  - form input/edit dengan field:
+    - `Nama` dari `Master Karyawan`
+    - `NIK` autofill dari `Employee No`
+    - `Dokumen` dari `Master Dok Karyawan`
+    - `Jenis Dokumen` autofill dari master dokumen
+    - `Type`
+    - `No. Dokumen`
+    - `Diterbitkan` autofill dari `Penerbit` master dokumen
+    - `Masa Berlaku`
+    - `Status` dinamis dari `Masa Berlaku`
+    - `Catatan`
+  - status menggunakan logika:
+    - `Aktif` jika masa berlaku hari ini atau masih di masa depan
+    - `Expired` jika masa berlaku sudah lewat
+  - halaman daftar mengikuti pola `Data Surat Peringatan`
+  - halaman daftar memiliki:
+    - search no-case sensitive
+    - filter rentang tanggal berdasarkan `Masa Berlaku`
+    - filter `Status`
+    - `Export Excel`
+    - checkbox selection
+    - `NO` berbasis nomor urut tampilan
 
 ## Prioritas Implementasi Saat Ini
 
@@ -434,6 +459,7 @@ Yang sudah selesai:
 - Menambahkan schema, API, route, menu, dan halaman `Master Karyawan` berdasarkan file Excel sumber.
 - Menambahkan schema, migration, API CRUD, route, menu, dan halaman `Master Admin` dengan field `Nama`, `NIK`, `Password`, dan `Role`.
 - Menambahkan schema, migration, API CRUD, route, menu, dan halaman `Master Dok Karyawan` dengan field `Nama Dokumen`, `Jenis Dokumen`, dan `Penerbit`.
+- Menambahkan schema, migration, API CRUD, route, menu, dan halaman `Lisensi & Sertifikasi` dengan relasi ke `Master Karyawan` dan `Master Dok Karyawan`.
 - Menambahkan fitur login aplikasi menggunakan kredensial `Master Admin` (`NIK` + `Password`).
 - Menambahkan halaman login, proteksi route frontend, dan logout dari header aplikasi.
 - Menyesuaikan desain halaman login menjadi gaya corporate-modern dengan tema dominan biru dan palet warna yang lebih minimal.
