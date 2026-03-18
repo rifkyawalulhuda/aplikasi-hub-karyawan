@@ -87,16 +87,33 @@ model JobLevel {
 }
 
 model MasterUnit {
-  id               Int      @id @default(autoincrement())
-  unitName         String   @db.VarChar(255)
-  unitType         String   @db.VarChar(100)
-  capacity         String   @db.VarChar(255)
-  unitSerialNumber String   @db.VarChar(255)
-  detailLainnya    String   @db.VarChar(255)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id               Int                        @id @default(autoincrement())
+  unitName         String                     @db.VarChar(255)
+  unitType         String                     @db.VarChar(100)
+  capacity         String                     @db.VarChar(255)
+  unitSerialNumber String                     @db.VarChar(255)
+  detailLainnya    String                     @db.VarChar(255)
+  createdAt        DateTime                   @default(now())
+  updatedAt        DateTime                   @updatedAt
+  certifications   UnitLicenseCertification[]
 
   @@map("master_units")
+}
+
+model MasterVendor {
+  id             Int                        @id @default(autoincrement())
+  vendorName     String                     @db.VarChar(255)
+  vendorType     String                     @db.VarChar(100)
+  address        String                     @db.VarChar(255)
+  picName        String                     @db.VarChar(255)
+  phoneNumber    String                     @db.VarChar(100)
+  email          String                     @db.VarChar(255)
+  detailLainnya  String                     @db.VarChar(255)
+  createdAt      DateTime                   @default(now())
+  updatedAt      DateTime                   @updatedAt
+  certifications UnitLicenseCertification[]
+
+  @@map("master_vendors")
 }
 
 model MasterDokPkb {
@@ -235,4 +252,23 @@ model EmployeeLicenseCertification {
   @@index([employeeId])
   @@index([masterDokKaryawanId])
   @@map("employee_license_certifications")
+}
+
+model UnitLicenseCertification {
+  id             Int          @id @default(autoincrement())
+  masterUnitId   Int
+  assetNo        String       @db.VarChar(255)
+  documentNumber String       @db.VarChar(255)
+  issuedBy       String       @db.VarChar(255)
+  vendorId       Int
+  expiryDate     DateTime     @db.Date
+  notes          String?      @db.Text
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  masterUnit     MasterUnit   @relation(fields: [masterUnitId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  vendor         MasterVendor @relation(fields: [vendorId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([masterUnitId])
+  @@index([vendorId])
+  @@map("unit_license_certifications")
 }

@@ -93,6 +93,58 @@ const MASTER_DATA_CONFIG = {
 			},
 		],
 	},
+	'master-vendors': {
+		label: 'Master Vendor',
+		model: 'masterVendor',
+		path: 'master-vendors',
+		fields: [
+			{
+				name: 'vendorName',
+				label: 'Nama Vendor',
+				required: true,
+				searchable: true,
+			},
+			{
+				name: 'vendorType',
+				label: 'Jenis Vendor',
+				required: true,
+				searchable: true,
+				options: ['Consumable', 'Building', 'Trucking', 'Jasa', 'Warehousing', 'Disposable'],
+				allowCustomOption: true,
+				customOptionLabel: 'Lainnya',
+			},
+			{
+				name: 'address',
+				label: 'Alamat',
+				required: true,
+				searchable: true,
+			},
+			{
+				name: 'picName',
+				label: 'Nama PIC',
+				required: true,
+				searchable: true,
+			},
+			{
+				name: 'phoneNumber',
+				label: 'Nomor Telfon',
+				required: true,
+				searchable: true,
+			},
+			{
+				name: 'email',
+				label: 'Email',
+				required: true,
+				searchable: true,
+			},
+			{
+				name: 'detailLainnya',
+				label: 'Detail Lainnya',
+				required: true,
+				searchable: true,
+			},
+		],
+	},
 	'master-dok-pkb': {
 		label: 'Master Dok PKB',
 		model: 'masterDokPkb',

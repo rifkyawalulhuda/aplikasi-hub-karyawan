@@ -95,6 +95,13 @@ const NAV_LINKS_CONFIG = [
 						Icon: LocalShippingOutlinedIcon,
 						href: '/data-master/master-data-unit/master-unit',
 					},
+					{
+						id: uuid(),
+						type: 'item',
+						title: 'Master Vendor',
+						Icon: BusinessOutlinedIcon,
+						href: '/data-master/master-data-unit/master-vendor',
+					},
 				],
 			},
 			{
@@ -148,6 +155,22 @@ const NAV_LINKS_CONFIG = [
 				title: 'Lisensi & Sertifikasi',
 				Icon: DescriptionOutlinedIcon,
 				href: '/data-karyawan/lisensi-sertifikasi',
+			},
+		],
+	},
+	{
+		id: uuid(),
+		type: 'group',
+		title: 'Data Unit',
+		Icon: LocalShippingOutlinedIcon,
+		menuMinWidth: 260,
+		menuChildren: [
+			{
+				id: uuid(),
+				type: 'item',
+				title: 'Lisensi & Sertifikasi Unit',
+				Icon: DescriptionOutlinedIcon,
+				href: '/data-unit/lisensi-sertifikasi-unit',
 			},
 		],
 	},

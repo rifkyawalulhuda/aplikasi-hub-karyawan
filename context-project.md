@@ -76,10 +76,13 @@ Folder ini dipilih sebagai basis utama pengembangan karena struktur template-nya
 - Dropdown tambahan: `Master Data Unit`
 - Submenu unit:
   - `Master Unit`
+  - `Master Vendor`
 - Tab utama tambahan: `Data Karyawan`
 - Menu utama: `Bimbingan & Pengarahan`
 - Menu tambahan: `Data Surat Peringatan`
 - Menu tambahan: `Lisensi & Sertifikasi`
+- Tab utama tambahan: `Data Unit`
+- Menu utama: `Lisensi & Sertifikasi Unit`
 
 ## Scope Modul yang Sudah Dibahas
 
@@ -215,6 +218,29 @@ Catatan implementasi:
   - `Kapasitas`
   - `Unit/Serial Number`
   - `Detail Lainnya`
+- Kolom `NO` pada tabel menggunakan nomor urut tampilan dan otomatis rapat kembali saat ada row yang dihapus.
+
+#### Master Vendor
+
+- Kolom database utama:
+  - `id` : auto increment
+  - `vendorName` : varchar
+  - `vendorType` : varchar
+  - `address` : varchar
+  - `picName` : varchar
+  - `phoneNumber` : varchar
+  - `email` : varchar
+  - `detailLainnya` : varchar
+- Ditempatkan pada grup menu `Master Data Unit`
+- Form input mengikuti pola halaman master yang sudah ada, dengan field:
+  - `Nama Vendor`
+  - `Jenis Vendor` dengan pilihan `Consumable`, `Building`, `Trucking`, `Jasa`, `Warehousing`, `Disposable`, dan `Lainnya`
+  - `Alamat`
+  - `Nama PIC`
+  - `Nomor Telfon`
+  - `Email`
+  - `Detail Lainnya`
+- Jika user memilih `Lainnya`, sistem menampilkan input manual tambahan untuk mengisi jenis vendor custom.
 - Kolom `NO` pada tabel menggunakan nomor urut tampilan dan otomatis rapat kembali saat ada row yang dihapus.
 
 ### 2. History Karyawan (Report)
@@ -411,6 +437,32 @@ Aturan approval yang sudah disebutkan:
   - Omni Lift
   - Forklift
   - Genset
+- Implementasi awal yang sudah direncanakan dan disetujui:
+  - halaman `Lisensi & Sertifikasi Unit` di bawah menu `Data Unit`
+  - form input/edit dengan field:
+    - `Nama Unit` dari `Master Unit`
+    - `Asset No`
+    - `Jenis Unit` autofill dari master unit
+    - `Kapasitas` autofill dari master unit
+    - `Unit/Serial Number` autofill dari master unit
+    - `No. Dokumen`
+    - `Diterbitkan`
+    - `Vendor Pengurus` dari `Master Vendor`
+    - `Masa Berlaku`
+    - `Status` dinamis dari `Masa Berlaku`
+    - `Catatan`
+  - status menggunakan logika:
+    - `Aktif` jika masa berlaku hari ini atau masih di masa depan
+    - `Akan Expired` jika masa berlaku tinggal 25 hari atau kurang dari hari ini
+    - `Expired` jika masa berlaku sudah lewat
+  - halaman daftar mengikuti pola `Lisensi & Sertifikasi` karyawan
+  - halaman daftar memiliki:
+    - search no-case sensitive
+    - filter rentang tanggal berdasarkan `Masa Berlaku`
+    - filter `Status`
+    - `Export Excel`
+    - checkbox selection
+    - `NO` berbasis nomor urut tampilan
 
 #### Daftar Lisensi SDM
 
@@ -482,7 +534,9 @@ Yang sudah selesai:
 - Menambahkan schema, migration, API CRUD, route, menu, dan halaman `Master Admin` dengan field `Nama`, `NIK`, `Password`, dan `Role`.
 - Menambahkan schema, migration, API CRUD, route, menu, dan halaman `Master Dok Karyawan` dengan field `Nama Dokumen`, `Jenis Dokumen`, dan `Penerbit`.
 - Menambahkan schema, migration, resource master data generic, route, menu, dan halaman `Master Unit` dengan field `Nama Unit`, `Jenis Unit`, `Kapasitas`, `Unit/Serial Number`, dan `Detail Lainnya`.
+- Menambahkan schema, migration, resource master data generic, route, menu, dan halaman `Master Vendor` dengan field `Nama Vendor`, `Jenis Vendor`, `Alamat`, `Nama PIC`, `Nomor Telfon`, `Email`, dan `Detail Lainnya`.
 - Menambahkan schema, migration, API CRUD, route, menu, dan halaman `Lisensi & Sertifikasi` dengan relasi ke `Master Karyawan` dan `Master Dok Karyawan`.
+- Menambahkan schema, migration, API CRUD, route, menu, dan halaman `Lisensi & Sertifikasi Unit` dengan relasi ke `Master Unit` dan `Master Vendor`.
 - Menambahkan fitur login aplikasi menggunakan kredensial `Master Admin` (`NIK` + `Password`).
 - Menambahkan halaman login, proteksi route frontend, dan logout dari header aplikasi.
 - Menyesuaikan desain halaman login menjadi gaya corporate-modern dengan tema dominan biru dan palet warna yang lebih minimal.

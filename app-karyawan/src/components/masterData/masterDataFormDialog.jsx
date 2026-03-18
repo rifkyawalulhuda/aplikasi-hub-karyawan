@@ -20,32 +20,66 @@ function MasterDataFormDialog({ config, open, loading, initialValue, onClose, on
 			placeholder: config.fieldPlaceholder,
 		},
 	];
+	const buildDefaultValues = () =>
+		fields.reduce((defaultValues, field) => {
+			const fieldValue = initialValue?.[field.name] || '';
+
+			if (field.type === 'select-custom') {
+				const hasPresetOption = field.options?.includes(fieldValue);
+				let selectionValue = '';
+
+				if (hasPresetOption) {
+					selectionValue = fieldValue;
+				} else if (fieldValue) {
+					selectionValue = '__custom__';
+				}
+
+				return {
+					...defaultValues,
+					[field.name]: hasPresetOption ? fieldValue : '',
+					[`${field.name}Selection`]: selectionValue,
+					[`${field.name}Custom`]: hasPresetOption ? '' : fieldValue,
+				};
+			}
+
+			return {
+				...defaultValues,
+				[field.name]: fieldValue,
+			};
+		}, {});
 	const {
 		control,
 		handleSubmit,
 		reset,
+		watch,
 		formState: { errors, dirtyFields },
 	} = useForm({
-		defaultValues: fields.reduce(
-			(defaultValues, field) => ({
-				...defaultValues,
-				[field.name]: initialValue?.[field.name] || '',
-			}),
-			{},
-		),
+		defaultValues: buildDefaultValues(),
 	});
 
 	useEffect(() => {
-		reset(
-			fields.reduce(
-				(defaultValues, field) => ({
-					...defaultValues,
-					[field.name]: initialValue?.[field.name] || '',
-				}),
-				{},
-			),
-		);
+		reset(buildDefaultValues());
 	}, [fields, initialValue, open, reset]);
+
+	const watchedValues = watch();
+
+	const normalizeSubmitValues = (values) =>
+		fields.reduce((normalizedValues, field) => {
+			if (field.type === 'select-custom') {
+				const selectedValue = values[`${field.name}Selection`];
+				const customValue = values[`${field.name}Custom`];
+
+				return {
+					...normalizedValues,
+					[field.name]: selectedValue === '__custom__' ? customValue.trim() : selectedValue,
+				};
+			}
+
+			return {
+				...normalizedValues,
+				[field.name]: typeof values[field.name] === 'string' ? values[field.name].trim() : values[field.name],
+			};
+		}, {});
 
 	return (
 		<Dialog open={open} onClose={loading ? undefined : onClose} fullWidth maxWidth="sm">
@@ -56,7 +90,7 @@ function MasterDataFormDialog({ config, open, loading, initialValue, onClose, on
 					id={`master-data-form-${config.resource}`}
 					spacing={2}
 					pt={1}
-					onSubmit={handleSubmit(onSubmit)}
+					onSubmit={handleSubmit((values) => onSubmit(normalizeSubmitValues(values)))}
 				>
 					{fields.map((field, index) => {
 						const selectOptions =
@@ -67,28 +101,85 @@ function MasterDataFormDialog({ config, open, loading, initialValue, onClose, on
 										</MenuItem>
 								  ))
 								: null;
+						const customSelectOptions =
+							field.type === 'select-custom'
+								? [
+										...(field.options?.map((option) => (
+											<MenuItem key={option} value={option}>
+												{option}
+											</MenuItem>
+										)) || []),
+										<MenuItem key="__custom__" value="__custom__">
+											{field.customOptionLabel || 'Lainnya'}
+										</MenuItem>,
+								  ]
+								: null;
+						const selectedCustomValue =
+							field.type === 'select-custom' ? watchedValues[`${field.name}Selection`] : null;
 
 						return (
-							<FormInput
-								key={field.name}
-								name={field.name}
-								label={field.label}
-								placeholder={field.placeholder}
-								control={control}
-								errors={errors}
-								dirtyFields={dirtyFields}
-								rules={{
-									required: `${field.label} wajib diisi.`,
-									validate: (value) => value.trim().length > 0 || `${field.label} wajib diisi.`,
-								}}
-								fullWidth
-								autoFocus={index === 0}
-								multiline={field.type === 'multiline'}
-								rows={field.rows}
-								select={field.type === 'select'}
-							>
-								{selectOptions}
-							</FormInput>
+							<Stack key={field.name} spacing={selectedCustomValue === '__custom__' ? 1.5 : 0}>
+								{field.type === 'select-custom' ? (
+									<>
+										<FormInput
+											name={`${field.name}Selection`}
+											label={field.label}
+											placeholder={field.placeholder}
+											control={control}
+											errors={errors}
+											dirtyFields={dirtyFields}
+											rules={{
+												required: `${field.label} wajib diisi.`,
+											}}
+											fullWidth
+											autoFocus={index === 0}
+											select
+										>
+											{customSelectOptions}
+										</FormInput>
+										{selectedCustomValue === '__custom__' ? (
+											<FormInput
+												name={`${field.name}Custom`}
+												label={`${field.label} Lainnya`}
+												placeholder={
+													field.customPlaceholder || `Masukkan ${field.label.toLowerCase()}`
+												}
+												control={control}
+												errors={errors}
+												dirtyFields={dirtyFields}
+												rules={{
+													required: `${field.label} lainnya wajib diisi.`,
+													validate: (value) =>
+														value.trim().length > 0 ||
+														`${field.label} lainnya wajib diisi.`,
+												}}
+												fullWidth
+											/>
+										) : null}
+									</>
+								) : (
+									<FormInput
+										name={field.name}
+										label={field.label}
+										placeholder={field.placeholder}
+										control={control}
+										errors={errors}
+										dirtyFields={dirtyFields}
+										rules={{
+											required: `${field.label} wajib diisi.`,
+											validate: (value) =>
+												value.trim().length > 0 || `${field.label} wajib diisi.`,
+										}}
+										fullWidth
+										autoFocus={index === 0}
+										multiline={field.type === 'multiline'}
+										rows={field.rows}
+										select={field.type === 'select'}
+									>
+										{selectOptions}
+									</FormInput>
+								)}
+							</Stack>
 						);
 					})}
 				</Stack>

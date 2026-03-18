@@ -50,7 +50,7 @@ function getFields(config) {
 					required: true,
 					unique: true,
 				},
-			];
+		  ];
 }
 
 function normalizeFieldValue(fieldConfig, value) {
@@ -73,7 +73,12 @@ async function buildPayload(config, body = {}, currentId = null) {
 			throw Object.assign(new Error(`${fieldConfig.label} wajib diisi.`), { statusCode: 400 });
 		}
 
-		if (fieldConfig.options?.length && value && !fieldConfig.options.includes(value)) {
+		if (
+			fieldConfig.options?.length &&
+			value &&
+			!fieldConfig.options.includes(value) &&
+			!fieldConfig.allowCustomOption
+		) {
 			throw Object.assign(new Error(`${fieldConfig.label} tidak valid.`), { statusCode: 400 });
 		}
 
