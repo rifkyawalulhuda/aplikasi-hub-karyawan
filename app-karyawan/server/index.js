@@ -8,6 +8,7 @@ import adminsRouter from './routes/admins.js';
 import employeeAuthRouter from './routes/employeeAuth.js';
 import employeeDocumentsRouter from './routes/employeeDocuments.js';
 import licenseCertificationsRouter from './routes/licenseCertifications.js';
+import unitLicenseCertificationsRouter from './routes/unitLicenseCertifications.js';
 import employeeMeRouter from './routes/employeeMe.js';
 import guidanceRecordsRouter from './routes/guidanceRecords.js';
 import employeesRouter from './routes/employees.js';
@@ -47,6 +48,7 @@ app.use('/api/master', masterDataRouter);
 app.use('/api/data-karyawan/guidance-records', guidanceRecordsRouter);
 app.use('/api/data-karyawan/warning-letters', warningLettersRouter);
 app.use('/api/data-karyawan/license-certifications', licenseCertificationsRouter);
+app.use('/api/data-unit/license-certifications', unitLicenseCertificationsRouter);
 
 app.use((error, req, res) => {
 	console.error(error);

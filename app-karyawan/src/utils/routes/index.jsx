@@ -24,6 +24,7 @@ const DepartmentsPage = withLazyLoadably(lazy(() => import('@/pages/masterData/d
 const JobRolesPage = withLazyLoadably(lazy(() => import('@/pages/masterData/jobRoles')));
 const JobLevelsPage = withLazyLoadably(lazy(() => import('@/pages/masterData/jobLevels')));
 const MasterUnitsPage = withLazyLoadably(lazy(() => import('@/pages/masterData/masterUnits')));
+const MasterVendorsPage = withLazyLoadably(lazy(() => import('@/pages/masterData/masterVendors')));
 const AdminsPage = withLazyLoadably(lazy(() => import('@/pages/masterData/admins')));
 const EmployeesPage = withLazyLoadably(lazy(() => import('@/pages/masterData/employees')));
 const MasterDokPkbPage = withLazyLoadably(lazy(() => import('@/pages/masterData/masterDokPkb')));
@@ -39,6 +40,7 @@ const WarningLetterBulkPrintPage = withLazyLoadably(
 	lazy(() => import('@/pages/employeeData/warningLetters/bulkPrint')),
 );
 const LicenseCertificationsPage = withLazyLoadably(lazy(() => import('@/pages/employeeData/licenseCertifications')));
+const UnitLicenseCertificationsPage = withLazyLoadably(lazy(() => import('@/pages/unitData/licenseCertifications')));
 
 function Router() {
 	return (
@@ -87,6 +89,7 @@ function Router() {
 							<Route path="data-master/master-data-karyawan/job-roles" element={<JobRolesPage />} />
 							<Route path="data-master/master-data-karyawan/job-levels" element={<JobLevelsPage />} />
 							<Route path="data-master/master-data-unit/master-unit" element={<MasterUnitsPage />} />
+							<Route path="data-master/master-data-unit/master-vendor" element={<MasterVendorsPage />} />
 							<Route
 								path="data-master/master-data-dokumen/master-dok-pkb"
 								element={<MasterDokPkbPage />}
@@ -102,6 +105,10 @@ function Router() {
 							/>
 							<Route path="data-karyawan/data-surat-peringatan" element={<WarningLettersPage />} />
 							<Route path="data-karyawan/lisensi-sertifikasi" element={<LicenseCertificationsPage />} />
+							<Route
+								path="data-unit/lisensi-sertifikasi-unit"
+								element={<UnitLicenseCertificationsPage />}
+							/>
 							<Route
 								path="data-karyawan/data-surat-peringatan/:id"
 								element={<WarningLetterDetailPage />}
