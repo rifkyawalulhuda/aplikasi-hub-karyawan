@@ -5,6 +5,7 @@ import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
 import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined';
 import FeedOutlinedIcon from '@mui/icons-material/FeedOutlined';
 import LayersOutlinedIcon from '@mui/icons-material/LayersOutlined';
+import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined';
 import PeopleAltOutlinedIcon from '@mui/icons-material/PeopleAltOutlined';
 import ReceiptLongOutlinedIcon from '@mui/icons-material/ReceiptLongOutlined';
 import ReportGmailerrorredOutlinedIcon from '@mui/icons-material/ReportGmailerrorredOutlined';
@@ -78,6 +79,21 @@ const NAV_LINKS_CONFIG = [
 						title: 'Master Job Level',
 						Icon: LayersOutlinedIcon,
 						href: '/data-master/master-data-karyawan/job-levels',
+					},
+				],
+			},
+			{
+				id: uuid(),
+				type: 'group',
+				title: 'Master Data Unit',
+				Icon: LocalShippingOutlinedIcon,
+				menuChildren: [
+					{
+						id: uuid(),
+						type: 'item',
+						title: 'Master Unit',
+						Icon: LocalShippingOutlinedIcon,
+						href: '/data-master/master-data-unit/master-unit',
 					},
 				],
 			},

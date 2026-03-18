@@ -55,6 +55,44 @@ const MASTER_DATA_CONFIG = {
 			},
 		],
 	},
+	'master-units': {
+		label: 'Master Unit',
+		model: 'masterUnit',
+		path: 'master-units',
+		fields: [
+			{
+				name: 'unitName',
+				label: 'Nama Unit',
+				required: true,
+				searchable: true,
+			},
+			{
+				name: 'unitType',
+				label: 'Jenis Unit',
+				required: true,
+				searchable: true,
+				options: ['Forklift', 'Cargo Lift', 'Kendaraan', 'Infrastruktur'],
+			},
+			{
+				name: 'capacity',
+				label: 'Kapasitas',
+				required: true,
+				searchable: true,
+			},
+			{
+				name: 'unitSerialNumber',
+				label: 'Unit/Serial Number',
+				required: true,
+				searchable: true,
+			},
+			{
+				name: 'detailLainnya',
+				label: 'Detail Lainnya',
+				required: true,
+				searchable: true,
+			},
+		],
+	},
 	'master-dok-pkb': {
 		label: 'Master Dok PKB',
 		model: 'masterDokPkb',

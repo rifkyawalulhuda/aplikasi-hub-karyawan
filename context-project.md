@@ -73,6 +73,9 @@ Folder ini dipilih sebagai basis utama pengembangan karena struktur template-nya
 - Submenu dokumen:
   - `Master Dok PKB`
   - `Master Dok Karyawan`
+- Dropdown tambahan: `Master Data Unit`
+- Submenu unit:
+  - `Master Unit`
 - Tab utama tambahan: `Data Karyawan`
 - Menu utama: `Bimbingan & Pengarahan`
 - Menu tambahan: `Data Surat Peringatan`
@@ -195,6 +198,24 @@ Catatan implementasi:
   - `Jenis Dokumen` dengan pilihan `Sertifikat`, `Lisensi`, `Izin`, `Rahasia`, dan `Lainnya`
   - `Penerbit`
 - Jika user memilih `Lainnya`, sistem menampilkan input manual tambahan untuk mengisi jenis dokumen custom.
+
+#### Master Unit
+
+- Kolom database utama:
+  - `id` : auto increment
+  - `unitName` : varchar
+  - `unitType` : varchar
+  - `capacity` : varchar
+  - `unitSerialNumber` : varchar
+  - `detailLainnya` : varchar
+- Ditempatkan pada grup menu `Master Data Unit`
+- Form input mengikuti pola halaman master yang sudah ada, dengan field:
+  - `Nama Unit`
+  - `Jenis Unit` dengan pilihan `Forklift`, `Cargo Lift`, `Kendaraan`, dan `Infrastruktur`
+  - `Kapasitas`
+  - `Unit/Serial Number`
+  - `Detail Lainnya`
+- Kolom `NO` pada tabel menggunakan nomor urut tampilan dan otomatis rapat kembali saat ada row yang dihapus.
 
 ### 2. History Karyawan (Report)
 
@@ -460,6 +481,7 @@ Yang sudah selesai:
 - Menambahkan schema, API, route, menu, dan halaman `Master Karyawan` berdasarkan file Excel sumber.
 - Menambahkan schema, migration, API CRUD, route, menu, dan halaman `Master Admin` dengan field `Nama`, `NIK`, `Password`, dan `Role`.
 - Menambahkan schema, migration, API CRUD, route, menu, dan halaman `Master Dok Karyawan` dengan field `Nama Dokumen`, `Jenis Dokumen`, dan `Penerbit`.
+- Menambahkan schema, migration, resource master data generic, route, menu, dan halaman `Master Unit` dengan field `Nama Unit`, `Jenis Unit`, `Kapasitas`, `Unit/Serial Number`, dan `Detail Lainnya`.
 - Menambahkan schema, migration, API CRUD, route, menu, dan halaman `Lisensi & Sertifikasi` dengan relasi ke `Master Karyawan` dan `Master Dok Karyawan`.
 - Menambahkan fitur login aplikasi menggunakan kredensial `Master Admin` (`NIK` + `Password`).
 - Menambahkan halaman login, proteksi route frontend, dan logout dari header aplikasi.
