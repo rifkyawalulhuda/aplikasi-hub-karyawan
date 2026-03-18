@@ -94,6 +94,13 @@ const NAV_LINKS_CONFIG = [
 						Icon: ReceiptLongOutlinedIcon,
 						href: '/data-master/master-data-dokumen/master-dok-pkb',
 					},
+					{
+						id: uuid(),
+						type: 'item',
+						title: 'Master Dok Karyawan',
+						Icon: DescriptionOutlinedIcon,
+						href: '/data-master/master-data-dokumen/master-dok-karyawan',
+					},
 				],
 			},
 		],
