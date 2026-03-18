@@ -5,6 +5,8 @@ import express from 'express';
 import prisma from './lib/prisma.js';
 import authRouter from './routes/auth.js';
 import adminsRouter from './routes/admins.js';
+import employeeAuthRouter from './routes/employeeAuth.js';
+import employeeMeRouter from './routes/employeeMe.js';
 import guidanceRecordsRouter from './routes/guidanceRecords.js';
 import employeesRouter from './routes/employees.js';
 import masterDataRouter from './routes/masterData.js';
@@ -34,6 +36,8 @@ app.get('/api/health', async (req, res) => {
 });
 
 app.use('/api/auth', authRouter);
+app.use('/api/employee-auth', employeeAuthRouter);
+app.use('/api/employee-me', employeeMeRouter);
 app.use('/api/master/employees', employeesRouter);
 app.use('/api/master/admins', adminsRouter);
 app.use('/api/master', masterDataRouter);
