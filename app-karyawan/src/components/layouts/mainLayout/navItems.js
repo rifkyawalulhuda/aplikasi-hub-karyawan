@@ -126,6 +126,13 @@ const NAV_LINKS_CONFIG = [
 				Icon: ReportGmailerrorredOutlinedIcon,
 				href: '/data-karyawan/data-surat-peringatan',
 			},
+			{
+				id: uuid(),
+				type: 'item',
+				title: 'Lisensi & Sertifikasi',
+				Icon: DescriptionOutlinedIcon,
+				href: '/data-karyawan/lisensi-sertifikasi',
+			},
 		],
 	},
 ];

@@ -104,6 +104,7 @@ model MasterDokKaryawan {
   issuer       String   @db.VarChar(255)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  licenseCertifications EmployeeLicenseCertification[]
 
   @@map("master_dok_karyawan")
 }
@@ -136,6 +137,7 @@ model Employee {
   warningLetters          WarningLetter[] @relation("WarningLetterEmployee")
   warningLetterApprovals WarningLetter[] @relation("WarningLetterSuperior")
   adminAccounts          MasterAdmin[]
+  licenseCertifications  EmployeeLicenseCertification[]
 
   @@index([departmentId])
   @@index([workLocationId])
@@ -201,4 +203,23 @@ model WarningLetter {
   @@index([superiorEmployeeId])
   @@index([masterDokPkbId])
   @@map("warning_letters")
+}
+
+model EmployeeLicenseCertification {
+  id                  Int      @id @default(autoincrement())
+  employeeId          Int
+  masterDokKaryawanId Int
+  type                String   @db.VarChar(255)
+  documentNumber      String   @db.VarChar(255)
+  issuerSnapshot      String   @db.VarChar(255)
+  expiryDate          DateTime @db.Date
+  notes               String?  @db.Text
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  employee            Employee @relation(fields: [employeeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  masterDokKaryawan   MasterDokKaryawan @relation(fields: [masterDokKaryawanId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([employeeId])
+  @@index([masterDokKaryawanId])
+  @@map("employee_license_certifications")
 }
