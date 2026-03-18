@@ -97,6 +97,17 @@ model MasterDokPkb {
   @@map("master_dok_pkb")
 }
 
+model MasterDokKaryawan {
+  id           Int      @id @default(autoincrement())
+  documentName String   @db.VarChar(255)
+  documentType String   @db.VarChar(100)
+  issuer       String   @db.VarChar(255)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("master_dok_karyawan")
+}
+
 model Employee {
   id             Int            @id @default(autoincrement())
   employeeNo     String         @unique @db.VarChar(100)
