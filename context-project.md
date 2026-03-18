@@ -413,6 +413,7 @@ Aturan approval yang sudah disebutkan:
     - `Catatan`
   - status menggunakan logika:
     - `Aktif` jika masa berlaku hari ini atau masih di masa depan
+    - `Akan Expired` jika masa berlaku tinggal 25 hari atau kurang dari hari ini
     - `Expired` jika masa berlaku sudah lewat
   - halaman daftar mengikuti pola `Data Surat Peringatan`
   - halaman daftar memiliki:

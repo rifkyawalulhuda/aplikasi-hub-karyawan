@@ -1,7 +1,10 @@
 export const LICENSE_STATUS = {
 	ACTIVE: 'Aktif',
+	EXPIRING_SOON: 'Akan Expired',
 	EXPIRED: 'Expired',
 };
+
+export const EXPIRING_SOON_DAYS = 25;
 
 export function formatLicenseDate(value) {
 	if (!value) {
@@ -68,10 +71,27 @@ export function getLicenseStatus(value) {
 
 	const today = new Date();
 	const comparableToday = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
+	const differenceInDays = Math.floor((comparableExpiryDate - comparableToday) / (24 * 60 * 60 * 1000));
 
-	return comparableExpiryDate >= comparableToday ? LICENSE_STATUS.ACTIVE : LICENSE_STATUS.EXPIRED;
+	if (differenceInDays < 0) {
+		return LICENSE_STATUS.EXPIRED;
+	}
+
+	if (differenceInDays <= EXPIRING_SOON_DAYS) {
+		return LICENSE_STATUS.EXPIRING_SOON;
+	}
+
+	return LICENSE_STATUS.ACTIVE;
 }
 
 export function getLicenseStatusChipColor(status) {
-	return status === LICENSE_STATUS.ACTIVE ? 'success' : 'error';
+	if (status === LICENSE_STATUS.ACTIVE) {
+		return 'success';
+	}
+
+	if (status === LICENSE_STATUS.EXPIRING_SOON) {
+		return 'warning';
+	}
+
+	return 'error';
 }

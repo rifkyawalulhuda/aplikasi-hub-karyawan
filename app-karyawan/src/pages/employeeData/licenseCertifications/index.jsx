@@ -364,6 +364,7 @@ function LicenseCertificationsPage() {
 							>
 								<MenuItem value="ALL">Semua</MenuItem>
 								<MenuItem value={LICENSE_STATUS.ACTIVE}>{LICENSE_STATUS.ACTIVE}</MenuItem>
+								<MenuItem value={LICENSE_STATUS.EXPIRING_SOON}>{LICENSE_STATUS.EXPIRING_SOON}</MenuItem>
 								<MenuItem value={LICENSE_STATUS.EXPIRED}>{LICENSE_STATUS.EXPIRED}</MenuItem>
 							</TextField>
 						</Grid>
