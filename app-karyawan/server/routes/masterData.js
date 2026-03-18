@@ -50,7 +50,7 @@ function getFields(config) {
 					required: true,
 					unique: true,
 				},
-		  ];
+			];
 }
 
 function normalizeFieldValue(fieldConfig, value) {
@@ -71,6 +71,10 @@ async function buildPayload(config, body = {}, currentId = null) {
 
 		if (fieldConfig.required && !value) {
 			throw Object.assign(new Error(`${fieldConfig.label} wajib diisi.`), { statusCode: 400 });
+		}
+
+		if (fieldConfig.options?.length && value && !fieldConfig.options.includes(value)) {
+			throw Object.assign(new Error(`${fieldConfig.label} tidak valid.`), { statusCode: 400 });
 		}
 
 		if (fieldConfig.unique && value) {
@@ -195,14 +199,12 @@ router.post(
 		const importedRows = [];
 		const errorRows = [];
 
-		for (
-			let rowNumber = config.import.dataStartRow || 2;
-			rowNumber <= worksheet.rowCount;
-			rowNumber += 1
-		) {
+		for (let rowNumber = config.import.dataStartRow || 2; rowNumber <= worksheet.rowCount; rowNumber += 1) {
 			const row = worksheet.getRow(rowNumber);
 			const raw = worksheetRowToPayload(row, headerMap);
-			const isEmpty = importHeaders.every((header) => !normalizeFieldValue({ type: 'string' }, raw[header] || ''));
+			const isEmpty = importHeaders.every(
+				(header) => !normalizeFieldValue({ type: 'string' }, raw[header] || ''),
+			);
 
 			if (isEmpty || isInstructionRow(config, importHeaders, raw)) {
 				continue;
@@ -228,7 +230,8 @@ router.post(
 
 		if (importedRows.length === 0 && errorRows.length === 0) {
 			return res.status(400).json({
-				message: 'Tidak ada data yang terbaca dari file import. Isi data mulai dari baris setelah header template.',
+				message:
+					'Tidak ada data yang terbaca dari file import. Isi data mulai dari baris setelah header template.',
 			});
 		}
 
@@ -282,107 +285,107 @@ router.get(
 router.get(
 	'/:resource',
 	withAsync(async (req, res) => {
-	const config = getConfig(req.params.resource);
+		const config = getConfig(req.params.resource);
 
-	if (!config) {
-		return res.status(404).json({ message: 'Master data resource not found.' });
-	}
+		if (!config) {
+			return res.status(404).json({ message: 'Master data resource not found.' });
+		}
 
-	const items = await getDelegate(config.model).findMany({
-		orderBy: {
-			id: 'asc',
-		},
-	});
+		const items = await getDelegate(config.model).findMany({
+			orderBy: {
+				id: 'asc',
+			},
+		});
 
-	return res.json(items);
+		return res.json(items);
 	}),
 );
 
 router.post(
 	'/:resource',
 	withAsync(async (req, res) => {
-	const config = getConfig(req.params.resource);
+		const config = getConfig(req.params.resource);
 
-	if (!config) {
-		return res.status(404).json({ message: 'Master data resource not found.' });
-	}
-	const data = await buildPayload(config, req.body);
+		if (!config) {
+			return res.status(404).json({ message: 'Master data resource not found.' });
+		}
+		const data = await buildPayload(config, req.body);
 
-	const item = await getDelegate(config.model).create({
-		data,
-	});
+		const item = await getDelegate(config.model).create({
+			data,
+		});
 
-	return res.status(201).json(item);
+		return res.status(201).json(item);
 	}),
 );
 
 router.put(
 	'/:resource/:id',
 	withAsync(async (req, res) => {
-	const config = getConfig(req.params.resource);
-	const id = Number(req.params.id);
+		const config = getConfig(req.params.resource);
+		const id = Number(req.params.id);
 
-	if (!config) {
-		return res.status(404).json({ message: 'Master data resource not found.' });
-	}
+		if (!config) {
+			return res.status(404).json({ message: 'Master data resource not found.' });
+		}
 
-	if (Number.isNaN(id)) {
-		return res.status(400).json({ message: 'ID tidak valid.' });
-	}
+		if (Number.isNaN(id)) {
+			return res.status(400).json({ message: 'ID tidak valid.' });
+		}
 
-	const existing = await getDelegate(config.model).findUnique({
-		where: {
-			id,
-		},
-	});
+		const existing = await getDelegate(config.model).findUnique({
+			where: {
+				id,
+			},
+		});
 
-	if (!existing) {
-		return res.status(404).json({ message: `${config.label} tidak ditemukan.` });
-	}
-	const data = await buildPayload(config, req.body, id);
+		if (!existing) {
+			return res.status(404).json({ message: `${config.label} tidak ditemukan.` });
+		}
+		const data = await buildPayload(config, req.body, id);
 
-	const item = await getDelegate(config.model).update({
-		where: {
-			id,
-		},
-		data,
-	});
+		const item = await getDelegate(config.model).update({
+			where: {
+				id,
+			},
+			data,
+		});
 
-	return res.json(item);
+		return res.json(item);
 	}),
 );
 
 router.delete(
 	'/:resource/:id',
 	withAsync(async (req, res) => {
-	const config = getConfig(req.params.resource);
-	const id = Number(req.params.id);
+		const config = getConfig(req.params.resource);
+		const id = Number(req.params.id);
 
-	if (!config) {
-		return res.status(404).json({ message: 'Master data resource not found.' });
-	}
+		if (!config) {
+			return res.status(404).json({ message: 'Master data resource not found.' });
+		}
 
-	if (Number.isNaN(id)) {
-		return res.status(400).json({ message: 'ID tidak valid.' });
-	}
+		if (Number.isNaN(id)) {
+			return res.status(400).json({ message: 'ID tidak valid.' });
+		}
 
-	const existing = await getDelegate(config.model).findUnique({
-		where: {
-			id,
-		},
-	});
+		const existing = await getDelegate(config.model).findUnique({
+			where: {
+				id,
+			},
+		});
 
-	if (!existing) {
-		return res.status(404).json({ message: `${config.label} tidak ditemukan.` });
-	}
+		if (!existing) {
+			return res.status(404).json({ message: `${config.label} tidak ditemukan.` });
+		}
 
-	await getDelegate(config.model).delete({
-		where: {
-			id,
-		},
-	});
+		await getDelegate(config.model).delete({
+			where: {
+				id,
+			},
+		});
 
-	return res.status(204).send();
+		return res.status(204).send();
 	}),
 );
 

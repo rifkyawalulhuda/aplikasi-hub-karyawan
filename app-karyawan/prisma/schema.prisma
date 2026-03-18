@@ -86,56 +86,69 @@ model JobLevel {
   @@map("job_levels")
 }
 
+model MasterUnit {
+  id               Int      @id @default(autoincrement())
+  unitName         String   @db.VarChar(255)
+  unitType         String   @db.VarChar(100)
+  capacity         String   @db.VarChar(255)
+  unitSerialNumber String   @db.VarChar(255)
+  detailLainnya    String   @db.VarChar(255)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@map("master_units")
+}
+
 model MasterDokPkb {
-  id        Int      @id @default(autoincrement())
-  article   String   @unique @db.VarChar(255)
-  content   String   @db.Text
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             Int             @id @default(autoincrement())
+  article        String          @unique @db.VarChar(255)
+  content        String          @db.Text
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
   warningLetters WarningLetter[]
 
   @@map("master_dok_pkb")
 }
 
 model MasterDokKaryawan {
-  id           Int      @id @default(autoincrement())
-  documentName String   @db.VarChar(255)
-  documentType String   @db.VarChar(100)
-  issuer       String   @db.VarChar(255)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                    Int                            @id @default(autoincrement())
+  documentName          String                         @db.VarChar(255)
+  documentType          String                         @db.VarChar(100)
+  issuer                String                         @db.VarChar(255)
+  createdAt             DateTime                       @default(now())
+  updatedAt             DateTime                       @updatedAt
   licenseCertifications EmployeeLicenseCertification[]
 
   @@map("master_dok_karyawan")
 }
 
 model Employee {
-  id             Int            @id @default(autoincrement())
-  employeeNo     String         @unique @db.VarChar(100)
-  password       String         @db.VarChar(255)
-  fullName       String         @db.VarChar(255)
-  employmentType EmploymentType
-  siteDiv        String         @default("CLC") @db.VarChar(100)
-  departmentId   Int
-  birthDate      DateTime       @db.Date
-  gender         Gender
-  workLocationId Int
-  jobRoleId      Int
-  jobLevelId     Int
-  educationLevel EducationLevel
-  grade          GradeRank
-  joinDate       DateTime       @db.Date
-  phoneNumber    String         @db.VarChar(50)
-  email          String?        @db.VarChar(255)
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  department     Department     @relation(fields: [departmentId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  workLocation   WorkLocation   @relation(fields: [workLocationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  jobRole        JobRole        @relation(fields: [jobRoleId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  jobLevel       JobLevel       @relation(fields: [jobLevelId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  guidanceRecords         GuidanceRecord[]
-  warningLetters          WarningLetter[] @relation("WarningLetterEmployee")
-  warningLetterApprovals WarningLetter[] @relation("WarningLetterSuperior")
+  id                     Int                            @id @default(autoincrement())
+  employeeNo             String                         @unique @db.VarChar(100)
+  password               String                         @db.VarChar(255)
+  fullName               String                         @db.VarChar(255)
+  employmentType         EmploymentType
+  siteDiv                String                         @default("CLC") @db.VarChar(100)
+  departmentId           Int
+  birthDate              DateTime                       @db.Date
+  gender                 Gender
+  workLocationId         Int
+  jobRoleId              Int
+  jobLevelId             Int
+  educationLevel         EducationLevel
+  grade                  GradeRank
+  joinDate               DateTime                       @db.Date
+  phoneNumber            String                         @db.VarChar(50)
+  email                  String?                        @db.VarChar(255)
+  createdAt              DateTime                       @default(now())
+  updatedAt              DateTime                       @updatedAt
+  department             Department                     @relation(fields: [departmentId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  workLocation           WorkLocation                   @relation(fields: [workLocationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  jobRole                JobRole                        @relation(fields: [jobRoleId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  jobLevel               JobLevel                       @relation(fields: [jobLevelId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  guidanceRecords        GuidanceRecord[]
+  warningLetters         WarningLetter[]                @relation("WarningLetterEmployee")
+  warningLetterApprovals WarningLetter[]                @relation("WarningLetterSuperior")
   adminAccounts          MasterAdmin[]
   licenseCertifications  EmployeeLicenseCertification[]
 
@@ -147,12 +160,12 @@ model Employee {
 }
 
 model MasterAdmin {
-  id        Int      @id @default(autoincrement())
-  employeeId Int     @unique
-  password  String   @db.VarChar(255)
-  role      String   @db.VarChar(20)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         Int      @id @default(autoincrement())
+  employeeId Int      @unique
+  password   String   @db.VarChar(255)
+  role       String   @db.VarChar(20)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
   employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
 
   @@index([employeeId])
@@ -181,23 +194,23 @@ model GuidanceRecord {
 
 model WarningLetter {
   category           DisciplineLetterCategory @default(WARNING_LETTER)
-  id                 Int      @id @default(autoincrement())
+  id                 Int                      @id @default(autoincrement())
   employeeId         Int
   superiorEmployeeId Int
   masterDokPkbId     Int?
   warningLevel       Int?
-  letterNumber       String   @db.VarChar(25)
-  letterDate         DateTime @db.Date
-  departmentName     String?  @db.VarChar(255)
-  jobLevelName       String?  @db.VarChar(255)
-  violation          String   @db.Text
-  articleLabel       String?  @db.VarChar(255)
-  articleContent     String?  @db.Text
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-  employee           Employee     @relation("WarningLetterEmployee", fields: [employeeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  superiorEmployee   Employee     @relation("WarningLetterSuperior", fields: [superiorEmployeeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  masterDokPkb       MasterDokPkb? @relation(fields: [masterDokPkbId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  letterNumber       String                   @db.VarChar(25)
+  letterDate         DateTime                 @db.Date
+  departmentName     String?                  @db.VarChar(255)
+  jobLevelName       String?                  @db.VarChar(255)
+  violation          String                   @db.Text
+  articleLabel       String?                  @db.VarChar(255)
+  articleContent     String?                  @db.Text
+  createdAt          DateTime                 @default(now())
+  updatedAt          DateTime                 @updatedAt
+  employee           Employee                 @relation("WarningLetterEmployee", fields: [employeeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  superiorEmployee   Employee                 @relation("WarningLetterSuperior", fields: [superiorEmployeeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  masterDokPkb       MasterDokPkb?            @relation(fields: [masterDokPkbId], references: [id], onDelete: Restrict, onUpdate: Cascade)
 
   @@index([employeeId])
   @@index([superiorEmployeeId])
@@ -206,17 +219,17 @@ model WarningLetter {
 }
 
 model EmployeeLicenseCertification {
-  id                  Int      @id @default(autoincrement())
+  id                  Int               @id @default(autoincrement())
   employeeId          Int
   masterDokKaryawanId Int
-  type                String   @db.VarChar(255)
-  documentNumber      String   @db.VarChar(255)
-  issuerSnapshot      String   @db.VarChar(255)
-  expiryDate          DateTime @db.Date
-  notes               String?  @db.Text
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
-  employee            Employee @relation(fields: [employeeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  type                String            @db.VarChar(255)
+  documentNumber      String            @db.VarChar(255)
+  issuerSnapshot      String            @db.VarChar(255)
+  expiryDate          DateTime          @db.Date
+  notes               String?           @db.Text
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  employee            Employee          @relation(fields: [employeeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   masterDokKaryawan   MasterDokKaryawan @relation(fields: [masterDokKaryawanId], references: [id], onDelete: Restrict, onUpdate: Cascade)
 
   @@index([employeeId])

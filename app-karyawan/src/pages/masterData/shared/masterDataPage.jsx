@@ -321,7 +321,7 @@ function MasterDataPage({ config }) {
 				open={deleteOpen}
 				loading={submitting}
 				title={config.fieldLabel}
-				itemName={selectedItem?.name}
+				itemName={selectedItem?.[config.itemNameField || 'name']}
 				onClose={closeDeleteDialog}
 				onConfirm={handleConfirmDelete}
 			/>

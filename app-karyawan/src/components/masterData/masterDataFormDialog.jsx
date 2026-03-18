@@ -6,6 +6,7 @@ import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
+import MenuItem from '@mui/material/MenuItem';
 import Stack from '@mui/material/Stack';
 
 import FormInput from '@/components/formInput';
@@ -57,25 +58,39 @@ function MasterDataFormDialog({ config, open, loading, initialValue, onClose, on
 					pt={1}
 					onSubmit={handleSubmit(onSubmit)}
 				>
-					{fields.map((field, index) => (
-						<FormInput
-							key={field.name}
-							name={field.name}
-							label={field.label}
-							placeholder={field.placeholder}
-							control={control}
-							errors={errors}
-							dirtyFields={dirtyFields}
-							rules={{
-								required: `${field.label} wajib diisi.`,
-								validate: (value) => value.trim().length > 0 || `${field.label} wajib diisi.`,
-							}}
-							fullWidth
-							autoFocus={index === 0}
-							multiline={field.type === 'multiline'}
-							rows={field.rows}
-						/>
-					))}
+					{fields.map((field, index) => {
+						const selectOptions =
+							field.type === 'select'
+								? field.options?.map((option) => (
+										<MenuItem key={option} value={option}>
+											{option}
+										</MenuItem>
+								  ))
+								: null;
+
+						return (
+							<FormInput
+								key={field.name}
+								name={field.name}
+								label={field.label}
+								placeholder={field.placeholder}
+								control={control}
+								errors={errors}
+								dirtyFields={dirtyFields}
+								rules={{
+									required: `${field.label} wajib diisi.`,
+									validate: (value) => value.trim().length > 0 || `${field.label} wajib diisi.`,
+								}}
+								fullWidth
+								autoFocus={index === 0}
+								multiline={field.type === 'multiline'}
+								rows={field.rows}
+								select={field.type === 'select'}
+							>
+								{selectOptions}
+							</FormInput>
+						);
+					})}
 				</Stack>
 			</DialogContent>
 			<DialogActions sx={{ px: 3, pb: 3 }}>
