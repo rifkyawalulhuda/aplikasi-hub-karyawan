@@ -10,6 +10,7 @@ import '@fontsource/roboto/700.css';
 
 import StoreProvider from '@/store';
 import { AuthProvider } from '@/contexts/authContext';
+import { EmployeeAuthProvider } from '@/contexts/employeeAuthContext';
 
 import { Provider as SnackbarProvider } from '@/components/snackbar';
 
@@ -21,12 +22,14 @@ function App() {
 	return (
 		<StoreProvider>
 			<AuthProvider>
-				<MUITheme>
-					<SnackbarProvider>
-						<CustomizationLayout />
-						<Router />
-					</SnackbarProvider>
-				</MUITheme>
+				<EmployeeAuthProvider>
+					<MUITheme>
+						<SnackbarProvider>
+							<CustomizationLayout />
+							<Router />
+						</SnackbarProvider>
+					</MUITheme>
+				</EmployeeAuthProvider>
 			</AuthProvider>
 		</StoreProvider>
 	);

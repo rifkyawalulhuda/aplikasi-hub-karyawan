@@ -6,10 +6,19 @@ import withLazyLoadably from '@hocs/withLazyLoadably';
 
 import ProtectedRoute from '@/components/auth/protectedRoute';
 import PublicOnlyRoute from '@/components/auth/publicOnlyRoute';
+import EmployeeProtectedRoute from '@/components/auth/employeeProtectedRoute';
+import EmployeePublicOnlyRoute from '@/components/auth/employeePublicOnlyRoute';
+import EmployeeAuthLayout from '@/components/layouts/employeeAuthLayout';
+import EmployeeMobileLayout from '@/components/layouts/employeeMobileLayout';
 import MinimalLayout from '@/components/layouts/minimalLayout';
 import MainLayout from '@/components/layouts/mainLayout';
 
 const LoginPage = withLazyLoadably(lazy(() => import('@/pages/login')));
+const EmployeeLoginPage = withLazyLoadably(lazy(() => import('@/pages/employeeMobile/login')));
+const EmployeeDashboardPage = withLazyLoadably(lazy(() => import('@/pages/employeeMobile/dashboard')));
+const EmployeeProfilePage = withLazyLoadably(lazy(() => import('@/pages/employeeMobile/profile')));
+const EmployeeGuidanceRecordsPage = withLazyLoadably(lazy(() => import('@/pages/employeeMobile/guidanceRecords')));
+const EmployeeWarningLettersPage = withLazyLoadably(lazy(() => import('@/pages/employeeMobile/warningLetters')));
 const WorkLocationsPage = withLazyLoadably(lazy(() => import('@/pages/masterData/workLocations')));
 const DepartmentsPage = withLazyLoadably(lazy(() => import('@/pages/masterData/departments')));
 const JobRolesPage = withLazyLoadably(lazy(() => import('@/pages/masterData/jobRoles')));
@@ -33,6 +42,19 @@ function Router() {
 		<BrowserRouter>
 			<ScrollToTopOnRouteChange>
 				<Routes>
+					<Route element={<EmployeePublicOnlyRoute />}>
+						<Route element={<EmployeeAuthLayout />}>
+							<Route path="/karyawan/login" element={<EmployeeLoginPage />} />
+						</Route>
+					</Route>
+					<Route element={<EmployeeProtectedRoute />}>
+						<Route path="/karyawan" element={<EmployeeMobileLayout />}>
+							<Route index element={<EmployeeDashboardPage />} />
+							<Route path="profil" element={<EmployeeProfilePage />} />
+							<Route path="bimbingan-pengarahan" element={<EmployeeGuidanceRecordsPage />} />
+							<Route path="surat-peringatan" element={<EmployeeWarningLettersPage />} />
+						</Route>
+					</Route>
 					<Route element={<PublicOnlyRoute />}>
 						<Route element={<MinimalLayout />}>
 							<Route path="/login" element={<LoginPage />} />

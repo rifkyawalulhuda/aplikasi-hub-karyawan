@@ -40,6 +40,9 @@ Folder ini dipilih sebagai basis utama pengembangan karena struktur template-nya
 - Menggunakan template project yang sudah ada di folder proyek.
 - Menggunakan React JS + Vite.
 - Menggunakan Material UI sebagai library UI utama.
+- Area `Portal Mobile Karyawan` dibangun di project yang sama dengan prefix route `/karyawan`.
+- Area `Portal Mobile Karyawan` ditujukan mobile-first dan diaktifkan sebagai PWA installable.
+- Area admin desktop dan area mobile karyawan menggunakan auth context dan route guard yang terpisah agar session tidak saling bentrok.
 
 ### Backend dan Database
 
@@ -52,6 +55,9 @@ Folder ini dipilih sebagai basis utama pengembangan karena struktur template-nya
 - Primary key tiap tabel menggunakan `id` auto increment.
 - Kolom `NO` pada tabel UI hanya nomor urut tampilan, bukan kolom utama database.
 - Backend API awal menggunakan Express JS dalam project yang sama dengan frontend.
+- Ditambahkan auth flow khusus karyawan berbasis bearer token ringan dengan secret `EMPLOYEE_AUTH_SECRET`.
+- Login `Portal Mobile Karyawan` menggunakan `Employee No` sebagai NIK dan `password` dari tabel `employees`.
+- API self-service karyawan menggunakan endpoint khusus `/api/employee-me/*` dan seluruh data selalu difilter berdasarkan employee yang sedang login.
 
 ## Struktur Navigasi yang Sudah Disepakati
 
@@ -240,6 +246,53 @@ Modul ini direncanakan untuk menampilkan histori karyawan dan report keseluruhan
     - isi section C
   - jika filter tanggal kosong, export akan mengambil seluruh data yang tersedia
 
+### 2A. Portal Mobile Karyawan (PWA)
+
+Modul ini digunakan agar karyawan dapat login dari HP dan melihat data dirinya sendiri dalam tampilan mobile yang ringan.
+
+- Route utama:
+  - `/karyawan/login`
+  - `/karyawan`
+  - `/karyawan/profil`
+  - `/karyawan/bimbingan-pengarahan`
+  - `/karyawan/surat-peringatan`
+- Scope v1 bersifat read-only untuk data milik karyawan yang sedang login.
+- Login menggunakan:
+  - `NIK` -> `Employee.employeeNo`
+  - `Password` -> `Employee.password`
+- Session mobile karyawan disimpan terpisah dari session admin.
+- Data yang ditampilkan pada dashboard/profil minimal mencakup:
+  - `employeeNo`
+  - `fullName`
+  - `employmentType`
+  - `siteDiv`
+  - `department`
+  - `workLocation`
+  - `jobRole`
+  - `jobLevel`
+  - `educationLevel`
+  - `grade`
+  - `joinDate`
+  - `lengthOfService`
+  - `birthDate`
+  - `age`
+  - `gender`
+  - `phoneNumber`
+  - `email`
+- Halaman mobile karyawan menampilkan:
+  - dashboard ringkasan
+  - profil karyawan
+  - riwayat `Bimbingan & Pengarahan` milik sendiri
+  - riwayat `Surat Peringatan / Surat Teguran` milik sendiri
+- PWA sekarang memiliki:
+  - manifest
+  - service worker
+  - ikon install app
+  - `start_url` ke `/karyawan/login`
+- Strategi PWA untuk data sensitif bersifat online-first:
+  - shell aplikasi dapat dicache
+  - request `/api/*` tidak menyimpan cache persisten data karyawan
+
 #### Halaman Surat Peringatan
 
 - Menyediakan form input surat peringatan.
@@ -379,6 +432,22 @@ Yang sudah selesai:
 - Menambahkan halaman detail dan print `Formulir Catatan Bimbingan Karyawan` dengan pendekatan overlay data di atas template PDF resmi.
 - Menambahkan kategori `Bimbingan` dan `Pengarahan` pada modul `Bimbingan & Pengarahan`, beserta form input dan template print A4 untuk `Formulir Catatan Pengarahan Karyawan`.
 - Menambahkan schema, migration, API CRUD, route, menu, halaman tabel, form input/edit, halaman detail, dan print A4 untuk modul `Data Surat Peringatan`.
+- Menambahkan auth flow khusus `Portal Mobile Karyawan` berbasis `Employee No` + `Employee.password`.
+- Menambahkan middleware bearer token karyawan dan endpoint self-service:
+  - `/api/employee-auth/login`
+  - `/api/employee-me/dashboard`
+  - `/api/employee-me/profile`
+  - `/api/employee-me/guidance-records`
+  - `/api/employee-me/warning-letters`
+- Menambahkan route frontend mobile-first untuk:
+  - `/karyawan/login`
+  - `/karyawan`
+  - `/karyawan/profil`
+  - `/karyawan/bimbingan-pengarahan`
+  - `/karyawan/surat-peringatan`
+- Menambahkan layout mobile khusus karyawan dengan bottom navigation dan logout terpisah dari area admin.
+- Menambahkan halaman dashboard, profil, riwayat bimbingan, dan riwayat surat peringatan untuk karyawan login.
+- Mengaktifkan PWA pada project aktif dengan manifest, service worker, register SW, dan ikon install app untuk `Portal Mobile Karyawan`.
 - Verifikasi `lint`, `build`, dan smoke test API ke database berhasil.
 
 ## Struktur Teknis Awal yang Sudah Dibangun

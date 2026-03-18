@@ -20,6 +20,11 @@ import RestartAltIcon from '@mui/icons-material/RestartAlt';
 
 function CustomizationLayout() {
 	const [showDrawer, setshowDrawer] = useState(false);
+	const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
+
+	if (pathname.startsWith('/karyawan')) {
+		return null;
+	}
 
 	const openDrawer = () => {
 		setshowDrawer(true);
