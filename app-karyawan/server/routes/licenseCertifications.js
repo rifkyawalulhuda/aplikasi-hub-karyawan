@@ -3,6 +3,7 @@ import { Router } from 'express';
 import prisma from '../lib/prisma.js';
 
 const router = Router();
+const EXPIRING_SOON_DAYS = 25;
 
 function withAsync(handler) {
 	return (req, res, next) => {
@@ -72,7 +73,19 @@ function getStatusLabel(expiryDate) {
 		return 'Expired';
 	}
 
-	return comparableExpiryDate >= getTodayComparableValue() ? 'Aktif' : 'Expired';
+	const differenceInDays = Math.floor(
+		(comparableExpiryDate - getTodayComparableValue()) / (24 * 60 * 60 * 1000),
+	);
+
+	if (differenceInDays < 0) {
+		return 'Expired';
+	}
+
+	if (differenceInDays <= EXPIRING_SOON_DAYS) {
+		return 'Akan Expired';
+	}
+
+	return 'Aktif';
 }
 
 function mapLicenseCertification(record) {
