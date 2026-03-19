@@ -168,6 +168,11 @@ function EmployeeDashboardPage() {
 					helper="Riwayat dokumen disipliner"
 				/>
 				<SummaryCard
+					label="Pengajuan Cuti"
+					value={data?.summary?.leaveRequestCount ?? 0}
+					helper="Total request cuti Anda"
+				/>
+				<SummaryCard
 					label="Masa Kerja"
 					value={profile?.lengthOfService || '-'}
 					helper="Dihitung dari join date"
