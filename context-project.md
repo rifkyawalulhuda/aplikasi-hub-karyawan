@@ -148,6 +148,7 @@ Catatan implementasi:
 - Nilai `Grade` untuk user-facing UI dan template Excel menggunakan format label seperti `Rank 1`, `Rank 2`, dan seterusnya, sedangkan penyimpanan internal database tetap memakai enum teknis.
 - Sudah tersedia template Excel bulk import untuk `Master Karyawan`.
 - Sudah tersedia fitur import bulk dari file Excel pada halaman `Master Karyawan`.
+- Template import `Master Karyawan` sekarang sudah memiliki kolom `Group Shift` dengan dropdown value dari `Master Group Shift`.
 - Import bulk mendukung partial success:
   - baris valid tetap diimport
   - baris gagal menghasilkan file error report `.xlsx`
