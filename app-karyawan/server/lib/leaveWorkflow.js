@@ -146,12 +146,17 @@ async function getRequesterForWorkflow(tx, employeeId) {
 	return employee;
 }
 
-async function findDepartmentApprovers(tx, departmentId, jobLevelName, requesterId) {
+async function findDepartmentApprovers(
+	tx,
+	{ departmentId, jobLevelName, requesterId, excludeGroupedForemen = false, excludeEmployeeIds = [] },
+) {
+	const uniqueExcludedEmployeeIds = [...new Set(excludeEmployeeIds)].filter((value) => Number.isInteger(value));
+
 	return tx.employee.findMany({
 		where: {
 			departmentId,
 			id: {
-				not: requesterId,
+				notIn: [...uniqueExcludedEmployeeIds, requesterId],
 			},
 			jobLevel: {
 				name: {
@@ -159,6 +164,13 @@ async function findDepartmentApprovers(tx, departmentId, jobLevelName, requester
 					mode: 'insensitive',
 				},
 			},
+			...(excludeGroupedForemen && normalizeJobLevelName(jobLevelName) === 'foreman'
+				? {
+						groupShiftAssignments: {
+							none: {},
+						},
+				  }
+				: {}),
 		},
 		include: {
 			jobLevel: true,
@@ -171,14 +183,20 @@ async function findDepartmentApprovers(tx, departmentId, jobLevelName, requester
 async function resolveApprovalStages(tx, requester) {
 	const stages = [];
 	const requesterRank = getApprovalRank(requester.jobLevel?.name);
+	const hasRequesterGroupShift = Boolean(requester.groupShiftId);
+	const groupShiftForemanApprovers = hasRequesterGroupShift
+		? requester.groupShift?.foremen
+				.map((assignment) => assignment.employee)
+				.filter((employee) => employee.id !== requester.id) || []
+		: [];
+	const seenApproverIds = new Set();
 	let stageOrder = 1;
 
-	if (requesterRank < 0 && requester.groupShift?.foremen?.length) {
-		const approvers = requester.groupShift.foremen
-			.map((assignment) => assignment.employee)
-			.filter((employee) => employee.id !== requester.id);
+	if (requesterRank < 0 && groupShiftForemanApprovers.length > 0) {
+		const approvers = groupShiftForemanApprovers.filter((employee) => !seenApproverIds.has(employee.id));
 
 		if (approvers.length > 0) {
+			approvers.forEach((employee) => seenApproverIds.add(employee.id));
 			stages.push({
 				stageOrder,
 				stageType: 'FOREMAN_GROUP_SHIFT',
@@ -191,17 +209,25 @@ async function resolveApprovalStages(tx, requester) {
 	const startIndex = requesterRank >= 0 ? requesterRank + 1 : 0;
 	for (let index = startIndex; index < APPROVAL_STAGE_SEQUENCE.length; index += 1) {
 		const stageConfig = APPROVAL_STAGE_SEQUENCE[index];
-		const approvers = await findDepartmentApprovers(
-			tx,
-			requester.departmentId,
-			stageConfig.jobLevelName,
-			requester.id,
-		);
+		const shouldSkipDepartmentForemanStage = stageConfig.stageType === 'FOREMAN' && hasRequesterGroupShift;
+
+		if (shouldSkipDepartmentForemanStage) {
+			continue;
+		}
+
+		const approvers = await findDepartmentApprovers(tx, {
+			departmentId: requester.departmentId,
+			jobLevelName: stageConfig.jobLevelName,
+			requesterId: requester.id,
+			excludeGroupedForemen: stageConfig.stageType === 'FOREMAN' && !hasRequesterGroupShift,
+			excludeEmployeeIds: Array.from(seenApproverIds),
+		});
 
 		if (approvers.length === 0) {
 			continue;
 		}
 
+		approvers.forEach((employee) => seenApproverIds.add(employee.id));
 		stages.push({
 			stageOrder,
 			stageType: stageConfig.stageType,
