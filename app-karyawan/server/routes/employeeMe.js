@@ -19,7 +19,7 @@ import {
 	toDateOnly,
 } from '../lib/leaveWorkflow.js';
 import {
-	createLeaveDatabaseHistory,
+	applyApprovedLeaveToDatabase,
 	getLeaveDatabaseBalance,
 	listLeaveTypeBalancesForEmployeeYear,
 } from '../lib/leaveDatabase.js';
@@ -944,12 +944,28 @@ router.post('/leave-approvals/:id/approve', async (req, res, next) => {
 					},
 				});
 			} else {
+				const approvedAt = new Date();
+				const leaveDatabaseResult = await applyApprovedLeaveToDatabase(tx, {
+					employeeId: approval.employeeLeave.employeeId,
+					masterCutiKaryawanId: approval.employeeLeave.masterCutiKaryawanId,
+					year: approval.employeeLeave.leaveYear,
+					employeeLeaveId: approval.employeeLeaveId,
+					leaveDays: approval.employeeLeave.leaveDays,
+					periodStart: approval.employeeLeave.periodStart,
+					periodEnd: approval.employeeLeave.periodEnd,
+					changeDate: approvedAt,
+					notes: approval.employeeLeave.notes
+						? `${approval.employeeLeave.notes}\n\nRef Workflow: ${approval.employeeLeave.requestNumber}`
+						: `Ref Workflow: ${approval.employeeLeave.requestNumber}`,
+				});
+
 				await tx.employeeLeave.update({
 					where: { id: approval.employeeLeaveId },
 					data: {
 						status: 'APPROVED',
 						currentStageOrder: null,
-						approvedAt: new Date(),
+						remainingLeave: leaveDatabaseResult.balanceAfter,
+						approvedAt,
 					},
 				});
 
@@ -962,20 +978,9 @@ router.post('/leave-approvals/:id/approve', async (req, res, next) => {
 					},
 					data: {
 						status: 'APPROVED',
-						approvedAt: new Date(),
+						remainingLeave: leaveDatabaseResult.balanceAfter,
+						approvedAt,
 					},
-				});
-
-				await createLeaveDatabaseHistory(tx, {
-					employeeId: approval.employeeLeave.employeeId,
-					masterCutiKaryawanId: approval.employeeLeave.masterCutiKaryawanId,
-					leaveDays: approval.employeeLeave.leaveDays,
-					periodStart: approval.employeeLeave.periodStart,
-					periodEnd: approval.employeeLeave.periodEnd,
-					remainingLeave: approval.employeeLeave.remainingLeave,
-					notes: approval.employeeLeave.notes
-						? `${approval.employeeLeave.notes}\n\nRef Workflow: ${approval.employeeLeave.requestNumber}`
-						: `Ref Workflow: ${approval.employeeLeave.requestNumber}`,
 				});
 			}
 

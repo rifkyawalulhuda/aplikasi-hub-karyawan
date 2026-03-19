@@ -23,6 +23,7 @@ import MasterDataImportDialog from '@/components/masterData/masterDataImportDial
 import PageHeader from '@/components/pageHeader';
 import apiRequest, { getApiBaseUrl } from '@/services/api';
 
+import EmployeeLeaveDetailDialog from './employeeLeaveDetailDialog';
 import EmployeeLeaveFormDialog from './employeeLeaveFormDialog';
 import EmployeeLeaveTable from './employeeLeaveTable';
 
@@ -48,6 +49,9 @@ function EmployeeLeavesPage() {
 	const [formOpen, setFormOpen] = useState(false);
 	const [importOpen, setImportOpen] = useState(false);
 	const [deleteOpen, setDeleteOpen] = useState(false);
+	const [detailOpen, setDetailOpen] = useState(false);
+	const [detailLoading, setDetailLoading] = useState(false);
+	const [detailItem, setDetailItem] = useState(null);
 	const [selectedItem, setSelectedItem] = useState(null);
 	const [searchKeyword, setSearchKeyword] = useState('');
 
@@ -93,6 +97,7 @@ function EmployeeLeavesPage() {
 				row.periodEnd,
 				row.remainingLeave,
 				row.notes,
+				row.year,
 			];
 
 			return searchableValues.some((value) =>
@@ -106,6 +111,12 @@ function EmployeeLeavesPage() {
 	const closeFormDialog = () => {
 		setFormOpen(false);
 		setSelectedItem(null);
+	};
+
+	const closeDetailDialog = () => {
+		setDetailOpen(false);
+		setDetailLoading(false);
+		setDetailItem(null);
 	};
 
 	const mergeImportedRows = (importedRows) => {
@@ -317,6 +328,22 @@ function EmployeeLeavesPage() {
 		}
 	};
 
+	const handleOpenDetail = async (item) => {
+		setDetailOpen(true);
+		setDetailLoading(true);
+		setDetailItem(null);
+
+		try {
+			const detail = await apiRequest(`/data-karyawan/employee-leave-database/${item.id}`);
+			setDetailItem(detail);
+		} catch (error) {
+			setDetailOpen(false);
+			enqueueSnackbar(error.message, { variant: 'error' });
+		} finally {
+			setDetailLoading(false);
+		}
+	};
+
 	return (
 		<>
 			<PageHeader title="Data Cuti Karyawan">
@@ -396,6 +423,7 @@ function EmployeeLeavesPage() {
 				) : (
 					<EmployeeLeaveTable
 						rows={filteredRows}
+						onDetail={handleOpenDetail}
 						onEdit={(item) => {
 							setSelectedItem(item);
 							setFormOpen(true);
@@ -415,6 +443,12 @@ function EmployeeLeavesPage() {
 				leaveTypeOptions={leaveTypeOptions}
 				onClose={closeFormDialog}
 				onSubmit={handleSubmit}
+			/>
+			<EmployeeLeaveDetailDialog
+				open={detailOpen}
+				loading={detailLoading}
+				data={detailItem}
+				onClose={closeDetailDialog}
 			/>
 			<MasterDataImportDialog
 				open={importOpen}

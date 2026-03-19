@@ -58,6 +58,9 @@ Folder ini dipilih sebagai basis utama pengembangan karena struktur template-nya
 - Ditambahkan auth flow khusus karyawan berbasis bearer token ringan dengan secret `EMPLOYEE_AUTH_SECRET`.
 - Login `Portal Mobile Karyawan` menggunakan `Employee No` sebagai NIK dan `password` dari tabel `employees`.
 - API self-service karyawan menggunakan endpoint khusus `/api/employee-me/*` dan seluruh data selalu difilter berdasarkan employee yang sedang login.
+- `Data Cuti Karyawan` sekarang diperlakukan sebagai saldo utama admin-only dengan satu row per kombinasi `Karyawan + Jenis Cuti + Tahun`.
+- Final approval cuti dari PWA tidak lagi menambah row baru pada `Data Cuti Karyawan`; sistem hanya mengurangi `Sisa Cuti` pada row utama yang sesuai.
+- Riwayat approval cuti dan perubahan admin/import untuk `Data Cuti Karyawan` ditampilkan melalui aksi `Detail`, bukan dengan menduplikasi row pada grid utama.
 - Routing approval cuti foreman sekarang bersifat eksklusif:
   - jika requester punya `Group Shift`, tahap foreman hanya memakai foreman yang terdaftar pada `Master Group Shift` tersebut
   - jika requester tidak punya `Group Shift`, tahap foreman hanya memakai foreman dalam department yang sama yang tidak punya assignment pada `group_shift_foremen`
