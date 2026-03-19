@@ -11,6 +11,8 @@ import DialogTitle from '@mui/material/DialogTitle';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
+import { getApiBaseUrl } from '@/services/api';
+
 function EmployeeImportDialog({ open, loading, onClose, onImport }) {
 	const inputRef = useRef(null);
 	const [selectedFile, setSelectedFile] = useState(null);
@@ -52,8 +54,7 @@ function EmployeeImportDialog({ open, loading, onClose, onImport }) {
 					</Typography>
 					<Button
 						component="a"
-						href="/templates/master-karyawan-import-template.xlsx"
-						download
+						href={`${getApiBaseUrl()}/master/employees/import-template`}
 						variant="outlined"
 						startIcon={<DownloadOutlinedIcon />}
 					>

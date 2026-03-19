@@ -149,6 +149,7 @@ Catatan implementasi:
 - Sudah tersedia template Excel bulk import untuk `Master Karyawan`.
 - Sudah tersedia fitur import bulk dari file Excel pada halaman `Master Karyawan`.
 - Template import `Master Karyawan` sekarang sudah memiliki kolom `Group Shift` dengan dropdown value dari `Master Group Shift`.
+- Template import `Master Karyawan` sekarang dihasilkan dinamis dari backend, sehingga seluruh dropdown value selalu mengikuti data master terbaru di sistem.
 - Import bulk mendukung partial success:
   - baris valid tetap diimport
   - baris gagal menghasilkan file error report `.xlsx`
