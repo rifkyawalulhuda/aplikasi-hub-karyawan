@@ -82,6 +82,7 @@ Folder ini dipilih sebagai basis utama pengembangan karena struktur template-nya
 - Menu utama: `Bimbingan & Pengarahan`
 - Menu tambahan: `Data Surat Peringatan`
 - Menu tambahan: `Lisensi & Sertifikasi`
+- Menu tambahan: `Cuti Karyawan`
 - Tab utama tambahan: `Data Unit`
 - Menu utama: `Lisensi & Sertifikasi Unit`
 
@@ -437,6 +438,27 @@ Aturan approval yang sudah disebutkan:
 - Jika pengaju adalah Foreman, approval masuk ke General Foreman pada department terkait.
 - Approval lanjutan mengikuti flow approval route perusahaan.
 
+#### Data Cuti Karyawan
+
+- Menyediakan halaman `Data Cuti Karyawan` di bawah menu `Data Karyawan`.
+- Struktur input:
+  - `Nama Karyawan` dari `Master Karyawan`
+  - `NIK` autofill dari `Employee No`
+  - `Jenis Cuti` dari `Master Cuti Karyawan`
+  - `Jumlah Cuti`
+  - `Periode Cuti Dari`
+  - `Periode Cuti Sampai`
+  - `Sisa Cuti`
+  - `Catatan`
+- Halaman daftar mengikuti pola `Lisensi & Sertifikasi`.
+- Halaman daftar memiliki:
+  - search no-case sensitive
+  - filter rentang tanggal berdasarkan rentang `Periode Cuti`
+  - `Export Excel`
+  - `NO` berbasis nomor urut tampilan
+  - sticky kolom aksi
+  - pagination `15 / 30 / 50 / 100`
+
 ### 4. Modul Dokumen
 
 #### Daftar Lisensi Unit & Kargo
@@ -545,6 +567,7 @@ Yang sudah selesai:
 - Menambahkan schema, migration, API CRUD, route, menu, dan halaman `Master Admin` dengan field `Nama`, `NIK`, `Password`, dan `Role`.
 - Menambahkan schema, migration, API CRUD, route, menu, dan halaman `Master Dok Karyawan` dengan field `Nama Dokumen`, `Jenis Dokumen`, dan `Penerbit`.
 - Menambahkan schema, migration, resource master data generic, route, menu, dan halaman `Master Cuti Karyawan` dengan field `Jenis Cuti`.
+- Menambahkan schema, migration, API CRUD, route, menu, dan halaman `Data Cuti Karyawan` dengan relasi ke `Master Karyawan` dan `Master Cuti Karyawan`.
 - Menambahkan schema, migration, resource master data generic, route, menu, dan halaman `Master Unit` dengan field `Nama Unit`, `Jenis Unit`, `Kapasitas`, `Unit/Serial Number`, dan `Detail Lainnya`.
 - Menambahkan schema, migration, resource master data generic, route, menu, dan halaman `Master Vendor` dengan field `Nama Vendor`, `Jenis Vendor`, `Alamat`, `Nama PIC`, `Nomor Telfon`, `Email`, dan `Detail Lainnya`.
 - Menambahkan schema, migration, API CRUD, route, menu, dan halaman `Lisensi & Sertifikasi` dengan relasi ke `Master Karyawan` dan `Master Dok Karyawan`.

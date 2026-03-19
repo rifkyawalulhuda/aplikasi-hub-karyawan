@@ -163,6 +163,13 @@ const NAV_LINKS_CONFIG = [
 				Icon: DescriptionOutlinedIcon,
 				href: '/data-karyawan/lisensi-sertifikasi',
 			},
+			{
+				id: uuid(),
+				type: 'item',
+				title: 'Cuti Karyawan',
+				Icon: DescriptionOutlinedIcon,
+				href: '/data-karyawan/cuti-karyawan',
+			},
 		],
 	},
 	{

@@ -7,6 +7,7 @@ import authRouter from './routes/auth.js';
 import adminsRouter from './routes/admins.js';
 import employeeAuthRouter from './routes/employeeAuth.js';
 import employeeDocumentsRouter from './routes/employeeDocuments.js';
+import employeeLeavesRouter from './routes/employeeLeaves.js';
 import licenseCertificationsRouter from './routes/licenseCertifications.js';
 import unitLicenseCertificationsRouter from './routes/unitLicenseCertifications.js';
 import employeeMeRouter from './routes/employeeMe.js';
@@ -47,6 +48,7 @@ app.use('/api/master/employee-documents', employeeDocumentsRouter);
 app.use('/api/master', masterDataRouter);
 app.use('/api/data-karyawan/guidance-records', guidanceRecordsRouter);
 app.use('/api/data-karyawan/warning-letters', warningLettersRouter);
+app.use('/api/data-karyawan/employee-leaves', employeeLeavesRouter);
 app.use('/api/data-karyawan/license-certifications', licenseCertificationsRouter);
 app.use('/api/data-unit/license-certifications', unitLicenseCertificationsRouter);
 
