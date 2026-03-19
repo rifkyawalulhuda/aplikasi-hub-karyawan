@@ -8,6 +8,8 @@ import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
+import PrintOutlinedIcon from '@mui/icons-material/PrintOutlined';
+
 import FeedbackState from '@/components/employeePortal/feedbackState';
 import LeaveDecisionDialog from '@/components/employeePortal/leaveDecisionDialog';
 import LeaveRequestFormDialog from '@/components/employeePortal/leaveRequestFormDialog';
@@ -107,6 +109,10 @@ function EmployeeLeaveRequestDetailPage() {
 		}
 	};
 
+	const handleOpenPrint = () => {
+		window.open(`/karyawan/cuti/${id}/print`, '_blank', 'noopener,noreferrer');
+	};
+
 	if (loading) {
 		return <FeedbackState loading />;
 	}
@@ -169,6 +175,16 @@ function EmployeeLeaveRequestDetailPage() {
 						) : null}
 						<Divider />
 						<Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+							{record?.status === 'APPROVED' ? (
+								<Button
+									variant="contained"
+									color="primary"
+									startIcon={<PrintOutlinedIcon />}
+									onClick={handleOpenPrint}
+								>
+									Print A4
+								</Button>
+							) : null}
 							{record?.canResubmit ? (
 								<Button variant="contained" onClick={() => setResubmitOpen(true)}>
 									Resubmit

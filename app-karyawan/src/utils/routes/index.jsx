@@ -23,6 +23,7 @@ const EmployeeLeaveCenterPage = withLazyLoadably(lazy(() => import('@/pages/empl
 const EmployeeLeaveRequestDetailPage = withLazyLoadably(
 	lazy(() => import('@/pages/employeeMobile/leaveRequestDetail')),
 );
+const EmployeeLeavePrintPage = withLazyLoadably(lazy(() => import('@/pages/employeeMobile/leavePrint')));
 const EmployeeLeaveApprovalDetailPage = withLazyLoadably(
 	lazy(() => import('@/pages/employeeMobile/leaveApprovalDetail')),
 );
@@ -51,6 +52,7 @@ const WarningLetterBulkPrintPage = withLazyLoadably(
 const LicenseCertificationsPage = withLazyLoadably(lazy(() => import('@/pages/employeeData/licenseCertifications')));
 const EmployeeLeavesPage = withLazyLoadably(lazy(() => import('@/pages/employeeData/leaveRecords')));
 const EmployeeLeaveFlowPage = withLazyLoadably(lazy(() => import('@/pages/employeeData/leaveFlow')));
+const EmployeeLeavePrintAdminPage = withLazyLoadably(lazy(() => import('@/pages/employeeData/leaveFlow/print')));
 const UnitLicenseCertificationsPage = withLazyLoadably(lazy(() => import('@/pages/unitData/licenseCertifications')));
 
 function Router() {
@@ -64,6 +66,7 @@ function Router() {
 						</Route>
 					</Route>
 					<Route element={<EmployeeProtectedRoute />}>
+						<Route path="/karyawan/cuti/:id/print" element={<EmployeeLeavePrintPage />} />
 						<Route path="/karyawan" element={<EmployeeMobileLayout />}>
 							<Route index element={<EmployeeDashboardPage />} />
 							<Route path="cuti" element={<EmployeeLeaveCenterPage />} />
@@ -87,6 +90,10 @@ function Router() {
 						<Route
 							path="/print/data-karyawan/data-surat-peringatan"
 							element={<WarningLetterBulkPrintPage />}
+						/>
+						<Route
+							path="/print/data-karyawan/cuti-karyawan/:id"
+							element={<EmployeeLeavePrintAdminPage />}
 						/>
 						<Route path="/" element={<MainLayout />}>
 							<Route
