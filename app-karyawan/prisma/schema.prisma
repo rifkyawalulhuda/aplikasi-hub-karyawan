@@ -140,10 +140,11 @@ model MasterDokKaryawan {
 }
 
 model MasterCutiKaryawan {
-  id        Int      @id @default(autoincrement())
-  leaveType String   @db.VarChar(255)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id        Int             @id @default(autoincrement())
+  leaveType String          @db.VarChar(255)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  records   EmployeeLeave[]
 
   @@map("master_cuti_karyawan")
 }
@@ -177,12 +178,32 @@ model Employee {
   warningLetterApprovals WarningLetter[]                @relation("WarningLetterSuperior")
   adminAccounts          MasterAdmin[]
   licenseCertifications  EmployeeLicenseCertification[]
+  leaveRecords           EmployeeLeave[]
 
   @@index([departmentId])
   @@index([workLocationId])
   @@index([jobRoleId])
   @@index([jobLevelId])
   @@map("employees")
+}
+
+model EmployeeLeave {
+  id                   Int                @id @default(autoincrement())
+  employeeId           Int
+  masterCutiKaryawanId Int
+  leaveDays            Int
+  periodStart          DateTime           @db.Date
+  periodEnd            DateTime           @db.Date
+  remainingLeave       Int
+  notes                String?            @db.Text
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  employee             Employee           @relation(fields: [employeeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  masterCutiKaryawan   MasterCutiKaryawan @relation(fields: [masterCutiKaryawanId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([employeeId])
+  @@index([masterCutiKaryawanId])
+  @@map("employee_leaves")
 }
 
 model MasterAdmin {

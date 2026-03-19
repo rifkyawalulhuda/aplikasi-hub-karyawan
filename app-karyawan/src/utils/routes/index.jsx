@@ -41,6 +41,7 @@ const WarningLetterBulkPrintPage = withLazyLoadably(
 	lazy(() => import('@/pages/employeeData/warningLetters/bulkPrint')),
 );
 const LicenseCertificationsPage = withLazyLoadably(lazy(() => import('@/pages/employeeData/licenseCertifications')));
+const EmployeeLeavesPage = withLazyLoadably(lazy(() => import('@/pages/employeeData/leaveRecords')));
 const UnitLicenseCertificationsPage = withLazyLoadably(lazy(() => import('@/pages/unitData/licenseCertifications')));
 
 function Router() {
@@ -110,6 +111,7 @@ function Router() {
 							/>
 							<Route path="data-karyawan/data-surat-peringatan" element={<WarningLettersPage />} />
 							<Route path="data-karyawan/lisensi-sertifikasi" element={<LicenseCertificationsPage />} />
+							<Route path="data-karyawan/cuti-karyawan" element={<EmployeeLeavesPage />} />
 							<Route
 								path="data-unit/lisensi-sertifikasi-unit"
 								element={<UnitLicenseCertificationsPage />}
