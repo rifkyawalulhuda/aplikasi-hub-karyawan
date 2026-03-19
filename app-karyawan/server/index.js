@@ -58,7 +58,11 @@ app.use('/api/data-karyawan/employee-leave-balance-seeds', employeeLeaveBalanceS
 app.use('/api/data-karyawan/license-certifications', licenseCertificationsRouter);
 app.use('/api/data-unit/license-certifications', unitLicenseCertificationsRouter);
 
-app.use((error, req, res) => {
+app.use((error, req, res, next) => {
+	if (res.headersSent) {
+		return next(error);
+	}
+
 	console.error(error);
 
 	if (error?.code === 'P2002') {
