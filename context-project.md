@@ -454,10 +454,21 @@ Aturan approval yang sudah disebutkan:
 - Halaman daftar memiliki:
   - search no-case sensitive
   - filter rentang tanggal berdasarkan rentang `Periode Cuti`
+  - `Import Excel`
   - `Export Excel`
   - `NO` berbasis nomor urut tampilan
   - sticky kolom aksi
   - pagination `15 / 30 / 50 / 100`
+- Sudah tersedia template Excel bulk import untuk `Data Cuti Karyawan`.
+- Sudah tersedia fitur import bulk dari file Excel pada halaman `Data Cuti Karyawan`.
+- Import bulk mendukung partial success:
+  - baris valid tetap diimport
+  - baris gagal menghasilkan file error report `.xlsx`
+- Template import `Data Cuti Karyawan` sekarang dihasilkan dinamis dari data master terbaru saat user menekan tombol `Download Template`.
+- Kolom `Nama Karyawan` pada template import menggunakan dropdown value dari `Master Karyawan`.
+- Kolom `NIK` pada template import terisi otomatis berdasarkan `Nama Karyawan` yang dipilih.
+- Kolom `Jenis Cuti` pada template import menggunakan dropdown value dari `Master Cuti Karyawan`.
+- Template import tidak lagi menyertakan sample data bawaan; sheet `Data Import` disediakan dalam kondisi bersih.
 
 ### 4. Modul Dokumen
 
@@ -568,6 +579,8 @@ Yang sudah selesai:
 - Menambahkan schema, migration, API CRUD, route, menu, dan halaman `Master Dok Karyawan` dengan field `Nama Dokumen`, `Jenis Dokumen`, dan `Penerbit`.
 - Menambahkan schema, migration, resource master data generic, route, menu, dan halaman `Master Cuti Karyawan` dengan field `Jenis Cuti`.
 - Menambahkan schema, migration, API CRUD, route, menu, dan halaman `Data Cuti Karyawan` dengan relasi ke `Master Karyawan` dan `Master Cuti Karyawan`.
+- Menambahkan template Excel bulk import dan fitur upload/import Excel untuk `Data Cuti Karyawan`, beserta file error report per baris.
+- Menyesuaikan template import `Data Cuti Karyawan` agar dropdown dan autofill mengikuti data master terbaru (`Nama Karyawan`, `NIK`, dan `Jenis Cuti`) serta menghapus sample data dari template.
 - Menambahkan schema, migration, resource master data generic, route, menu, dan halaman `Master Unit` dengan field `Nama Unit`, `Jenis Unit`, `Kapasitas`, `Unit/Serial Number`, dan `Detail Lainnya`.
 - Menambahkan schema, migration, resource master data generic, route, menu, dan halaman `Master Vendor` dengan field `Nama Vendor`, `Jenis Vendor`, `Alamat`, `Nama PIC`, `Nomor Telfon`, `Email`, dan `Detail Lainnya`.
 - Menambahkan schema, migration, API CRUD, route, menu, dan halaman `Lisensi & Sertifikasi` dengan relasi ke `Master Karyawan` dan `Master Dok Karyawan`.
