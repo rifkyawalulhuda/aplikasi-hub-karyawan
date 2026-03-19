@@ -149,6 +149,31 @@ model MasterCutiKaryawan {
   @@map("master_cuti_karyawan")
 }
 
+model MasterGroupShift {
+  id             Int                 @id @default(autoincrement())
+  groupShiftName String              @db.VarChar(255)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  foremen        GroupShiftForeman[]
+
+  @@map("master_group_shifts")
+}
+
+model GroupShiftForeman {
+  id                 Int              @id @default(autoincrement())
+  masterGroupShiftId Int
+  employeeId         Int
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  masterGroupShift   MasterGroupShift @relation(fields: [masterGroupShiftId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  employee           Employee         @relation(fields: [employeeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([masterGroupShiftId, employeeId])
+  @@index([masterGroupShiftId])
+  @@index([employeeId])
+  @@map("group_shift_foremen")
+}
+
 model Employee {
   id                     Int                            @id @default(autoincrement())
   employeeNo             String                         @unique @db.VarChar(100)
@@ -179,6 +204,7 @@ model Employee {
   adminAccounts          MasterAdmin[]
   licenseCertifications  EmployeeLicenseCertification[]
   leaveRecords           EmployeeLeave[]
+  groupShiftAssignments  GroupShiftForeman[]
 
   @@index([departmentId])
   @@index([workLocationId])

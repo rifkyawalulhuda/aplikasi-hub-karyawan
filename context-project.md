@@ -69,6 +69,7 @@ Folder ini dipilih sebagai basis utama pengembangan karena struktur template-nya
   - `Master Department`
   - `Master Job Role`
   - `Master Job Level`
+  - `Master Group Shift`
 - Dropdown tambahan: `Master Data Dokumen`
 - Submenu dokumen:
   - `Master Dok PKB`
@@ -212,6 +213,19 @@ Catatan implementasi:
 - Ditempatkan pada grup menu `Master Data Dokumen`
 - Form input mengikuti pola halaman master yang sudah ada, dengan field:
   - `Jenis Cuti`
+- Kolom `NO` pada tabel menggunakan nomor urut tampilan dan otomatis rapat kembali saat ada row yang dihapus.
+
+#### Master Group Shift
+
+- Kolom database utama:
+  - `id` : auto increment
+  - `groupShiftName` : varchar
+- Ditempatkan pada grup menu `Master Data Karyawan`
+- Form input mengikuti pola halaman master yang sudah ada, dengan field:
+  - `Nama Group Shift`
+  - `Foreman` sebagai input repetitif dropdown searchable dari `Master Karyawan`
+- Opsi `Foreman` hanya menampilkan karyawan dengan `Job Level = Foreman`
+- Satu `Master Group Shift` dapat memiliki lebih dari satu foreman yang terhubung
 - Kolom `NO` pada tabel menggunakan nomor urut tampilan dan otomatis rapat kembali saat ada row yang dihapus.
 
 #### Master Unit
@@ -576,6 +590,7 @@ Yang sudah selesai:
 - Menambahkan halaman CRUD frontend awal untuk 4 master data tersebut.
 - Menambahkan schema, API, route, menu, dan halaman `Master Karyawan` berdasarkan file Excel sumber.
 - Menambahkan schema, migration, API CRUD, route, menu, dan halaman `Master Admin` dengan field `Nama`, `NIK`, `Password`, dan `Role`.
+- Menambahkan schema, migration, API CRUD, route, menu, dan halaman `Master Group Shift` dengan field `Nama Group Shift` dan relasi banyak `Foreman` dari `Master Karyawan`.
 - Menambahkan schema, migration, API CRUD, route, menu, dan halaman `Master Dok Karyawan` dengan field `Nama Dokumen`, `Jenis Dokumen`, dan `Penerbit`.
 - Menambahkan schema, migration, resource master data generic, route, menu, dan halaman `Master Cuti Karyawan` dengan field `Jenis Cuti`.
 - Menambahkan schema, migration, API CRUD, route, menu, dan halaman `Data Cuti Karyawan` dengan relasi ke `Master Karyawan` dan `Master Cuti Karyawan`.

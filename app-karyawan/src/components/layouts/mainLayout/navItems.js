@@ -80,6 +80,13 @@ const NAV_LINKS_CONFIG = [
 						Icon: LayersOutlinedIcon,
 						href: '/data-master/master-data-karyawan/job-levels',
 					},
+					{
+						id: uuid(),
+						type: 'item',
+						title: 'Master Group Shift',
+						Icon: BadgeOutlinedIcon,
+						href: '/data-master/master-data-karyawan/group-shifts',
+					},
 				],
 			},
 			{
