@@ -177,6 +177,19 @@ const MASTER_DATA_CONFIG = {
 			errorFilePrefix: 'master-dok-pkb-import-errors',
 		},
 	},
+	'master-cuti-karyawan': {
+		label: 'Master Cuti Karyawan',
+		model: 'masterCutiKaryawan',
+		path: 'master-cuti-karyawan',
+		fields: [
+			{
+				name: 'leaveType',
+				label: 'Jenis Cuti',
+				required: true,
+				searchable: true,
+			},
+		],
+	},
 };
 
 export default MASTER_DATA_CONFIG;
