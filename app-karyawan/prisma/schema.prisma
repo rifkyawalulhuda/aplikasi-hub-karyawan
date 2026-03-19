@@ -256,6 +256,7 @@ model Employee {
   leaveRevisionReplacements EmployeeLeaveRevision[]     @relation("EmployeeLeaveRevisionReplacement")
   leaveReplacementAssignments EmployeeLeaveReplacementAssignee[] @relation("EmployeeLeaveReplacementAssigneeEmployee")
   groupShiftAssignments  GroupShiftForeman[]
+  notificationReadStates AdminNotificationReadState[]
 
   @@index([departmentId])
   @@index([groupShiftId])
@@ -469,6 +470,21 @@ model EmailOutbox {
   @@index([employeeLeaveApprovalId])
   @@index([status])
   @@map("email_outbox")
+}
+
+model AdminNotificationReadState {
+  id             Int      @id @default(autoincrement())
+  employeeId     Int
+  notificationId String   @db.VarChar(255)
+  readAt         DateTime @default(now())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  employee       Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([employeeId, notificationId])
+  @@index([employeeId])
+  @@index([readAt])
+  @@map("admin_notification_read_states")
 }
 
 model MasterAdmin {

@@ -61,6 +61,15 @@ Folder ini dipilih sebagai basis utama pengembangan karena struktur template-nya
 - `Data Cuti Karyawan` sekarang diperlakukan sebagai saldo utama admin-only dengan satu row per kombinasi `Karyawan + Jenis Cuti + Tahun`.
 - Final approval cuti dari PWA tidak lagi menambah row baru pada `Data Cuti Karyawan`; sistem hanya mengurangi `Sisa Cuti` pada row utama yang sesuai.
 - Riwayat approval cuti dan perubahan admin/import untuk `Data Cuti Karyawan` ditampilkan melalui aksi `Detail`, bukan dengan menduplikasi row pada grid utama.
+- Header admin sekarang memiliki tombol notifikasi `live alert` tanpa tabel notifikasi tersendiri di database.
+- Notifikasi header dihitung langsung dari data existing untuk:
+  - lisensi & sertifikasi karyawan `Akan Expired` dan `Expired`
+  - lisensi & sertifikasi unit `Akan Expired` dan `Expired`
+  - flow cuti aktif terlalu lama
+  - cuti `Rejected`
+  - email workflow cuti yang gagal terkirim
+- Status notifikasi admin sekarang disimpan per admin sebagai `baca / belum baca`.
+- Badge lonceng sekarang menampilkan jumlah notifikasi `belum dibaca`, bukan jumlah total alert.
 - Request cuti `Approved` sekarang memiliki fitur `Print A4` baik dari admin maupun dari PWA karyawan.
 - Dokumen print cuti menggunakan halaman HTML/CSS A4 khusus yang dikalibrasi mengikuti file referensi `Form Permohonan Cuti dan Ijin.pdf`.
 - Kolom approval pada dokumen print menampilkan tanggal dan nama requester/approver sesuai grup approval yang sudah disepakati.
@@ -397,6 +406,22 @@ Modul ini digunakan agar karyawan dapat login dari HP dan melihat data dirinya s
   - shell aplikasi dapat dicache
   - request `/api/*` tidak menyimpan cache persisten data karyawan
 
+#### Notifikasi Header Admin
+
+- Tombol lonceng pada header admin sekarang menampilkan panel notifikasi global.
+- Badge menggunakan jumlah alert aktif, bukan `dot` statis.
+- Data notifikasi diambil dari endpoint live `/api/notifications`.
+- Status `baca / belum baca` disimpan pada tabel `admin_notification_read_states`.
+- Panel notifikasi mendukung:
+  - tandai otomatis sebagai dibaca saat item diklik
+  - tombol `Tandai semua`
+- Setiap item notifikasi memiliki deep-link ke halaman terkait:
+  - `Lisensi & Sertifikasi` karyawan
+  - `Lisensi & Sertifikasi Unit`
+  - `Flow Proses Cuti`
+- Query deep-link minimal menggunakan `?search=` agar halaman tujuan langsung terfilter ke data terkait.
+- Ambang `Akan Expired` tetap `25 hari` agar konsisten dengan halaman lisensi yang sudah ada.
+
 #### Halaman Surat Peringatan
 
 - Menyediakan form input surat peringatan.
@@ -675,6 +700,14 @@ Yang sudah selesai:
 - Menambahkan route print admin dan PWA untuk `Form Permohonan Cuti dan Ijin`, beserta tombol `Print A4` pada flow cuti approved dan detail cuti approved.
 - Menambahkan dokumen print A4 khusus cuti approved dengan mapping field workflow cuti, checkbox jenis cuti, daftar pengganti repetitif, dan ringkasan approval bawah.
 - Menyesuaikan layout vertikal dokumen print cuti agar seluruh form tetap muat dalam satu halaman A4 tanpa memotong area approval bawah.
+- Menambahkan endpoint live `/api/notifications` dan panel notifikasi pada header admin.
+- Menambahkan endpoint update status notifikasi:
+  - `POST /api/notifications/read`
+  - `POST /api/notifications/read-all`
+- Menambahkan tabel `admin_notification_read_states` untuk menyimpan status baca per admin.
+- Menambahkan notifikasi global untuk lisensi/sertifikasi karyawan dan unit yang akan expired atau expired.
+- Menambahkan reminder operasional pada notifikasi header untuk flow cuti terlalu lama, cuti rejected, dan email workflow gagal.
+- Menambahkan status `Sudah dibaca` dan `Belum dibaca` pada panel notifikasi serta verifikasi UI klik/deep-link secara langsung di browser lokal.
 - Verifikasi `lint`, `build`, dan smoke test API ke database berhasil.
 
 ## Struktur Teknis Awal yang Sudah Dibangun
