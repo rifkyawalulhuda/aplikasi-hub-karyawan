@@ -5,6 +5,7 @@ import Typography from '@mui/material/Typography';
 
 import { formatLongDate } from '@/utils/employeePortal';
 
+import ReplacementEmployeeList from './replacementEmployeeList';
 import LeaveStatusChip from './leaveStatusChip';
 
 function LeaveRequestTimeline({ revisions = [], approvals = [] }) {
@@ -48,9 +49,12 @@ function LeaveRequestTimeline({ revisions = [], approvals = [] }) {
 							<Typography variant="body2" color="text.secondary">
 								Alasan cuti: {revision.leaveReason || '-'}
 							</Typography>
-							<Typography variant="body2" color="text.secondary">
-								Pengganti selama cuti: {revision.replacementEmployeeName || '-'}
-							</Typography>
+							<Stack spacing={0.5}>
+								<Typography variant="body2" color="text.secondary">
+									Pengganti selama cuti:
+								</Typography>
+								<ReplacementEmployeeList items={revision.replacementEmployees || []} />
+							</Stack>
 							<Typography variant="body2" color="text.secondary">
 								Catatan tambahan: {revision.notes || '-'}
 							</Typography>

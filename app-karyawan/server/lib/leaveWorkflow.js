@@ -319,6 +319,43 @@ function buildRequestNumber(date = new Date()) {
 	return `CT-${year}${month}${day}-${randomSuffix}`;
 }
 
+function getSortedReplacementAssignments(assignments = [], revisionNo = null) {
+	return assignments
+		.filter((item) => (revisionNo == null ? true : item.revisionNo === revisionNo))
+		.slice()
+		.sort((left, right) => {
+			if (left.sequenceNo !== right.sequenceNo) {
+				return left.sequenceNo - right.sequenceNo;
+			}
+
+			return left.id - right.id;
+		});
+}
+
+function mapReplacementAssignmentRow(assignment) {
+	return {
+		id: assignment.replacementEmployee.id,
+		fullName: assignment.replacementEmployee.fullName,
+		employeeNo: assignment.replacementEmployee.employeeNo,
+		sequenceNo: assignment.sequenceNo,
+	};
+}
+
+function buildReplacementFields(assignments = []) {
+	const replacementEmployees = assignments.map(mapReplacementAssignmentRow);
+	const replacementEmployeeNames = replacementEmployees.map((item) => item.fullName);
+	const replacementEmployeeSummary = replacementEmployees
+		.map((item) => `${item.fullName} (${item.employeeNo})`)
+		.join(', ');
+
+	return {
+		replacementEmployees,
+		replacementEmployeeNames,
+		replacementEmployeeId: replacementEmployees[0]?.id || null,
+		replacementEmployeeName: replacementEmployeeSummary || '',
+	};
+}
+
 function mapApprovalRow(approval, activeApproverId = null) {
 	return {
 		id: approval.id,
@@ -342,13 +379,14 @@ function mapApprovalRow(approval, activeApproverId = null) {
 }
 
 function mapRevisionRow(revision) {
+	const replacementFields = buildReplacementFields(getSortedReplacementAssignments(revision.replacementAssignments));
+
 	return {
 		id: revision.id,
 		revisionNo: revision.revisionNo,
 		masterCutiKaryawanId: revision.masterCutiKaryawanId,
 		leaveType: revision.masterCutiKaryawan.leaveType,
-		replacementEmployeeId: revision.replacementEmployeeId || null,
-		replacementEmployeeName: revision.replacementEmployee?.fullName || '',
+		...replacementFields,
 		status: revision.status,
 		statusLabel: getRequestStatusLabel(revision.status),
 		leaveDays: revision.leaveDays,
@@ -373,6 +411,9 @@ function mapRevisionRow(revision) {
 function mapLeaveRequestSummary(record) {
 	const activeApprovals = record.approvals.filter(
 		(item) => item.revisionNo === record.revisionNo && item.status === 'PENDING',
+	);
+	const replacementFields = buildReplacementFields(
+		getSortedReplacementAssignments(record.replacementAssignments, record.revisionNo),
 	);
 
 	return {
@@ -401,8 +442,7 @@ function mapLeaveRequestSummary(record) {
 		notes: record.notes || '',
 		leaveAddress: record.leaveAddress || '',
 		leaveReason: record.leaveReason || '',
-		replacementEmployeeId: record.replacementEmployeeId || null,
-		replacementEmployeeName: record.replacementEmployee?.fullName || '',
+		...replacementFields,
 		rejectionNote: record.rejectionNote || '',
 		submittedAt: record.submittedAt ? record.submittedAt.toISOString() : null,
 		approvedAt: record.approvedAt ? record.approvedAt.toISOString() : null,
@@ -462,12 +502,22 @@ async function getLeaveRequestOrThrow(tx, id) {
 					department: true,
 				},
 			},
-			replacementEmployee: true,
 			masterCutiKaryawan: true,
+			replacementAssignments: {
+				include: {
+					replacementEmployee: true,
+				},
+				orderBy: [{ revisionNo: 'desc' }, { sequenceNo: 'asc' }, { id: 'asc' }],
+			},
 			revisions: {
 				include: {
 					masterCutiKaryawan: true,
-					replacementEmployee: true,
+					replacementAssignments: {
+						include: {
+							replacementEmployee: true,
+						},
+						orderBy: [{ sequenceNo: 'asc' }, { id: 'asc' }],
+					},
 				},
 			},
 			approvals: {
@@ -548,12 +598,22 @@ async function listApprovalsForEmployee(employeeId) {
 							department: true,
 						},
 					},
-					replacementEmployee: true,
 					masterCutiKaryawan: true,
+					replacementAssignments: {
+						include: {
+							replacementEmployee: true,
+						},
+						orderBy: [{ revisionNo: 'desc' }, { sequenceNo: 'asc' }, { id: 'asc' }],
+					},
 					revisions: {
 						include: {
 							masterCutiKaryawan: true,
-							replacementEmployee: true,
+							replacementAssignments: {
+								include: {
+									replacementEmployee: true,
+								},
+								orderBy: [{ sequenceNo: 'asc' }, { id: 'asc' }],
+							},
 						},
 					},
 					approvals: {
