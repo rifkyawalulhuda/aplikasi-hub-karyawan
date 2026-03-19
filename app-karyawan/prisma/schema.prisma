@@ -46,6 +46,39 @@ enum DisciplineLetterCategory {
   REPRIMAND
 }
 
+enum LeaveRequestStatus {
+  SUBMITTED
+  IN_APPROVAL
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum LeaveApprovalStatus {
+  WAITING
+  PENDING
+  APPROVED
+  REJECTED
+  LOCKED
+  CANCELLED
+}
+
+enum LeaveStageType {
+  FOREMAN_GROUP_SHIFT
+  FOREMAN
+  GENERAL_FOREMAN
+  SECTION_CHIEF
+  DY_DEPT_MANAGER
+  DEPT_MANAGER
+  SITE_DIV_MANAGER
+}
+
+enum EmailOutboxStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
 model WorkLocation {
   id        Int        @id @default(autoincrement())
   name      String     @unique @db.VarChar(255)
@@ -207,6 +240,8 @@ model Employee {
   adminAccounts          MasterAdmin[]
   licenseCertifications  EmployeeLicenseCertification[]
   leaveRecords           EmployeeLeave[]
+  leaveApprovals         EmployeeLeaveApproval[]        @relation("EmployeeLeaveApprover")
+  leaveBalanceSeeds      EmployeeLeaveBalanceSeed[]
   groupShiftAssignments  GroupShiftForeman[]
 
   @@index([departmentId])
@@ -218,22 +253,126 @@ model Employee {
 }
 
 model EmployeeLeave {
-  id                   Int                @id @default(autoincrement())
+  id                   Int                   @id @default(autoincrement())
+  requestNumber        String                @unique @db.VarChar(50)
   employeeId           Int
   masterCutiKaryawanId Int
+  leaveYear            Int
+  revisionNo           Int                   @default(1)
+  status               LeaveRequestStatus    @default(SUBMITTED)
   leaveDays            Int
-  periodStart          DateTime           @db.Date
-  periodEnd            DateTime           @db.Date
+  periodStart          DateTime              @db.Date
+  periodEnd            DateTime              @db.Date
+  balanceBefore        Int
   remainingLeave       Int
-  notes                String?            @db.Text
-  createdAt            DateTime           @default(now())
-  updatedAt            DateTime           @updatedAt
-  employee             Employee           @relation(fields: [employeeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  masterCutiKaryawan   MasterCutiKaryawan @relation(fields: [masterCutiKaryawanId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  currentStageOrder    Int?
+  notes                String?               @db.Text
+  rejectionNote        String?               @db.Text
+  submittedAt          DateTime              @default(now())
+  approvedAt           DateTime?
+  rejectedAt           DateTime?
+  cancelledAt          DateTime?
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  employee             Employee              @relation(fields: [employeeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  masterCutiKaryawan   MasterCutiKaryawan    @relation(fields: [masterCutiKaryawanId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  revisions            EmployeeLeaveRevision[]
+  approvals            EmployeeLeaveApproval[]
+  emailOutbox          EmailOutbox[]
 
   @@index([employeeId])
   @@index([masterCutiKaryawanId])
+  @@index([status])
+  @@index([leaveYear])
   @@map("employee_leaves")
+}
+
+model EmployeeLeaveRevision {
+  id             Int                @id @default(autoincrement())
+  employeeLeaveId Int
+  revisionNo     Int
+  status         LeaveRequestStatus
+  leaveDays      Int
+  periodStart    DateTime           @db.Date
+  periodEnd      DateTime           @db.Date
+  balanceBefore  Int
+  remainingLeave Int
+  notes          String?            @db.Text
+  rejectionNote  String?            @db.Text
+  submittedAt    DateTime           @default(now())
+  approvedAt     DateTime?
+  rejectedAt     DateTime?
+  cancelledAt    DateTime?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  employeeLeave  EmployeeLeave      @relation(fields: [employeeLeaveId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([employeeLeaveId, revisionNo])
+  @@index([employeeLeaveId])
+  @@map("employee_leave_revisions")
+}
+
+model EmployeeLeaveApproval {
+  id               Int                @id @default(autoincrement())
+  employeeLeaveId  Int
+  revisionNo       Int
+  stageOrder       Int
+  stageType        LeaveStageType
+  approverEmployeeId Int
+  status           LeaveApprovalStatus @default(WAITING)
+  actionNote       String?             @db.Text
+  actedAt          DateTime?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  employeeLeave    EmployeeLeave       @relation(fields: [employeeLeaveId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  approverEmployee Employee            @relation("EmployeeLeaveApprover", fields: [approverEmployeeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  emailOutbox      EmailOutbox[]
+
+  @@unique([employeeLeaveId, revisionNo, stageOrder, approverEmployeeId])
+  @@index([employeeLeaveId])
+  @@index([approverEmployeeId])
+  @@index([status])
+  @@map("employee_leave_approvals")
+}
+
+model EmployeeLeaveBalanceSeed {
+  id             Int      @id @default(autoincrement())
+  employeeId     Int
+  year           Int
+  openingBalance Int
+  currentBalance Int
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  employee       Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([employeeId, year])
+  @@index([employeeId])
+  @@index([year])
+  @@map("employee_leave_balance_seeds")
+}
+
+model EmailOutbox {
+  id                    Int               @id @default(autoincrement())
+  employeeLeaveId       Int?
+  employeeLeaveApprovalId Int?
+  revisionNo            Int?
+  recipientEmail        String            @db.VarChar(255)
+  recipientName         String?           @db.VarChar(255)
+  subject               String            @db.VarChar(255)
+  htmlBody              String?           @db.Text
+  textBody              String?           @db.Text
+  status                EmailOutboxStatus @default(PENDING)
+  sentAt                DateTime?
+  errorMessage          String?           @db.Text
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+  employeeLeave         EmployeeLeave?    @relation(fields: [employeeLeaveId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  employeeLeaveApproval EmployeeLeaveApproval? @relation(fields: [employeeLeaveApprovalId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@index([employeeLeaveId])
+  @@index([employeeLeaveApprovalId])
+  @@index([status])
+  @@map("email_outbox")
 }
 
 model MasterAdmin {

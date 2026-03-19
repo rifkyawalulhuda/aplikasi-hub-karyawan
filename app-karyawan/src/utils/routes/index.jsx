@@ -19,6 +19,13 @@ const EmployeeDashboardPage = withLazyLoadably(lazy(() => import('@/pages/employ
 const EmployeeProfilePage = withLazyLoadably(lazy(() => import('@/pages/employeeMobile/profile')));
 const EmployeeGuidanceRecordsPage = withLazyLoadably(lazy(() => import('@/pages/employeeMobile/guidanceRecords')));
 const EmployeeWarningLettersPage = withLazyLoadably(lazy(() => import('@/pages/employeeMobile/warningLetters')));
+const EmployeeLeaveCenterPage = withLazyLoadably(lazy(() => import('@/pages/employeeMobile/leaveCenter')));
+const EmployeeLeaveRequestDetailPage = withLazyLoadably(
+	lazy(() => import('@/pages/employeeMobile/leaveRequestDetail')),
+);
+const EmployeeLeaveApprovalDetailPage = withLazyLoadably(
+	lazy(() => import('@/pages/employeeMobile/leaveApprovalDetail')),
+);
 const WorkLocationsPage = withLazyLoadably(lazy(() => import('@/pages/masterData/workLocations')));
 const DepartmentsPage = withLazyLoadably(lazy(() => import('@/pages/masterData/departments')));
 const JobRolesPage = withLazyLoadably(lazy(() => import('@/pages/masterData/jobRoles')));
@@ -43,6 +50,7 @@ const WarningLetterBulkPrintPage = withLazyLoadably(
 );
 const LicenseCertificationsPage = withLazyLoadably(lazy(() => import('@/pages/employeeData/licenseCertifications')));
 const EmployeeLeavesPage = withLazyLoadably(lazy(() => import('@/pages/employeeData/leaveRecords')));
+const EmployeeLeaveFlowPage = withLazyLoadably(lazy(() => import('@/pages/employeeData/leaveFlow')));
 const UnitLicenseCertificationsPage = withLazyLoadably(lazy(() => import('@/pages/unitData/licenseCertifications')));
 
 function Router() {
@@ -58,6 +66,9 @@ function Router() {
 					<Route element={<EmployeeProtectedRoute />}>
 						<Route path="/karyawan" element={<EmployeeMobileLayout />}>
 							<Route index element={<EmployeeDashboardPage />} />
+							<Route path="cuti" element={<EmployeeLeaveCenterPage />} />
+							<Route path="cuti/approval/:approvalId" element={<EmployeeLeaveApprovalDetailPage />} />
+							<Route path="cuti/:id" element={<EmployeeLeaveRequestDetailPage />} />
 							<Route path="profil" element={<EmployeeProfilePage />} />
 							<Route path="bimbingan-pengarahan" element={<EmployeeGuidanceRecordsPage />} />
 							<Route path="surat-peringatan" element={<EmployeeWarningLettersPage />} />
@@ -114,6 +125,7 @@ function Router() {
 							<Route path="data-karyawan/data-surat-peringatan" element={<WarningLettersPage />} />
 							<Route path="data-karyawan/lisensi-sertifikasi" element={<LicenseCertificationsPage />} />
 							<Route path="data-karyawan/cuti-karyawan" element={<EmployeeLeavesPage />} />
+							<Route path="data-karyawan/cuti-karyawan/flow" element={<EmployeeLeaveFlowPage />} />
 							<Route
 								path="data-unit/lisensi-sertifikasi-unit"
 								element={<UnitLicenseCertificationsPage />}

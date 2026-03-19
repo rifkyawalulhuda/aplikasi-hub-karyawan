@@ -9,6 +9,7 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
+import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined';
 import FeedOutlinedIcon from '@mui/icons-material/FeedOutlined';
 import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
 import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
@@ -30,6 +31,11 @@ const NAV_ITEMS = [
 		icon: <BadgeOutlinedIcon />,
 	},
 	{
+		label: 'Cuti',
+		value: '/karyawan/cuti',
+		icon: <CalendarMonthOutlinedIcon />,
+	},
+	{
 		label: 'Bimbingan',
 		value: '/karyawan/bimbingan-pengarahan',
 		icon: <FeedOutlinedIcon />,
@@ -44,6 +50,18 @@ const NAV_ITEMS = [
 function getPageTitle(pathname) {
 	if (pathname.startsWith('/karyawan/profil')) {
 		return 'Profil Karyawan';
+	}
+
+	if (pathname.startsWith('/karyawan/cuti/approval/')) {
+		return 'Approval Cuti';
+	}
+
+	if (pathname.startsWith('/karyawan/cuti/')) {
+		return 'Detail Cuti';
+	}
+
+	if (pathname.startsWith('/karyawan/cuti')) {
+		return 'Cuti Karyawan';
 	}
 
 	if (pathname.startsWith('/karyawan/bimbingan-pengarahan')) {
