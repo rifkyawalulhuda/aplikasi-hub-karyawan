@@ -10,6 +10,7 @@ import employeeDocumentsRouter from './routes/employeeDocuments.js';
 import employeeLeaveBalanceSeedsRouter from './routes/employeeLeaveBalanceSeeds.js';
 import employeeLeaveDatabaseRouter from './routes/employeeLeaveDatabase.js';
 import employeeLeavesRouter from './routes/employeeLeaves.js';
+import globalSearchRouter from './routes/globalSearch.js';
 import licenseCertificationsRouter from './routes/licenseCertifications.js';
 import unitLicenseCertificationsRouter from './routes/unitLicenseCertifications.js';
 import employeeMeRouter from './routes/employeeMe.js';
@@ -43,6 +44,7 @@ app.get('/api/health', async (req, res) => {
 });
 
 app.use('/api/auth', authRouter);
+app.use('/api/global-search', globalSearchRouter);
 app.use('/api/employee-auth', employeeAuthRouter);
 app.use('/api/employee-me', employeeMeRouter);
 app.use('/api/master/employees', employeesRouter);

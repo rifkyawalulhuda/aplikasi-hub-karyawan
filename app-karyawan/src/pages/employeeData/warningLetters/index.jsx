@@ -23,6 +23,7 @@ import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
 
 import CardHeader from '@/components/cardHeader';
 import DeleteConfirmDialog from '@/components/masterData/deleteConfirmDialog';
+import useUrlSearchKeyword from '@/hooks/useUrlSearchKeyword';
 import PageHeader from '@/components/pageHeader';
 import apiRequest from '@/services/api';
 
@@ -60,7 +61,7 @@ function WarningLettersPage() {
 	const [selectedItem, setSelectedItem] = useState(null);
 	const [createCategory, setCreateCategory] = useState(DISCIPLINE_LETTER_CATEGORIES.WARNING_LETTER);
 	const [createMenuAnchorEl, setCreateMenuAnchorEl] = useState(null);
-	const [searchKeyword, setSearchKeyword] = useState('');
+	const [searchKeyword, setSearchKeyword] = useUrlSearchKeyword();
 	const [dateFrom, setDateFrom] = useState('');
 	const [dateTo, setDateTo] = useState('');
 	const [warningLevelFilter, setWarningLevelFilter] = useState('ALL');

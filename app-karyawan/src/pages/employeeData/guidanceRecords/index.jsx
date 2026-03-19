@@ -23,6 +23,7 @@ import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
 
 import CardHeader from '@/components/cardHeader';
 import DeleteConfirmDialog from '@/components/masterData/deleteConfirmDialog';
+import useUrlSearchKeyword from '@/hooks/useUrlSearchKeyword';
 import PageHeader from '@/components/pageHeader';
 import apiRequest from '@/services/api';
 
@@ -55,7 +56,7 @@ function GuidanceRecordsPage() {
 	const [selectedItem, setSelectedItem] = useState(null);
 	const [formCategory, setFormCategory] = useState(GUIDANCE_RECORD_CATEGORY.GUIDANCE);
 	const [menuAnchorEl, setMenuAnchorEl] = useState(null);
-	const [searchKeyword, setSearchKeyword] = useState('');
+	const [searchKeyword, setSearchKeyword] = useUrlSearchKeyword();
 	const [categoryFilter, setCategoryFilter] = useState('ALL');
 	const [dateFrom, setDateFrom] = useState('');
 	const [dateTo, setDateTo] = useState('');
