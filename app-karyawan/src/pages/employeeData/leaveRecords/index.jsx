@@ -19,6 +19,7 @@ import UploadFileOutlinedIcon from '@mui/icons-material/UploadFileOutlined';
 
 import CardHeader from '@/components/cardHeader';
 import DeleteConfirmDialog from '@/components/masterData/deleteConfirmDialog';
+import useUrlSearchKeyword from '@/hooks/useUrlSearchKeyword';
 import MasterDataImportDialog from '@/components/masterData/masterDataImportDialog';
 import PageHeader from '@/components/pageHeader';
 import apiRequest, { getApiBaseUrl } from '@/services/api';
@@ -53,7 +54,7 @@ function EmployeeLeavesPage() {
 	const [detailLoading, setDetailLoading] = useState(false);
 	const [detailItem, setDetailItem] = useState(null);
 	const [selectedItem, setSelectedItem] = useState(null);
-	const [searchKeyword, setSearchKeyword] = useState('');
+	const [searchKeyword, setSearchKeyword] = useUrlSearchKeyword();
 
 	const loadData = async () => {
 		setLoading(true);

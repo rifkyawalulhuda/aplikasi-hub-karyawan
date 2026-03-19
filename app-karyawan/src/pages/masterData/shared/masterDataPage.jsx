@@ -21,6 +21,7 @@ import DeleteConfirmDialog from '@/components/masterData/deleteConfirmDialog';
 import MasterDataFormDialog from '@/components/masterData/masterDataFormDialog';
 import MasterDataImportDialog from '@/components/masterData/masterDataImportDialog';
 import MasterDataTable from '@/components/masterData/masterDataTable';
+import useUrlSearchKeyword from '@/hooks/useUrlSearchKeyword';
 import apiRequest, { getApiBaseUrl } from '@/services/api';
 
 async function fetchMasterData(resource) {
@@ -36,7 +37,7 @@ function MasterDataPage({ config }) {
 	const [formOpen, setFormOpen] = useState(false);
 	const [importOpen, setImportOpen] = useState(false);
 	const [deleteOpen, setDeleteOpen] = useState(false);
-	const [searchKeyword, setSearchKeyword] = useState('');
+	const [searchKeyword, setSearchKeyword] = useUrlSearchKeyword();
 
 	const closeFormDialog = () => {
 		setFormOpen(false);

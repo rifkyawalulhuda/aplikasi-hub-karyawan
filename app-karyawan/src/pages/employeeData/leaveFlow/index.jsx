@@ -28,6 +28,7 @@ import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import CardHeader from '@/components/cardHeader';
 import LeaveStatusChip from '@/components/employeePortal/leaveStatusChip';
 import LeaveRequestDetailDialog from '@/components/leaveAdmin/leaveRequestDetailDialog';
+import useUrlSearchKeyword from '@/hooks/useUrlSearchKeyword';
 import PageHeader from '@/components/pageHeader';
 import apiRequest from '@/services/api';
 
@@ -60,7 +61,7 @@ function EmployeeLeaveFlowPage() {
 	const [detailOpen, setDetailOpen] = useState(false);
 	const [detailLoading, setDetailLoading] = useState(false);
 	const [selectedDetail, setSelectedDetail] = useState(null);
-	const [searchKeyword, setSearchKeyword] = useState('');
+	const [searchKeyword, setSearchKeyword] = useUrlSearchKeyword();
 	const [statusFilter, setStatusFilter] = useState('ALL');
 	const [stageFilter, setStageFilter] = useState('ALL');
 
