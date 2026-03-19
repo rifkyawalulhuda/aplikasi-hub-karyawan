@@ -52,7 +52,12 @@ async function getLeaveTypeOrThrow(id, tx = prisma) {
 function validateLeavePayload(payload = {}) {
 	const masterCutiKaryawanId = Number(payload.masterCutiKaryawanId);
 	const leaveDays = Number(payload.leaveDays);
-	const replacementEmployeeId = Number(payload.replacementEmployeeId);
+	const rawReplacementEmployeeIds = Array.isArray(payload.replacementEmployeeIds)
+		? payload.replacementEmployeeIds
+		: typeof payload.replacementEmployeeId !== 'undefined' && payload.replacementEmployeeId !== null
+			? [payload.replacementEmployeeId]
+			: [];
+	const replacementEmployeeIds = rawReplacementEmployeeIds.map((value) => Number(value));
 	const periodStart = toDateOnly(payload.periodStart);
 	const periodEnd = toDateOnly(payload.periodEnd);
 	const notes = normalizeString(payload.notes || '');
@@ -75,8 +80,20 @@ function validateLeavePayload(payload = {}) {
 		throw Object.assign(new Error('Alasan cuti wajib diisi.'), { statusCode: 400 });
 	}
 
-	if (!Number.isInteger(replacementEmployeeId)) {
-		throw Object.assign(new Error('Pengganti selama cuti wajib dipilih.'), { statusCode: 400 });
+	if (replacementEmployeeIds.length === 0) {
+		throw Object.assign(new Error('Minimal 1 pengganti selama cuti wajib dipilih.'), { statusCode: 400 });
+	}
+
+	if (replacementEmployeeIds.length > 4) {
+		throw Object.assign(new Error('Maksimal 4 pengganti selama cuti dapat dipilih.'), { statusCode: 400 });
+	}
+
+	if (replacementEmployeeIds.some((value) => !Number.isInteger(value))) {
+		throw Object.assign(new Error('Data pengganti selama cuti tidak valid.'), { statusCode: 400 });
+	}
+
+	if (new Set(replacementEmployeeIds).size !== replacementEmployeeIds.length) {
+		throw Object.assign(new Error('Pengganti selama cuti tidak boleh duplikat.'), { statusCode: 400 });
 	}
 
 	if (!periodStart) {
@@ -96,7 +113,7 @@ function validateLeavePayload(payload = {}) {
 	return {
 		masterCutiKaryawanId,
 		leaveDays,
-		replacementEmployeeId,
+		replacementEmployeeIds,
 		periodStart,
 		periodEnd,
 		leaveAddress,
@@ -164,17 +181,30 @@ async function getAvailableLeaveTypeOptions(employeeId, year, tx = prisma) {
 		}));
 }
 
-async function assertReplacementEmployeeValid(employee, replacementEmployeeId, tx = prisma) {
+async function assertReplacementEmployeesValid(employee, replacementEmployeeIds, tx = prisma) {
 	const options = await getReplacementOptions(employee, tx);
-	const match = options.find((item) => item.id === replacementEmployeeId);
+	const optionMap = new Map(options.map((item) => [item.id, item]));
+	const seenIds = new Set();
+	const matches = replacementEmployeeIds.map((replacementEmployeeId) => {
+		if (seenIds.has(replacementEmployeeId)) {
+			throw Object.assign(new Error('Pengganti selama cuti tidak boleh duplikat.'), {
+				statusCode: 400,
+			});
+		}
 
-	if (!match) {
-		throw Object.assign(new Error('Pengganti selama cuti tidak valid untuk karyawan ini.'), {
-			statusCode: 400,
-		});
-	}
+		seenIds.add(replacementEmployeeId);
+		const match = optionMap.get(replacementEmployeeId);
 
-	return match;
+		if (!match) {
+			throw Object.assign(new Error('Pengganti selama cuti tidak valid untuk karyawan ini.'), {
+				statusCode: 400,
+			});
+		}
+
+		return match;
+	});
+
+	return matches;
 }
 
 async function getAvailableLeaveBalanceOrThrow(employeeId, masterCutiKaryawanId, year, tx = prisma) {
@@ -187,6 +217,30 @@ async function getAvailableLeaveBalanceOrThrow(employeeId, masterCutiKaryawanId,
 	}
 
 	return balance;
+}
+
+function getReplacementEmployeesForRecord(record) {
+	return (record.replacementAssignments || [])
+		.filter((item) => item.revisionNo === record.revisionNo)
+		.slice()
+		.sort((left, right) => {
+			if (left.sequenceNo !== right.sequenceNo) {
+				return left.sequenceNo - right.sequenceNo;
+			}
+
+			return left.id - right.id;
+		})
+		.map((item) => item.replacementEmployee);
+}
+
+function formatReplacementEmployeesForEmail(record) {
+	const replacements = getReplacementEmployeesForRecord(record);
+
+	if (!replacements.length) {
+		return '-';
+	}
+
+	return replacements.map((item, index) => `${index + 1}. ${item.fullName} (${item.employeeNo})`).join('\n');
 }
 
 async function sendSubmittedEmail(record) {
@@ -205,7 +259,8 @@ async function sendSubmittedEmail(record) {
 			`Jumlah cuti: ${record.leaveDays} hari`,
 			`Alamat selama cuti: ${record.leaveAddress || '-'}`,
 			`Alasan cuti: ${record.leaveReason || '-'}`,
-			`Pengganti selama cuti: ${record.replacementEmployee?.fullName || '-'}`,
+			'Pengganti selama cuti:',
+			formatReplacementEmployeesForEmail(record),
 			'',
 			`Lihat detail: ${buildLeaveRequestUrl(record.id)}`,
 		].join('\n'),
@@ -235,7 +290,8 @@ async function sendStageActivationEmails(record) {
 					`Jumlah cuti: ${record.leaveDays} hari`,
 					`Alamat selama cuti: ${record.leaveAddress || '-'}`,
 					`Alasan cuti: ${record.leaveReason || '-'}`,
-					`Pengganti selama cuti: ${record.replacementEmployee?.fullName || '-'}`,
+					'Pengganti selama cuti:',
+					formatReplacementEmployeesForEmail(record),
 					'',
 					`Buka approval: ${buildLeaveApprovalUrl(approval.id)}`,
 				].join('\n'),
@@ -259,7 +315,8 @@ async function sendRejectedEmail(record) {
 			`Jenis cuti: ${record.masterCutiKaryawan.leaveType}`,
 			`Alamat selama cuti: ${record.leaveAddress || '-'}`,
 			`Alasan cuti: ${record.leaveReason || '-'}`,
-			`Pengganti selama cuti: ${record.replacementEmployee?.fullName || '-'}`,
+			'Pengganti selama cuti:',
+			formatReplacementEmployeesForEmail(record),
 			'',
 			'Anda dapat membuka detail pengajuan untuk melakukan resubmit atau cancel.',
 			`Detail: ${buildLeaveRequestUrl(record.id)}`,
@@ -281,7 +338,8 @@ async function sendApprovedEmail(record) {
 			`Jenis cuti: ${record.masterCutiKaryawan.leaveType}`,
 			`Alamat selama cuti: ${record.leaveAddress || '-'}`,
 			`Alasan cuti: ${record.leaveReason || '-'}`,
-			`Pengganti selama cuti: ${record.replacementEmployee?.fullName || '-'}`,
+			'Pengganti selama cuti:',
+			formatReplacementEmployeesForEmail(record),
 			`Sisa cuti setelah approval: ${record.remainingLeave}`,
 			'',
 			`Detail: ${buildLeaveRequestUrl(record.id)}`,
@@ -397,8 +455,13 @@ router.get('/leave-requests', async (req, res, next) => {
 				},
 				include: {
 					employee: true,
-					replacementEmployee: true,
 					masterCutiKaryawan: true,
+					replacementAssignments: {
+						include: {
+							replacementEmployee: true,
+						},
+						orderBy: [{ revisionNo: 'desc' }, { sequenceNo: 'asc' }, { id: 'asc' }],
+					},
 					approvals: {
 						include: {
 							approverEmployee: true,
@@ -474,7 +537,7 @@ router.post('/leave-requests', async (req, res, next) => {
 				leaveYear,
 				tx,
 			);
-			await assertReplacementEmployeeValid(req.employee, payload.replacementEmployeeId, tx);
+			await assertReplacementEmployeesValid(req.employee, payload.replacementEmployeeIds, tx);
 
 			if (payload.leaveDays > availableBalance.currentBalance) {
 				throw Object.assign(new Error('Jumlah cuti tidak cukup untuk jenis cuti yang dipilih.'), {
@@ -507,7 +570,7 @@ router.post('/leave-requests', async (req, res, next) => {
 					notes: payload.notes,
 					leaveAddress: payload.leaveAddress,
 					leaveReason: payload.leaveReason,
-					replacementEmployeeId: payload.replacementEmployeeId,
+					replacementEmployeeId: payload.replacementEmployeeIds[0],
 					submittedAt: new Date(),
 				},
 			});
@@ -533,9 +596,18 @@ router.post('/leave-requests', async (req, res, next) => {
 					notes: payload.notes,
 					leaveAddress: payload.leaveAddress,
 					leaveReason: payload.leaveReason,
-					replacementEmployeeId: payload.replacementEmployeeId,
+					replacementEmployeeId: payload.replacementEmployeeIds[0],
 					submittedAt: new Date(),
 				},
+			});
+
+			await tx.employeeLeaveReplacementAssignee.createMany({
+				data: payload.replacementEmployeeIds.map((replacementEmployeeId, index) => ({
+					employeeLeaveId: leaveRequest.id,
+					revisionNo: 1,
+					replacementEmployeeId,
+					sequenceNo: index + 1,
+				})),
 			});
 
 			await tx.employeeLeaveApproval.createMany({
@@ -597,7 +669,7 @@ router.post('/leave-requests/:id/resubmit', async (req, res, next) => {
 				leaveYear,
 				tx,
 			);
-			await assertReplacementEmployeeValid(req.employee, payload.replacementEmployeeId, tx);
+			await assertReplacementEmployeesValid(req.employee, payload.replacementEmployeeIds, tx);
 
 			if (payload.leaveDays > availableBalance.currentBalance) {
 				throw Object.assign(new Error('Jumlah cuti tidak cukup untuk jenis cuti yang dipilih.'), {
@@ -630,7 +702,7 @@ router.post('/leave-requests/:id/resubmit', async (req, res, next) => {
 					notes: payload.notes,
 					leaveAddress: payload.leaveAddress,
 					leaveReason: payload.leaveReason,
-					replacementEmployeeId: payload.replacementEmployeeId,
+					replacementEmployeeId: payload.replacementEmployeeIds[0],
 					rejectionNote: null,
 					submittedAt: new Date(),
 					rejectedAt: null,
@@ -653,9 +725,18 @@ router.post('/leave-requests/:id/resubmit', async (req, res, next) => {
 					notes: payload.notes,
 					leaveAddress: payload.leaveAddress,
 					leaveReason: payload.leaveReason,
-					replacementEmployeeId: payload.replacementEmployeeId,
+					replacementEmployeeId: payload.replacementEmployeeIds[0],
 					submittedAt: new Date(),
 				},
+			});
+
+			await tx.employeeLeaveReplacementAssignee.createMany({
+				data: payload.replacementEmployeeIds.map((replacementEmployeeId, index) => ({
+					employeeLeaveId: id,
+					revisionNo: nextRevisionNo,
+					replacementEmployeeId,
+					sequenceNo: index + 1,
+				})),
 			});
 
 			await tx.employeeLeaveApproval.createMany({
@@ -782,12 +863,22 @@ router.get('/leave-approvals/:id', async (req, res, next) => {
 								department: true,
 							},
 						},
-						replacementEmployee: true,
 						masterCutiKaryawan: true,
+						replacementAssignments: {
+							include: {
+								replacementEmployee: true,
+							},
+							orderBy: [{ revisionNo: 'desc' }, { sequenceNo: 'asc' }, { id: 'asc' }],
+						},
 						revisions: {
 							include: {
 								masterCutiKaryawan: true,
-								replacementEmployee: true,
+								replacementAssignments: {
+									include: {
+										replacementEmployee: true,
+									},
+									orderBy: [{ sequenceNo: 'asc' }, { id: 'asc' }],
+								},
 							},
 						},
 						approvals: {

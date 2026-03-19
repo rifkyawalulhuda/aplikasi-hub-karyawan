@@ -16,6 +16,7 @@ import TableRow from '@mui/material/TableRow';
 import Typography from '@mui/material/Typography';
 
 import LeaveRequestTimeline from '@/components/employeePortal/leaveRequestTimeline';
+import ReplacementEmployeeList from '@/components/employeePortal/replacementEmployeeList';
 import LeaveStatusChip from '@/components/employeePortal/leaveStatusChip';
 import { formatLongDate } from '@/utils/employeePortal';
 
@@ -86,7 +87,15 @@ function LeaveRequestDetailDialog({ open, loading = false, data, title = 'Detail
 							<InfoRow label="Sisa cuti" value={data.remainingLeave} />
 							<InfoRow label="Alamat selama cuti" value={data.leaveAddress || '-'} />
 							<InfoRow label="Alasan cuti" value={data.leaveReason || '-'} />
-							<InfoRow label="Pengganti selama cuti" value={data.replacementEmployeeName || '-'} />
+							<Stack spacing={0.5}>
+								<Typography variant="body2" color="text.secondary">
+									Pengganti selama cuti
+								</Typography>
+								<ReplacementEmployeeList
+									items={data.replacementEmployees || []}
+									textColor="text.primary"
+								/>
+							</Stack>
 							<InfoRow label="Stage aktif" value={data.activeStageLabel || '-'} />
 							<InfoRow
 								label="Tanggal submit"

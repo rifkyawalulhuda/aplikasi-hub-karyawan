@@ -22,6 +22,11 @@ router.get(
 			include: {
 				employee: true,
 				masterCutiKaryawan: true,
+				replacementAssignments: {
+					include: {
+						replacementEmployee: true,
+					},
+				},
 				approvals: {
 					include: {
 						approverEmployee: true,

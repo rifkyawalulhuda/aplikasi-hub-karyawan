@@ -11,6 +11,7 @@ import Typography from '@mui/material/Typography';
 import FeedbackState from '@/components/employeePortal/feedbackState';
 import LeaveDecisionDialog from '@/components/employeePortal/leaveDecisionDialog';
 import LeaveRequestTimeline from '@/components/employeePortal/leaveRequestTimeline';
+import ReplacementEmployeeList from '@/components/employeePortal/replacementEmployeeList';
 import LeaveStatusChip from '@/components/employeePortal/leaveStatusChip';
 import { useEmployeeAuth } from '@/contexts/employeeAuthContext';
 import { employeeMeRequest } from '@/services/employeeApi';
@@ -156,9 +157,12 @@ function EmployeeLeaveApprovalDetailPage() {
 						<Typography variant="body2" color="text.secondary">
 							Alasan cuti: {payload?.request?.leaveReason || '-'}
 						</Typography>
-						<Typography variant="body2" color="text.secondary">
-							Pengganti selama cuti: {payload?.request?.replacementEmployeeName || '-'}
-						</Typography>
+						<Stack spacing={0.5}>
+							<Typography variant="body2" color="text.secondary">
+								Pengganti selama cuti:
+							</Typography>
+							<ReplacementEmployeeList items={payload?.request?.replacementEmployees || []} />
+						</Stack>
 						<Typography variant="body2" color="text.secondary">
 							Catatan tambahan: {payload?.request?.notes || '-'}
 						</Typography>

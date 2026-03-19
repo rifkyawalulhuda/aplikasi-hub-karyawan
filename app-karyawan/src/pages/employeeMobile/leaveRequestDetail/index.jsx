@@ -12,6 +12,7 @@ import FeedbackState from '@/components/employeePortal/feedbackState';
 import LeaveDecisionDialog from '@/components/employeePortal/leaveDecisionDialog';
 import LeaveRequestFormDialog from '@/components/employeePortal/leaveRequestFormDialog';
 import LeaveRequestTimeline from '@/components/employeePortal/leaveRequestTimeline';
+import ReplacementEmployeeList from '@/components/employeePortal/replacementEmployeeList';
 import LeaveStatusChip from '@/components/employeePortal/leaveStatusChip';
 import { useEmployeeAuth } from '@/contexts/employeeAuthContext';
 import { employeeMeRequest } from '@/services/employeeApi';
@@ -152,9 +153,12 @@ function EmployeeLeaveRequestDetailPage() {
 						<Typography variant="body2" color="text.secondary">
 							Alasan cuti: {record?.leaveReason || '-'}
 						</Typography>
-						<Typography variant="body2" color="text.secondary">
-							Pengganti selama cuti: {record?.replacementEmployeeName || '-'}
-						</Typography>
+						<Stack spacing={0.5}>
+							<Typography variant="body2" color="text.secondary">
+								Pengganti selama cuti:
+							</Typography>
+							<ReplacementEmployeeList items={record?.replacementEmployees || []} />
+						</Stack>
 						<Typography variant="body2" color="text.secondary">
 							Catatan tambahan: {record?.notes || '-'}
 						</Typography>
