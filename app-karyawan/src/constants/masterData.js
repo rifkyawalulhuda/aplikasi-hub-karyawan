@@ -242,6 +242,29 @@ const MASTER_DATA_PAGE_CONFIG = {
 			templateHref: '/templates/master-dok-pkb-import-template.xlsx',
 		},
 	},
+	masterCutiKaryawan: {
+		resource: 'master-cuti-karyawan',
+		title: 'Master Cuti Karyawan',
+		breadcrumb: 'Master Cuti Karyawan',
+		groupBreadcrumb: 'Master Data Dokumen',
+		fieldLabel: 'Master Cuti Karyawan',
+		fieldPlaceholder: 'Masukkan jenis cuti',
+		description: 'Kelola daftar jenis cuti karyawan yang dipakai pada modul pengajuan cuti.',
+		searchPlaceholder: 'Jenis cuti, nomor...',
+		itemNameField: 'leaveType',
+		fields: [
+			{
+				name: 'leaveType',
+				label: 'Jenis Cuti',
+				placeholder: 'Masukkan jenis cuti',
+				searchable: true,
+			},
+		],
+		tableColumns: [
+			{ id: 'id', label: 'NO' },
+			{ id: 'leaveType', label: 'JENIS CUTI' },
+		],
+	},
 };
 
 export default MASTER_DATA_PAGE_CONFIG;

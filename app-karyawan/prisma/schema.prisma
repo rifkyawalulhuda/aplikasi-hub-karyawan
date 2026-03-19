@@ -139,6 +139,15 @@ model MasterDokKaryawan {
   @@map("master_dok_karyawan")
 }
 
+model MasterCutiKaryawan {
+  id        Int      @id @default(autoincrement())
+  leaveType String   @db.VarChar(255)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("master_cuti_karyawan")
+}
+
 model Employee {
   id                     Int                            @id @default(autoincrement())
   employeeNo             String                         @unique @db.VarChar(100)

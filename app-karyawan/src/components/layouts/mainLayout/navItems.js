@@ -124,6 +124,13 @@ const NAV_LINKS_CONFIG = [
 						Icon: DescriptionOutlinedIcon,
 						href: '/data-master/master-data-dokumen/master-dok-karyawan',
 					},
+					{
+						id: uuid(),
+						type: 'item',
+						title: 'Master Cuti Karyawan',
+						Icon: DescriptionOutlinedIcon,
+						href: '/data-master/master-data-dokumen/master-cuti-karyawan',
+					},
 				],
 			},
 		],

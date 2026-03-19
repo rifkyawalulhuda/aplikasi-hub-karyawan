@@ -73,6 +73,7 @@ Folder ini dipilih sebagai basis utama pengembangan karena struktur template-nya
 - Submenu dokumen:
   - `Master Dok PKB`
   - `Master Dok Karyawan`
+  - `Master Cuti Karyawan`
 - Dropdown tambahan: `Master Data Unit`
 - Submenu unit:
   - `Master Unit`
@@ -201,6 +202,16 @@ Catatan implementasi:
   - `Jenis Dokumen` dengan pilihan `Sertifikat`, `Lisensi`, `Izin`, `Rahasia`, dan `Lainnya`
   - `Penerbit`
 - Jika user memilih `Lainnya`, sistem menampilkan input manual tambahan untuk mengisi jenis dokumen custom.
+
+#### Master Cuti Karyawan
+
+- Kolom database utama:
+  - `id` : auto increment
+  - `leaveType` : varchar
+- Ditempatkan pada grup menu `Master Data Dokumen`
+- Form input mengikuti pola halaman master yang sudah ada, dengan field:
+  - `Jenis Cuti`
+- Kolom `NO` pada tabel menggunakan nomor urut tampilan dan otomatis rapat kembali saat ada row yang dihapus.
 
 #### Master Unit
 
@@ -533,6 +544,7 @@ Yang sudah selesai:
 - Menambahkan schema, API, route, menu, dan halaman `Master Karyawan` berdasarkan file Excel sumber.
 - Menambahkan schema, migration, API CRUD, route, menu, dan halaman `Master Admin` dengan field `Nama`, `NIK`, `Password`, dan `Role`.
 - Menambahkan schema, migration, API CRUD, route, menu, dan halaman `Master Dok Karyawan` dengan field `Nama Dokumen`, `Jenis Dokumen`, dan `Penerbit`.
+- Menambahkan schema, migration, resource master data generic, route, menu, dan halaman `Master Cuti Karyawan` dengan field `Jenis Cuti`.
 - Menambahkan schema, migration, resource master data generic, route, menu, dan halaman `Master Unit` dengan field `Nama Unit`, `Jenis Unit`, `Kapasitas`, `Unit/Serial Number`, dan `Detail Lainnya`.
 - Menambahkan schema, migration, resource master data generic, route, menu, dan halaman `Master Vendor` dengan field `Nama Vendor`, `Jenis Vendor`, `Alamat`, `Nama PIC`, `Nomor Telfon`, `Email`, dan `Detail Lainnya`.
 - Menambahkan schema, migration, API CRUD, route, menu, dan halaman `Lisensi & Sertifikasi` dengan relasi ke `Master Karyawan` dan `Master Dok Karyawan`.
