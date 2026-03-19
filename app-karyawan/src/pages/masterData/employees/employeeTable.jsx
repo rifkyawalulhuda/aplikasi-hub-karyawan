@@ -27,6 +27,7 @@ const HEAD_CELLS = [
 	{ id: 'employmentType', label: 'EMPLOYMENT TYPE' },
 	{ id: 'siteDiv', label: 'SITE / DIV' },
 	{ id: 'departmentName', label: 'DEPARTMENT' },
+	{ id: 'groupShiftName', label: 'GROUP SHIFT' },
 	{ id: 'lengthOfService', label: 'LENGTH OF SERVICE' },
 	{ id: 'age', label: 'AGE' },
 	{ id: 'birthDate', label: 'BIRTH DATE' },
@@ -70,6 +71,7 @@ function EmployeeTable({ rows, onEdit, onDelete }) {
 					<TableCell>{formatEmploymentTypeLabel(row.employmentType)}</TableCell>
 					<TableCell>{row.siteDiv}</TableCell>
 					<TableCell>{row.departmentName}</TableCell>
+					<TableCell>{row.groupShiftName || '-'}</TableCell>
 					<TableCell>{row.lengthOfService}</TableCell>
 					<TableCell>{row.age}</TableCell>
 					<TableCell>{row.birthDate}</TableCell>

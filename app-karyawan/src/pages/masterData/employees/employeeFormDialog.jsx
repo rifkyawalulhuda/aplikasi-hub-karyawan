@@ -29,6 +29,7 @@ function toDefaultValues(initialValue) {
 		employmentType: formatEmploymentTypeLabel(initialValue?.employmentType || DEFAULT_EMPLOYMENT_TYPE),
 		siteDiv: initialValue?.siteDiv || 'CLC',
 		departmentId: initialValue?.departmentId || '',
+		groupShiftId: initialValue?.groupShiftId || '',
 		birthDate: initialValue?.birthDate || '',
 		gender: initialValue?.gender || 'MALE',
 		workLocationId: initialValue?.workLocationId || '',
@@ -146,6 +147,24 @@ function EmployeeFormDialog({ open, loading, initialValue, options, onClose, onS
 							{options.departments.map((option) => (
 								<MenuItem key={option.id} value={option.id}>
 									{option.name}
+								</MenuItem>
+							))}
+						</FormInput>
+					</Grid>
+					<Grid item xs={12} md={6}>
+						<FormInput
+							name="groupShiftId"
+							label="Group Shift"
+							control={control}
+							errors={errors}
+							dirtyFields={dirtyFields}
+							fullWidth
+							select
+						>
+							<MenuItem value="">-</MenuItem>
+							{options.groupShifts.map((option) => (
+								<MenuItem key={option.id} value={option.id}>
+									{option.groupShiftName}
 								</MenuItem>
 							))}
 						</FormInput>

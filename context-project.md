@@ -108,6 +108,7 @@ Kolom utama yang diimplementasikan:
 - `Employment Type`
 - `Site / Div`
 - `Department`
+- `Group Shift`
 - `Length Of Service` (hasil kalkulasi dari `Join Date`, tidak disimpan sebagai kolom fisik)
 - `Age` (hasil kalkulasi dari `Birth Date`, tidak disimpan sebagai kolom fisik)
 - `Birth Date`
@@ -127,6 +128,7 @@ Relasi master yang dipakai:
 - `Work Location` -> dari `Master Work Location`
 - `Job Role` -> dari `Master Job Role`
 - `Job Level` -> dari `Master Job Level`
+- `Group Shift` -> dari `Master Group Shift`
 
 Catatan implementasi:
 
@@ -591,6 +593,7 @@ Yang sudah selesai:
 - Menambahkan schema, API, route, menu, dan halaman `Master Karyawan` berdasarkan file Excel sumber.
 - Menambahkan schema, migration, API CRUD, route, menu, dan halaman `Master Admin` dengan field `Nama`, `NIK`, `Password`, dan `Role`.
 - Menambahkan schema, migration, API CRUD, route, menu, dan halaman `Master Group Shift` dengan field `Nama Group Shift` dan relasi banyak `Foreman` dari `Master Karyawan`.
+- Menambahkan relasi `Group Shift` pada `Master Karyawan`, dengan sumber dropdown dari `Master Group Shift` dan posisi kolom setelah `Department`.
 - Menambahkan schema, migration, API CRUD, route, menu, dan halaman `Master Dok Karyawan` dengan field `Nama Dokumen`, `Jenis Dokumen`, dan `Penerbit`.
 - Menambahkan schema, migration, resource master data generic, route, menu, dan halaman `Master Cuti Karyawan` dengan field `Jenis Cuti`.
 - Menambahkan schema, migration, API CRUD, route, menu, dan halaman `Data Cuti Karyawan` dengan relasi ke `Master Karyawan` dan `Master Cuti Karyawan`.

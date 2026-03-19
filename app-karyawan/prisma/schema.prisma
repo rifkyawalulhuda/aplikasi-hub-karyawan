@@ -154,6 +154,7 @@ model MasterGroupShift {
   groupShiftName String              @db.VarChar(255)
   createdAt      DateTime            @default(now())
   updatedAt      DateTime            @updatedAt
+  employees      Employee[]
   foremen        GroupShiftForeman[]
 
   @@map("master_group_shifts")
@@ -182,6 +183,7 @@ model Employee {
   employmentType         EmploymentType
   siteDiv                String                         @default("CLC") @db.VarChar(100)
   departmentId           Int
+  groupShiftId           Int?
   birthDate              DateTime                       @db.Date
   gender                 Gender
   workLocationId         Int
@@ -195,6 +197,7 @@ model Employee {
   createdAt              DateTime                       @default(now())
   updatedAt              DateTime                       @updatedAt
   department             Department                     @relation(fields: [departmentId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  groupShift             MasterGroupShift?              @relation(fields: [groupShiftId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   workLocation           WorkLocation                   @relation(fields: [workLocationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   jobRole                JobRole                        @relation(fields: [jobRoleId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   jobLevel               JobLevel                       @relation(fields: [jobLevelId], references: [id], onDelete: Restrict, onUpdate: Cascade)
@@ -207,6 +210,7 @@ model Employee {
   groupShiftAssignments  GroupShiftForeman[]
 
   @@index([departmentId])
+  @@index([groupShiftId])
   @@index([workLocationId])
   @@index([jobRoleId])
   @@index([jobLevelId])
