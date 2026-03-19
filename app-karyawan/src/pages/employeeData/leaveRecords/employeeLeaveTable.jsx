@@ -7,6 +7,7 @@ import Typography from '@mui/material/Typography';
 
 import DeleteOutlineOutlinedIcon from '@mui/icons-material/DeleteOutlineOutlined';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
+import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 
 import EnhancedTable from '@/components/dataTable';
 
@@ -15,13 +16,13 @@ import formatLeaveDate from './utils';
 const stickyActionCellSx = {
 	position: 'sticky',
 	right: 0,
-	minWidth: 112,
+	minWidth: 156,
 	backgroundColor: 'background.paper',
 	zIndex: 2,
 	boxShadow: '-6px 0 8px -8px rgba(15, 23, 42, 0.35)',
 };
 
-function EmployeeLeaveTable({ rows, onEdit, onDelete }) {
+function EmployeeLeaveTable({ rows, onDetail, onEdit, onDelete }) {
 	if (rows.length === 0) {
 		return (
 			<Stack py={8} alignItems="center" spacing={1}>
@@ -77,6 +78,11 @@ function EmployeeLeaveTable({ rows, onEdit, onDelete }) {
 					<TableCell>{row.notes || '-'}</TableCell>
 					<TableCell sx={{ ...stickyActionCellSx, py: 1.25 }}>
 						<Stack direction="row" spacing={0.25} justifyContent="center">
+							<Tooltip title="Detail">
+								<IconButton color="info" size="small" onClick={() => onDetail(row)}>
+									<VisibilityOutlinedIcon fontSize="small" />
+								</IconButton>
+							</Tooltip>
 							<Tooltip title="Edit">
 								<IconButton color="primary" size="small" onClick={() => onEdit(row)}>
 									<EditOutlinedIcon fontSize="small" />

@@ -6,8 +6,14 @@ import ExcelJS from 'exceljs';
 import { Router } from 'express';
 import multer from 'multer';
 
+import {
+	createLeaveDatabaseEntry,
+	getLeaveDatabaseDetailOrThrow,
+	listLeaveDatabase,
+	mapLeaveDatabaseRow,
+	updateLeaveDatabaseEntry,
+} from '../lib/leaveDatabase.js';
 import prisma from '../lib/prisma.js';
-import { mapLeaveDatabaseRow } from '../lib/leaveDatabase.js';
 import { normalizeString, toDateOnly } from '../lib/leaveWorkflow.js';
 
 const router = Router();
@@ -36,6 +42,27 @@ function withAsync(handler) {
 	return (req, res, next) => {
 		Promise.resolve(handler(req, res, next)).catch(next);
 	};
+}
+
+function buildCompositeKey(payload) {
+	return [payload.employeeId, payload.masterCutiKaryawanId, payload.year].join(':');
+}
+
+function getLeaveYear(periodStart, periodEnd) {
+	if (!periodStart || !periodEnd) {
+		return null;
+	}
+
+	const startYear = periodStart.getUTCFullYear();
+	const endYear = periodEnd.getUTCFullYear();
+
+	if (startYear !== endYear) {
+		throw Object.assign(new Error('Periode Dari dan Periode Sampai harus berada pada tahun yang sama.'), {
+			statusCode: 400,
+		});
+	}
+
+	return startYear;
 }
 
 function validatePayload(payload = {}) {
@@ -76,6 +103,7 @@ function validatePayload(payload = {}) {
 	return {
 		employeeId,
 		masterCutiKaryawanId,
+		year: getLeaveYear(periodStart, periodEnd),
 		leaveDays,
 		periodStart,
 		periodEnd,
@@ -308,6 +336,72 @@ async function createErrorReport(rows) {
 	return fileName;
 }
 
+async function findLeaveDatabaseByComposite(tx, payload) {
+	return tx.employeeLeaveDatabase.findUnique({
+		where: {
+			employeeId_masterCutiKaryawanId_year: {
+				employeeId: payload.employeeId,
+				masterCutiKaryawanId: payload.masterCutiKaryawanId,
+				year: payload.year,
+			},
+		},
+	});
+}
+
+async function ensureCreatePayloadAvailable(tx, payload) {
+	const existing = await findLeaveDatabaseByComposite(tx, payload);
+
+	if (existing) {
+		throw Object.assign(
+			new Error('Data Cuti Karyawan untuk kombinasi karyawan, jenis cuti, dan tahun ini sudah tersedia.'),
+			{ statusCode: 409 },
+		);
+	}
+}
+
+async function ensureUpdatePayloadAvailable(tx, id, payload) {
+	const conflict = await findLeaveDatabaseByComposite(tx, payload);
+
+	if (conflict && conflict.id !== id) {
+		throw Object.assign(
+			new Error('Data Cuti Karyawan untuk kombinasi karyawan, jenis cuti, dan tahun ini sudah digunakan row lain.'),
+			{ statusCode: 409 },
+		);
+	}
+}
+
+async function saveImportedRow(recordId, payload) {
+	return prisma.$transaction(async (tx) => {
+		if (recordId) {
+			const existing = await tx.employeeLeaveDatabase.findUnique({
+				where: { id: recordId },
+			});
+
+			if (!existing) {
+				throw Object.assign(new Error(`Data cuti dengan NO ${recordId} tidak ditemukan.`), { statusCode: 404 });
+			}
+
+			await ensureUpdatePayloadAvailable(tx, recordId, payload);
+
+			return updateLeaveDatabaseEntry(tx, recordId, payload, {
+				sourceType: 'ADMIN_IMPORT',
+			});
+		}
+
+		const existingByComposite = await findLeaveDatabaseByComposite(tx, payload);
+
+		if (existingByComposite) {
+			return updateLeaveDatabaseEntry(tx, existingByComposite.id, payload, {
+				sourceType: 'ADMIN_IMPORT',
+			});
+		}
+
+		return createLeaveDatabaseEntry(tx, payload, {
+			sourceType: 'ADMIN_IMPORT',
+		});
+	});
+}
+
 router.get(
 	'/import-template',
 	withAsync(async (_req, res) => {
@@ -352,10 +446,10 @@ router.get(
 			'Pilih dari dropdown Data Master Karyawan terbaru',
 			'Terisi otomatis dari Nama Karyawan yang dipilih',
 			'Pilih dari dropdown Data Master Cuti Karyawan terbaru',
-			'Angka saja',
-			'Format tanggal DD/MM/YYYY',
-			'Format tanggal DD/MM/YYYY',
-			'Angka saja',
+			'Isi kuota cuti tahunan utama',
+			'Format tanggal DD/MM/YYYY dan harus dalam tahun yang sama',
+			'Format tanggal DD/MM/YYYY dan harus dalam tahun yang sama',
+			'Isi saldo berjalan saat ini',
 			'Opsional',
 		];
 
@@ -451,15 +545,16 @@ router.get(
 
 		guideSheet.columns = [{ width: 120 }];
 		[
-			'Template ini dipakai untuk import database cuti karyawan, bukan workflow approval cuti.',
+			'Template ini dipakai untuk import saldo utama Data Cuti Karyawan, bukan transaksi workflow approval.',
 			'Isi data mulai dari baris 3 pada sheet "Data Import".',
-			'Kolom NO boleh dikosongkan untuk membuat data baru.',
-			'Jika NO diisi dan ditemukan, sistem akan memperbarui record tersebut.',
+			'Satu row utama hanya boleh ada untuk kombinasi Karyawan + Jenis Cuti + Tahun.',
+			'Kolom NO boleh dikosongkan untuk tambah data baru atau update otomatis jika kombinasi yang sama sudah ada.',
+			'Jika NO diisi dan ditemukan, sistem akan memperbarui row utama tersebut.',
 			'Kolom Nama Karyawan adalah dropdown utama yang selalu dibentuk dari Data Master Karyawan saat template diunduh.',
 			'Kolom NIK terisi otomatis mengikuti Nama Karyawan yang dipilih.',
 			'Kolom Jenis Cuti adalah dropdown yang selalu dibentuk dari Data Master Cuti Karyawan saat template diunduh.',
-			'Kolom Periode Dari dan Periode Sampai menggunakan format dd/mm/yyyy.',
-			'Kolom Sisa Cuti adalah saldo setelah transaksi pada record database ini.',
+			'Kolom Periode Dari dan Periode Sampai wajib berada di tahun yang sama karena row ini mewakili saldo utama tahunan.',
+			'Kolom Jumlah Cuti adalah kuota tahunan awal, sedangkan Sisa Cuti adalah saldo berjalan saat ini.',
 			'Jika ada baris gagal saat import, sistem akan mengunduh file error report.',
 		].forEach((text) => guideSheet.addRow([text]));
 
@@ -507,6 +602,7 @@ router.post(
 		const importedRows = [];
 		const errorRows = [];
 		const seenRecordIds = new Set();
+		const seenCompositeKeys = new Set();
 
 		for (let rowNumber = 3; rowNumber <= worksheet.rowCount; rowNumber += 1) {
 			const row = worksheet.getRow(rowNumber);
@@ -524,43 +620,21 @@ router.post(
 					throw new Error('Kolom NO duplikat pada file import.');
 				}
 
+				const validatedPayload = validatePayload(payload);
+				const compositeKey = buildCompositeKey(validatedPayload);
+
+				if (seenCompositeKeys.has(compositeKey)) {
+					throw new Error(
+						'Kombinasi Nama Karyawan, Jenis Cuti, dan Tahun duplikat pada file import. Sisakan satu baris saja.',
+					);
+				}
+
 				if (recordId) {
 					seenRecordIds.add(recordId);
 				}
+				seenCompositeKeys.add(compositeKey);
 
-				const validatedPayload = validatePayload(payload);
-				const data = {
-					...validatedPayload,
-					notes: validatedPayload.notes || null,
-				};
-
-				if (recordId) {
-					const existing = await prisma.employeeLeaveDatabase.findUnique({
-						where: { id: recordId },
-					});
-
-					if (!existing) {
-						throw new Error(`Data cuti dengan NO ${recordId} tidak ditemukan.`);
-					}
-				}
-
-				const record = recordId
-					? await prisma.employeeLeaveDatabase.update({
-							where: { id: recordId },
-							data,
-							include: {
-								employee: true,
-								masterCutiKaryawan: true,
-							},
-					  })
-					: await prisma.employeeLeaveDatabase.create({
-							data,
-							include: {
-								employee: true,
-								masterCutiKaryawan: true,
-							},
-					  });
-
+				const record = await saveImportedRow(recordId, validatedPayload);
 				importedRows.push(mapLeaveDatabaseRow(record));
 			} catch (error) {
 				errorRows.push({
@@ -615,28 +689,49 @@ router.get(
 router.get(
 	'/',
 	withAsync(async (_req, res) => {
-		const rows = await prisma.employeeLeaveDatabase.findMany({
-			include: {
-				employee: true,
-				masterCutiKaryawan: true,
-			},
-			orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-		});
+		const rows = await listLeaveDatabase(prisma);
+		return res.json(rows);
+	}),
+);
 
-		return res.json(rows.map(mapLeaveDatabaseRow));
+router.get(
+	'/:id/history',
+	withAsync(async (req, res) => {
+		const id = Number(req.params.id);
+
+		if (Number.isNaN(id)) {
+			return res.status(400).json({ message: 'ID tidak valid.' });
+		}
+
+		const detail = await getLeaveDatabaseDetailOrThrow(prisma, id);
+		return res.json(detail.histories);
+	}),
+);
+
+router.get(
+	'/:id',
+	withAsync(async (req, res) => {
+		const id = Number(req.params.id);
+
+		if (Number.isNaN(id)) {
+			return res.status(400).json({ message: 'ID tidak valid.' });
+		}
+
+		const detail = await getLeaveDatabaseDetailOrThrow(prisma, id);
+		return res.json(detail);
 	}),
 );
 
 router.post(
 	'/',
 	withAsync(async (req, res) => {
-		const data = validatePayload(req.body);
-		const record = await prisma.employeeLeaveDatabase.create({
-			data,
-			include: {
-				employee: true,
-				masterCutiKaryawan: true,
-			},
+		const payload = validatePayload(req.body);
+
+		const record = await prisma.$transaction(async (tx) => {
+			await ensureCreatePayloadAvailable(tx, payload);
+			return createLeaveDatabaseEntry(tx, payload, {
+				sourceType: 'ADMIN_CREATE',
+			});
 		});
 
 		return res.status(201).json(mapLeaveDatabaseRow(record));
@@ -652,22 +747,21 @@ router.put(
 			return res.status(400).json({ message: 'ID tidak valid.' });
 		}
 
-		const existing = await prisma.employeeLeaveDatabase.findUnique({
-			where: { id },
-		});
+		const payload = validatePayload(req.body);
+		const record = await prisma.$transaction(async (tx) => {
+			const existing = await tx.employeeLeaveDatabase.findUnique({
+				where: { id },
+			});
 
-		if (!existing) {
-			return res.status(404).json({ message: 'Data cuti karyawan tidak ditemukan.' });
-		}
+			if (!existing) {
+				throw Object.assign(new Error('Data cuti karyawan tidak ditemukan.'), { statusCode: 404 });
+			}
 
-		const data = validatePayload(req.body);
-		const record = await prisma.employeeLeaveDatabase.update({
-			where: { id },
-			data,
-			include: {
-				employee: true,
-				masterCutiKaryawan: true,
-			},
+			await ensureUpdatePayloadAvailable(tx, id, payload);
+
+			return updateLeaveDatabaseEntry(tx, id, payload, {
+				sourceType: 'ADMIN_UPDATE',
+			});
 		});
 
 		return res.json(mapLeaveDatabaseRow(record));

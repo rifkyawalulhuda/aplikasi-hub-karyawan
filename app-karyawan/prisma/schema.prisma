@@ -79,6 +79,13 @@ enum EmailOutboxStatus {
   FAILED
 }
 
+enum LeaveDatabaseHistorySourceType {
+  WORKFLOW_APPROVED
+  ADMIN_CREATE
+  ADMIN_UPDATE
+  ADMIN_IMPORT
+}
+
 model WorkLocation {
   id        Int        @id @default(autoincrement())
   name      String     @unique @db.VarChar(255)
@@ -288,6 +295,7 @@ model EmployeeLeave {
   revisions            EmployeeLeaveRevision[]
   approvals            EmployeeLeaveApproval[]
   emailOutbox          EmailOutbox[]
+  leaveDatabaseHistories EmployeeLeaveDatabaseHistory[]
 
   @@index([employeeId])
   @@index([replacementEmployeeId])
@@ -301,6 +309,7 @@ model EmployeeLeaveDatabase {
   id                   Int               @id @default(autoincrement())
   employeeId           Int
   masterCutiKaryawanId Int
+  year                 Int
   leaveDays            Int
   periodStart          DateTime          @db.Date
   periodEnd            DateTime          @db.Date
@@ -310,11 +319,37 @@ model EmployeeLeaveDatabase {
   updatedAt            DateTime          @updatedAt
   employee             Employee          @relation(fields: [employeeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   masterCutiKaryawan   MasterCutiKaryawan @relation(fields: [masterCutiKaryawanId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  histories            EmployeeLeaveDatabaseHistory[]
 
+  @@unique([employeeId, masterCutiKaryawanId, year])
   @@index([employeeId])
   @@index([masterCutiKaryawanId])
+  @@index([year])
   @@index([periodStart])
   @@map("employee_leave_database")
+}
+
+model EmployeeLeaveDatabaseHistory {
+  id                     Int                           @id @default(autoincrement())
+  employeeLeaveDatabaseId Int
+  employeeLeaveId        Int?
+  sourceType             LeaveDatabaseHistorySourceType
+  changeDate             DateTime                      @default(now())
+  leaveDays              Int
+  periodStart            DateTime                      @db.Date
+  periodEnd              DateTime                      @db.Date
+  balanceBefore          Int
+  balanceAfter           Int
+  notes                  String?                       @db.Text
+  createdAt              DateTime                      @default(now())
+  employeeLeaveDatabase  EmployeeLeaveDatabase         @relation(fields: [employeeLeaveDatabaseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  employeeLeave          EmployeeLeave?                @relation(fields: [employeeLeaveId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@index([employeeLeaveDatabaseId])
+  @@index([employeeLeaveId])
+  @@index([sourceType])
+  @@index([changeDate])
+  @@map("employee_leave_database_histories")
 }
 
 model EmployeeLeaveRevision {
