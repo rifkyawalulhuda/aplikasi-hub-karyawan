@@ -15,11 +15,13 @@ import Typography from '@mui/material/Typography';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
 import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
+import UploadFileOutlinedIcon from '@mui/icons-material/UploadFileOutlined';
 
 import CardHeader from '@/components/cardHeader';
+import MasterDataImportDialog from '@/components/masterData/masterDataImportDialog';
 import DeleteConfirmDialog from '@/components/masterData/deleteConfirmDialog';
 import PageHeader from '@/components/pageHeader';
-import apiRequest from '@/services/api';
+import apiRequest, { getApiBaseUrl } from '@/services/api';
 
 import EmployeeLeaveFormDialog from './employeeLeaveFormDialog';
 import EmployeeLeaveTable from './employeeLeaveTable';
@@ -45,6 +47,7 @@ function EmployeeLeavesPage() {
 	const [loading, setLoading] = useState(true);
 	const [submitting, setSubmitting] = useState(false);
 	const [formOpen, setFormOpen] = useState(false);
+	const [importOpen, setImportOpen] = useState(false);
 	const [deleteOpen, setDeleteOpen] = useState(false);
 	const [selectedItem, setSelectedItem] = useState(null);
 	const [searchKeyword, setSearchKeyword] = useState('');
@@ -115,6 +118,10 @@ function EmployeeLeavesPage() {
 	const closeDeleteDialog = () => {
 		setDeleteOpen(false);
 		setSelectedItem(null);
+	};
+
+	const closeImportDialog = () => {
+		setImportOpen(false);
 	};
 
 	const handleSubmit = async (values) => {
@@ -249,6 +256,57 @@ function EmployeeLeavesPage() {
 		window.URL.revokeObjectURL(url);
 	};
 
+	const handleImportExcel = async (file) => {
+		setSubmitting(true);
+
+		try {
+			const formData = new FormData();
+			formData.append('file', file);
+
+			const payload = await apiRequest('/data-karyawan/employee-leaves/import', {
+				method: 'POST',
+				body: formData,
+			});
+
+			if (payload?.rows?.length) {
+				setRows((currentRows) => {
+					const importedIds = new Set(payload.rows.map((item) => item.id));
+					const nextRows = currentRows.filter((item) => !importedIds.has(item.id));
+
+					return [...payload.rows, ...nextRows];
+				});
+			}
+
+			if (payload?.errorReportUrl) {
+				const reportUrl = `${getApiBaseUrl()}${payload.errorReportUrl}`;
+				const link = document.createElement('a');
+				link.href = reportUrl;
+				link.target = '_blank';
+				link.rel = 'noreferrer';
+				document.body.appendChild(link);
+				link.click();
+				document.body.removeChild(link);
+			}
+
+			closeImportDialog();
+			enqueueSnackbar(
+				`${payload?.message || 'Import Data Cuti Karyawan berhasil.'} Total import: ${
+					payload?.importedCount || 0
+				}.`,
+				{
+					variant: payload?.failedCount > 0 ? 'warning' : 'success',
+				},
+			);
+
+			return true;
+		} catch (error) {
+			enqueueSnackbar(error.message, { variant: 'error' });
+			return false;
+		} finally {
+			setSubmitting(false);
+		}
+	};
+
 	return (
 		<>
 			<PageHeader title="Cuti Karyawan">
@@ -322,6 +380,14 @@ function EmployeeLeavesPage() {
 									Export Excel
 								</Button>
 								<Button
+									variant="outlined"
+									startIcon={<UploadFileOutlinedIcon />}
+									onClick={() => setImportOpen(true)}
+									sx={{ minWidth: 170, whiteSpace: 'nowrap' }}
+								>
+									Import Excel
+								</Button>
+								<Button
 									variant="contained"
 									startIcon={<AddOutlinedIcon />}
 									onClick={() => setFormOpen(true)}
@@ -359,6 +425,15 @@ function EmployeeLeavesPage() {
 				leaveTypeOptions={leaveTypeOptions}
 				onClose={closeFormDialog}
 				onSubmit={handleSubmit}
+			/>
+			<MasterDataImportDialog
+				open={importOpen}
+				loading={submitting}
+				title="Import Data Cuti Karyawan"
+				description="Unduh template Excel resmi, isi data cuti karyawan secara bulk, lalu upload file `.xlsx` untuk import."
+				templateHref={`${getApiBaseUrl()}/data-karyawan/employee-leaves/import-template`}
+				onClose={closeImportDialog}
+				onImport={handleImportExcel}
 			/>
 			<DeleteConfirmDialog
 				open={deleteOpen}
