@@ -15,6 +15,7 @@ const upload = multer({
 		fileSize: 10 * 1024 * 1024,
 	},
 });
+const TEMPLATE_MAX_ROWS = 500;
 
 const EMPLOYMENT_TYPES = ['PERMANENT', 'CONTRACT'];
 const GENDERS = ['MALE', 'FEMALE'];
@@ -458,6 +459,208 @@ async function createErrorReport(rows) {
 
 	return fileName;
 }
+
+router.get(
+	'/import-template',
+	withAsync(async (_req, res) => {
+		const [departments, groupShifts, workLocations, jobRoles, jobLevels] = await Promise.all([
+			prisma.department.findMany({
+				select: { name: true },
+				orderBy: { name: 'asc' },
+			}),
+			prisma.masterGroupShift.findMany({
+				select: { groupShiftName: true },
+				orderBy: { groupShiftName: 'asc' },
+			}),
+			prisma.workLocation.findMany({
+				select: { name: true },
+				orderBy: { name: 'asc' },
+			}),
+			prisma.jobRole.findMany({
+				select: { name: true },
+				orderBy: { name: 'asc' },
+			}),
+			prisma.jobLevel.findMany({
+				select: { name: true },
+				orderBy: { name: 'asc' },
+			}),
+		]);
+
+		const workbook = new ExcelJS.Workbook();
+		const dataSheet = workbook.addWorksheet('Data Import');
+		const guideSheet = workbook.addWorksheet('Petunjuk');
+		const referenceSheet = workbook.addWorksheet('Referensi');
+		referenceSheet.state = 'veryHidden';
+
+		dataSheet.columns = [
+			{ header: 'Employee No', key: 'employeeNo', width: 18 },
+			{ header: 'Password', key: 'password', width: 18 },
+			{ header: 'Fullname', key: 'fullName', width: 28 },
+			{ header: 'Employment Type', key: 'employmentType', width: 18 },
+			{ header: 'Site / Div', key: 'siteDiv', width: 16 },
+			{ header: 'Department', key: 'department', width: 22 },
+			{ header: 'Group Shift', key: 'groupShift', width: 22 },
+			{ header: 'Length Of Service', key: 'lengthOfService', width: 20 },
+			{ header: 'Age', key: 'age', width: 12 },
+			{ header: 'Birth Date', key: 'birthDate', width: 16 },
+			{ header: 'Gender', key: 'gender', width: 14 },
+			{ header: 'Work Location', key: 'workLocation', width: 22 },
+			{ header: 'Job Role', key: 'jobRole', width: 20 },
+			{ header: 'Job Level', key: 'jobLevel', width: 20 },
+			{ header: 'Education Level', key: 'educationLevel', width: 18 },
+			{ header: 'Grade', key: 'grade', width: 14 },
+			{ header: 'Join Date', key: 'joinDate', width: 16 },
+			{ header: 'Phone Number', key: 'phoneNumber', width: 18 },
+			{ header: 'Email', key: 'email', width: 28 },
+		];
+
+		const instructions = [
+			'ID Karyawan unik',
+			'Isi password awal karyawan',
+			'Nama lengkap karyawan',
+			'Pilih Permanent atau Contract',
+			'Default CLC jika tidak ada nilai lain',
+			'Harus sesuai Master Department',
+			'Harus sesuai Master Group Shift',
+			'Otomatis dari Join Date',
+			'Otomatis dari Birth Date',
+			'Format tanggal DD/MM/YYYY',
+			'Pilih Male atau Female',
+			'Harus sesuai Master Work Location',
+			'Harus sesuai Master Job Role',
+			'Harus sesuai Master Job Level',
+			'Pilih SMA, D3, S1, atau S2',
+			'Pilih Rank 1 sampai Rank 9',
+			'Format tanggal DD/MM/YYYY',
+			'Nomor telepon',
+			'Email aktif karyawan',
+		];
+
+		const headerRow = dataSheet.getRow(1);
+		headerRow.values = IMPORT_HEADERS;
+		headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+		headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1565C0' } };
+		headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+		dataSheet.getRow(2).values = instructions;
+		dataSheet.getRow(2).font = { italic: true, color: { argb: 'FF546E7A' } };
+		dataSheet.getRow(2).alignment = { vertical: 'top', wrapText: true };
+		dataSheet.views = [{ state: 'frozen', ySplit: 2 }];
+		dataSheet.autoFilter = {
+			from: 'A1',
+			to: 'S1',
+		};
+
+		const referenceColumns = [
+			{ header: 'Employment Type', key: 'employmentType', values: ['Permanent', 'Contract'], column: 'A' },
+			{ header: 'Gender', key: 'gender', values: ['MALE', 'FEMALE'], column: 'B' },
+			{ header: 'Education Level', key: 'educationLevel', values: ['SMA', 'D3', 'S1', 'S2'], column: 'C' },
+			{
+				header: 'Grade',
+				key: 'grade',
+				values: ['Rank 1', 'Rank 2', 'Rank 3', 'Rank 4', 'Rank 5', 'Rank 6', 'Rank 7', 'Rank 8', 'Rank 9'],
+				column: 'D',
+			},
+			{ header: 'Work Location', key: 'workLocation', values: workLocations.map((item) => item.name), column: 'E' },
+			{ header: 'Department', key: 'department', values: departments.map((item) => item.name), column: 'F' },
+			{ header: 'Group Shift', key: 'groupShift', values: groupShifts.map((item) => item.groupShiftName), column: 'G' },
+			{ header: 'Job Role', key: 'jobRole', values: jobRoles.map((item) => item.name), column: 'H' },
+			{ header: 'Job Level', key: 'jobLevel', values: jobLevels.map((item) => item.name), column: 'I' },
+		];
+
+		referenceColumns.forEach(({ header, values, column }) => {
+			referenceSheet.getCell(`${column}1`).value = header;
+			const normalizedValues = values.length > 0 ? values : [''];
+			normalizedValues.forEach((value, index) => {
+				referenceSheet.getCell(`${column}${index + 2}`).value = value;
+			});
+		});
+
+		for (let rowNumber = 3; rowNumber <= TEMPLATE_MAX_ROWS + 2; rowNumber += 1) {
+			dataSheet.getCell(`E${rowNumber}`).value = 'CLC';
+			dataSheet.getCell(`H${rowNumber}`).value = {
+				formula: `IF(Q${rowNumber}="","",DATEDIF(Q${rowNumber},TODAY(),"Y")&" tahun "&DATEDIF(Q${rowNumber},TODAY(),"YM")&" bulan")`,
+			};
+			dataSheet.getCell(`I${rowNumber}`).value = {
+				formula: `IF(J${rowNumber}="","",DATEDIF(J${rowNumber},TODAY(),"Y"))`,
+			};
+			dataSheet.getCell(`H${rowNumber}`).fill = {
+				type: 'pattern',
+				pattern: 'solid',
+				fgColor: { argb: 'FFF5F7FA' },
+			};
+			dataSheet.getCell(`I${rowNumber}`).fill = {
+				type: 'pattern',
+				pattern: 'solid',
+				fgColor: { argb: 'FFF5F7FA' },
+			};
+
+			[
+				['D', 'Referensi!$A$2:$A$3', 'Employment Type tidak valid', 'Pilih Employment Type dari dropdown yang tersedia.'],
+				['F', `Referensi!$F$2:$F$${Math.max(departments.length + 1, 2)}`, 'Department tidak valid', 'Pilih Department dari dropdown yang tersedia.'],
+				['G', `Referensi!$G$2:$G$${Math.max(groupShifts.length + 1, 2)}`, 'Group Shift tidak valid', 'Pilih Group Shift dari dropdown yang tersedia.'],
+				['K', 'Referensi!$B$2:$B$3', 'Gender tidak valid', 'Pilih Gender dari dropdown yang tersedia.'],
+				['L', `Referensi!$E$2:$E$${Math.max(workLocations.length + 1, 2)}`, 'Work Location tidak valid', 'Pilih Work Location dari dropdown yang tersedia.'],
+				['M', `Referensi!$H$2:$H$${Math.max(jobRoles.length + 1, 2)}`, 'Job Role tidak valid', 'Pilih Job Role dari dropdown yang tersedia.'],
+				['N', `Referensi!$I$2:$I$${Math.max(jobLevels.length + 1, 2)}`, 'Job Level tidak valid', 'Pilih Job Level dari dropdown yang tersedia.'],
+				['O', 'Referensi!$C$2:$C$5', 'Education Level tidak valid', 'Pilih Education Level dari dropdown yang tersedia.'],
+				['P', 'Referensi!$D$2:$D$10', 'Grade tidak valid', 'Pilih Grade dari dropdown yang tersedia.'],
+			].forEach(([column, formulae, errorTitle, error]) => {
+				dataSheet.getCell(`${column}${rowNumber}`).dataValidation = {
+					type: 'list',
+					allowBlank: column === 'G',
+					showErrorMessage: true,
+					errorTitle,
+					error,
+					formulae: [formulae],
+				};
+			});
+
+			['J', 'Q'].forEach((column) => {
+				dataSheet.getCell(`${column}${rowNumber}`).dataValidation = {
+					type: 'date',
+					operator: 'greaterThanOrEqual',
+					showErrorMessage: true,
+					errorTitle: 'Tanggal tidak valid',
+					error: 'Gunakan format tanggal yang benar.',
+					formulae: [new Date(1960, 0, 1)],
+				};
+				dataSheet.getCell(`${column}${rowNumber}`).numFmt = 'dd/mm/yyyy';
+			});
+
+			dataSheet.getCell(`S${rowNumber}`).dataValidation = {
+				type: 'custom',
+				allowBlank: true,
+				showErrorMessage: true,
+				errorTitle: 'Email tidak valid',
+				error: 'Masukkan email yang valid atau kosongkan kolom email.',
+				formulae: [`OR(S${rowNumber}="",ISNUMBER(SEARCH("@",S${rowNumber})))`],
+			};
+		}
+
+		guideSheet.columns = [{ width: 120 }];
+		[
+			'Template resmi ini dibuat otomatis dari data master terbaru.',
+			'Isi data mulai dari baris 3 pada sheet "Data Import".',
+			'Baris 2 hanya berisi petunjuk dan tidak perlu diubah.',
+			'Kolom dropdown seperti Department, Group Shift, Work Location, Job Role, dan Job Level selalu mengikuti data master terbaru saat template diunduh.',
+			'Kolom Group Shift boleh dikosongkan jika belum ada group shift untuk karyawan tersebut.',
+			'Kolom Length Of Service dan Age dihitung otomatis dari Join Date dan Birth Date.',
+			'Kolom tanggal gunakan format dd/mm/yyyy.',
+			'Jika ada baris gagal saat import, sistem akan mengunduh file error report.',
+		].forEach((text) => guideSheet.addRow([text]));
+
+		guideSheet.getCell('A1').font = { bold: true };
+		guideSheet.eachRow((row) => {
+			row.alignment = { vertical: 'top', wrapText: true };
+		});
+
+		res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+		res.setHeader('Content-Disposition', 'attachment; filename=\"master-karyawan-import-template.xlsx\"');
+
+		await workbook.xlsx.write(res);
+		return res.end();
+	}),
+);
 
 router.post(
 	'/import',
