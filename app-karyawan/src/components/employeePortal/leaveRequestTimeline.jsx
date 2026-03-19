@@ -27,15 +27,32 @@ function LeaveRequestTimeline({ revisions = [], approvals = [] }) {
 								<LeaveStatusChip status={revision.status} label={revision.statusLabel} />
 							</Stack>
 							<Typography variant="body2" color="text.secondary">
+								Tanggal pengajuan: {formatLongDate(revision.submissionDate)}
+							</Typography>
+							<Typography variant="body2" color="text.secondary">
+								Jenis cuti: {revision.leaveType}
+							</Typography>
+							<Typography variant="body2" color="text.secondary">
 								{formatLongDate(revision.periodStart)} - {formatLongDate(revision.periodEnd)}
 								{' | '}
 								{revision.leaveDays} hari
 							</Typography>
 							<Typography variant="body2" color="text.secondary">
-								Saldo sebelum: {revision.balanceBefore} | Saldo setelah: {revision.remainingLeave}
+								Jumlah cuti tersedia: {revision.availableLeaveBalance}
+								{' | '}
+								Sisa cuti: {revision.remainingLeave}
 							</Typography>
 							<Typography variant="body2" color="text.secondary">
-								Catatan pengajuan: {revision.notes || '-'}
+								Alamat selama cuti: {revision.leaveAddress || '-'}
+							</Typography>
+							<Typography variant="body2" color="text.secondary">
+								Alasan cuti: {revision.leaveReason || '-'}
+							</Typography>
+							<Typography variant="body2" color="text.secondary">
+								Pengganti selama cuti: {revision.replacementEmployeeName || '-'}
+							</Typography>
+							<Typography variant="body2" color="text.secondary">
+								Catatan tambahan: {revision.notes || '-'}
 							</Typography>
 							{revision.rejectionNote ? (
 								<Typography variant="body2" color="error.main">
