@@ -22,6 +22,7 @@ import Typography from '@mui/material/Typography';
 
 import RefreshOutlinedIcon from '@mui/icons-material/RefreshOutlined';
 import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
+import PrintOutlinedIcon from '@mui/icons-material/PrintOutlined';
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 
 import CardHeader from '@/components/cardHeader';
@@ -142,6 +143,10 @@ function EmployeeLeaveFlowPage() {
 		} finally {
 			setDetailLoading(false);
 		}
+	};
+
+	const handleOpenPrint = (id) => {
+		window.open(`/print/data-karyawan/cuti-karyawan/${id}`, '_blank', 'noopener,noreferrer');
 	};
 
 	return (
@@ -294,12 +299,22 @@ function EmployeeLeaveFlowPage() {
 													<LeaveStatusChip status={row.status} label={row.statusLabel} />
 												</TableCell>
 												<TableCell align="right">
-													<IconButton
-														color="primary"
-														onClick={() => handleOpenDetail(row.id)}
-													>
-														<VisibilityOutlinedIcon fontSize="small" />
-													</IconButton>
+													<Stack direction="row" justifyContent="flex-end" spacing={0.5}>
+														<IconButton
+															color="primary"
+															onClick={() => handleOpenDetail(row.id)}
+														>
+															<VisibilityOutlinedIcon fontSize="small" />
+														</IconButton>
+														{row.status === 'APPROVED' ? (
+															<IconButton
+																color="primary"
+																onClick={() => handleOpenPrint(row.id)}
+															>
+																<PrintOutlinedIcon fontSize="small" />
+															</IconButton>
+														) : null}
+													</Stack>
 												</TableCell>
 											</TableRow>
 										))
