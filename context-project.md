@@ -61,6 +61,9 @@ Folder ini dipilih sebagai basis utama pengembangan karena struktur template-nya
 - `Data Cuti Karyawan` sekarang diperlakukan sebagai saldo utama admin-only dengan satu row per kombinasi `Karyawan + Jenis Cuti + Tahun`.
 - Final approval cuti dari PWA tidak lagi menambah row baru pada `Data Cuti Karyawan`; sistem hanya mengurangi `Sisa Cuti` pada row utama yang sesuai.
 - Riwayat approval cuti dan perubahan admin/import untuk `Data Cuti Karyawan` ditampilkan melalui aksi `Detail`, bukan dengan menduplikasi row pada grid utama.
+- Request cuti `Approved` sekarang memiliki fitur `Print A4` baik dari admin maupun dari PWA karyawan.
+- Dokumen print cuti menggunakan halaman HTML/CSS A4 khusus yang dikalibrasi mengikuti file referensi `Form Permohonan Cuti dan Ijin.pdf`.
+- Kolom approval pada dokumen print menampilkan tanggal dan nama requester/approver sesuai grup approval yang sudah disepakati.
 - Routing approval cuti foreman sekarang bersifat eksklusif:
   - jika requester punya `Group Shift`, tahap foreman hanya memakai foreman yang terdaftar pada `Master Group Shift` tersebut
   - jika requester tidak punya `Group Shift`, tahap foreman hanya memakai foreman dalam department yang sama yang tidak punya assignment pada `group_shift_foremen`
@@ -496,6 +499,32 @@ Aturan approval yang sudah disebutkan:
 - Kolom `Jenis Cuti` pada template import menggunakan dropdown value dari `Master Cuti Karyawan`.
 - Template import tidak lagi menyertakan sample data bawaan; sheet `Data Import` disediakan dalam kondisi bersih.
 
+#### Print Form Cuti Approved
+
+- Request cuti dengan status `Approved` sekarang dapat dicetak ke format `Print A4`.
+- Tombol `Print A4` tersedia pada:
+  - halaman admin `Flow Proses Cuti` di kolom `Aksi`
+  - halaman detail cuti karyawan di PWA untuk request yang sudah `Approved`
+- Route print yang digunakan:
+  - `/print/data-karyawan/cuti-karyawan/:id`
+  - `/karyawan/cuti/:id/print`
+- Template print mengikuti dokumen `Form Permohonan Cuti dan Ijin.pdf` dengan pendekatan komposisi manual A4 agar hasil visual mendekati form resmi.
+- Mapping print saat ini mencakup:
+  - `Site / Div`
+  - `Department`
+  - `Tanggal Pengajuan`
+  - `Nama`
+  - `NIK`
+  - checkbox `Jenis Cuti`
+  - `Jumlah hari cuti`
+  - `Periode cuti`
+  - `Alamat selama cuti`
+  - `Alasan cuti`
+  - daftar `Pengganti selama cuti` hingga 4 orang
+  - `Sisa cuti`
+  - tabel approval bawah berisi tanggal dan nama requester/approver
+- Layout print A4 cuti sudah disesuaikan ulang agar bagian approval bawah tidak terpotong pada preview/print satu halaman.
+
 ### 4. Modul Dokumen
 
 #### Daftar Lisensi Unit & Kargo
@@ -643,6 +672,9 @@ Yang sudah selesai:
 - Menambahkan layout mobile khusus karyawan dengan bottom navigation dan logout terpisah dari area admin.
 - Menambahkan halaman dashboard, profil, riwayat bimbingan, dan riwayat surat peringatan untuk karyawan login.
 - Mengaktifkan PWA pada project aktif dengan manifest, service worker, register SW, dan ikon install app untuk `Portal Mobile Karyawan`.
+- Menambahkan route print admin dan PWA untuk `Form Permohonan Cuti dan Ijin`, beserta tombol `Print A4` pada flow cuti approved dan detail cuti approved.
+- Menambahkan dokumen print A4 khusus cuti approved dengan mapping field workflow cuti, checkbox jenis cuti, daftar pengganti repetitif, dan ringkasan approval bawah.
+- Menyesuaikan layout vertikal dokumen print cuti agar seluruh form tetap muat dalam satu halaman A4 tanpa memotong area approval bawah.
 - Verifikasi `lint`, `build`, dan smoke test API ke database berhasil.
 
 ## Struktur Teknis Awal yang Sudah Dibangun
