@@ -10,7 +10,7 @@ function TextLine({ value = '', width = '100%', align = 'left' }) {
 	return (
 		<Box
 			sx={{
-				minHeight: '5.4mm',
+				minHeight: '4.8mm',
 				borderBottom: '0.55mm solid #111',
 				width,
 				display: 'flex',
@@ -59,7 +59,7 @@ function FormLabel({ idLabel, enLabel, width = '44mm' }) {
 
 function FormFieldRow({ idLabel, enLabel, value, valueWidth = '70mm', labelWidth, trailing }) {
 	return (
-		<Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.25 }}>
+		<Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
 			<FormLabel idLabel={idLabel} enLabel={enLabel} width={labelWidth} />
 			<Typography sx={{ fontFamily: FONT_FAMILY, fontSize: '9pt', lineHeight: 1.55, pt: 0.2 }}>:</Typography>
 			<TextLine value={value} width={valueWidth} />
@@ -70,7 +70,7 @@ function FormFieldRow({ idLabel, enLabel, value, valueWidth = '70mm', labelWidth
 
 function CheckboxItem({ item }) {
 	return (
-		<Stack direction="row" spacing={0.9} alignItems="flex-start">
+		<Stack direction="row" spacing={0.8} alignItems="flex-start">
 			<Box
 				sx={{
 					width: '7.6mm',
@@ -114,9 +114,9 @@ function ApprovalCell({ title, date, name, width, hideTop = false }) {
 				borderTop: hideTop ? 0 : '0.55mm solid #111',
 				borderRight: '0.55mm solid #111',
 				borderBottom: '0.55mm solid #111',
-				minHeight: '31mm',
+				minHeight: '26.5mm',
 				display: 'grid',
-				gridTemplateRows: '10mm 1fr',
+				gridTemplateRows: '8.5mm 1fr',
 			}}
 		>
 			<Box
@@ -131,15 +131,15 @@ function ApprovalCell({ title, date, name, width, hideTop = false }) {
 			>
 				<Typography sx={{ fontFamily: FONT_FAMILY, fontSize: '8.4pt', lineHeight: 1.15 }}>{title}</Typography>
 			</Box>
-			<Stack spacing={0.45} sx={{ px: 1, pt: 1.2, alignItems: 'center', textAlign: 'center' }}>
-				<Typography sx={{ fontFamily: FONT_FAMILY, fontSize: '8.7pt', lineHeight: 1.1 }}>
+			<Stack spacing={0.25} sx={{ px: 0.8, pt: 0.75, alignItems: 'center', textAlign: 'center' }}>
+				<Typography sx={{ fontFamily: FONT_FAMILY, fontSize: '8.4pt', lineHeight: 1.08 }}>
 					{date || ' '}
 				</Typography>
 				<Typography
 					sx={{
 						fontFamily: FONT_FAMILY,
-						fontSize: '8.2pt',
-						lineHeight: 1.15,
+						fontSize: '7.8pt',
+						lineHeight: 1.1,
 						fontWeight: 600,
 						wordBreak: 'break-word',
 					}}
@@ -177,8 +177,8 @@ function LeaveApplicationPrintDocument({ data }) {
 					width: '100%',
 					height: '100%',
 					px: '12mm',
-					pt: '8mm',
-					pb: '8mm',
+					pt: '7mm',
+					pb: '6mm',
 					display: 'flex',
 					flexDirection: 'column',
 				}}
@@ -267,8 +267,8 @@ function LeaveApplicationPrintDocument({ data }) {
 					</Typography>
 				</Box>
 
-				<Stack spacing={1.35} sx={{ mt: 0.8, flex: 1 }}>
-					<Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: 3.2, rowGap: 1.25 }}>
+				<Stack spacing={1.05} sx={{ mt: 0.55, flex: 1 }}>
+					<Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: 3, rowGap: 0.9 }}>
 						<Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.2 }}>
 							<FormLabel idLabel="Site / Div" enLabel="" width="30mm" />
 							<Typography sx={{ fontFamily: FONT_FAMILY, fontSize: '9pt', lineHeight: 1.4, pt: 0.15 }}>
@@ -320,11 +320,11 @@ function LeaveApplicationPrintDocument({ data }) {
 						</Typography>
 					</Stack>
 
-					<Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', columnGap: 4, rowGap: 1.2 }}>
+					<Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', columnGap: 3.3, rowGap: 0.8 }}>
 						{data.checkboxRows.map((row, rowIndex) => (
 							<Stack
 								key={`checkbox-row-${rowIndex}`}
-								spacing={1.05}
+								spacing={0.7}
 								sx={{ gridColumn: row.length === 2 ? '1 / span 2' : 'auto' }}
 							>
 								{row.map((item) => (
@@ -497,7 +497,7 @@ function LeaveApplicationPrintDocument({ data }) {
 						</Stack>
 					</Box>
 
-					<Stack spacing={0.5} sx={{ mt: 0.2 }}>
+					<Stack spacing={0.3} sx={{ mt: 0.1 }}>
 						<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.9 }}>
 							<Box
 								sx={{
@@ -567,7 +567,7 @@ function LeaveApplicationPrintDocument({ data }) {
 									display: 'flex',
 									alignItems: 'center',
 									justifyContent: 'center',
-									minHeight: '7mm',
+									minHeight: '6.2mm',
 								}}
 							>
 								<Typography sx={{ fontFamily: FONT_FAMILY, fontSize: '8.8pt', lineHeight: 1.15 }}>
