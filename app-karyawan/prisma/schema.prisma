@@ -173,11 +173,12 @@ model MasterDokKaryawan {
 }
 
 model MasterCutiKaryawan {
-  id        Int             @id @default(autoincrement())
-  leaveType String          @db.VarChar(255)
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @updatedAt
-  records   EmployeeLeave[]
+  id              Int                   @id @default(autoincrement())
+  leaveType       String                @db.VarChar(255)
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  records         EmployeeLeave[]
+  databaseRecords EmployeeLeaveDatabase[]
 
   @@map("master_cuti_karyawan")
 }
@@ -240,6 +241,7 @@ model Employee {
   adminAccounts          MasterAdmin[]
   licenseCertifications  EmployeeLicenseCertification[]
   leaveRecords           EmployeeLeave[]
+  leaveDatabaseRecords   EmployeeLeaveDatabase[]
   leaveApprovals         EmployeeLeaveApproval[]        @relation("EmployeeLeaveApprover")
   leaveBalanceSeeds      EmployeeLeaveBalanceSeed[]
   groupShiftAssignments  GroupShiftForeman[]
@@ -285,6 +287,26 @@ model EmployeeLeave {
   @@index([status])
   @@index([leaveYear])
   @@map("employee_leaves")
+}
+
+model EmployeeLeaveDatabase {
+  id                   Int               @id @default(autoincrement())
+  employeeId           Int
+  masterCutiKaryawanId Int
+  leaveDays            Int
+  periodStart          DateTime          @db.Date
+  periodEnd            DateTime          @db.Date
+  remainingLeave       Int
+  notes                String?           @db.Text
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+  employee             Employee          @relation(fields: [employeeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  masterCutiKaryawan   MasterCutiKaryawan @relation(fields: [masterCutiKaryawanId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([employeeId])
+  @@index([masterCutiKaryawanId])
+  @@index([periodStart])
+  @@map("employee_leave_database")
 }
 
 model EmployeeLeaveRevision {

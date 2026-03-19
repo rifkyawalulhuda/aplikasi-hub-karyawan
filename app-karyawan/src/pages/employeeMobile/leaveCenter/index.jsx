@@ -201,9 +201,9 @@ function EmployeeLeaveCenterPage() {
 						helper={`Tahun ${requestData.year}`}
 					/>
 					<InfoCard
-						title="Saldo Awal"
-						value={requestData.balance?.openingBalance ?? '-'}
-						helper="Sumber saldo tahunan"
+						title="Sumber Saldo"
+						value={requestData.balance?.reference?.leaveType || '-'}
+						helper="Diambil dari database cuti admin"
 					/>
 				</Box>
 

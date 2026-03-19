@@ -25,7 +25,7 @@ function EmployeeLeaveTable({ rows, onEdit, onDelete }) {
 	if (rows.length === 0) {
 		return (
 			<Stack py={8} alignItems="center" spacing={1}>
-				<Typography variant="h6">Belum ada data cuti karyawan</Typography>
+				<Typography variant="h6">Belum ada database cuti karyawan</Typography>
 				<Typography variant="body2" color="text.secondary">
 					Tambahkan data cuti karyawan pertama dari halaman ini.
 				</Typography>
@@ -54,7 +54,7 @@ function EmployeeLeaveTable({ rows, onEdit, onDelete }) {
 			initialRowsPerPage={15}
 			rowsPerPageOptions={[15, 30, 50, 100]}
 			resizableColumns
-			columnResizeKey="employee-leaves-table"
+			columnResizeKey="employee-leave-database-table"
 			tableSx={{
 				'& th, & td': {
 					borderRight: '1px solid rgba(15, 23, 42, 0.08)',

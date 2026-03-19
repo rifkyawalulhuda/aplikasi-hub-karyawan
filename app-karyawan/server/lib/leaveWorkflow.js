@@ -1,4 +1,5 @@
 import prisma from './prisma.js';
+import { getLeaveDatabaseBalance } from './leaveDatabase.js';
 
 const APPROVAL_STAGE_SEQUENCE = [
 	{ stageType: 'FOREMAN', jobLevelName: 'Foreman' },
@@ -271,17 +272,16 @@ async function validateOverlappingLeave(tx, { employeeId, periodStart, periodEnd
 }
 
 async function getBalanceBefore(tx, employeeId, leaveYear) {
-	const seed = await getBalanceSeed(tx, employeeId, leaveYear);
-	const latestApprovedRequest = await tx.employeeLeave.findFirst({
-		where: {
-			employeeId,
-			leaveYear,
-			status: 'APPROVED',
-		},
-		orderBy: [{ approvedAt: 'desc' }, { id: 'desc' }],
-	});
+	const balance = await getLeaveDatabaseBalance(tx, employeeId, leaveYear);
 
-	return latestApprovedRequest?.remainingLeave ?? seed.currentBalance;
+	if (!balance) {
+		throw Object.assign(
+			new Error(`Database cuti tahun ${leaveYear} belum disiapkan untuk karyawan ini.`),
+			{ statusCode: 400 },
+		);
+	}
+
+	return balance.currentBalance;
 }
 
 function buildRequestNumber(date = new Date()) {
@@ -452,7 +452,10 @@ function getActiveApprovals(record) {
 async function createLeaveRequestRevision(tx, payload) {
 	const requester = await getRequesterForWorkflow(tx, payload.employeeId);
 	const leaveYear = payload.periodStart.getUTCFullYear();
-	const balanceBefore = await getBalanceBefore(tx, payload.employeeId, leaveYear);
+	const balanceBefore =
+		typeof payload.balanceBeforeOverride === 'number'
+			? payload.balanceBeforeOverride
+			: await getBalanceBefore(tx, payload.employeeId, leaveYear);
 	const remainingLeave = balanceBefore - payload.leaveDays;
 
 	if (remainingLeave < 0) {

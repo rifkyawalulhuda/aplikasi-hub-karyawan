@@ -49,38 +49,4 @@ router.get(
 	}),
 );
 
-router.get(
-	'/',
-	withAsync(async (_req, res) => {
-		const rows = await prisma.employeeLeave.findMany({
-			include: {
-				employee: true,
-				masterCutiKaryawan: true,
-				approvals: {
-					include: {
-						approverEmployee: true,
-					},
-				},
-			},
-			orderBy: [{ submittedAt: 'desc' }, { id: 'desc' }],
-		});
-
-		return res.json(rows.map(mapLeaveRequestSummary));
-	}),
-);
-
-router.get(
-	'/:id',
-	withAsync(async (req, res) => {
-		const id = Number(req.params.id);
-
-		if (Number.isNaN(id)) {
-			return res.status(400).json({ message: 'ID tidak valid.' });
-		}
-
-		const record = await getLeaveRequestOrThrow(prisma, id);
-		return res.json(mapLeaveRequestDetail(record));
-	}),
-);
-
 export default router;

@@ -10,7 +10,6 @@ import { getAppBaseUrl, queueAndSendEmail } from '../lib/emailService.js';
 import {
 	createLeaveRequestRevision,
 	getActiveApprovals,
-	getBalanceSeed,
 	getLeaveRequestOrThrow,
 	listApprovalsForEmployee,
 	mapApprovalRow,
@@ -19,6 +18,7 @@ import {
 	normalizeString,
 	toDateOnly,
 } from '../lib/leaveWorkflow.js';
+import { createLeaveDatabaseHistory, getLeaveDatabaseBalance } from '../lib/leaveDatabase.js';
 import requireEmployeeAuth from '../middleware/requireEmployeeAuth.js';
 
 const router = Router();
@@ -269,8 +269,8 @@ router.get('/warning-letters', async (req, res, next) => {
 router.get('/leave-requests', async (req, res, next) => {
 	try {
 		const currentYear = new Date().getFullYear();
-		const [seed, rows] = await Promise.all([
-			getBalanceSeed(prisma, req.employee.id, currentYear).catch(() => null),
+		const [balance, rows] = await Promise.all([
+			getLeaveDatabaseBalance(prisma, req.employee.id, currentYear).catch(() => null),
 			prisma.employeeLeave.findMany({
 				where: {
 					employeeId: req.employee.id,
@@ -290,12 +290,7 @@ router.get('/leave-requests', async (req, res, next) => {
 
 		return res.json({
 			year: currentYear,
-			balance: seed
-				? {
-						openingBalance: seed.openingBalance,
-						currentBalance: seed.currentBalance,
-				  }
-				: null,
+			balance,
 			rows: rows.map(mapLeaveRequestSummary),
 		});
 	} catch (error) {
@@ -776,16 +771,16 @@ router.post('/leave-approvals/:id/approve', async (req, res, next) => {
 					},
 				});
 
-				await tx.employeeLeaveBalanceSeed.update({
-					where: {
-						employeeId_year: {
-							employeeId: approval.employeeLeave.employeeId,
-							year: approval.employeeLeave.leaveYear,
-						},
-					},
-					data: {
-						currentBalance: approval.employeeLeave.remainingLeave,
-					},
+				await createLeaveDatabaseHistory(tx, {
+					employeeId: approval.employeeLeave.employeeId,
+					masterCutiKaryawanId: approval.employeeLeave.masterCutiKaryawanId,
+					leaveDays: approval.employeeLeave.leaveDays,
+					periodStart: approval.employeeLeave.periodStart,
+					periodEnd: approval.employeeLeave.periodEnd,
+					remainingLeave: approval.employeeLeave.remainingLeave,
+					notes: approval.employeeLeave.notes
+						? `${approval.employeeLeave.notes}\n\nRef Workflow: ${approval.employeeLeave.requestNumber}`
+						: `Ref Workflow: ${approval.employeeLeave.requestNumber}`,
 				});
 			}
 
