@@ -20,7 +20,7 @@ function toDefaultValues(initialValue) {
 		leaveDays: initialValue?.leaveDays ?? '',
 		periodStart: initialValue?.periodStart || '',
 		periodEnd: initialValue?.periodEnd || '',
-		remainingLeave: initialValue?.remainingLeave ?? '',
+		remainingLeave: initialValue?.remainingLeaveInput ?? initialValue?.remainingLeave ?? '',
 		notes: initialValue?.notes || '',
 	};
 }
@@ -75,6 +75,14 @@ function EmployeeLeaveFormDialog({
 					sx={{ pt: 1 }}
 					onSubmit={handleSubmit(onSubmit)}
 				>
+					<Grid item xs={12} md={4}>
+						<TextField
+							label="NO"
+							value={initialValue?.id || 'Auto Generate Saat Simpan'}
+							fullWidth
+							disabled
+						/>
+					</Grid>
 					<Grid item xs={12} md={8}>
 						<Controller
 							name="employeeId"
