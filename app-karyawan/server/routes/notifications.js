@@ -158,7 +158,11 @@ function createEmployeeLicenseNotification(record) {
 	const description = isExpired
 		? `${record.masterDokKaryawan.documentName} (${record.documentNumber}) sudah expired pada ${formatDateLabel(record.expiryDate)}.`
 		: `${record.masterDokKaryawan.documentName} (${record.documentNumber}) akan expired pada ${formatDateLabel(record.expiryDate)}.`;
-	const targetSearch = `${record.employee.fullName} ${record.employee.employeeNo} ${record.masterDokKaryawan.documentName}`;
+	const targetSearch =
+		record.documentNumber ||
+		record.employee.employeeNo ||
+		record.employee.fullName ||
+		record.masterDokKaryawan.documentName;
 
 	return {
 		id: `employee-license-${record.id}-${severityLabel}-${record.expiryDate.toISOString().slice(0, 10)}`,
@@ -189,7 +193,8 @@ function createUnitLicenseNotification(record) {
 	const description = isExpired
 		? `Dokumen ${record.documentNumber} untuk asset ${record.assetNo} sudah expired pada ${formatDateLabel(record.expiryDate)}.`
 		: `Dokumen ${record.documentNumber} untuk asset ${record.assetNo} akan expired pada ${formatDateLabel(record.expiryDate)}.`;
-	const targetSearch = `${record.masterUnit.unitName} ${record.assetNo} ${record.documentNumber}`;
+	const targetSearch =
+		record.documentNumber || record.assetNo || record.masterUnit.unitName;
 
 	return {
 		id: `unit-license-${record.id}-${severityLabel}-${record.expiryDate.toISOString().slice(0, 10)}`,
