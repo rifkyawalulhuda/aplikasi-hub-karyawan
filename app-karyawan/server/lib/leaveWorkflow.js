@@ -271,12 +271,12 @@ async function validateOverlappingLeave(tx, { employeeId, periodStart, periodEnd
 	}
 }
 
-async function getBalanceBefore(tx, employeeId, leaveYear) {
-	const balance = await getLeaveDatabaseBalance(tx, employeeId, leaveYear);
+async function getBalanceBefore(tx, employeeId, leaveYear, masterCutiKaryawanId) {
+	const balance = await getLeaveDatabaseBalance(tx, employeeId, leaveYear, masterCutiKaryawanId);
 
 	if (!balance) {
 		throw Object.assign(
-			new Error(`Database cuti tahun ${leaveYear} belum disiapkan untuk karyawan ini.`),
+			new Error(`Database cuti tahun ${leaveYear} untuk jenis cuti ini belum disiapkan untuk karyawan ini.`),
 			{ statusCode: 400 },
 		);
 	}
@@ -319,14 +319,23 @@ function mapRevisionRow(revision) {
 	return {
 		id: revision.id,
 		revisionNo: revision.revisionNo,
+		masterCutiKaryawanId: revision.masterCutiKaryawanId,
+		leaveType: revision.masterCutiKaryawan.leaveType,
+		replacementEmployeeId: revision.replacementEmployeeId || null,
+		replacementEmployeeName: revision.replacementEmployee?.fullName || '',
 		status: revision.status,
 		statusLabel: getRequestStatusLabel(revision.status),
 		leaveDays: revision.leaveDays,
 		periodStart: formatDateForClient(revision.periodStart),
 		periodEnd: formatDateForClient(revision.periodEnd),
+		submissionDate: formatDateForClient(revision.submittedAt),
 		balanceBefore: revision.balanceBefore,
+		availableLeaveBalance: revision.balanceBefore,
 		remainingLeave: revision.remainingLeave,
+		remainingLeavePreview: revision.remainingLeave,
 		notes: revision.notes || '',
+		leaveAddress: revision.leaveAddress || '',
+		leaveReason: revision.leaveReason || '',
 		rejectionNote: revision.rejectionNote || '',
 		submittedAt: revision.submittedAt ? revision.submittedAt.toISOString() : null,
 		approvedAt: revision.approvedAt ? revision.approvedAt.toISOString() : null,
@@ -350,16 +359,24 @@ function mapLeaveRequestSummary(record) {
 		employeeNo: record.employee.employeeNo,
 		leaveYear: record.leaveYear,
 		revisionNo: record.revisionNo,
+		submissionDate: formatDateForClient(record.submittedAt || record.createdAt),
+		masterCutiKaryawanId: record.masterCutiKaryawanId,
 		leaveType: record.masterCutiKaryawan.leaveType,
 		leaveDays: record.leaveDays,
 		periodStart: formatDateForClient(record.periodStart),
 		periodEnd: formatDateForClient(record.periodEnd),
 		balanceBefore: record.balanceBefore,
+		availableLeaveBalance: record.balanceBefore,
 		remainingLeave: record.remainingLeave,
+		remainingLeavePreview: record.remainingLeave,
 		currentStageOrder: record.currentStageOrder,
 		activeStageLabel: activeApprovals[0] ? getStageLabel(activeApprovals[0].stageType) : '',
 		activeApproverNames: activeApprovals.map((item) => item.approverEmployee.fullName).join(', '),
 		notes: record.notes || '',
+		leaveAddress: record.leaveAddress || '',
+		leaveReason: record.leaveReason || '',
+		replacementEmployeeId: record.replacementEmployeeId || null,
+		replacementEmployeeName: record.replacementEmployee?.fullName || '',
 		rejectionNote: record.rejectionNote || '',
 		submittedAt: record.submittedAt ? record.submittedAt.toISOString() : null,
 		approvedAt: record.approvedAt ? record.approvedAt.toISOString() : null,
@@ -419,8 +436,14 @@ async function getLeaveRequestOrThrow(tx, id) {
 					department: true,
 				},
 			},
+			replacementEmployee: true,
 			masterCutiKaryawan: true,
-			revisions: true,
+			revisions: {
+				include: {
+					masterCutiKaryawan: true,
+					replacementEmployee: true,
+				},
+			},
 			approvals: {
 				include: {
 					approverEmployee: {
@@ -455,7 +478,7 @@ async function createLeaveRequestRevision(tx, payload) {
 	const balanceBefore =
 		typeof payload.balanceBeforeOverride === 'number'
 			? payload.balanceBeforeOverride
-			: await getBalanceBefore(tx, payload.employeeId, leaveYear);
+			: await getBalanceBefore(tx, payload.employeeId, leaveYear, payload.masterCutiKaryawanId);
 	const remainingLeave = balanceBefore - payload.leaveDays;
 
 	if (remainingLeave < 0) {
@@ -499,8 +522,14 @@ async function listApprovalsForEmployee(employeeId) {
 							department: true,
 						},
 					},
+					replacementEmployee: true,
 					masterCutiKaryawan: true,
-					revisions: true,
+					revisions: {
+						include: {
+							masterCutiKaryawan: true,
+							replacementEmployee: true,
+						},
+					},
 					approvals: {
 						include: {
 							approverEmployee: {

@@ -20,13 +20,15 @@ import LeaveStatusChip from '@/components/employeePortal/leaveStatusChip';
 import { formatLongDate } from '@/utils/employeePortal';
 
 function InfoRow({ label, value }) {
+	const displayValue = value === 0 || value === '0' ? value : value || '-';
+
 	return (
 		<Stack direction="row" justifyContent="space-between" spacing={2}>
 			<Typography variant="body2" color="text.secondary">
 				{label}
 			</Typography>
 			<Typography variant="body2" sx={{ fontWeight: 600, textAlign: 'right' }}>
-				{value || '-'}
+				{displayValue}
 			</Typography>
 		</Stack>
 	);
@@ -70,14 +72,21 @@ function LeaveRequestDetailDialog({ open, loading = false, data, title = 'Detail
 						<Stack spacing={1}>
 							<InfoRow label="Jenis cuti" value={data.leaveType} />
 							<InfoRow
+								label="Tanggal pengajuan"
+								value={data.submissionDate ? formatLongDate(data.submissionDate) : '-'}
+							/>
+							<InfoRow
 								label="Periode"
 								value={`${formatLongDate(data.periodStart)} - ${formatLongDate(data.periodEnd)}`}
 							/>
 							<InfoRow label="Jumlah hari" value={`${data.leaveDays || 0} hari`} />
 							<InfoRow label="Tahun cuti" value={data.leaveYear} />
 							<InfoRow label="Revisi aktif" value={`Revisi ${data.revisionNo || 1}`} />
-							<InfoRow label="Saldo sebelum" value={data.balanceBefore} />
-							<InfoRow label="Saldo setelah" value={data.remainingLeave} />
+							<InfoRow label="Jumlah cuti tersedia" value={data.availableLeaveBalance} />
+							<InfoRow label="Sisa cuti" value={data.remainingLeave} />
+							<InfoRow label="Alamat selama cuti" value={data.leaveAddress || '-'} />
+							<InfoRow label="Alasan cuti" value={data.leaveReason || '-'} />
+							<InfoRow label="Pengganti selama cuti" value={data.replacementEmployeeName || '-'} />
 							<InfoRow label="Stage aktif" value={data.activeStageLabel || '-'} />
 							<InfoRow
 								label="Tanggal submit"
@@ -101,7 +110,7 @@ function LeaveRequestDetailDialog({ open, loading = false, data, title = 'Detail
 									value={new Date(data.cancelledAt).toLocaleString('id-ID')}
 								/>
 							) : null}
-							<InfoRow label="Catatan pengajuan" value={data.notes || '-'} />
+							<InfoRow label="Catatan tambahan" value={data.notes || '-'} />
 							{data.rejectionNote ? (
 								<InfoRow label="Catatan reject terakhir" value={data.rejectionNote} />
 							) : null}

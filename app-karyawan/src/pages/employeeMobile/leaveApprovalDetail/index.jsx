@@ -138,11 +138,29 @@ function EmployeeLeaveApprovalDetailPage() {
 							{payload?.request?.leaveDays} hari
 						</Typography>
 						<Typography variant="body2" color="text.secondary">
+							Tanggal Pengajuan:{' '}
+							{payload?.request?.submissionDate ? formatLongDate(payload.request.submissionDate) : '-'}
+						</Typography>
+						<Typography variant="body2" color="text.secondary">
 							{formatLongDate(payload?.request?.periodStart)} -{' '}
 							{formatLongDate(payload?.request?.periodEnd)}
 						</Typography>
 						<Typography variant="body2" color="text.secondary">
-							Catatan: {payload?.request?.notes || '-'}
+							Jumlah cuti tersedia: {payload?.request?.availableLeaveBalance}
+							{' | '}
+							Sisa cuti: {payload?.request?.remainingLeave}
+						</Typography>
+						<Typography variant="body2" color="text.secondary">
+							Alamat selama cuti: {payload?.request?.leaveAddress || '-'}
+						</Typography>
+						<Typography variant="body2" color="text.secondary">
+							Alasan cuti: {payload?.request?.leaveReason || '-'}
+						</Typography>
+						<Typography variant="body2" color="text.secondary">
+							Pengganti selama cuti: {payload?.request?.replacementEmployeeName || '-'}
+						</Typography>
+						<Typography variant="body2" color="text.secondary">
+							Catatan tambahan: {payload?.request?.notes || '-'}
 						</Typography>
 						<Typography variant="body2" color="text.secondary">
 							Tahap Anda: {payload?.approval?.stageLabel}

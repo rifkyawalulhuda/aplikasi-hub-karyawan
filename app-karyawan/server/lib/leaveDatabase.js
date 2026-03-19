@@ -25,12 +25,13 @@ function mapLeaveDatabaseRow(record) {
 	};
 }
 
-async function getLatestLeaveDatabaseRecord(tx, employeeId, year) {
+async function getLatestLeaveDatabaseRecord(tx, employeeId, year, masterCutiKaryawanId = null) {
 	const { start, end } = getYearRange(year);
 
 	return tx.employeeLeaveDatabase.findFirst({
 		where: {
 			employeeId,
+			...(masterCutiKaryawanId ? { masterCutiKaryawanId } : {}),
 			periodStart: {
 				gte: start,
 				lt: end,
@@ -44,8 +45,8 @@ async function getLatestLeaveDatabaseRecord(tx, employeeId, year) {
 	});
 }
 
-async function getLeaveDatabaseBalance(tx, employeeId, year) {
-	const record = await getLatestLeaveDatabaseRecord(tx, employeeId, year);
+async function getLeaveDatabaseBalance(tx, employeeId, year, masterCutiKaryawanId = null) {
+	const record = await getLatestLeaveDatabaseRecord(tx, employeeId, year, masterCutiKaryawanId);
 
 	if (!record) {
 		return null;
@@ -53,9 +54,43 @@ async function getLeaveDatabaseBalance(tx, employeeId, year) {
 
 	return {
 		year,
+		masterCutiKaryawanId: record.masterCutiKaryawanId,
 		currentBalance: record.remainingLeave,
 		reference: mapLeaveDatabaseRow(record),
 	};
+}
+
+async function listLeaveTypeBalancesForEmployeeYear(tx, employeeId, year) {
+	const { start, end } = getYearRange(year);
+	const rows = await tx.employeeLeaveDatabase.findMany({
+		where: {
+			employeeId,
+			periodStart: {
+				gte: start,
+				lt: end,
+			},
+		},
+		include: {
+			employee: true,
+			masterCutiKaryawan: true,
+		},
+		orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+	});
+
+	const latestByLeaveType = new Map();
+
+	rows.forEach((row) => {
+		if (!latestByLeaveType.has(row.masterCutiKaryawanId)) {
+			latestByLeaveType.set(row.masterCutiKaryawanId, row);
+		}
+	});
+
+	return Array.from(latestByLeaveType.values()).map((record) => ({
+		year,
+		masterCutiKaryawanId: record.masterCutiKaryawanId,
+		currentBalance: record.remainingLeave,
+		reference: mapLeaveDatabaseRow(record),
+	}));
 }
 
 async function createLeaveDatabaseHistory(tx, payload) {
@@ -93,6 +128,7 @@ export {
 	getLatestLeaveDatabaseRecord,
 	getLeaveDatabaseBalance,
 	getYearRange,
+	listLeaveTypeBalancesForEmployeeYear,
 	listLeaveDatabase,
 	mapLeaveDatabaseRow,
 };

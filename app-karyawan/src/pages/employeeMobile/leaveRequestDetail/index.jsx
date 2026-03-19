@@ -14,7 +14,6 @@ import LeaveRequestFormDialog from '@/components/employeePortal/leaveRequestForm
 import LeaveRequestTimeline from '@/components/employeePortal/leaveRequestTimeline';
 import LeaveStatusChip from '@/components/employeePortal/leaveStatusChip';
 import { useEmployeeAuth } from '@/contexts/employeeAuthContext';
-import apiRequest from '@/services/api';
 import { employeeMeRequest } from '@/services/employeeApi';
 import { formatLongDate, getEmployeePortalErrorMessage, handleEmployeeUnauthorized } from '@/utils/employeePortal';
 
@@ -27,7 +26,12 @@ function EmployeeLeaveRequestDetailPage() {
 	const [submitting, setSubmitting] = useState(false);
 	const [error, setError] = useState('');
 	const [record, setRecord] = useState(null);
-	const [leaveTypes, setLeaveTypes] = useState([]);
+	const [formOptions, setFormOptions] = useState({
+		submissionDate: '',
+		year: new Date().getFullYear(),
+		leaveTypeOptions: [],
+		replacementOptions: [],
+	});
 	const [resubmitOpen, setResubmitOpen] = useState(false);
 	const [cancelOpen, setCancelOpen] = useState(false);
 
@@ -36,13 +40,13 @@ function EmployeeLeaveRequestDetailPage() {
 		setError('');
 
 		try {
-			const [detailResponse, leaveTypeResponse] = await Promise.all([
+			const [detailResponse, formOptionsResponse] = await Promise.all([
 				employeeMeRequest(`/leave-requests/${id}`),
-				apiRequest('/master/master-cuti-karyawan'),
+				employeeMeRequest('/leave-form-options'),
 			]);
 
 			setRecord(detailResponse);
-			setLeaveTypes(leaveTypeResponse);
+			setFormOptions(formOptionsResponse);
 		} catch (requestError) {
 			if (
 				handleEmployeeUnauthorized({
@@ -134,13 +138,25 @@ function EmployeeLeaveRequestDetailPage() {
 							{record?.leaveType} | {record?.leaveDays} hari
 						</Typography>
 						<Typography variant="body2" color="text.secondary">
+							Tanggal Pengajuan: {record?.submissionDate ? formatLongDate(record.submissionDate) : '-'}
+						</Typography>
+						<Typography variant="body2" color="text.secondary">
 							{formatLongDate(record?.periodStart)} - {formatLongDate(record?.periodEnd)}
 						</Typography>
 						<Typography variant="body2" color="text.secondary">
-							Saldo sebelum: {record?.balanceBefore} | Saldo setelah: {record?.remainingLeave}
+							Jumlah cuti tersedia: {record?.availableLeaveBalance} | Sisa cuti: {record?.remainingLeave}
 						</Typography>
 						<Typography variant="body2" color="text.secondary">
-							Catatan: {record?.notes || '-'}
+							Alamat selama cuti: {record?.leaveAddress || '-'}
+						</Typography>
+						<Typography variant="body2" color="text.secondary">
+							Alasan cuti: {record?.leaveReason || '-'}
+						</Typography>
+						<Typography variant="body2" color="text.secondary">
+							Pengganti selama cuti: {record?.replacementEmployeeName || '-'}
+						</Typography>
+						<Typography variant="body2" color="text.secondary">
+							Catatan tambahan: {record?.notes || '-'}
 						</Typography>
 						{record?.rejectionNote ? (
 							<Typography variant="body2" color="error.main">
@@ -176,7 +192,9 @@ function EmployeeLeaveRequestDetailPage() {
 			<LeaveRequestFormDialog
 				open={resubmitOpen}
 				loading={submitting}
-				leaveTypeOptions={leaveTypes}
+				leaveTypeOptions={formOptions.leaveTypeOptions}
+				replacementOptions={formOptions.replacementOptions}
+				submissionDate={formOptions.submissionDate}
 				initialValue={record}
 				title="Resubmit Pengajuan Cuti"
 				onClose={() => setResubmitOpen(false)}

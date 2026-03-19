@@ -18,7 +18,11 @@ import {
 	normalizeString,
 	toDateOnly,
 } from '../lib/leaveWorkflow.js';
-import { createLeaveDatabaseHistory, getLeaveDatabaseBalance } from '../lib/leaveDatabase.js';
+import {
+	createLeaveDatabaseHistory,
+	getLeaveDatabaseBalance,
+	listLeaveTypeBalancesForEmployeeYear,
+} from '../lib/leaveDatabase.js';
 import requireEmployeeAuth from '../middleware/requireEmployeeAuth.js';
 
 const router = Router();
@@ -48,9 +52,12 @@ async function getLeaveTypeOrThrow(id, tx = prisma) {
 function validateLeavePayload(payload = {}) {
 	const masterCutiKaryawanId = Number(payload.masterCutiKaryawanId);
 	const leaveDays = Number(payload.leaveDays);
+	const replacementEmployeeId = Number(payload.replacementEmployeeId);
 	const periodStart = toDateOnly(payload.periodStart);
 	const periodEnd = toDateOnly(payload.periodEnd);
 	const notes = normalizeString(payload.notes || '');
+	const leaveAddress = normalizeString(payload.leaveAddress || '');
+	const leaveReason = normalizeString(payload.leaveReason || '');
 
 	if (!Number.isInteger(masterCutiKaryawanId)) {
 		throw Object.assign(new Error('Jenis cuti wajib dipilih.'), { statusCode: 400 });
@@ -58,6 +65,18 @@ function validateLeavePayload(payload = {}) {
 
 	if (!Number.isInteger(leaveDays) || leaveDays <= 0) {
 		throw Object.assign(new Error('Jumlah cuti wajib diisi dengan angka yang valid.'), { statusCode: 400 });
+	}
+
+	if (!leaveAddress) {
+		throw Object.assign(new Error('Alamat selama cuti wajib diisi.'), { statusCode: 400 });
+	}
+
+	if (!leaveReason) {
+		throw Object.assign(new Error('Alasan cuti wajib diisi.'), { statusCode: 400 });
+	}
+
+	if (!Number.isInteger(replacementEmployeeId)) {
+		throw Object.assign(new Error('Pengganti selama cuti wajib dipilih.'), { statusCode: 400 });
 	}
 
 	if (!periodStart) {
@@ -77,10 +96,97 @@ function validateLeavePayload(payload = {}) {
 	return {
 		masterCutiKaryawanId,
 		leaveDays,
+		replacementEmployeeId,
 		periodStart,
 		periodEnd,
+		leaveAddress,
+		leaveReason,
 		notes: notes || null,
 	};
+}
+
+function mapReplacementOption(employee) {
+	return {
+		id: employee.id,
+		fullName: employee.fullName,
+		employeeNo: employee.employeeNo,
+		departmentName: employee.department?.name || '',
+		jobRoleName: employee.jobRole?.name || '',
+	};
+}
+
+async function getReplacementOptions(employee, tx = prisma) {
+	const sameRoleAndDepartment = await tx.employee.findMany({
+		where: {
+			id: { not: employee.id },
+			departmentId: employee.departmentId,
+			jobRoleId: employee.jobRoleId,
+		},
+		include: {
+			department: true,
+			jobRole: true,
+		},
+		orderBy: [{ fullName: 'asc' }, { employeeNo: 'asc' }],
+	});
+
+	if (sameRoleAndDepartment.length > 0) {
+		return sameRoleAndDepartment.map(mapReplacementOption);
+	}
+
+	const sameDepartment = await tx.employee.findMany({
+		where: {
+			id: { not: employee.id },
+			departmentId: employee.departmentId,
+		},
+		include: {
+			department: true,
+			jobRole: true,
+		},
+		orderBy: [{ fullName: 'asc' }, { employeeNo: 'asc' }],
+	});
+
+	return sameDepartment.map(mapReplacementOption);
+}
+
+async function getAvailableLeaveTypeOptions(employeeId, year, tx = prisma) {
+	const balances = await listLeaveTypeBalancesForEmployeeYear(tx, employeeId, year);
+
+	return balances
+		.filter((item) => item.currentBalance > 0)
+		.sort((left, right) => left.reference.leaveType.localeCompare(right.reference.leaveType))
+		.map((item) => ({
+			id: item.masterCutiKaryawanId,
+			leaveType: item.reference.leaveType,
+			availableLeaveBalance: item.currentBalance,
+			referenceId: item.reference.id,
+			referencePeriodStart: item.reference.periodStart,
+			referencePeriodEnd: item.reference.periodEnd,
+		}));
+}
+
+async function assertReplacementEmployeeValid(employee, replacementEmployeeId, tx = prisma) {
+	const options = await getReplacementOptions(employee, tx);
+	const match = options.find((item) => item.id === replacementEmployeeId);
+
+	if (!match) {
+		throw Object.assign(new Error('Pengganti selama cuti tidak valid untuk karyawan ini.'), {
+			statusCode: 400,
+		});
+	}
+
+	return match;
+}
+
+async function getAvailableLeaveBalanceOrThrow(employeeId, masterCutiKaryawanId, year, tx = prisma) {
+	const balance = await getLeaveDatabaseBalance(tx, employeeId, year, masterCutiKaryawanId);
+
+	if (!balance) {
+		throw Object.assign(new Error('Saldo cuti untuk jenis cuti ini belum tersedia.'), {
+			statusCode: 400,
+		});
+	}
+
+	return balance;
 }
 
 async function sendSubmittedEmail(record) {
@@ -97,6 +203,9 @@ async function sendSubmittedEmail(record) {
 			`Jenis cuti: ${record.masterCutiKaryawan.leaveType}`,
 			`Periode: ${record.periodStart.toLocaleDateString('id-ID')} - ${record.periodEnd.toLocaleDateString('id-ID')}`,
 			`Jumlah cuti: ${record.leaveDays} hari`,
+			`Alamat selama cuti: ${record.leaveAddress || '-'}`,
+			`Alasan cuti: ${record.leaveReason || '-'}`,
+			`Pengganti selama cuti: ${record.replacementEmployee?.fullName || '-'}`,
 			'',
 			`Lihat detail: ${buildLeaveRequestUrl(record.id)}`,
 		].join('\n'),
@@ -124,6 +233,9 @@ async function sendStageActivationEmails(record) {
 					`Jenis cuti: ${record.masterCutiKaryawan.leaveType}`,
 					`Periode: ${record.periodStart.toLocaleDateString('id-ID')} - ${record.periodEnd.toLocaleDateString('id-ID')}`,
 					`Jumlah cuti: ${record.leaveDays} hari`,
+					`Alamat selama cuti: ${record.leaveAddress || '-'}`,
+					`Alasan cuti: ${record.leaveReason || '-'}`,
+					`Pengganti selama cuti: ${record.replacementEmployee?.fullName || '-'}`,
 					'',
 					`Buka approval: ${buildLeaveApprovalUrl(approval.id)}`,
 				].join('\n'),
@@ -144,6 +256,10 @@ async function sendRejectedEmail(record) {
 			'',
 			`Pengajuan cuti Anda dengan nomor ${record.requestNumber} ditolak.`,
 			`Alasan reject: ${record.rejectionNote || '-'}`,
+			`Jenis cuti: ${record.masterCutiKaryawan.leaveType}`,
+			`Alamat selama cuti: ${record.leaveAddress || '-'}`,
+			`Alasan cuti: ${record.leaveReason || '-'}`,
+			`Pengganti selama cuti: ${record.replacementEmployee?.fullName || '-'}`,
 			'',
 			'Anda dapat membuka detail pengajuan untuk melakukan resubmit atau cancel.',
 			`Detail: ${buildLeaveRequestUrl(record.id)}`,
@@ -162,6 +278,10 @@ async function sendApprovedEmail(record) {
 			`Halo ${record.employee.fullName},`,
 			'',
 			`Pengajuan cuti Anda dengan nomor ${record.requestNumber} telah selesai di-approve.`,
+			`Jenis cuti: ${record.masterCutiKaryawan.leaveType}`,
+			`Alamat selama cuti: ${record.leaveAddress || '-'}`,
+			`Alasan cuti: ${record.leaveReason || '-'}`,
+			`Pengganti selama cuti: ${record.replacementEmployee?.fullName || '-'}`,
 			`Sisa cuti setelah approval: ${record.remainingLeave}`,
 			'',
 			`Detail: ${buildLeaveRequestUrl(record.id)}`,
@@ -277,6 +397,7 @@ router.get('/leave-requests', async (req, res, next) => {
 				},
 				include: {
 					employee: true,
+					replacementEmployee: true,
 					masterCutiKaryawan: true,
 					approvals: {
 						include: {
@@ -292,6 +413,28 @@ router.get('/leave-requests', async (req, res, next) => {
 			year: currentYear,
 			balance,
 			rows: rows.map(mapLeaveRequestSummary),
+		});
+	} catch (error) {
+		return next(error);
+	}
+});
+
+router.get('/leave-form-options', async (req, res, next) => {
+	try {
+		const now = new Date();
+		const currentYear = now.getFullYear();
+		const [leaveTypeOptions, replacementOptions] = await Promise.all([
+			getAvailableLeaveTypeOptions(req.employee.id, currentYear),
+			getReplacementOptions(req.employee),
+		]);
+
+		return res.json({
+			submissionDate: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(
+				now.getDate(),
+			).padStart(2, '0')}`,
+			year: currentYear,
+			leaveTypeOptions,
+			replacementOptions,
 		});
 	} catch (error) {
 		return next(error);
@@ -322,10 +465,26 @@ router.post('/leave-requests', async (req, res, next) => {
 	try {
 		const payload = validateLeavePayload(req.body);
 		await getLeaveTypeOrThrow(payload.masterCutiKaryawanId);
+		const leaveYear = payload.periodStart.getUTCFullYear();
 
 		const result = await prisma.$transaction(async (tx) => {
+			const availableBalance = await getAvailableLeaveBalanceOrThrow(
+				req.employee.id,
+				payload.masterCutiKaryawanId,
+				leaveYear,
+				tx,
+			);
+			await assertReplacementEmployeeValid(req.employee, payload.replacementEmployeeId, tx);
+
+			if (payload.leaveDays > availableBalance.currentBalance) {
+				throw Object.assign(new Error('Jumlah cuti tidak cukup untuk jenis cuti yang dipilih.'), {
+					statusCode: 400,
+				});
+			}
+
 			const workflow = await createLeaveRequestRevision(tx, {
 				employeeId: req.employee.id,
+				masterCutiKaryawanId: payload.masterCutiKaryawanId,
 				leaveDays: payload.leaveDays,
 				periodStart: payload.periodStart,
 				periodEnd: payload.periodEnd,
@@ -346,6 +505,9 @@ router.post('/leave-requests', async (req, res, next) => {
 					remainingLeave: workflow.remainingLeave,
 					currentStageOrder: workflow.stages[0]?.stageOrder || null,
 					notes: payload.notes,
+					leaveAddress: payload.leaveAddress,
+					leaveReason: payload.leaveReason,
+					replacementEmployeeId: payload.replacementEmployeeId,
 					submittedAt: new Date(),
 				},
 			});
@@ -361,6 +523,7 @@ router.post('/leave-requests', async (req, res, next) => {
 				data: {
 					employeeLeaveId: leaveRequest.id,
 					revisionNo: 1,
+					masterCutiKaryawanId: payload.masterCutiKaryawanId,
 					status: 'IN_APPROVAL',
 					leaveDays: payload.leaveDays,
 					periodStart: payload.periodStart,
@@ -368,6 +531,9 @@ router.post('/leave-requests', async (req, res, next) => {
 					balanceBefore: workflow.balanceBefore,
 					remainingLeave: workflow.remainingLeave,
 					notes: payload.notes,
+					leaveAddress: payload.leaveAddress,
+					leaveReason: payload.leaveReason,
+					replacementEmployeeId: payload.replacementEmployeeId,
 					submittedAt: new Date(),
 				},
 			});
@@ -424,9 +590,25 @@ router.post('/leave-requests/:id/resubmit', async (req, res, next) => {
 			}
 
 			const nextRevisionNo = existing.revisionNo + 1;
+			const leaveYear = payload.periodStart.getUTCFullYear();
+			const availableBalance = await getAvailableLeaveBalanceOrThrow(
+				req.employee.id,
+				payload.masterCutiKaryawanId,
+				leaveYear,
+				tx,
+			);
+			await assertReplacementEmployeeValid(req.employee, payload.replacementEmployeeId, tx);
+
+			if (payload.leaveDays > availableBalance.currentBalance) {
+				throw Object.assign(new Error('Jumlah cuti tidak cukup untuk jenis cuti yang dipilih.'), {
+					statusCode: 400,
+				});
+			}
+
 			const workflow = await createLeaveRequestRevision(tx, {
 				employeeId: req.employee.id,
 				employeeLeaveId: existing.id,
+				masterCutiKaryawanId: payload.masterCutiKaryawanId,
 				leaveDays: payload.leaveDays,
 				periodStart: payload.periodStart,
 				periodEnd: payload.periodEnd,
@@ -446,6 +628,9 @@ router.post('/leave-requests/:id/resubmit', async (req, res, next) => {
 					remainingLeave: workflow.remainingLeave,
 					currentStageOrder: workflow.stages[0]?.stageOrder || null,
 					notes: payload.notes,
+					leaveAddress: payload.leaveAddress,
+					leaveReason: payload.leaveReason,
+					replacementEmployeeId: payload.replacementEmployeeId,
 					rejectionNote: null,
 					submittedAt: new Date(),
 					rejectedAt: null,
@@ -458,6 +643,7 @@ router.post('/leave-requests/:id/resubmit', async (req, res, next) => {
 				data: {
 					employeeLeaveId: id,
 					revisionNo: nextRevisionNo,
+					masterCutiKaryawanId: payload.masterCutiKaryawanId,
 					status: 'IN_APPROVAL',
 					leaveDays: payload.leaveDays,
 					periodStart: payload.periodStart,
@@ -465,6 +651,9 @@ router.post('/leave-requests/:id/resubmit', async (req, res, next) => {
 					balanceBefore: workflow.balanceBefore,
 					remainingLeave: workflow.remainingLeave,
 					notes: payload.notes,
+					leaveAddress: payload.leaveAddress,
+					leaveReason: payload.leaveReason,
+					replacementEmployeeId: payload.replacementEmployeeId,
 					submittedAt: new Date(),
 				},
 			});
@@ -593,8 +782,14 @@ router.get('/leave-approvals/:id', async (req, res, next) => {
 								department: true,
 							},
 						},
+						replacementEmployee: true,
 						masterCutiKaryawan: true,
-						revisions: true,
+						revisions: {
+							include: {
+								masterCutiKaryawan: true,
+								replacementEmployee: true,
+							},
+						},
 						approvals: {
 							include: {
 								approverEmployee: {

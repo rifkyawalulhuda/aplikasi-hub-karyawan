@@ -178,6 +178,7 @@ model MasterCutiKaryawan {
   createdAt       DateTime              @default(now())
   updatedAt       DateTime              @updatedAt
   records         EmployeeLeave[]
+  revisionRecords EmployeeLeaveRevision[]
   databaseRecords EmployeeLeaveDatabase[]
 
   @@map("master_cuti_karyawan")
@@ -240,10 +241,12 @@ model Employee {
   warningLetterApprovals WarningLetter[]                @relation("WarningLetterSuperior")
   adminAccounts          MasterAdmin[]
   licenseCertifications  EmployeeLicenseCertification[]
-  leaveRecords           EmployeeLeave[]
+  leaveRecords           EmployeeLeave[]                @relation("EmployeeLeaveRequester")
+  leaveReplacementRequests EmployeeLeave[]             @relation("EmployeeLeaveReplacement")
   leaveDatabaseRecords   EmployeeLeaveDatabase[]
   leaveApprovals         EmployeeLeaveApproval[]        @relation("EmployeeLeaveApprover")
   leaveBalanceSeeds      EmployeeLeaveBalanceSeed[]
+  leaveRevisionReplacements EmployeeLeaveRevision[]     @relation("EmployeeLeaveRevisionReplacement")
   groupShiftAssignments  GroupShiftForeman[]
 
   @@index([departmentId])
@@ -269,6 +272,9 @@ model EmployeeLeave {
   remainingLeave       Int
   currentStageOrder    Int?
   notes                String?               @db.Text
+  leaveAddress         String?               @db.Text
+  leaveReason          String?               @db.Text
+  replacementEmployeeId Int?
   rejectionNote        String?               @db.Text
   submittedAt          DateTime              @default(now())
   approvedAt           DateTime?
@@ -276,13 +282,15 @@ model EmployeeLeave {
   cancelledAt          DateTime?
   createdAt            DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
-  employee             Employee              @relation(fields: [employeeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  employee             Employee              @relation("EmployeeLeaveRequester", fields: [employeeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  replacementEmployee  Employee?             @relation("EmployeeLeaveReplacement", fields: [replacementEmployeeId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   masterCutiKaryawan   MasterCutiKaryawan    @relation(fields: [masterCutiKaryawanId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   revisions            EmployeeLeaveRevision[]
   approvals            EmployeeLeaveApproval[]
   emailOutbox          EmailOutbox[]
 
   @@index([employeeId])
+  @@index([replacementEmployeeId])
   @@index([masterCutiKaryawanId])
   @@index([status])
   @@index([leaveYear])
@@ -310,27 +318,35 @@ model EmployeeLeaveDatabase {
 }
 
 model EmployeeLeaveRevision {
-  id             Int                @id @default(autoincrement())
-  employeeLeaveId Int
-  revisionNo     Int
-  status         LeaveRequestStatus
-  leaveDays      Int
-  periodStart    DateTime           @db.Date
-  periodEnd      DateTime           @db.Date
-  balanceBefore  Int
-  remainingLeave Int
-  notes          String?            @db.Text
-  rejectionNote  String?            @db.Text
-  submittedAt    DateTime           @default(now())
-  approvedAt     DateTime?
-  rejectedAt     DateTime?
-  cancelledAt    DateTime?
-  createdAt      DateTime           @default(now())
-  updatedAt      DateTime           @updatedAt
-  employeeLeave  EmployeeLeave      @relation(fields: [employeeLeaveId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  id                   Int                @id @default(autoincrement())
+  employeeLeaveId      Int
+  revisionNo           Int
+  masterCutiKaryawanId Int
+  replacementEmployeeId Int?
+  status               LeaveRequestStatus
+  leaveDays            Int
+  periodStart          DateTime           @db.Date
+  periodEnd            DateTime           @db.Date
+  balanceBefore        Int
+  remainingLeave       Int
+  notes                String?            @db.Text
+  leaveAddress         String?            @db.Text
+  leaveReason          String?            @db.Text
+  rejectionNote        String?            @db.Text
+  submittedAt          DateTime           @default(now())
+  approvedAt           DateTime?
+  rejectedAt           DateTime?
+  cancelledAt          DateTime?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  employeeLeave        EmployeeLeave      @relation(fields: [employeeLeaveId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  masterCutiKaryawan   MasterCutiKaryawan @relation(fields: [masterCutiKaryawanId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  replacementEmployee  Employee?          @relation("EmployeeLeaveRevisionReplacement", fields: [replacementEmployeeId], references: [id], onDelete: SetNull, onUpdate: Cascade)
 
   @@unique([employeeLeaveId, revisionNo])
   @@index([employeeLeaveId])
+  @@index([masterCutiKaryawanId])
+  @@index([replacementEmployeeId])
   @@map("employee_leave_revisions")
 }
 

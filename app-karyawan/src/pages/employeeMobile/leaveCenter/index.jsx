@@ -18,7 +18,6 @@ import FeedbackState from '@/components/employeePortal/feedbackState';
 import LeaveRequestFormDialog from '@/components/employeePortal/leaveRequestFormDialog';
 import LeaveStatusChip from '@/components/employeePortal/leaveStatusChip';
 import { useEmployeeAuth } from '@/contexts/employeeAuthContext';
-import apiRequest from '@/services/api';
 import { employeeMeRequest } from '@/services/employeeApi';
 import { formatLongDate, getEmployeePortalErrorMessage, handleEmployeeUnauthorized } from '@/utils/employeePortal';
 
@@ -111,7 +110,12 @@ function EmployeeLeaveCenterPage() {
 	const [error, setError] = useState('');
 	const [tab, setTab] = useState('requests');
 	const [dialogOpen, setDialogOpen] = useState(false);
-	const [leaveTypes, setLeaveTypes] = useState([]);
+	const [formOptions, setFormOptions] = useState({
+		submissionDate: '',
+		year: new Date().getFullYear(),
+		leaveTypeOptions: [],
+		replacementOptions: [],
+	});
 	const [requestData, setRequestData] = useState({ year: new Date().getFullYear(), balance: null, rows: [] });
 	const [approvalRows, setApprovalRows] = useState([]);
 
@@ -120,15 +124,15 @@ function EmployeeLeaveCenterPage() {
 		setError('');
 
 		try {
-			const [requestsResponse, approvalsResponse, leaveTypesResponse] = await Promise.all([
+			const [requestsResponse, approvalsResponse, formOptionsResponse] = await Promise.all([
 				employeeMeRequest('/leave-requests'),
 				employeeMeRequest('/leave-approvals'),
-				apiRequest('/master/master-cuti-karyawan'),
+				employeeMeRequest('/leave-form-options'),
 			]);
 
 			setRequestData(requestsResponse);
 			setApprovalRows(approvalsResponse);
-			setLeaveTypes(leaveTypesResponse);
+			setFormOptions(formOptionsResponse);
 		} catch (requestError) {
 			if (
 				handleEmployeeUnauthorized({
@@ -196,14 +200,14 @@ function EmployeeLeaveCenterPage() {
 					}}
 				>
 					<InfoCard
-						title="Saldo Saat Ini"
-						value={requestData.balance?.currentBalance ?? '-'}
-						helper={`Tahun ${requestData.year}`}
+						title="Jenis Cuti Aktif"
+						value={formOptions.leaveTypeOptions.length}
+						helper={`Tahun ${formOptions.year || requestData.year}`}
 					/>
 					<InfoCard
-						title="Sumber Saldo"
-						value={requestData.balance?.reference?.leaveType || '-'}
-						helper="Diambil dari database cuti admin"
+						title="Saldo Berdasarkan Jenis"
+						value="Pilih Jenis"
+						helper="Saldo final ditentukan oleh jenis cuti yang dipilih di form."
 					/>
 				</Box>
 
@@ -222,6 +226,7 @@ function EmployeeLeaveCenterPage() {
 								variant="contained"
 								startIcon={<AddOutlinedIcon />}
 								onClick={() => setDialogOpen(true)}
+								disabled={formOptions.leaveTypeOptions.length === 0}
 							>
 								Ajukan
 							</Button>
@@ -274,7 +279,9 @@ function EmployeeLeaveCenterPage() {
 			<LeaveRequestFormDialog
 				open={dialogOpen}
 				loading={submitting}
-				leaveTypeOptions={leaveTypes}
+				leaveTypeOptions={formOptions.leaveTypeOptions}
+				replacementOptions={formOptions.replacementOptions}
+				submissionDate={formOptions.submissionDate}
 				title="Ajukan Cuti"
 				onClose={() => setDialogOpen(false)}
 				onSubmit={handleSubmit}
