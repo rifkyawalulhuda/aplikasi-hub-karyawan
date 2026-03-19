@@ -27,6 +27,7 @@ const IMPORT_HEADERS = [
 	'Employment Type',
 	'Site / Div',
 	'Department',
+	'Group Shift',
 	'Length Of Service',
 	'Age',
 	'Birth Date',
@@ -40,6 +41,7 @@ const IMPORT_HEADERS = [
 	'Phone Number',
 	'Email',
 ];
+const REQUIRED_IMPORT_HEADERS = IMPORT_HEADERS.filter((header) => header !== 'Group Shift');
 const ERROR_REPORT_DIR = path.resolve(process.cwd(), 'tmp', 'import-results');
 
 function withAsync(handler) {
@@ -194,6 +196,8 @@ function mapEmployee(employee) {
 		siteDiv: employee.siteDiv,
 		departmentId: employee.departmentId,
 		departmentName: employee.department.name,
+		groupShiftId: employee.groupShiftId,
+		groupShiftName: employee.groupShift?.groupShiftName || '',
 		lengthOfService: diffService(employee.joinDate),
 		age: diffYears(employee.birthDate),
 		birthDate: formatDateForClient(employee.birthDate),
@@ -243,6 +247,31 @@ async function getLookupByName(model, label, value) {
 	return item;
 }
 
+async function getLookupByField(model, field, label, value) {
+	const normalizedValue = normalizeString(value);
+
+	if (!normalizedValue) {
+		throw Object.assign(new Error(`${label} wajib diisi.`), { statusCode: 400 });
+	}
+
+	const item = await prisma[model].findFirst({
+		where: {
+			[field]: {
+				equals: normalizedValue,
+				mode: 'insensitive',
+			},
+		},
+	});
+
+	if (!item) {
+		throw Object.assign(new Error(`${label} "${normalizedValue}" tidak ditemukan di master data.`), {
+			statusCode: 400,
+		});
+	}
+
+	return item;
+}
+
 async function validatePayload(payload, currentEmployeeId = null) {
 	const employeeNo = normalizeString(payload.employeeNo);
 	const password = normalizeString(payload.password);
@@ -251,6 +280,10 @@ async function validatePayload(payload, currentEmployeeId = null) {
 	const phoneNumber = normalizeString(payload.phoneNumber);
 	const email = normalizeString(payload.email || '');
 	const departmentId = Number(payload.departmentId);
+	const groupShiftId =
+		payload.groupShiftId === '' || payload.groupShiftId === null || typeof payload.groupShiftId === 'undefined'
+			? null
+			: Number(payload.groupShiftId);
 	const workLocationId = Number(payload.workLocationId);
 	const jobRoleId = Number(payload.jobRoleId);
 	const jobLevelId = Number(payload.jobLevelId);
@@ -268,6 +301,9 @@ async function validatePayload(payload, currentEmployeeId = null) {
 	if (!siteDiv) throw Object.assign(new Error('Site / Div wajib diisi.'), { statusCode: 400 });
 	if (!Number.isInteger(departmentId)) {
 		throw Object.assign(new Error('Department wajib dipilih.'), { statusCode: 400 });
+	}
+	if (groupShiftId !== null && !Number.isInteger(groupShiftId)) {
+		throw Object.assign(new Error('Group Shift tidak valid.'), { statusCode: 400 });
 	}
 	if (!birthDate) throw Object.assign(new Error('Birth Date wajib diisi.'), { statusCode: 400 });
 	if (!GENDERS.includes(payload.gender)) throw Object.assign(new Error('Gender tidak valid.'), { statusCode: 400 });
@@ -296,6 +332,7 @@ async function validatePayload(payload, currentEmployeeId = null) {
 
 	await Promise.all([
 		ensureLookupExists('department', departmentId, 'Department'),
+		...(groupShiftId !== null ? [ensureLookupExists('masterGroupShift', groupShiftId, 'Group Shift')] : []),
 		ensureLookupExists('workLocation', workLocationId, 'Work Location'),
 		ensureLookupExists('jobRole', jobRoleId, 'Job Role'),
 		ensureLookupExists('jobLevel', jobLevelId, 'Job Level'),
@@ -308,6 +345,7 @@ async function validatePayload(payload, currentEmployeeId = null) {
 		employmentType,
 		siteDiv,
 		departmentId,
+		groupShiftId,
 		birthDate,
 		gender: payload.gender,
 		workLocationId,
@@ -324,7 +362,7 @@ async function validatePayload(payload, currentEmployeeId = null) {
 async function getEmployeeOrThrow(id) {
 	const employee = await prisma.employee.findUnique({
 		where: { id },
-		include: { department: true, workLocation: true, jobRole: true, jobLevel: true },
+		include: { department: true, groupShift: true, workLocation: true, jobRole: true, jobLevel: true },
 	});
 
 	if (!employee) {
@@ -347,6 +385,9 @@ function worksheetRowToPayload(row, headerMap) {
 
 async function buildImportPayload(rawPayload) {
 	const department = await getLookupByName('department', 'Department', rawPayload.Department);
+	const groupShift = normalizeString(rawPayload['Group Shift'] || '')
+		? await getLookupByField('masterGroupShift', 'groupShiftName', 'Group Shift', rawPayload['Group Shift'])
+		: null;
 	const workLocation = await getLookupByName('workLocation', 'Work Location', rawPayload['Work Location']);
 	const jobRole = await getLookupByName('jobRole', 'Job Role', rawPayload['Job Role']);
 	const jobLevel = await getLookupByName('jobLevel', 'Job Level', rawPayload['Job Level']);
@@ -358,6 +399,7 @@ async function buildImportPayload(rawPayload) {
 		employmentType: normalizeString(rawPayload['Employment Type']),
 		siteDiv: normalizeString(rawPayload['Site / Div'] || 'CLC') || 'CLC',
 		departmentId: department.id,
+		groupShiftId: groupShift?.id ?? null,
 		birthDate: parseExcelDate(rawPayload['Birth Date']),
 		gender: normalizeExcelEnum(rawPayload.Gender),
 		workLocationId: workLocation.id,
@@ -386,6 +428,7 @@ async function createErrorReport(rows) {
 			row.raw['Employment Type'] || '',
 			row.raw['Site / Div'] || '',
 			row.raw.Department || '',
+			row.raw['Group Shift'] || '',
 			row.raw['Length Of Service'] || '',
 			row.raw.Age || '',
 			row.raw['Birth Date'] || '',
@@ -437,7 +480,7 @@ router.post(
 			headerMap.set(normalizeString(cell.value), colNumber);
 		});
 
-		const missingHeaders = IMPORT_HEADERS.filter((header) => !headerMap.has(header));
+		const missingHeaders = REQUIRED_IMPORT_HEADERS.filter((header) => !headerMap.has(header));
 		if (missingHeaders.length > 0) {
 			return res.status(400).json({
 				message: `Template Excel tidak valid. Header tidak ditemukan: ${missingHeaders.join(', ')}`,
@@ -469,7 +512,7 @@ router.post(
 				const validatedPayload = await validatePayload(payload);
 				const employee = await prisma.employee.create({
 					data: validatedPayload,
-					include: { department: true, workLocation: true, jobRole: true, jobLevel: true },
+					include: { department: true, groupShift: true, workLocation: true, jobRole: true, jobLevel: true },
 				});
 
 				importedRows.push(mapEmployee(employee));
@@ -527,7 +570,7 @@ router.get(
 	'/',
 	withAsync(async (req, res) => {
 		const employees = await prisma.employee.findMany({
-			include: { department: true, workLocation: true, jobRole: true, jobLevel: true },
+			include: { department: true, groupShift: true, workLocation: true, jobRole: true, jobLevel: true },
 			orderBy: { id: 'asc' },
 		});
 
@@ -541,7 +584,7 @@ router.post(
 		const data = await validatePayload(req.body);
 		const employee = await prisma.employee.create({
 			data,
-			include: { department: true, workLocation: true, jobRole: true, jobLevel: true },
+			include: { department: true, groupShift: true, workLocation: true, jobRole: true, jobLevel: true },
 		});
 
 		return res.status(201).json(mapEmployee(employee));
@@ -561,7 +604,7 @@ router.put(
 		const employee = await prisma.employee.update({
 			where: { id },
 			data,
-			include: { department: true, workLocation: true, jobRole: true, jobLevel: true },
+			include: { department: true, groupShift: true, workLocation: true, jobRole: true, jobLevel: true },
 		});
 
 		return res.json(mapEmployee(employee));

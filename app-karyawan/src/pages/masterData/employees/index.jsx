@@ -31,14 +31,15 @@ async function fetchEmployees() {
 }
 
 async function fetchLookupOptions() {
-	const [departments, workLocations, jobRoles, jobLevels] = await Promise.all([
+	const [departments, groupShifts, workLocations, jobRoles, jobLevels] = await Promise.all([
 		apiRequest('/master/departments'),
+		apiRequest('/master/group-shifts'),
 		apiRequest('/master/work-locations'),
 		apiRequest('/master/job-roles'),
 		apiRequest('/master/job-levels'),
 	]);
 
-	return { departments, workLocations, jobRoles, jobLevels };
+	return { departments, groupShifts, workLocations, jobRoles, jobLevels };
 }
 
 function formatEmployeeDate(value) {
@@ -62,6 +63,7 @@ function EmployeesPage() {
 	const [rows, setRows] = useState([]);
 	const [options, setOptions] = useState({
 		departments: [],
+		groupShifts: [],
 		workLocations: [],
 		jobRoles: [],
 		jobLevels: [],
@@ -105,6 +107,7 @@ function EmployeesPage() {
 			row.employmentType,
 			row.siteDiv,
 			row.departmentName,
+			row.groupShiftName,
 			row.lengthOfService,
 			row.age,
 			row.birthDate,
@@ -277,6 +280,7 @@ function EmployeesPage() {
 			{ header: 'Employment Type', key: 'employmentType', width: 18 },
 			{ header: 'Site / Div', key: 'siteDiv', width: 14 },
 			{ header: 'Department', key: 'departmentName', width: 20 },
+			{ header: 'Group Shift', key: 'groupShiftName', width: 20 },
 			{ header: 'Length Of Service', key: 'lengthOfService', width: 20 },
 			{ header: 'Age', key: 'age', width: 10 },
 			{ header: 'Birth Date', key: 'birthDate', width: 14 },
@@ -303,6 +307,7 @@ function EmployeesPage() {
 				employmentType: formatEmploymentTypeLabel(row.employmentType),
 				siteDiv: row.siteDiv,
 				departmentName: row.departmentName,
+				groupShiftName: row.groupShiftName || '',
 				lengthOfService: row.lengthOfService,
 				age: row.age,
 				birthDate: formatEmployeeDate(row.birthDate),
