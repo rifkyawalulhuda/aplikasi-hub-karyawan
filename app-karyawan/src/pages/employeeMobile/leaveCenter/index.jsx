@@ -199,17 +199,45 @@ function EmployeeLeaveCenterPage() {
 						gap: 1.5,
 					}}
 				>
+					<InfoCard title="Total Pengajuan" value={requestData.rows.length} helper="Riwayat cuti Anda" />
 					<InfoCard
 						title="Jenis Cuti Aktif"
 						value={formOptions.leaveTypeOptions.length}
 						helper={`Tahun ${formOptions.year || requestData.year}`}
 					/>
-					<InfoCard
-						title="Saldo Berdasarkan Jenis"
-						value="Pilih Jenis"
-						helper="Saldo final ditentukan oleh jenis cuti yang dipilih di form."
-					/>
 				</Box>
+
+				<Paper sx={{ p: 2, borderRadius: 4 }}>
+					<Stack spacing={1.5}>
+						<Typography variant="subtitle2" sx={{ color: '#123B66', fontWeight: 700 }}>
+							Saldo Cuti Tahun {formOptions.year || requestData.year}
+						</Typography>
+						<Divider />
+						{formOptions.leaveTypeOptions.length > 0 ? (
+							<Stack spacing={1.5}>
+								{formOptions.leaveTypeOptions.map((type) => (
+									<Stack
+										key={type.id}
+										direction="row"
+										justifyContent="space-between"
+										alignItems="center"
+									>
+										<Typography variant="body2" color="text.secondary">
+											{type.leaveType}
+										</Typography>
+										<Typography variant="body2" sx={{ fontWeight: 700, color: '#123B66' }}>
+											{type.availableLeaveBalance} hari
+										</Typography>
+									</Stack>
+								))}
+							</Stack>
+						) : (
+							<Typography variant="body2" color="text.secondary">
+								Belum ada saldo cuti aktif.
+							</Typography>
+						)}
+					</Stack>
+				</Paper>
 
 				<Paper sx={{ p: 2.25, borderRadius: 4 }}>
 					<Stack spacing={1.5}>
