@@ -1,0 +1,25 @@
+{
+  "kipli": {
+    "id": 5,
+    "employeeNo": "CLC001",
+    "password": "sankyu39",
+    "fullName": "KIPLI",
+    "employmentType": "PERMANENT",
+    "siteDiv": "CLC",
+    "departmentId": 6,
+    "groupShiftId": 1,
+    "birthDate": "1997-05-31T00:00:00.000Z",
+    "gender": "MALE",
+    "workLocationId": 3,
+    "jobRoleId": 1,
+    "jobLevelId": 8,
+    "educationLevel": "D3",
+    "grade": "RANK_4",
+    "joinDate": "2020-11-30T00:00:00.000Z",
+    "phoneNumber": "089630574477",
+    "email": "rifki@sankyu.co.id",
+    "createdAt": "2026-03-13T17:01:30.683Z",
+    "updatedAt": "2026-03-19T10:51:19.759Z"
+  },
+  "approvalsForKipli": []
+}

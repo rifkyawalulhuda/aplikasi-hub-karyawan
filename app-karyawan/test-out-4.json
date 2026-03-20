@@ -1,0 +1,17 @@
+{
+  "pendingApprovalsCount": 1,
+  "notifs": [
+    {
+      "id": "emp-approval-pending-40-2026-03-20T04:43:16.056Z",
+      "category": "LEAVE_APPROVAL_PENDING",
+      "severity": "warning",
+      "title": "Approval menunggu tindakan: CT-2026-000010",
+      "description": "Permohonan cuti KIPLI menunggu persetujuan Anda.",
+      "targetPath": "/karyawan/cuti/approval/40",
+      "targetSearch": "",
+      "dateLabel": "Sejak: 20 Maret 2026",
+      "sortDate": "2026-03-20T04:43:16.056Z",
+      "href": "/karyawan/cuti/approval/40"
+    }
+  ]
+}
