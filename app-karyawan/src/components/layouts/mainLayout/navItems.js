@@ -138,6 +138,13 @@ const NAV_LINKS_CONFIG = [
 						Icon: DescriptionOutlinedIcon,
 						href: '/data-master/master-data-dokumen/master-cuti-karyawan',
 					},
+					{
+						id: uuid(),
+						type: 'item',
+						title: 'Master Hari Libur',
+						Icon: DescriptionOutlinedIcon,
+						href: '/data-master/master-data-dokumen/master-hari-libur',
+					},
 				],
 			},
 		],

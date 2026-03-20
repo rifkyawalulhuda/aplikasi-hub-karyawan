@@ -73,9 +73,7 @@ function getStatusLabel(expiryDate) {
 		return 'Expired';
 	}
 
-	const differenceInDays = Math.floor(
-		(comparableExpiryDate - getTodayComparableValue()) / (24 * 60 * 60 * 1000),
-	);
+	const differenceInDays = Math.floor((comparableExpiryDate - getTodayComparableValue()) / (24 * 60 * 60 * 1000));
 
 	if (differenceInDays < 0) {
 		return 'Expired';

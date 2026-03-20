@@ -153,11 +153,7 @@ router.get(
 			}),
 			prisma.masterDokKaryawan.findMany({
 				where: {
-					OR: [
-						{ documentName: containsQuery },
-						{ documentType: containsQuery },
-						{ issuer: containsQuery },
-					],
+					OR: [{ documentName: containsQuery }, { documentType: containsQuery }, { issuer: containsQuery }],
 				},
 				orderBy: { id: 'desc' },
 				take: RESULT_LIMIT,
@@ -414,7 +410,9 @@ router.get(
 					id: item.id,
 					group: 'Bimbingan & Pengarahan',
 					title: item.employee.fullName,
-					subtitle: `${item.employee.employeeNo} | ${formatDateForClient(item.meetingDate)} | ${item.location}`,
+					subtitle: `${item.employee.employeeNo} | ${formatDateForClient(item.meetingDate)} | ${
+						item.location
+					}`,
 					href: buildSearchHref('/data-karyawan/bimbingan-pengarahan', query),
 				}),
 			),
@@ -423,7 +421,9 @@ router.get(
 					id: item.id,
 					group: 'Data Surat Peringatan',
 					title: item.letterNumber,
-					subtitle: `${item.employee.fullName} (${item.employee.employeeNo}) | ${formatDateForClient(item.letterDate)}`,
+					subtitle: `${item.employee.fullName} (${item.employee.employeeNo}) | ${formatDateForClient(
+						item.letterDate,
+					)}`,
 					href: buildSearchHref('/data-karyawan/data-surat-peringatan', query),
 				}),
 			),

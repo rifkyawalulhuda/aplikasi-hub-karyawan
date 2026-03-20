@@ -156,8 +156,12 @@ function createEmployeeLicenseNotification(record) {
 		? `Lisensi karyawan expired: ${record.employee.fullName}`
 		: `Lisensi karyawan akan expired: ${record.employee.fullName}`;
 	const description = isExpired
-		? `${record.masterDokKaryawan.documentName} (${record.documentNumber}) sudah expired pada ${formatDateLabel(record.expiryDate)}.`
-		: `${record.masterDokKaryawan.documentName} (${record.documentNumber}) akan expired pada ${formatDateLabel(record.expiryDate)}.`;
+		? `${record.masterDokKaryawan.documentName} (${record.documentNumber}) sudah expired pada ${formatDateLabel(
+				record.expiryDate,
+		  )}.`
+		: `${record.masterDokKaryawan.documentName} (${record.documentNumber}) akan expired pada ${formatDateLabel(
+				record.expiryDate,
+		  )}.`;
 	const targetSearch =
 		record.documentNumber ||
 		record.employee.employeeNo ||
@@ -191,10 +195,13 @@ function createUnitLicenseNotification(record) {
 		? `Lisensi unit expired: ${record.masterUnit.unitName}`
 		: `Lisensi unit akan expired: ${record.masterUnit.unitName}`;
 	const description = isExpired
-		? `Dokumen ${record.documentNumber} untuk asset ${record.assetNo} sudah expired pada ${formatDateLabel(record.expiryDate)}.`
-		: `Dokumen ${record.documentNumber} untuk asset ${record.assetNo} akan expired pada ${formatDateLabel(record.expiryDate)}.`;
-	const targetSearch =
-		record.documentNumber || record.assetNo || record.masterUnit.unitName;
+		? `Dokumen ${record.documentNumber} untuk asset ${record.assetNo} sudah expired pada ${formatDateLabel(
+				record.expiryDate,
+		  )}.`
+		: `Dokumen ${record.documentNumber} untuk asset ${record.assetNo} akan expired pada ${formatDateLabel(
+				record.expiryDate,
+		  )}.`;
+	const targetSearch = record.documentNumber || record.assetNo || record.masterUnit.unitName;
 
 	return {
 		id: `unit-license-${record.id}-${severityLabel}-${record.expiryDate.toISOString().slice(0, 10)}`,
@@ -215,11 +222,15 @@ function createLeaveFlowNotification(approval) {
 	const targetSearch = approval.employeeLeave.requestNumber;
 
 	return {
-		id: `leave-flow-${approval.employeeLeaveId}-${approval.revisionNo}-${approval.stageOrder}-${activatedAt.toISOString()}`,
+		id: `leave-flow-${approval.employeeLeaveId}-${approval.revisionNo}-${
+			approval.stageOrder
+		}-${activatedAt.toISOString()}`,
 		category: 'LEAVE_FLOW',
 		severity: 'warning',
 		title: `Flow cuti lama: ${approval.employeeLeave.requestNumber}`,
-		description: `${approval.employeeLeave.employee.fullName} masih menunggu approval ${approval.approverEmployee.fullName} pada tahap ${formatStageLabel(approval.stageType)}.`,
+		description: `${approval.employeeLeave.employee.fullName} masih menunggu approval ${
+			approval.approverEmployee.fullName
+		} pada tahap ${formatStageLabel(approval.stageType)}.`,
 		targetPath: '/data-karyawan/cuti-karyawan/flow',
 		targetSearch,
 		dateLabel: `Stage aktif sejak: ${formatDateLabel(activatedAt)}`,
@@ -288,7 +299,9 @@ function createFailedEmailNotification(record) {
 		category: 'EMAIL_FAILED',
 		severity: 'error',
 		title: `Email workflow gagal: ${leaveRequestNumber}`,
-		description: `Pengiriman ke ${record.recipientEmail} gagal${record.errorMessage ? `: ${record.errorMessage}` : '.'}`,
+		description: `Pengiriman ke ${record.recipientEmail} gagal${
+			record.errorMessage ? `: ${record.errorMessage}` : '.'
+		}`,
 		targetPath: '/data-karyawan/cuti-karyawan/flow',
 		targetSearch,
 		dateLabel: `Gagal kirim: ${formatDateLabel(failureDate)}`,
@@ -299,62 +312,57 @@ function createFailedEmailNotification(record) {
 
 async function buildLiveNotifications() {
 	const staleThreshold = new Date(Date.now() - STALE_APPROVAL_DAYS * 24 * 60 * 60 * 1000);
-	const [
-		employeeLicenses,
-		unitLicenses,
-		staleLeaveApprovals,
-		rejectedLeaveRequests,
-		failedEmails,
-	] = await Promise.all([
-		prisma.employeeLicenseCertification.findMany({
-			include: {
-				employee: true,
-				masterDokKaryawan: true,
-			},
-			orderBy: [{ expiryDate: 'asc' }, { id: 'desc' }],
-		}),
-		prisma.unitLicenseCertification.findMany({
-			include: {
-				masterUnit: true,
-			},
-			orderBy: [{ expiryDate: 'asc' }, { id: 'desc' }],
-		}),
-		prisma.employeeLeaveApproval.findMany({
-			where: {
-				status: 'PENDING',
-				updatedAt: {
-					lte: staleThreshold,
+	const [employeeLicenses, unitLicenses, staleLeaveApprovals, rejectedLeaveRequests, failedEmails] =
+		await Promise.all([
+			prisma.employeeLicenseCertification.findMany({
+				include: {
+					employee: true,
+					masterDokKaryawan: true,
 				},
-			},
-			include: {
-				approverEmployee: true,
-				employeeLeave: {
-					include: {
-						employee: true,
+				orderBy: [{ expiryDate: 'asc' }, { id: 'desc' }],
+			}),
+			prisma.unitLicenseCertification.findMany({
+				include: {
+					masterUnit: true,
+				},
+				orderBy: [{ expiryDate: 'asc' }, { id: 'desc' }],
+			}),
+			prisma.employeeLeaveApproval.findMany({
+				where: {
+					status: 'PENDING',
+					updatedAt: {
+						lte: staleThreshold,
 					},
 				},
-			},
-			orderBy: [{ updatedAt: 'asc' }, { id: 'asc' }],
-		}),
-		prisma.employeeLeave.findMany({
-			where: {
-				status: 'REJECTED',
-			},
-			include: {
-				employee: true,
-			},
-			orderBy: [{ rejectedAt: 'desc' }, { updatedAt: 'desc' }, { id: 'desc' }],
-		}),
-		prisma.emailOutbox.findMany({
-			where: {
-				status: 'FAILED',
-			},
-			include: {
-				employeeLeave: true,
-			},
-			orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
-		}),
-	]);
+				include: {
+					approverEmployee: true,
+					employeeLeave: {
+						include: {
+							employee: true,
+						},
+					},
+				},
+				orderBy: [{ updatedAt: 'asc' }, { id: 'asc' }],
+			}),
+			prisma.employeeLeave.findMany({
+				where: {
+					status: 'REJECTED',
+				},
+				include: {
+					employee: true,
+				},
+				orderBy: [{ rejectedAt: 'desc' }, { updatedAt: 'desc' }, { id: 'desc' }],
+			}),
+			prisma.emailOutbox.findMany({
+				where: {
+					status: 'FAILED',
+				},
+				include: {
+					employeeLeave: true,
+				},
+				orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
+			}),
+		]);
 
 	return [
 		...employeeLicenses.map(createEmployeeLicenseNotification).filter(Boolean),

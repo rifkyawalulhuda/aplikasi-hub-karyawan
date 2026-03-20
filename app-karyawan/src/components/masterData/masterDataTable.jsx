@@ -9,6 +9,7 @@ import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import DeleteOutlineOutlinedIcon from '@mui/icons-material/DeleteOutlineOutlined';
 
 import EnhancedTable from '@/components/dataTable';
+import { toLocalDateString } from '@/utils/dateUtils';
 
 const stickyActionCellSx = {
 	position: 'sticky',
@@ -80,7 +81,11 @@ function MasterDataTable({ rows, loading, config, onEdit, onDelete }) {
 									: undefined
 							}
 						>
-							{column.id === 'id' ? rowNumber : row[column.id]}
+							{(() => {
+								if (column.id === 'id') return rowNumber;
+								if (column.type === 'date') return toLocalDateString(row[column.id]);
+								return row[column.id];
+							})()}
 						</TableCell>
 					))}
 					<TableCell sx={stickyActionCellSx}>

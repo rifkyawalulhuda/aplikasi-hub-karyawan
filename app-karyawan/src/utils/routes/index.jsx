@@ -39,6 +39,7 @@ const EmployeesPage = withLazyLoadably(lazy(() => import('@/pages/masterData/emp
 const MasterDokPkbPage = withLazyLoadably(lazy(() => import('@/pages/masterData/masterDokPkb')));
 const MasterDokKaryawanPage = withLazyLoadably(lazy(() => import('@/pages/masterData/masterDokKaryawan')));
 const MasterCutiKaryawanPage = withLazyLoadably(lazy(() => import('@/pages/masterData/masterCutiKaryawan')));
+const MasterHariLiburPage = withLazyLoadably(lazy(() => import('@/pages/masterData/masterHoliday')));
 const GuidanceRecordsPage = withLazyLoadably(lazy(() => import('@/pages/employeeData/guidanceRecords')));
 const GuidanceRecordDetailPage = withLazyLoadably(lazy(() => import('@/pages/employeeData/guidanceRecords/detail')));
 const GuidanceRecordBulkPrintPage = withLazyLoadably(
@@ -125,6 +126,10 @@ function Router() {
 							<Route
 								path="data-master/master-data-dokumen/master-cuti-karyawan"
 								element={<MasterCutiKaryawanPage />}
+							/>
+							<Route
+								path="data-master/master-data-dokumen/master-hari-libur"
+								element={<MasterHariLiburPage />}
 							/>
 							<Route path="data-karyawan/bimbingan-pengarahan" element={<GuidanceRecordsPage />} />
 							<Route

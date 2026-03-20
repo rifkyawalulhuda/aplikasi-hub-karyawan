@@ -55,8 +55,8 @@ function validateLeavePayload(payload = {}) {
 	const rawReplacementEmployeeIds = Array.isArray(payload.replacementEmployeeIds)
 		? payload.replacementEmployeeIds
 		: typeof payload.replacementEmployeeId !== 'undefined' && payload.replacementEmployeeId !== null
-			? [payload.replacementEmployeeId]
-			: [];
+		? [payload.replacementEmployeeId]
+		: [];
 	const replacementEmployeeIds = rawReplacementEmployeeIds.map((value) => Number(value));
 	const periodStart = toDateOnly(payload.periodStart);
 	const periodEnd = toDateOnly(payload.periodEnd);
@@ -255,7 +255,9 @@ async function sendSubmittedEmail(record) {
 			'',
 			`Pengajuan cuti Anda dengan nomor ${record.requestNumber} telah dikirim.`,
 			`Jenis cuti: ${record.masterCutiKaryawan.leaveType}`,
-			`Periode: ${record.periodStart.toLocaleDateString('id-ID')} - ${record.periodEnd.toLocaleDateString('id-ID')}`,
+			`Periode: ${record.periodStart.toLocaleDateString('id-ID')} - ${record.periodEnd.toLocaleDateString(
+				'id-ID',
+			)}`,
 			`Jumlah cuti: ${record.leaveDays} hari`,
 			`Alamat selama cuti: ${record.leaveAddress || '-'}`,
 			`Alasan cuti: ${record.leaveReason || '-'}`,
@@ -286,7 +288,9 @@ async function sendStageActivationEmails(record) {
 					`Nomor request: ${record.requestNumber}`,
 					`Karyawan: ${record.employee.fullName} (${record.employee.employeeNo})`,
 					`Jenis cuti: ${record.masterCutiKaryawan.leaveType}`,
-					`Periode: ${record.periodStart.toLocaleDateString('id-ID')} - ${record.periodEnd.toLocaleDateString('id-ID')}`,
+					`Periode: ${record.periodStart.toLocaleDateString('id-ID')} - ${record.periodEnd.toLocaleDateString(
+						'id-ID',
+					)}`,
 					`Jumlah cuti: ${record.leaveDays} hari`,
 					`Alamat selama cuti: ${record.leaveAddress || '-'}`,
 					`Alasan cuti: ${record.leaveReason || '-'}`,
@@ -349,41 +353,42 @@ async function sendApprovedEmail(record) {
 
 router.get('/dashboard', async (req, res, next) => {
 	try {
-		const [guidanceCount, warningLetterCount, leaveRequestCount, guidanceRecords, warningLetters] = await Promise.all([
-			prisma.guidanceRecord.count({
-				where: { employeeId: req.employee.id },
-			}),
-			prisma.warningLetter.count({
-				where: { employeeId: req.employee.id },
-			}),
-			prisma.employeeLeave.count({
-				where: { employeeId: req.employee.id },
-			}),
-			prisma.guidanceRecord.findMany({
-				where: { employeeId: req.employee.id },
-				orderBy: [{ meetingDate: 'desc' }, { id: 'desc' }],
-				take: 3,
-			}),
-			prisma.warningLetter.findMany({
-				where: { employeeId: req.employee.id },
-				include: {
-					employee: {
-						include: {
-							department: true,
-							jobRole: true,
-							jobLevel: true,
+		const [guidanceCount, warningLetterCount, leaveRequestCount, guidanceRecords, warningLetters] =
+			await Promise.all([
+				prisma.guidanceRecord.count({
+					where: { employeeId: req.employee.id },
+				}),
+				prisma.warningLetter.count({
+					where: { employeeId: req.employee.id },
+				}),
+				prisma.employeeLeave.count({
+					where: { employeeId: req.employee.id },
+				}),
+				prisma.guidanceRecord.findMany({
+					where: { employeeId: req.employee.id },
+					orderBy: [{ meetingDate: 'desc' }, { id: 'desc' }],
+					take: 3,
+				}),
+				prisma.warningLetter.findMany({
+					where: { employeeId: req.employee.id },
+					include: {
+						employee: {
+							include: {
+								department: true,
+								jobRole: true,
+								jobLevel: true,
+							},
+						},
+						superiorEmployee: {
+							include: {
+								jobLevel: true,
+							},
 						},
 					},
-					superiorEmployee: {
-						include: {
-							jobLevel: true,
-						},
-					},
-				},
-				orderBy: [{ letterDate: 'desc' }, { id: 'desc' }],
-				take: 3,
-			}),
-		]);
+					orderBy: [{ letterDate: 'desc' }, { id: 'desc' }],
+					take: 3,
+				}),
+			]);
 
 		return res.json({
 			profile: buildEmployeePortalProfile(req.employee),
@@ -400,9 +405,7 @@ router.get('/dashboard', async (req, res, next) => {
 	}
 });
 
-router.get('/profile', async (req, res) => {
-	return res.json(buildEmployeePortalProfile(req.employee));
-});
+router.get('/profile', async (req, res) => res.json(buildEmployeePortalProfile(req.employee)));
 
 router.get('/guidance-records', async (req, res, next) => {
 	try {
@@ -1359,7 +1362,7 @@ function createRejectedLeaveNotification(record) {
 }
 
 function createGuidanceNotification(record) {
-	const meetingDate = record.meetingDate;
+	const { meetingDate } = record;
 
 	return {
 		id: `emp-guidance-${record.id}-${meetingDate.toISOString()}`,
@@ -1376,7 +1379,7 @@ function createGuidanceNotification(record) {
 }
 
 function createWarningLetterNotification(record) {
-	const letterDate = record.letterDate;
+	const { letterDate } = record;
 	const isWarning = record.category === 'WARNING_LETTER';
 
 	return {
@@ -1397,13 +1400,7 @@ async function buildEmployeeLiveNotifications(employeeId) {
 	const threshold14Days = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
 	const threshold30Days = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
-	const [
-		pendingApprovals,
-		approvedLeaves,
-		rejectedLeaves,
-		guidances,
-		warnings,
-	] = await Promise.all([
+	const [pendingApprovals, approvedLeaves, rejectedLeaves, guidances, warnings] = await Promise.all([
 		prisma.employeeLeaveApproval.findMany({
 			where: {
 				approverEmployeeId: employeeId,

@@ -560,9 +560,19 @@ router.get(
 				values: ['Rank 1', 'Rank 2', 'Rank 3', 'Rank 4', 'Rank 5', 'Rank 6', 'Rank 7', 'Rank 8', 'Rank 9'],
 				column: 'D',
 			},
-			{ header: 'Work Location', key: 'workLocation', values: workLocations.map((item) => item.name), column: 'E' },
+			{
+				header: 'Work Location',
+				key: 'workLocation',
+				values: workLocations.map((item) => item.name),
+				column: 'E',
+			},
 			{ header: 'Department', key: 'department', values: departments.map((item) => item.name), column: 'F' },
-			{ header: 'Group Shift', key: 'groupShift', values: groupShifts.map((item) => item.groupShiftName), column: 'G' },
+			{
+				header: 'Group Shift',
+				key: 'groupShift',
+				values: groupShifts.map((item) => item.groupShiftName),
+				column: 'G',
+			},
 			{ header: 'Job Role', key: 'jobRole', values: jobRoles.map((item) => item.name), column: 'H' },
 			{ header: 'Job Level', key: 'jobLevel', values: jobLevels.map((item) => item.name), column: 'I' },
 		];
@@ -595,14 +605,49 @@ router.get(
 			};
 
 			[
-				['D', 'Referensi!$A$2:$A$3', 'Employment Type tidak valid', 'Pilih Employment Type dari dropdown yang tersedia.'],
-				['F', `Referensi!$F$2:$F$${Math.max(departments.length + 1, 2)}`, 'Department tidak valid', 'Pilih Department dari dropdown yang tersedia.'],
-				['G', `Referensi!$G$2:$G$${Math.max(groupShifts.length + 1, 2)}`, 'Group Shift tidak valid', 'Pilih Group Shift dari dropdown yang tersedia.'],
+				[
+					'D',
+					'Referensi!$A$2:$A$3',
+					'Employment Type tidak valid',
+					'Pilih Employment Type dari dropdown yang tersedia.',
+				],
+				[
+					'F',
+					`Referensi!$F$2:$F$${Math.max(departments.length + 1, 2)}`,
+					'Department tidak valid',
+					'Pilih Department dari dropdown yang tersedia.',
+				],
+				[
+					'G',
+					`Referensi!$G$2:$G$${Math.max(groupShifts.length + 1, 2)}`,
+					'Group Shift tidak valid',
+					'Pilih Group Shift dari dropdown yang tersedia.',
+				],
 				['K', 'Referensi!$B$2:$B$3', 'Gender tidak valid', 'Pilih Gender dari dropdown yang tersedia.'],
-				['L', `Referensi!$E$2:$E$${Math.max(workLocations.length + 1, 2)}`, 'Work Location tidak valid', 'Pilih Work Location dari dropdown yang tersedia.'],
-				['M', `Referensi!$H$2:$H$${Math.max(jobRoles.length + 1, 2)}`, 'Job Role tidak valid', 'Pilih Job Role dari dropdown yang tersedia.'],
-				['N', `Referensi!$I$2:$I$${Math.max(jobLevels.length + 1, 2)}`, 'Job Level tidak valid', 'Pilih Job Level dari dropdown yang tersedia.'],
-				['O', 'Referensi!$C$2:$C$5', 'Education Level tidak valid', 'Pilih Education Level dari dropdown yang tersedia.'],
+				[
+					'L',
+					`Referensi!$E$2:$E$${Math.max(workLocations.length + 1, 2)}`,
+					'Work Location tidak valid',
+					'Pilih Work Location dari dropdown yang tersedia.',
+				],
+				[
+					'M',
+					`Referensi!$H$2:$H$${Math.max(jobRoles.length + 1, 2)}`,
+					'Job Role tidak valid',
+					'Pilih Job Role dari dropdown yang tersedia.',
+				],
+				[
+					'N',
+					`Referensi!$I$2:$I$${Math.max(jobLevels.length + 1, 2)}`,
+					'Job Level tidak valid',
+					'Pilih Job Level dari dropdown yang tersedia.',
+				],
+				[
+					'O',
+					'Referensi!$C$2:$C$5',
+					'Education Level tidak valid',
+					'Pilih Education Level dari dropdown yang tersedia.',
+				],
 				['P', 'Referensi!$D$2:$D$10', 'Grade tidak valid', 'Pilih Grade dari dropdown yang tersedia.'],
 			].forEach(([column, formulae, errorTitle, error]) => {
 				dataSheet.getCell(`${column}${rowNumber}`).dataValidation = {
@@ -655,7 +700,7 @@ router.get(
 		});
 
 		res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-		res.setHeader('Content-Disposition', 'attachment; filename=\"master-karyawan-import-template.xlsx\"');
+		res.setHeader('Content-Disposition', 'attachment; filename="master-karyawan-import-template.xlsx"');
 
 		await workbook.xlsx.write(res);
 		return res.end();
@@ -790,13 +835,7 @@ router.get(
 		const soonThreshold = new Date(today);
 		soonThreshold.setDate(soonThreshold.getDate() + 25);
 
-		const [
-			guidanceRecords,
-			warningLetters,
-			licenseCertifications,
-			leaveDatabases,
-			leaveFlows,
-		] = await Promise.all([
+		const [guidanceRecords, warningLetters, licenseCertifications, leaveDatabases, leaveFlows] = await Promise.all([
 			prisma.guidanceRecord.findMany({
 				where: { employeeId: id },
 				orderBy: { meetingDate: 'desc' },
@@ -876,8 +915,8 @@ router.get(
 					? new Date(l.expiryDate) < today
 						? 'EXPIRED'
 						: new Date(l.expiryDate) <= soonThreshold
-							? 'SOON'
-							: 'ACTIVE'
+						? 'SOON'
+						: 'ACTIVE'
 					: 'ACTIVE',
 			})),
 			leaveBalances: leaveDatabases.map((lb) => ({

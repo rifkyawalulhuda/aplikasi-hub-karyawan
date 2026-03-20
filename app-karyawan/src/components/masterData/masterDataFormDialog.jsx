@@ -22,7 +22,17 @@ function MasterDataFormDialog({ config, open, loading, initialValue, onClose, on
 	];
 	const buildDefaultValues = () =>
 		fields.reduce((defaultValues, field) => {
-			const fieldValue = initialValue?.[field.name] || '';
+			let fieldValue = initialValue?.[field.name] || '';
+
+			if (field.type === 'date' && fieldValue) {
+				const d = new Date(fieldValue);
+				if (!Number.isNaN(d.getTime())) {
+					const year = d.getFullYear();
+					const month = String(d.getMonth() + 1).padStart(2, '0');
+					const day = String(d.getDate()).padStart(2, '0');
+					fieldValue = `${year}-${month}-${day}`;
+				}
+			}
 
 			if (field.type === 'select-custom') {
 				const hasPresetOption = field.options?.includes(fieldValue);
@@ -167,14 +177,33 @@ function MasterDataFormDialog({ config, open, loading, initialValue, onClose, on
 										dirtyFields={dirtyFields}
 										rules={{
 											required: `${field.label} wajib diisi.`,
-											validate: (value) =>
-												value.trim().length > 0 || `${field.label} wajib diisi.`,
+											validate: (value) => {
+												if (typeof value === 'string') {
+													return value.trim().length > 0 || `${field.label} wajib diisi.`;
+												}
+												return (
+													(value !== undefined && value !== null && value !== '') ||
+													`${field.label} wajib diisi.`
+												);
+											},
 										}}
 										fullWidth
 										autoFocus={index === 0}
 										multiline={field.type === 'multiline'}
 										rows={field.rows}
 										select={field.type === 'select'}
+										type={field.type}
+										inputProps={{
+											...(field.maxLength ? { maxLength: field.maxLength } : {}),
+											...(field.type === 'number' && field.maxLength
+												? {
+														onInput: (e) => {
+															e.target.value = e.target.value.slice(0, field.maxLength);
+														},
+												  }
+												: {}),
+										}}
+										InputLabelProps={field.type === 'date' ? { shrink: true } : undefined}
 									>
 										{selectOptions}
 									</FormInput>
