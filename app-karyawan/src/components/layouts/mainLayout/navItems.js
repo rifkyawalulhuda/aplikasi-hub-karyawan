@@ -152,6 +152,13 @@ const NAV_LINKS_CONFIG = [
 			{
 				id: uuid(),
 				type: 'item',
+				title: 'Detail Karyawan',
+				Icon: PeopleAltOutlinedIcon,
+				href: '/data-karyawan/detail-karyawan',
+			},
+			{
+				id: uuid(),
+				type: 'item',
 				title: 'Bimbingan & Pengarahan',
 				Icon: FeedOutlinedIcon,
 				href: '/data-karyawan/bimbingan-pengarahan',

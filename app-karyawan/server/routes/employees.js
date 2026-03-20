@@ -770,6 +770,138 @@ router.get(
 );
 
 router.get(
+	'/:id/summary',
+	withAsync(async (req, res) => {
+		const id = Number(req.params.id);
+		if (Number.isNaN(id)) {
+			return res.status(400).json({ message: 'ID tidak valid.' });
+		}
+
+		const employee = await prisma.employee.findUnique({
+			where: { id },
+			include: { department: true, groupShift: true, workLocation: true, jobRole: true, jobLevel: true },
+		});
+
+		if (!employee) {
+			return res.status(404).json({ message: 'Karyawan tidak ditemukan.' });
+		}
+
+		const today = new Date();
+		const soonThreshold = new Date(today);
+		soonThreshold.setDate(soonThreshold.getDate() + 25);
+
+		const [
+			guidanceRecords,
+			warningLetters,
+			licenseCertifications,
+			leaveDatabases,
+			leaveFlows,
+		] = await Promise.all([
+			prisma.guidanceRecord.findMany({
+				where: { employeeId: id },
+				orderBy: { meetingDate: 'desc' },
+				take: 5,
+			}),
+			prisma.warningLetter.findMany({
+				where: { employeeId: id },
+				orderBy: { letterDate: 'desc' },
+				take: 5,
+			}),
+			prisma.employeeLicenseCertification.findMany({
+				where: { employeeId: id },
+				include: { masterDokKaryawan: true },
+				orderBy: { expiryDate: 'asc' },
+			}),
+			prisma.employeeLeaveDatabase.findMany({
+				where: { employeeId: id },
+				include: { masterCutiKaryawan: true },
+				orderBy: { year: 'desc' },
+			}),
+			prisma.employeeLeave.findMany({
+				where: { employeeId: id },
+				include: { masterCutiKaryawan: true },
+				orderBy: { createdAt: 'desc' },
+				take: 5,
+			}),
+		]);
+
+		const licenseExpiredCount = licenseCertifications.filter(
+			(l) => l.expiryDate && new Date(l.expiryDate) < today,
+		).length;
+		const licenseSoonCount = licenseCertifications.filter(
+			(l) => l.expiryDate && new Date(l.expiryDate) >= today && new Date(l.expiryDate) <= soonThreshold,
+		).length;
+
+		const activeWarningLetters = warningLetters.filter((w) => {
+			if (!w.letterDate) return false;
+			const sixMonthsAgo = new Date(today);
+			sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+			return new Date(w.letterDate) >= sixMonthsAgo;
+		});
+
+		return res.json({
+			profile: mapEmployee(employee),
+			summary: {
+				guidanceCount: await prisma.guidanceRecord.count({ where: { employeeId: id } }),
+				warningLetterCount: await prisma.warningLetter.count({ where: { employeeId: id } }),
+				activeWarningLetterCount: activeWarningLetters.length,
+				licenseCount: licenseCertifications.length,
+				licenseExpiredCount,
+				licenseSoonCount,
+				leaveBalanceCount: leaveDatabases.length,
+				leaveFlowCount: await prisma.employeeLeave.count({ where: { employeeId: id } }),
+			},
+			recentGuidanceRecords: guidanceRecords.map((r) => ({
+				id: r.id,
+				category: r.category,
+				meetingDate: r.meetingDate ? r.meetingDate.toISOString().slice(0, 10) : null,
+				meetingNumber: r.meetingNumber,
+				location: r.location || '',
+			})),
+			recentWarningLetters: warningLetters.map((w) => ({
+				id: w.id,
+				category: w.category,
+				warningLevel: w.warningLevel,
+				letterDate: w.letterDate ? w.letterDate.toISOString().slice(0, 10) : null,
+				violation: w.violation || '',
+				letterNumber: w.letterNumber || '',
+			})),
+			licenseCertifications: licenseCertifications.slice(0, 5).map((l) => ({
+				id: l.id,
+				documentName: l.masterDokKaryawan?.documentName || '',
+				documentType: l.masterDokKaryawan?.documentType || '',
+				documentNumber: l.documentNumber || '',
+				expiryDate: l.expiryDate ? l.expiryDate.toISOString().slice(0, 10) : null,
+				status: l.expiryDate
+					? new Date(l.expiryDate) < today
+						? 'EXPIRED'
+						: new Date(l.expiryDate) <= soonThreshold
+							? 'SOON'
+							: 'ACTIVE'
+					: 'ACTIVE',
+			})),
+			leaveBalances: leaveDatabases.map((lb) => ({
+				id: lb.id,
+				leaveType: lb.masterCutiKaryawan.leaveType,
+				year: lb.year,
+				leaveDays: lb.leaveDays,
+				remainingLeave: lb.remainingLeave,
+			})),
+			recentLeaveFlows: leaveFlows.map((lf) => ({
+				id: lf.id,
+				requestNumber: lf.requestNumber,
+				leaveType: lf.masterCutiKaryawan.leaveType,
+				status: lf.status,
+				submittedAt: lf.submittedAt ? lf.submittedAt.toISOString().slice(0, 10) : null,
+				periodStart: lf.periodStart ? lf.periodStart.toISOString().slice(0, 10) : null,
+				periodEnd: lf.periodEnd ? lf.periodEnd.toISOString().slice(0, 10) : null,
+				leaveDays: lf.leaveDays,
+			})),
+		});
+	}),
+);
+
+router.get(
 	'/',
 	withAsync(async (req, res) => {
 		const employees = await prisma.employee.findMany({
