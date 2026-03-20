@@ -288,6 +288,93 @@ router.get(
 );
 
 router.get(
+	'/:resource/template',
+	withAsync(async (req, res) => {
+		const config = getConfig(req.params.resource);
+
+		if (!config) {
+			return res.status(404).json({ message: 'Master data resource not found.' });
+		}
+
+		if (!config.import) {
+			return res.status(404).json({ message: 'Import Excel tidak tersedia untuk master data ini.' });
+		}
+
+		const workbook = new ExcelJS.Workbook();
+		const dataSheet = workbook.addWorksheet(config.import.worksheetName || 'Data Import');
+		const constantsSheet = workbook.addWorksheet('Constants');
+
+		// Hide constants sheet
+		constantsSheet.state = 'hidden';
+
+		const importHeaders = config.import.headers || [];
+		const instructionRowValues = config.import.instructionRowValues || {};
+		const fields = getFields(config);
+
+		// Add Header Row
+		dataSheet.addRow(importHeaders);
+		const headerRow = dataSheet.getRow(1);
+		headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+		headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1976D2' } };
+		headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+
+		// Add Instruction Row
+		const instructions = importHeaders.map((header) => instructionRowValues[header] || '');
+		dataSheet.addRow(instructions);
+		const instructionRow = dataSheet.getRow(2);
+		instructionRow.font = { italic: true, color: { argb: 'FF757575' } };
+
+		// Set column widths
+		dataSheet.columns = importHeaders.map(() => ({ width: 30 }));
+
+		// Setup dropdowns (lists)
+		let constantColIndex = 1;
+		importHeaders.forEach((header, colIndex) => {
+			const fieldConfig = fields.find((f) => f.label === header);
+
+			if (fieldConfig?.options?.length) {
+				const colLetter = dataSheet.getColumn(colIndex + 1).letter;
+				const options = fieldConfig.options;
+
+				// Write options to Constants sheet
+				options.forEach((option, index) => {
+					constantsSheet.getCell(index + 1, constantColIndex).value = option;
+				});
+
+				const constantsColLetter = constantsSheet.getColumn(constantColIndex).letter;
+				const range = `$${constantsColLetter}$1:$${constantsColLetter}$${options.length}`;
+
+				// Apply validation to a large number of rows (e.g., 500)
+				for (let i = 3; i <= 502; i += 1) {
+					dataSheet.getCell(`${colLetter}${i}`).dataValidation = {
+						type: 'list',
+						allowBlank: true,
+						formulae: [`Constants!${range}`],
+						showErrorMessage: true,
+						errorTitle: 'Input Tidak Valid',
+						error: `Silakan pilih salah satu opsi yang tersedia untuk ${header}.`,
+					};
+				}
+
+				constantColIndex += 1;
+			}
+		});
+
+		res.setHeader(
+			'Content-Type',
+			'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+		);
+		res.setHeader(
+			'Content-Disposition',
+			`attachment; filename=${req.params.resource}-import-template.xlsx`,
+		);
+
+		await workbook.xlsx.write(res);
+		res.end();
+	}),
+);
+
+router.get(
 	'/:resource',
 	withAsync(async (req, res) => {
 		const config = getConfig(req.params.resource);

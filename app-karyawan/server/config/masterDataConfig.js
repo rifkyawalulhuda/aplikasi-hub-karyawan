@@ -92,6 +92,19 @@ const MASTER_DATA_CONFIG = {
 				searchable: true,
 			},
 		],
+		import: {
+			worksheetName: 'Data Import',
+			dataStartRow: 2,
+			headers: ['Nama Unit', 'Jenis Unit', 'Kapasitas', 'Unit/Serial Number', 'Detail Lainnya'],
+			instructionRowValues: {
+				'Nama Unit': 'Contoh: Forklift CLC-C-111',
+				'Jenis Unit': 'Pilih: Forklift, Cargo Lift, Kendaraan, atau Infrastruktur',
+				Kapasitas: 'Contoh: 12T',
+				'Unit/Serial Number': 'Contoh: 2112121',
+				'Detail Lainnya': 'Contoh: 1212121',
+			},
+			errorFilePrefix: 'master-unit-import-errors',
+		},
 	},
 	'master-vendors': {
 		label: 'Master Vendor',

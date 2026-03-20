@@ -135,6 +135,12 @@ const MASTER_DATA_PAGE_CONFIG = {
 			{ id: 'unitSerialNumber', label: 'UNIT/SERIAL NUMBER' },
 			{ id: 'detailLainnya', label: 'DETAIL LAINNYA' },
 		],
+		import: {
+			title: 'Import Master Unit',
+			description:
+				'Unduh template Excel resmi, isi data unit operasional secara bulk, lalu upload file `.xlsx` untuk import.',
+			templateHref: '/api/master/master-units/template',
+		},
 	},
 	masterVendors: {
 		resource: 'master-vendors',
