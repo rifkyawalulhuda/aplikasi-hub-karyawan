@@ -308,7 +308,6 @@ router.get(
 		constantsSheet.state = 'hidden';
 
 		const importHeaders = config.import.headers || [];
-		const instructionRowValues = config.import.instructionRowValues || {};
 		const fields = getFields(config);
 
 		// Add Header Row
@@ -317,12 +316,6 @@ router.get(
 		headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
 		headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1976D2' } };
 		headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
-
-		// Add Instruction Row
-		const instructions = importHeaders.map((header) => instructionRowValues[header] || '');
-		dataSheet.addRow(instructions);
-		const instructionRow = dataSheet.getRow(2);
-		instructionRow.font = { italic: true, color: { argb: 'FF757575' } };
 
 		// Set column widths
 		dataSheet.columns = importHeaders.map(() => ({ width: 30 }));
@@ -345,7 +338,7 @@ router.get(
 				const range = `$${constantsColLetter}$1:$${constantsColLetter}$${options.length}`;
 
 				// Apply validation to a large number of rows (e.g., 500)
-				for (let i = 3; i <= 502; i += 1) {
+				for (let i = 2; i <= 501; i += 1) {
 					dataSheet.getCell(`${colLetter}${i}`).dataValidation = {
 						type: 'list',
 						allowBlank: true,
