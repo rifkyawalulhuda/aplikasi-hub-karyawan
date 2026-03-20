@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 
 import Box from '@mui/material/Box';
@@ -14,6 +15,12 @@ import FeedOutlinedIcon from '@mui/icons-material/FeedOutlined';
 import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
 import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
 import ReportGmailerrorredOutlinedIcon from '@mui/icons-material/ReportGmailerrorredOutlined';
+import Drawer from '@mui/material/Drawer';
+import List from '@mui/material/List';
+import ListItem from '@mui/material/ListItem';
+import ListItemButton from '@mui/material/ListItemButton';
+import ListItemIcon from '@mui/material/ListItemIcon';
+import ListItemText from '@mui/material/ListItemText';
 
 import { useEmployeeAuth } from '@/contexts/employeeAuthContext';
 
@@ -36,14 +43,9 @@ const NAV_ITEMS = [
 		icon: <CalendarMonthOutlinedIcon />,
 	},
 	{
-		label: 'Bimbingan',
-		value: '/karyawan/bimbingan-pengarahan',
+		label: 'Catatan',
+		value: 'group-catatan',
 		icon: <FeedOutlinedIcon />,
-	},
-	{
-		label: 'Peringatan',
-		value: '/karyawan/surat-peringatan',
-		icon: <ReportGmailerrorredOutlinedIcon />,
 	},
 ];
 
@@ -76,14 +78,26 @@ function getPageTitle(pathname) {
 }
 
 function getCurrentValue(pathname) {
-	const matchedItem = NAV_ITEMS.find((item) => pathname === item.value || pathname.startsWith(`${item.value}/`));
-	return matchedItem?.value || '/karyawan';
+	if (pathname.startsWith('/karyawan/bimbingan-pengarahan') || pathname.startsWith('/karyawan/surat-peringatan')) {
+		return 'group-catatan';
+	}
+
+	const specificMatch = NAV_ITEMS.find(
+		(item) => item.value !== '/karyawan' && (pathname === item.value || pathname.startsWith(`${item.value}/`)),
+	);
+
+	if (specificMatch) {
+		return specificMatch.value;
+	}
+
+	return '/karyawan';
 }
 
 function EmployeeMobileLayout() {
 	const location = useLocation();
 	const navigate = useNavigate();
 	const { logout } = useEmployeeAuth();
+	const [drawerOpen, setDrawerOpen] = useState(false);
 
 	return (
 		<Box
@@ -174,11 +188,34 @@ function EmployeeMobileLayout() {
 				<BottomNavigation
 					showLabels
 					value={getCurrentValue(location.pathname)}
-					onChange={(...args) => navigate(args[1])}
+					onChange={(...args) => {
+						const newValue = args[1];
+						if (newValue === 'group-catatan') {
+							setDrawerOpen(true);
+						} else {
+							navigate(newValue);
+						}
+					}}
 					sx={{
 						height: 72,
+						px: 1,
 						'& .MuiBottomNavigationAction-root': {
 							minWidth: 0,
+							borderRadius: 3,
+							my: 0.75,
+							mx: 0.5,
+							color: '#5D738B',
+							transition: 'all 0.2s ease-in-out',
+							'&:hover': {
+								backgroundColor: 'rgba(25, 118, 210, 0.04)',
+							},
+							'&.Mui-selected': {
+								backgroundColor: 'rgba(25, 118, 210, 0.08)',
+								color: '#1976d2',
+								'& .MuiSvgIcon-root': {
+									color: '#1976d2',
+								},
+							},
 						},
 					}}
 				>
@@ -192,6 +229,77 @@ function EmployeeMobileLayout() {
 					))}
 				</BottomNavigation>
 			</Paper>
+
+			<Drawer
+				anchor="bottom"
+				open={drawerOpen}
+				onClose={() => setDrawerOpen(false)}
+				PaperProps={{
+					sx: {
+						borderTopLeftRadius: 20,
+						borderTopRightRadius: 20,
+						width: '100%',
+						maxWidth: 480,
+						mx: 'auto',
+					},
+				}}
+			>
+				<Box sx={{ p: 2, pb: 4 }}>
+					<Box
+						sx={{
+							width: 40,
+							height: 4,
+							bgcolor: 'rgba(0,0,0,0.1)',
+							borderRadius: 2,
+							mx: 'auto',
+							mb: 2,
+						}}
+					/>
+					<Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#123B66', mb: 1, px: 2 }}>
+						Catatan Karyawan
+					</Typography>
+					<List>
+						<ListItem disablePadding>
+							<ListItemButton
+								onClick={() => {
+									setDrawerOpen(false);
+									navigate('/karyawan/bimbingan-pengarahan');
+								}}
+								sx={{ borderRadius: 2 }}
+							>
+								<ListItemIcon sx={{ color: '#123B66' }}>
+									<FeedOutlinedIcon />
+								</ListItemIcon>
+								<ListItemText
+									primary="Bimbingan & Pengarahan"
+									primaryTypographyProps={{ variant: 'body2', fontWeight: 600, color: '#123B66' }}
+									secondary="Riwayat konseling dan pengarahan"
+									secondaryTypographyProps={{ variant: 'caption' }}
+								/>
+							</ListItemButton>
+						</ListItem>
+						<ListItem disablePadding>
+							<ListItemButton
+								onClick={() => {
+									setDrawerOpen(false);
+									navigate('/karyawan/surat-peringatan');
+								}}
+								sx={{ borderRadius: 2 }}
+							>
+								<ListItemIcon sx={{ color: '#D32F2F' }}>
+									<ReportGmailerrorredOutlinedIcon />
+								</ListItemIcon>
+								<ListItemText
+									primary="Surat Peringatan"
+									primaryTypographyProps={{ variant: 'body2', fontWeight: 600, color: '#123B66' }}
+									secondary="Riwayat peringatan dan teguran disipliner"
+									secondaryTypographyProps={{ variant: 'caption' }}
+								/>
+							</ListItemButton>
+						</ListItem>
+					</List>
+				</Box>
+			</Drawer>
 		</Box>
 	);
 }
