@@ -1245,4 +1245,274 @@ router.post('/leave-approvals/:id/reject', async (req, res, next) => {
 	}
 });
 
+function getEmployeePriority(item) {
+	switch (item.category) {
+		case 'WARNING_LETTER':
+			return 500;
+		case 'LEAVE_REJECTED':
+			return 400;
+		case 'LEAVE_APPROVAL_PENDING':
+			return 300;
+		case 'LEAVE_APPROVED':
+			return 200;
+		case 'GUIDANCE_RECORD':
+			return 100;
+		default:
+			return 0;
+	}
+}
+
+function compareEmployeeNotifications(left, right) {
+	const unreadDelta = Number(left.isRead) - Number(right.isRead);
+
+	if (unreadDelta !== 0) {
+		return unreadDelta;
+	}
+
+	const priorityDelta = getEmployeePriority(right) - getEmployeePriority(left);
+
+	if (priorityDelta !== 0) {
+		return priorityDelta;
+	}
+
+	const leftTime = new Date(left.sortDate).getTime();
+	const rightTime = new Date(right.sortDate).getTime();
+
+	return rightTime - leftTime;
+}
+
+function formatLongDateForNotice(value) {
+	if (!value) return '-';
+	const parsed = value instanceof Date ? value : new Date(value);
+	if (Number.isNaN(parsed.getTime())) return '-';
+	return parsed.toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
+}
+
+function createPendingApprovalNotification(approval) {
+	const activatedAt = approval.updatedAt || approval.createdAt;
+
+	return {
+		id: `emp-approval-pending-${approval.id}-${activatedAt.toISOString()}`,
+		category: 'LEAVE_APPROVAL_PENDING',
+		severity: 'warning',
+		title: `Approval menunggu tindakan: ${approval.employeeLeave.requestNumber}`,
+		description: `Permohonan cuti ${approval.employeeLeave.employee.fullName} menunggu persetujuan Anda.`,
+		targetPath: `/karyawan/cuti/approval/${approval.id}`,
+		targetSearch: '',
+		dateLabel: `Sejak: ${formatLongDateForNotice(activatedAt)}`,
+		sortDate: activatedAt.toISOString(),
+		href: `/karyawan/cuti/approval/${approval.id}`,
+	};
+}
+
+function createApprovedLeaveNotification(record) {
+	const approvedAt = record.approvedAt || record.updatedAt || record.createdAt;
+
+	return {
+		id: `emp-leave-approved-${record.id}-${approvedAt.toISOString()}`,
+		category: 'LEAVE_APPROVED',
+		severity: 'success',
+		title: `Cuti Disetujui: ${record.requestNumber}`,
+		description: `Permohonan cuti Anda telah disetujui.`,
+		targetPath: `/karyawan/cuti/${record.id}`,
+		targetSearch: '',
+		dateLabel: `Approved: ${formatLongDateForNotice(approvedAt)}`,
+		sortDate: approvedAt.toISOString(),
+		href: `/karyawan/cuti/${record.id}`,
+	};
+}
+
+function createRejectedLeaveNotification(record) {
+	const rejectedAt = record.rejectedAt || record.updatedAt || record.createdAt;
+
+	return {
+		id: `emp-leave-rejected-${record.id}-rev-${record.revisionNo}-${rejectedAt.toISOString()}`,
+		category: 'LEAVE_REJECTED',
+		severity: 'error',
+		title: `Cuti Ditolak: ${record.requestNumber}`,
+		description: `Permohonan cuti Anda ditolak. Silakan cek detailnya.`,
+		targetPath: `/karyawan/cuti/${record.id}`,
+		targetSearch: '',
+		dateLabel: `Rejected: ${formatLongDateForNotice(rejectedAt)}`,
+		sortDate: rejectedAt.toISOString(),
+		href: `/karyawan/cuti/${record.id}`,
+	};
+}
+
+function createGuidanceNotification(record) {
+	const meetingDate = record.meetingDate;
+
+	return {
+		id: `emp-guidance-${record.id}-${meetingDate.toISOString()}`,
+		category: 'GUIDANCE_RECORD',
+		severity: 'info',
+		title: `Catatan Bimbingan Baru`,
+		description: `Ada catatan ${record.category === 'GUIDANCE' ? 'bimbingan' : 'pengarahan'} baru untuk Anda.`,
+		targetPath: `/karyawan/bimbingan-pengarahan`,
+		targetSearch: '',
+		dateLabel: `Tanggal: ${formatLongDateForNotice(meetingDate)}`,
+		sortDate: meetingDate.toISOString(),
+		href: `/karyawan/bimbingan-pengarahan`,
+	};
+}
+
+function createWarningLetterNotification(record) {
+	const letterDate = record.letterDate;
+	const isWarning = record.category === 'WARNING_LETTER';
+
+	return {
+		id: `emp-warning-${record.id}-${letterDate.toISOString()}`,
+		category: 'WARNING_LETTER',
+		severity: 'error',
+		title: `Surat ${isWarning ? 'Peringatan' : 'Teguran'} Baru`,
+		description: `Anda menerima Surat ${isWarning ? `Peringatan ke-${record.warningLevel}` : 'Teguran'}.`,
+		targetPath: `/karyawan/surat-peringatan`,
+		targetSearch: '',
+		dateLabel: `Tanggal: ${formatLongDateForNotice(letterDate)}`,
+		sortDate: letterDate.toISOString(),
+		href: `/karyawan/surat-peringatan`,
+	};
+}
+
+async function buildEmployeeLiveNotifications(employeeId) {
+	const threshold14Days = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+	const threshold30Days = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+	const [
+		pendingApprovals,
+		approvedLeaves,
+		rejectedLeaves,
+		guidances,
+		warnings,
+	] = await Promise.all([
+		prisma.employeeLeaveApproval.findMany({
+			where: {
+				approverEmployeeId: employeeId,
+				status: 'PENDING',
+			},
+			include: {
+				employeeLeave: {
+					include: { employee: true },
+				},
+			},
+			orderBy: [{ createdAt: 'desc' }],
+		}),
+		prisma.employeeLeave.findMany({
+			where: {
+				employeeId,
+				status: 'APPROVED',
+				approvedAt: { gte: threshold14Days },
+			},
+			orderBy: [{ approvedAt: 'desc' }],
+		}),
+		prisma.employeeLeave.findMany({
+			where: {
+				employeeId,
+				status: 'REJECTED',
+				updatedAt: { gte: threshold14Days },
+			},
+			orderBy: [{ updatedAt: 'desc' }],
+		}),
+		prisma.guidanceRecord.findMany({
+			where: {
+				employeeId,
+				meetingDate: { gte: threshold14Days },
+			},
+			orderBy: [{ meetingDate: 'desc' }],
+		}),
+		prisma.warningLetter.findMany({
+			where: {
+				employeeId,
+				letterDate: { gte: threshold30Days },
+			},
+			orderBy: [{ letterDate: 'desc' }],
+		}),
+	]);
+
+	return [
+		...pendingApprovals.map(createPendingApprovalNotification),
+		...approvedLeaves.map(createApprovedLeaveNotification),
+		...rejectedLeaves.map(createRejectedLeaveNotification),
+		...guidances.map(createGuidanceNotification),
+		...warnings.map(createWarningLetterNotification),
+	];
+}
+
+async function attachEmployeeReadState(employeeId, items) {
+	if (!items.length) return [];
+
+	const reads = await prisma.adminNotificationReadState.findMany({
+		where: {
+			employeeId,
+			notificationId: { in: items.map((item) => item.id) },
+		},
+		select: { notificationId: true, readAt: true },
+	});
+	const readMap = new Map(reads.map((item) => [item.notificationId, item.readAt]));
+
+	return items.map((item) => ({
+		...item,
+		isRead: readMap.has(item.id),
+		readAt: readMap.get(item.id)?.toISOString() || null,
+	}));
+}
+
+async function markEmployeeNotificationsRead(employeeId, notificationIds = []) {
+	const uniqueNotificationIds = [...new Set(notificationIds.map((value) => String(value).trim()).filter(Boolean))];
+	if (!uniqueNotificationIds.length) return;
+
+	await prisma.adminNotificationReadState.createMany({
+		data: uniqueNotificationIds.map((notificationId) => ({
+			employeeId,
+			notificationId,
+			readAt: new Date(),
+		})),
+		skipDuplicates: true,
+	});
+}
+
+router.get('/notifications', async (req, res, next) => {
+	try {
+		const employeeId = req.employee.id;
+		const items = await attachEmployeeReadState(employeeId, await buildEmployeeLiveNotifications(employeeId));
+		const sortedItems = items.sort(compareEmployeeNotifications);
+
+		return res.json({
+			totalCount: sortedItems.length,
+			unreadCount: sortedItems.filter((item) => !item.isRead).length,
+			items: sortedItems.slice(0, 50),
+		});
+	} catch (error) {
+		return next(error);
+	}
+});
+
+router.post('/notifications/read', async (req, res, next) => {
+	try {
+		const employeeId = req.employee.id;
+		const notificationId = String(req.body?.notificationId || '').trim();
+
+		if (!notificationId) {
+			return res.status(400).json({ message: 'notificationId wajib diisi.' });
+		}
+
+		await markEmployeeNotificationsRead(employeeId, [notificationId]);
+		return res.status(204).send();
+	} catch (error) {
+		return next(error);
+	}
+});
+
+router.post('/notifications/read-all', async (req, res, next) => {
+	try {
+		const employeeId = req.employee.id;
+		const notificationIds = Array.isArray(req.body?.notificationIds) ? req.body.notificationIds : [];
+
+		await markEmployeeNotificationsRead(employeeId, notificationIds);
+		return res.status(204).send();
+	} catch (error) {
+		return next(error);
+	}
+});
+
 export default router;

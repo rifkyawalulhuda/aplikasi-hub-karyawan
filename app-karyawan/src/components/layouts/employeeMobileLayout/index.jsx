@@ -22,6 +22,7 @@ import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 
+import EmployeeNotificationButton from '@/components/employeePortal/employeeNotificationButton';
 import { useEmployeeAuth } from '@/contexts/employeeAuthContext';
 
 import logo from '@/assets/images/logo/png/Sankyu_logo_redicon_whitetext.png';
@@ -151,19 +152,22 @@ function EmployeeMobileLayout() {
 								</Typography>
 							</Box>
 						</Stack>
-						<IconButton
-							aria-label="logout"
-							onClick={() => {
-								logout();
-								navigate('/karyawan/login', { replace: true });
-							}}
-							sx={{
-								bgcolor: 'rgba(18,59,102,0.06)',
-								color: '#123B66',
-							}}
-						>
-							<LogoutRoundedIcon />
-						</IconButton>
+						<Stack direction="row" spacing={0.5} alignItems="center">
+							<EmployeeNotificationButton />
+							<IconButton
+								aria-label="logout"
+								onClick={() => {
+									logout();
+									navigate('/karyawan/login', { replace: true });
+								}}
+								sx={{
+									bgcolor: 'rgba(18,59,102,0.06)',
+									color: '#123B66',
+								}}
+							>
+								<LogoutRoundedIcon />
+							</IconButton>
+						</Stack>
 					</Stack>
 				</Paper>
 

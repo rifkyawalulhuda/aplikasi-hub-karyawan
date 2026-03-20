@@ -1,0 +1,24 @@
+[
+  {
+    "id": 40,
+    "employeeLeaveId": 10,
+    "revisionNo": 1,
+    "stageOrder": 2,
+    "stageType": "GENERAL_FOREMAN",
+    "approverEmployeeId": 14,
+    "status": "PENDING",
+    "actionNote": null,
+    "actedAt": null,
+    "createdAt": "2026-03-20T04:40:36.882Z",
+    "updatedAt": "2026-03-20T04:43:16.056Z",
+    "employeeLeave": {
+      "requestNumber": "CT-2026-000010",
+      "employeeId": 5
+    },
+    "approverEmployee": {
+      "fullName": "EKANDANA RACHMANTO",
+      "id": 14,
+      "employeeNo": "CBS-011"
+    }
+  }
+]
