@@ -102,6 +102,7 @@ Folder ini dipilih sebagai basis utama pengembangan karena struktur template-nya
 - Tab utama tambahan: `Data Karyawan`
 - Menu utama: `Bimbingan & Pengarahan`
 - Menu tambahan: `Data Surat Peringatan`
+- Menu tambahan: `Detail Karyawan`
 - Menu tambahan: `Lisensi & Sertifikasi`
 - Menu tambahan: `Cuti Karyawan`
 - Tab utama tambahan: `Data Unit`
@@ -717,6 +718,16 @@ Yang sudah selesai:
 - Menambahkan fungsi klik/baca notifikasi khusus PWA melalui `/api/employee-me/notifications/read` dan `read-all` yang transparan menggunakan tabel read-state Admin berbasis `employeeId`.
 - Fitur notifikasi PWA sekarang menyaring status Cuti Menunggu Approval, Cuti Disetujui/Ditolak (14 hari terakhir), Bimbingan (14 hari), dan Peringatan (30 hari).
 - Menyelesaikan perbaikan _bug_ destructuring auth pada fungsionalitas _hooks_ React di notifikasi PWA Karyawan.
+- Menambahkan halaman **Detail Karyawan** di bawah menu Data Karyawan, yang menampilkan:
+  - Halaman daftar karyawan (`/data-karyawan/detail-karyawan`) dengan tabel searchable + filter departemen + pagination 15/30/50/100
+  - Halaman detail per karyawan (`/data-karyawan/detail-karyawan/:id`) menampilkan hero card profil lengkap dan ringkasan data dari semua modul:
+    - Bimbingan & Pengarahan (5 data terbaru)
+    - Surat Peringatan (5 data terbaru + counter SP aktif 6 bulan)
+    - Lisensi & Sertifikasi (5 data terbaru + badge status expired/akan expired)
+    - Saldo Cuti (kartu saldo per jenis cuti dengan progress bar)
+    - Riwayat Pengajuan Cuti (5 pengajuan terbaru)
+  - Setiap section memiliki tombol deep-link "Lihat semua" yang langsung filter ke halaman terkait dengan nama karyawan
+  - Backend endpoint baru `GET /api/master/employees/:id/summary` mengambil semua data terkait sekaligus
 ## Struktur Teknis Awal yang Sudah Dibangun
 
 - Frontend:
