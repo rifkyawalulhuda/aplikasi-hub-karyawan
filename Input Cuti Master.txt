@@ -1,0 +1,13 @@
+Jenis cuti:
+gunakan mapping manual tetap dari Master Cuti Karyawan ke checkbox form:
+Cuti Tahunan -> Cuti Tahunan (C1)
+Cuti 10 Tahunan -> Cuti 10 Tahunan (C2)
+Cuti Spesial -> Cuti Spesial (C3)
+Cuti Haid -> Cuti Haid (H1)
+Cuti Melahirkan -> Cuti Melahirkan (H2)
+Dispensasi -> Dispensasi (DP)
+Sakit Ijin Dokter -> Sakit Ijin Dokter (S1)
+Sakit Karena Kecelakaan -> Sakit Karena Kecelakaan (S2)
+Skorsing -> Skorsing (SC)
+Absen -> Absen (A)
+Ijin -> Ijin (B)
