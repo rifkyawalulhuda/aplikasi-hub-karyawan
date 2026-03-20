@@ -14,6 +14,7 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 
 import AddCircleOutlineOutlinedIcon from '@mui/icons-material/AddCircleOutlineOutlined';
+import calculateWorkingDays from '@/utils/dateUtils';
 import DeleteOutlineOutlinedIcon from '@mui/icons-material/DeleteOutlineOutlined';
 
 function getDefaultReplacementEmployeeIds(initialValue = null) {
@@ -75,6 +76,7 @@ function LeaveRequestFormDialog({
 		control,
 		handleSubmit,
 		reset,
+		setValue,
 		watch,
 		formState: { errors },
 	} = useForm({
@@ -127,6 +129,19 @@ function LeaveRequestFormDialog({
 	useEffect(() => {
 		reset(toDefaultValues(initialValue));
 	}, [initialValue, open, reset]);
+
+	const periodStartValue = watch('periodStart');
+	const periodEndValue = watch('periodEnd');
+
+	useEffect(() => {
+		if (periodStartValue && periodEndValue) {
+			const calculatedDays = calculateWorkingDays(periodStartValue, periodEndValue);
+			setValue('leaveDays', calculatedDays > 0 ? calculatedDays : '', {
+				shouldValidate: true,
+				shouldDirty: true,
+			});
+		}
+	}, [periodStartValue, periodEndValue, setValue]);
 
 	const handleFormSubmit = (values) => {
 		onSubmit({
@@ -214,9 +229,12 @@ function LeaveRequestFormDialog({
 									label="Jumlah Hari Cuti"
 									type="number"
 									fullWidth
+									disabled
 									inputProps={{ min: 1, step: 1 }}
 									error={Boolean(errors.leaveDays)}
-									helperText={errors.leaveDays?.message || ' '}
+									helperText={
+										errors.leaveDays?.message || 'Dihitung otomatis dari periode tanggal cuti.'
+									}
 								/>
 							)}
 						/>
