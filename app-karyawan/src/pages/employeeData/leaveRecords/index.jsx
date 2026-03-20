@@ -186,92 +186,20 @@ function EmployeeLeavesPage() {
 	};
 
 	const handleExportExcel = async () => {
-		if (filteredRows.length === 0) {
-			enqueueSnackbar('Tidak ada database cuti karyawan untuk diexport.', { variant: 'error' });
-			return;
+		try {
+			const downloadUrl = `${getApiBaseUrl()}/data-karyawan/employee-leave-database/export`;
+			const link = document.createElement('a');
+			link.href = downloadUrl;
+			link.target = '_blank';
+			link.rel = 'noreferrer';
+			document.body.appendChild(link);
+			link.click();
+			document.body.removeChild(link);
+
+			enqueueSnackbar('Menyiapkan file export Excel...', { variant: 'info' });
+		} catch (error) {
+			enqueueSnackbar(error.message, { variant: 'error' });
 		}
-
-		const formatExcelDate = (value) => {
-			if (!value) {
-				return '';
-			}
-
-			const raw = String(value);
-			const isoMatch = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-
-			if (isoMatch) {
-				const [, year, month, day] = isoMatch;
-				return `${day}/${month}/${year}`;
-			}
-
-			return raw;
-		};
-
-		const ExcelJS = await import('exceljs');
-		const Workbook = ExcelJS.Workbook || ExcelJS.default?.Workbook;
-		const workbook = new Workbook();
-		const worksheet = workbook.addWorksheet('Database Cuti');
-
-		worksheet.columns = [
-			{ header: 'NO', key: 'id', width: 10 },
-			{ header: 'Nama Karyawan', key: 'employeeName', width: 28 },
-			{ header: 'NIK', key: 'employeeNo', width: 18 },
-			{ header: 'Jenis Cuti', key: 'leaveType', width: 22 },
-			{ header: 'Jumlah Cuti', key: 'leaveDays', width: 14 },
-			{ header: 'Periode Dari', key: 'periodStart', width: 16 },
-			{ header: 'Periode Sampai', key: 'periodEnd', width: 16 },
-			{ header: 'Sisa Cuti', key: 'remainingLeave', width: 14 },
-			{ header: 'Catatan', key: 'notes', width: 36 },
-		];
-
-		worksheet.getRow(1).font = { bold: true };
-		worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
-
-		filteredRows.forEach((row) => {
-			worksheet.addRow({
-				id: row.id,
-				employeeName: row.employeeName,
-				employeeNo: row.employeeNo,
-				leaveType: row.leaveType,
-				leaveDays: row.leaveDays,
-				periodStart: formatExcelDate(row.periodStart),
-				periodEnd: formatExcelDate(row.periodEnd),
-				remainingLeave: row.remainingLeave,
-				notes: row.notes || '',
-			});
-		});
-
-		worksheet.eachRow((row, rowNumber) => {
-			const targetRow = row;
-
-			targetRow.alignment = {
-				vertical: rowNumber === 1 ? 'middle' : 'top',
-				horizontal: rowNumber === 1 ? 'center' : 'left',
-				wrapText: true,
-			};
-
-			if (rowNumber === 1) {
-				targetRow.fill = {
-					type: 'pattern',
-					pattern: 'solid',
-					fgColor: { argb: 'DDE4EE' },
-				};
-			}
-		});
-
-		const buffer = await workbook.xlsx.writeBuffer();
-		const blob = new Blob([buffer], {
-			type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-		});
-		const url = window.URL.createObjectURL(blob);
-		const link = document.createElement('a');
-
-		link.href = url;
-		link.download = 'database-cuti-karyawan.xlsx';
-		document.body.appendChild(link);
-		link.click();
-		document.body.removeChild(link);
-		window.URL.revokeObjectURL(url);
 	};
 
 	const handleSubmit = async (values) => {

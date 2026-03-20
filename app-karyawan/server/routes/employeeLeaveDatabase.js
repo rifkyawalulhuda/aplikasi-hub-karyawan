@@ -678,6 +678,126 @@ router.get(
 );
 
 router.get(
+	'/export',
+	withAsync(async (_req, res) => {
+		const rows = await prisma.employeeLeaveDatabase.findMany({
+			include: {
+				employee: true,
+				masterCutiKaryawan: true,
+				histories: {
+					include: {
+						employeeLeave: true,
+					},
+					orderBy: { changeDate: 'desc' },
+				},
+			},
+			orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
+		});
+
+		const workbook = new ExcelJS.Workbook();
+		const dataSheet = workbook.addWorksheet('Database Cuti');
+		const historySheet = workbook.addWorksheet('Histori Cuti');
+
+		// Sheet 1: Database Cuti
+		dataSheet.columns = [
+			{ header: 'NO', key: 'id', width: 10 },
+			{ header: 'Nama Karyawan', key: 'employeeName', width: 28 },
+			{ header: 'NIK', key: 'employeeNo', width: 18 },
+			{ header: 'Jenis Cuti', key: 'leaveType', width: 22 },
+			{ header: 'Tahun', key: 'year', width: 10 },
+			{ header: 'Jumlah Cuti', key: 'leaveDays', width: 14 },
+			{ header: 'Periode Dari', key: 'periodStart', width: 16 },
+			{ header: 'Periode Sampai', key: 'periodEnd', width: 16 },
+			{ header: 'Sisa Cuti', key: 'remainingLeave', width: 14 },
+			{ header: 'Catatan', key: 'notes', width: 36 },
+		];
+
+		const headerFont = { bold: true, color: { argb: 'FFFFFFFF' } };
+		const headerFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1565C0' } };
+
+		dataSheet.getRow(1).font = headerFont;
+		dataSheet.getRow(1).fill = headerFill;
+		dataSheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
+
+		rows.forEach((row) => {
+			dataSheet.addRow({
+				id: row.id,
+				employeeName: row.employee.fullName,
+				employeeNo: row.employee.employeeNo,
+				leaveType: row.masterCutiKaryawan.leaveType,
+				year: row.year,
+				leaveDays: row.leaveDays,
+				periodStart: row.periodStart.toISOString().slice(0, 10),
+				periodEnd: row.periodEnd.toISOString().slice(0, 10),
+				remainingLeave: row.remainingLeave,
+				notes: row.notes || '',
+			});
+		});
+
+		// Sheet 2: Histori Cuti
+		historySheet.columns = [
+			{ header: 'ID Database', key: 'dbId', width: 12 },
+			{ header: 'Nama Karyawan', key: 'employeeName', width: 28 },
+			{ header: 'NIK', key: 'employeeNo', width: 18 },
+			{ header: 'Jenis Cuti', key: 'leaveType', width: 22 },
+			{ header: 'Sumber', key: 'source', width: 20 },
+			{ header: 'No. Request', key: 'requestNumber', width: 20 },
+			{ header: 'Tgl Pengajuan', key: 'submittedAt', width: 18 },
+			{ header: 'Periode Dari', key: 'periodStart', width: 16 },
+			{ header: 'Periode Sampai', key: 'periodEnd', width: 16 },
+			{ header: 'Tanggal Perubahan', key: 'changeDate', width: 18 },
+			{ header: 'Jumlah Hari', key: 'leaveDays', width: 14 },
+			{ header: 'Saldo Sebelum', key: 'balanceBefore', width: 16 },
+			{ header: 'Saldo Sesudah', key: 'balanceAfter', width: 16 },
+			{ header: 'Catatan Histori', key: 'notes', width: 40 },
+		];
+
+		historySheet.getRow(1).font = headerFont;
+		historySheet.getRow(1).fill = headerFill;
+		historySheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
+
+		const { getLeaveDatabaseHistorySourceLabel } = await import('../lib/leaveDatabase.js');
+
+		rows.forEach((row) => {
+			row.histories.forEach((history) => {
+				historySheet.addRow({
+					dbId: row.id,
+					employeeName: row.employee.fullName,
+					employeeNo: row.employee.employeeNo,
+					leaveType: row.masterCutiKaryawan.leaveType,
+					source: getLeaveDatabaseHistorySourceLabel(history.sourceType),
+					requestNumber: history.employeeLeave?.requestNumber || '-',
+					submittedAt: history.employeeLeave?.submittedAt ? history.employeeLeave.submittedAt.toISOString().slice(0, 10) : '-',
+					periodStart: history.periodStart ? history.periodStart.toISOString().slice(0, 10) : '-',
+					periodEnd: history.periodEnd ? history.periodEnd.toISOString().slice(0, 10) : '-',
+					changeDate: history.changeDate.toISOString().slice(0, 10),
+					leaveDays: history.leaveDays,
+					balanceBefore: history.balanceBefore,
+					balanceAfter: history.balanceAfter,
+					notes: history.notes || '',
+				});
+			});
+		});
+
+		[dataSheet, historySheet].forEach((sheet) => {
+			sheet.eachRow((row, rowNumber) => {
+				row.alignment = {
+					vertical: rowNumber === 1 ? 'middle' : 'top',
+					horizontal: rowNumber === 1 ? 'center' : 'left',
+					wrapText: true,
+				};
+			});
+		});
+
+		res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+		res.setHeader('Content-Disposition', 'attachment; filename="database-cuti-karyawan-lengkap.xlsx"');
+
+		await workbook.xlsx.write(res);
+		return res.end();
+	}),
+);
+
+router.get(
 	'/',
 	withAsync(async (_req, res) => {
 		const rows = await listLeaveDatabase(prisma);
