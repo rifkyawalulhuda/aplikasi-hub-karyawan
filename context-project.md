@@ -728,6 +728,17 @@ Yang sudah selesai:
     - Riwayat Pengajuan Cuti (5 pengajuan terbaru)
   - Setiap section memiliki tombol deep-link "Lihat semua" yang langsung filter ke halaman terkait dengan nama karyawan
   - Backend endpoint baru `GET /api/master/employees/:id/summary` mengambil semua data terkait sekaligus
+- Menambahkan schema, migration, API CRUD, route, menu, dan halaman **Master Hari Libur** di bawah Master Data Dokumen:
+  - Input field: `Periode Tahun` (max 5 karakter, number), `Tanggal`, dan `Nama Hari Libur`.
+  - Berhasil menangani normalisasi data tipe angka dan tanggal pada API master data generik.
+  - Form Edit diperbaiki agar format tanggal `YYYY-MM-DD` muncul dengan benar di native input browser.
+- Mengubah sumber data hari libur pada kalkulasi otomatis "Jumlah Hari Cuti":
+  - Tidak lagi mengambil dari API eksternal `libur.deno.dev`.
+  - Sekarang sepenuhnya mengambil dari database **Master Hari Libur** yang dikelola oleh Admin.
+- Refactor UI PWA Mobile pada modul Cuti:
+  - Halaman **Detail Cuti** (requester): Menghapus kartu detail redundan, memindahkan tombol Kembali dan Nomor Pengajuan ke header, serta memindahkan tombol **Print A4**, **Resubmit**, dan **Cancel** ke dalam kartu Flow Approval.
+  - Halaman **Detail Approval** (approver): Kartu detail utama otomatis disembunyikan jika status bukan lagi "Menunggu Tindakan" agar user fokus ke Timeline Approval.
+  - Halaman **Daftar Cuti**: Informasi "Stage aktif" dan "Approver aktif" pada kartu pengajuan disembunyikan jika status pengajuan bukan lagi "Dalam Approval" (PENDING_APPROVAL) untuk tampilan yang lebih ringkas.
 ## Struktur Teknis Awal yang Sudah Dibangun
 
 - Frontend:
