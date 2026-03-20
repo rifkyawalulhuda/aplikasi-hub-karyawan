@@ -709,7 +709,14 @@ Yang sudah selesai:
 - Menambahkan reminder operasional pada notifikasi header untuk flow cuti terlalu lama, cuti rejected, dan email workflow gagal.
 - Menambahkan status `Sudah dibaca` dan `Belum dibaca` pada panel notifikasi serta verifikasi UI klik/deep-link secara langsung di browser lokal.
 - Verifikasi `lint`, `build`, dan smoke test API ke database berhasil.
-
+- Menyesuaikan bottom navigation PWA Karyawan dengan menggabungkan menu `Bimbingan` dan `Peringatan` ke dalam tab `Catatan` yang memicu *Bottom Sheet* Drawer.
+- Memperbaiki styling bottom navigation PWA untuk memastikan ikon tab aktif selalu konsisten berwarna biru saat diklik.
+- Menyesuaikan UI dashboard cuti PWA karyawan untuk menampilkan kartu ringkasan saldo riil untuk masing-masing jenis cuti aktif.
+- Menambahkan tombol dropdown notifikasi (lonceng) pada header PWA khusus Karyawan beserta badge _unread_.
+- Menambahkan endpoint live `/api/employee-me/notifications` khusus PWA.
+- Menambahkan fungsi klik/baca notifikasi khusus PWA melalui `/api/employee-me/notifications/read` dan `read-all` yang transparan menggunakan tabel read-state Admin berbasis `employeeId`.
+- Fitur notifikasi PWA sekarang menyaring status Cuti Menunggu Approval, Cuti Disetujui/Ditolak (14 hari terakhir), Bimbingan (14 hari), dan Peringatan (30 hari).
+- Menyelesaikan perbaikan _bug_ destructuring auth pada fungsionalitas _hooks_ React di notifikasi PWA Karyawan.
 ## Struktur Teknis Awal yang Sudah Dibangun
 
 - Frontend:
