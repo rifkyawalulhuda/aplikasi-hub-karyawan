@@ -1,4 +1,3 @@
-import Checkbox from '@mui/material/Checkbox';
 import Chip from '@mui/material/Chip';
 import IconButton from '@mui/material/IconButton';
 import Stack from '@mui/material/Stack';
@@ -23,16 +22,7 @@ const stickyActionCellSx = {
 	boxShadow: '-6px 0 8px -8px rgba(15, 23, 42, 0.35)',
 };
 
-function LicenseCertificationTable({
-	rows,
-	selectedRowIds,
-	allRowsSelected,
-	someRowsSelected,
-	onToggleSelectAll,
-	onToggleSelectRow,
-	onEdit,
-	onDelete,
-}) {
+function LicenseCertificationTable({ rows, onEdit, onDelete }) {
 	if (rows.length === 0) {
 		return (
 			<Stack py={8} alignItems="center" spacing={1}>
@@ -45,20 +35,6 @@ function LicenseCertificationTable({
 	}
 
 	const headCells = [
-		{
-			id: 'select',
-			label: (
-				<Checkbox
-					size="small"
-					checked={allRowsSelected}
-					indeterminate={someRowsSelected}
-					onChange={(event) => onToggleSelectAll(event.target.checked)}
-					inputProps={{ 'aria-label': 'Pilih semua data lisensi dan sertifikasi' }}
-				/>
-			),
-			disableSort: true,
-			sx: { width: 56, px: 1.5 },
-		},
 		{ id: 'id', label: 'NO' },
 		{ id: 'employeeName', label: 'NAMA' },
 		{ id: 'employeeNo', label: 'NIK' },
@@ -91,54 +67,42 @@ function LicenseCertificationTable({
 				},
 			}}
 			tableContainerProps={{ sx: { maxHeight: 520 } }}
-			render={(row, _index, meta) => {
-				const isSelected = selectedRowIds.includes(row.id);
-
-				return (
-					<TableRow hover key={row.id} selected={isSelected}>
-						<TableCell padding="checkbox" sx={{ pl: 1.5 }}>
-							<Checkbox
-								size="small"
-								checked={isSelected}
-								onChange={(event) => onToggleSelectRow(row.id, event.target.checked)}
-								inputProps={{ 'aria-label': `Pilih data lisensi ${row.employeeName}` }}
-							/>
-						</TableCell>
-						<TableCell>{meta?.rowNumber || 1}</TableCell>
-						<TableCell>{row.employeeName}</TableCell>
-						<TableCell>{row.employeeNo}</TableCell>
-						<TableCell>{row.documentName}</TableCell>
-						<TableCell>{row.documentType}</TableCell>
-						<TableCell>{row.type}</TableCell>
-						<TableCell>{row.documentNumber}</TableCell>
-						<TableCell>{row.issuer}</TableCell>
-						<TableCell>{formatLicenseDate(row.expiryDate)}</TableCell>
-						<TableCell>
-							<Chip
-								size="small"
-								label={row.status}
-								color={getLicenseStatusChipColor(row.status)}
-								variant="outlined"
-							/>
-						</TableCell>
-						<TableCell>{row.notes || '-'}</TableCell>
-						<TableCell sx={{ ...stickyActionCellSx, py: 1.25 }}>
-							<Stack direction="row" spacing={0.25} justifyContent="center">
-								<Tooltip title="Edit">
-									<IconButton color="primary" size="small" onClick={() => onEdit(row)}>
-										<EditOutlinedIcon fontSize="small" />
-									</IconButton>
-								</Tooltip>
-								<Tooltip title="Hapus">
-									<IconButton color="error" size="small" onClick={() => onDelete(row)}>
-										<DeleteOutlineOutlinedIcon fontSize="small" />
-									</IconButton>
-								</Tooltip>
-							</Stack>
-						</TableCell>
-					</TableRow>
-				);
-			}}
+			render={(row, _index, meta) => (
+				<TableRow hover key={row.id}>
+					<TableCell>{meta?.rowNumber || 1}</TableCell>
+					<TableCell>{row.employeeName}</TableCell>
+					<TableCell>{row.employeeNo}</TableCell>
+					<TableCell>{row.documentName}</TableCell>
+					<TableCell>{row.documentType}</TableCell>
+					<TableCell>{row.type}</TableCell>
+					<TableCell>{row.documentNumber}</TableCell>
+					<TableCell>{row.issuer}</TableCell>
+					<TableCell>{formatLicenseDate(row.expiryDate)}</TableCell>
+					<TableCell>
+						<Chip
+							size="small"
+							label={row.status}
+							color={getLicenseStatusChipColor(row.status)}
+							variant="outlined"
+						/>
+					</TableCell>
+					<TableCell>{row.notes || '-'}</TableCell>
+					<TableCell sx={{ ...stickyActionCellSx, py: 1.25 }}>
+						<Stack direction="row" spacing={0.25} justifyContent="center">
+							<Tooltip title="Edit">
+								<IconButton color="primary" size="small" onClick={() => onEdit(row)}>
+									<EditOutlinedIcon fontSize="small" />
+								</IconButton>
+							</Tooltip>
+							<Tooltip title="Hapus">
+								<IconButton color="error" size="small" onClick={() => onDelete(row)}>
+									<DeleteOutlineOutlinedIcon fontSize="small" />
+								</IconButton>
+							</Tooltip>
+						</Stack>
+					</TableCell>
+				</TableRow>
+			)}
 		/>
 	);
 }
