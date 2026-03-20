@@ -1,5 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+
+import Badge from '@mui/material/Badge';
 
 import Box from '@mui/material/Box';
 import BottomNavigation from '@mui/material/BottomNavigation';
@@ -24,6 +26,7 @@ import ListItemText from '@mui/material/ListItemText';
 
 import EmployeeNotificationButton from '@/components/employeePortal/employeeNotificationButton';
 import { useEmployeeAuth } from '@/contexts/employeeAuthContext';
+import { employeeMeRequest } from '@/services/employeeApi';
 
 import logo from '@/assets/images/logo/png/logo_sankyu.png';
 
@@ -97,8 +100,20 @@ function getCurrentValue(pathname) {
 function EmployeeMobileLayout() {
 	const location = useLocation();
 	const navigate = useNavigate();
-	const { logout } = useEmployeeAuth();
+	const { user: employee, logout } = useEmployeeAuth();
 	const [drawerOpen, setDrawerOpen] = useState(false);
+	const [pendingApprovalsCount, setPendingApprovalsCount] = useState(0);
+
+	useEffect(() => {
+		if (employee?.id) {
+			employeeMeRequest('/notifications')
+				.then((res) => {
+					const count = res.items?.filter((item) => item.category === 'LEAVE_APPROVAL_PENDING').length || 0;
+					setPendingApprovalsCount(count);
+				})
+				.catch(() => {});
+		}
+	}, [employee?.id, location.pathname]);
 
 	return (
 		<Box
@@ -228,7 +243,25 @@ function EmployeeMobileLayout() {
 							key={item.value}
 							label={item.label}
 							value={item.value}
-							icon={item.icon}
+							icon={
+								item.value === '/karyawan/cuti' ? (
+									<Badge
+										color="error"
+										variant="dot"
+										invisible={pendingApprovalsCount === 0}
+										sx={{
+											'& .MuiBadge-badge': {
+												right: 2,
+												top: 2,
+											},
+										}}
+									>
+										{item.icon}
+									</Badge>
+								) : (
+									item.icon
+								)
+							}
 						/>
 					))}
 				</BottomNavigation>

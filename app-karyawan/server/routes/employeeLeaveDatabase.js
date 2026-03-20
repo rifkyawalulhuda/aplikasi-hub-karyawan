@@ -53,16 +53,7 @@ function getLeaveYear(periodStart, periodEnd) {
 		return null;
 	}
 
-	const startYear = periodStart.getUTCFullYear();
-	const endYear = periodEnd.getUTCFullYear();
-
-	if (startYear !== endYear) {
-		throw Object.assign(new Error('Periode Dari dan Periode Sampai harus berada pada tahun yang sama.'), {
-			statusCode: 400,
-		});
-	}
-
-	return startYear;
+	return periodStart.getUTCFullYear();
 }
 
 function validatePayload(payload = {}) {
@@ -447,8 +438,8 @@ router.get(
 			'Terisi otomatis dari Nama Karyawan yang dipilih',
 			'Pilih dari dropdown Data Master Cuti Karyawan terbaru',
 			'Isi kuota cuti tahunan utama',
-			'Format tanggal DD/MM/YYYY dan harus dalam tahun yang sama',
-			'Format tanggal DD/MM/YYYY dan harus dalam tahun yang sama',
+			'Format tanggal DD/MM/YYYY',
+			'Format tanggal DD/MM/YYYY',
 			'Isi saldo berjalan saat ini',
 			'Opsional',
 		];
@@ -553,7 +544,7 @@ router.get(
 			'Kolom Nama Karyawan adalah dropdown utama yang selalu dibentuk dari Data Master Karyawan saat template diunduh.',
 			'Kolom NIK terisi otomatis mengikuti Nama Karyawan yang dipilih.',
 			'Kolom Jenis Cuti adalah dropdown yang selalu dibentuk dari Data Master Cuti Karyawan saat template diunduh.',
-			'Kolom Periode Dari dan Periode Sampai wajib berada di tahun yang sama karena row ini mewakili saldo utama tahunan.',
+			'Kolom Periode Dari dan Periode Sampai mewakili batas waku penggunaan saldo.',
 			'Kolom Jumlah Cuti adalah kuota tahunan awal, sedangkan Sisa Cuti adalah saldo berjalan saat ini.',
 			'Jika ada baris gagal saat import, sistem akan mengunduh file error report.',
 		].forEach((text) => guideSheet.addRow([text]));
