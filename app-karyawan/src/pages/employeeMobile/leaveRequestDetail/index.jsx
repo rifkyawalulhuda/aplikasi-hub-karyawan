@@ -14,11 +14,9 @@ import FeedbackState from '@/components/employeePortal/feedbackState';
 import LeaveDecisionDialog from '@/components/employeePortal/leaveDecisionDialog';
 import LeaveRequestFormDialog from '@/components/employeePortal/leaveRequestFormDialog';
 import LeaveRequestTimeline from '@/components/employeePortal/leaveRequestTimeline';
-import ReplacementEmployeeList from '@/components/employeePortal/replacementEmployeeList';
-import LeaveStatusChip from '@/components/employeePortal/leaveStatusChip';
 import { useEmployeeAuth } from '@/contexts/employeeAuthContext';
 import { employeeMeRequest } from '@/services/employeeApi';
-import { formatLongDate, getEmployeePortalErrorMessage, handleEmployeeUnauthorized } from '@/utils/employeePortal';
+import { getEmployeePortalErrorMessage, handleEmployeeUnauthorized } from '@/utils/employeePortal';
 
 function EmployeeLeaveRequestDetailPage() {
 	const { id } = useParams();
@@ -131,80 +129,67 @@ function EmployeeLeaveRequestDetailPage() {
 
 	return (
 		<>
-			<Stack spacing={2}>
+			<Stack spacing={2.5}>
+				<Stack spacing={1.5}>
+					<Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1}>
+						<BoxButtonBack onBack={() => navigate('/karyawan/cuti')} />
+					</Stack>
+				</Stack>
+
 				<Paper sx={{ p: 2.5, borderRadius: 4 }}>
-					<Stack spacing={1.5}>
-						<Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1}>
-							<BoxButtonBack onBack={() => navigate('/karyawan/cuti')} />
-							<LeaveStatusChip status={record?.status} label={record?.statusLabel} />
-						</Stack>
-						<Typography variant="h6" sx={{ color: '#123B66', fontWeight: 700 }}>
+					<Stack spacing={2}>
+						<Typography variant="h5" sx={{ color: '#123B66', fontWeight: 800 }}>
 							{record?.requestNumber}
 						</Typography>
-						<Typography variant="body2" color="text.secondary">
-							{record?.leaveType} | {record?.leaveDays} hari
-						</Typography>
-						<Typography variant="body2" color="text.secondary">
-							Tanggal Pengajuan: {record?.submissionDate ? formatLongDate(record.submissionDate) : '-'}
-						</Typography>
-						<Typography variant="body2" color="text.secondary">
-							{formatLongDate(record?.periodStart)} - {formatLongDate(record?.periodEnd)}
-						</Typography>
-						<Typography variant="body2" color="text.secondary">
-							Jumlah cuti tersedia: {record?.availableLeaveBalance} | Sisa cuti: {record?.remainingLeave}
-						</Typography>
-						<Typography variant="body2" color="text.secondary">
-							Alamat selama cuti: {record?.leaveAddress || '-'}
-						</Typography>
-						<Typography variant="body2" color="text.secondary">
-							Alasan cuti: {record?.leaveReason || '-'}
-						</Typography>
-						<Stack spacing={0.5}>
-							<Typography variant="body2" color="text.secondary">
-								Pengganti selama cuti:
+
+						<Stack direction="row" justifyContent="space-between" alignItems="center">
+							<Typography variant="h6" sx={{ color: '#123B66', fontWeight: 700 }}>
+								Flow Approval
 							</Typography>
-							<ReplacementEmployeeList items={record?.replacementEmployees || []} />
-						</Stack>
-						<Typography variant="body2" color="text.secondary">
-							Catatan tambahan: {record?.notes || '-'}
-						</Typography>
-						{record?.rejectionNote ? (
-							<Typography variant="body2" color="error.main">
-								Alasan reject terakhir: {record.rejectionNote}
-							</Typography>
-						) : null}
-						<Divider />
-						<Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
 							{record?.status === 'APPROVED' ? (
 								<Button
 									variant="contained"
 									color="primary"
+									size="small"
 									startIcon={<PrintOutlinedIcon />}
 									onClick={handleOpenPrint}
+									sx={{ borderRadius: 2 }}
 								>
 									Print A4
 								</Button>
 							) : null}
-							{record?.canResubmit ? (
-								<Button variant="contained" onClick={() => setResubmitOpen(true)}>
-									Resubmit
-								</Button>
-							) : null}
-							{record?.canCancel ? (
-								<Button variant="outlined" color="error" onClick={() => setCancelOpen(true)}>
-									Cancel
-								</Button>
-							) : null}
 						</Stack>
-					</Stack>
-				</Paper>
 
-				<Paper sx={{ p: 2.5, borderRadius: 4 }}>
-					<Stack spacing={1.5}>
-						<Typography variant="h6" sx={{ color: '#123B66', fontWeight: 700 }}>
-							Flow Approval
-						</Typography>
 						<LeaveRequestTimeline revisions={record?.revisions || []} approvals={record?.approvals || []} />
+
+						{record?.canResubmit || record?.canCancel ? (
+							<>
+								<Divider />
+								<Stack direction="row" spacing={1.5}>
+									{record?.canResubmit ? (
+										<Button
+											fullWidth
+											variant="contained"
+											onClick={() => setResubmitOpen(true)}
+											sx={{ py: 1.25, borderRadius: 3 }}
+										>
+											Resubmit
+										</Button>
+									) : null}
+									{record?.canCancel ? (
+										<Button
+											fullWidth
+											variant="outlined"
+											color="error"
+											onClick={() => setCancelOpen(true)}
+											sx={{ py: 1.25, borderRadius: 3 }}
+										>
+											Cancel
+										</Button>
+									) : null}
+								</Stack>
+							</>
+						) : null}
 					</Stack>
 				</Paper>
 			</Stack>
