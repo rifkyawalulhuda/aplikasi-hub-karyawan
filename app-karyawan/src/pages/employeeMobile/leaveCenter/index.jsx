@@ -12,6 +12,7 @@ import Tabs from '@mui/material/Tabs';
 import TextField from '@mui/material/TextField';
 import MenuItem from '@mui/material/MenuItem';
 import Typography from '@mui/material/Typography';
+import Badge from '@mui/material/Badge';
 
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import ArrowForwardOutlinedIcon from '@mui/icons-material/ArrowForwardOutlined';
@@ -125,6 +126,7 @@ function EmployeeLeaveCenterPage() {
 	});
 	const [requestData, setRequestData] = useState({ year: new Date().getFullYear(), balance: null, rows: [] });
 	const [approvalRows, setApprovalRows] = useState([]);
+	const [pendingApprovalsCount, setPendingApprovalsCount] = useState(0);
 
 	const loadData = async () => {
 		setLoading(true);
@@ -137,15 +139,22 @@ function EmployeeLeaveCenterPage() {
 			if (filters.endDate) queryParams.append('endDate', filters.endDate);
 			const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
 
-			const [requestsResponse, approvalsResponse, formOptionsResponse] = await Promise.all([
-				employeeMeRequest(`/leave-requests${queryString}`),
-				employeeMeRequest(`/leave-approvals${queryString}`),
-				employeeMeRequest('/leave-form-options'),
-			]);
+			const [requestsResponse, approvalsResponse, formOptionsResponse, notificationsResponse] = await Promise.all(
+				[
+					employeeMeRequest(`/leave-requests${queryString}`),
+					employeeMeRequest(`/leave-approvals${queryString}`),
+					employeeMeRequest('/leave-form-options'),
+					employeeMeRequest('/notifications').catch(() => ({ items: [] })),
+				],
+			);
+
+			const pendingCount =
+				notificationsResponse.items?.filter((item) => item.category === 'LEAVE_APPROVAL_PENDING').length || 0;
 
 			setRequestData(requestsResponse);
 			setApprovalRows(approvalsResponse);
 			setFormOptions(formOptionsResponse);
+			setPendingApprovalsCount(pendingCount);
 		} catch (requestError) {
 			if (
 				handleEmployeeUnauthorized({
@@ -275,7 +284,19 @@ function EmployeeLeaveCenterPage() {
 						<Divider />
 						<Tabs value={tab} onChange={(event, value) => setTab(value)} variant="fullWidth">
 							<Tab value="requests" label="Cuti Saya" />
-							<Tab value="approvals" label="Approval Saya" />
+							<Tab
+								value="approvals"
+								label={
+									<Badge
+										color="error"
+										variant="dot"
+										invisible={pendingApprovalsCount === 0}
+										sx={{ '& .MuiBadge-badge': { right: -6, top: 4 } }}
+									>
+										Approval Saya
+									</Badge>
+								}
+							/>
 						</Tabs>
 						<Divider />
 						<Stack spacing={1.5}>
