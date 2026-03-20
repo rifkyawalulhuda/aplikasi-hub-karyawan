@@ -16,6 +16,7 @@ import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
+import TablePagination from '@mui/material/TablePagination';
 import TableRow from '@mui/material/TableRow';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
@@ -64,6 +65,8 @@ function EmployeeLeaveFlowPage() {
 	const [searchKeyword, setSearchKeyword] = useUrlSearchKeyword();
 	const [statusFilter, setStatusFilter] = useState('ALL');
 	const [stageFilter, setStageFilter] = useState('ALL');
+	const [page, setPage] = useState(0);
+	const [rowsPerPage, setRowsPerPage] = useState(15);
 
 	const loadData = async () => {
 		setLoading(true);
@@ -120,6 +123,15 @@ function EmployeeLeaveFlowPage() {
 			);
 		});
 	}, [rows, searchKeyword, statusFilter, stageFilter]);
+
+	useEffect(() => {
+		setPage(0);
+	}, [searchKeyword, statusFilter, stageFilter]);
+
+	const paginatedRows = useMemo(
+		() => filteredRows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage),
+		[filteredRows, page, rowsPerPage],
+	);
 
 	const summary = useMemo(
 		() => ({
@@ -267,8 +279,8 @@ function EmployeeLeaveFlowPage() {
 									</TableRow>
 								</TableHead>
 								<TableBody>
-									{filteredRows.length ? (
-										filteredRows.map((row) => (
+									{paginatedRows.length ? (
+										paginatedRows.map((row) => (
 											<TableRow key={row.id} hover>
 												<TableCell>
 													<Stack spacing={0.25}>
@@ -328,6 +340,18 @@ function EmployeeLeaveFlowPage() {
 									)}
 								</TableBody>
 							</Table>
+							<TablePagination
+								rowsPerPageOptions={[15, 30, 50, 100]}
+								component="div"
+								count={filteredRows.length}
+								rowsPerPage={rowsPerPage}
+								page={page}
+								onPageChange={(event, newPage) => setPage(newPage)}
+								onRowsPerPageChange={(event) => {
+									setRowsPerPage(parseInt(event.target.value, 10));
+									setPage(0);
+								}}
+							/>
 						</TableContainer>
 					)}
 				</Card>
