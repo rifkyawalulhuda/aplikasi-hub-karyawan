@@ -25,7 +25,7 @@ import ListItemText from '@mui/material/ListItemText';
 import EmployeeNotificationButton from '@/components/employeePortal/employeeNotificationButton';
 import { useEmployeeAuth } from '@/contexts/employeeAuthContext';
 
-import logo from '@/assets/images/logo/png/Sankyu_logo_redicon_whitetext.png';
+import logo from '@/assets/images/logo/png/logo_sankyu.png';
 
 const NAV_ITEMS = [
 	{
