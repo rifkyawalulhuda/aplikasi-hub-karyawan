@@ -9,6 +9,8 @@ import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
+import TextField from '@mui/material/TextField';
+import MenuItem from '@mui/material/MenuItem';
 import Typography from '@mui/material/Typography';
 
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
@@ -110,6 +112,11 @@ function EmployeeLeaveCenterPage() {
 	const [error, setError] = useState('');
 	const [tab, setTab] = useState('requests');
 	const [dialogOpen, setDialogOpen] = useState(false);
+	const [filters, setFilters] = useState({
+		status: '',
+		startDate: '',
+		endDate: '',
+	});
 	const [formOptions, setFormOptions] = useState({
 		submissionDate: '',
 		year: new Date().getFullYear(),
@@ -124,9 +131,15 @@ function EmployeeLeaveCenterPage() {
 		setError('');
 
 		try {
+			const queryParams = new URLSearchParams();
+			if (filters.status) queryParams.append('status', filters.status);
+			if (filters.startDate) queryParams.append('startDate', filters.startDate);
+			if (filters.endDate) queryParams.append('endDate', filters.endDate);
+			const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
+
 			const [requestsResponse, approvalsResponse, formOptionsResponse] = await Promise.all([
-				employeeMeRequest('/leave-requests'),
-				employeeMeRequest('/leave-approvals'),
+				employeeMeRequest(`/leave-requests${queryString}`),
+				employeeMeRequest(`/leave-approvals${queryString}`),
 				employeeMeRequest('/leave-form-options'),
 			]);
 
@@ -153,7 +166,7 @@ function EmployeeLeaveCenterPage() {
 
 	useEffect(() => {
 		loadData();
-	}, []);
+	}, [filters.status, filters.startDate, filters.endDate]);
 
 	const handleSubmit = async (values) => {
 		setSubmitting(true);
@@ -264,6 +277,43 @@ function EmployeeLeaveCenterPage() {
 							<Tab value="requests" label="Cuti Saya" />
 							<Tab value="approvals" label="Approval Saya" />
 						</Tabs>
+						<Divider />
+						<Stack spacing={1.5}>
+							<TextField
+								select
+								fullWidth
+								size="small"
+								label="Status Cuti"
+								value={filters.status}
+								onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+								InputLabelProps={{ shrink: true }}
+							>
+								<MenuItem value="">Semua Status</MenuItem>
+								<MenuItem value="APPROVED">Approved</MenuItem>
+								<MenuItem value="REJECTED">Rejected</MenuItem>
+								<MenuItem value="CANCELLED">Dibatalkan</MenuItem>
+							</TextField>
+							<Stack direction="row" spacing={1.5}>
+								<TextField
+									type="date"
+									fullWidth
+									size="small"
+									label="Dari Tanggal"
+									value={filters.startDate}
+									onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
+									InputLabelProps={{ shrink: true }}
+								/>
+								<TextField
+									type="date"
+									fullWidth
+									size="small"
+									label="Sampai Tanggal"
+									value={filters.endDate}
+									onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
+									InputLabelProps={{ shrink: true }}
+								/>
+							</Stack>
+						</Stack>
 					</Stack>
 				</Paper>
 

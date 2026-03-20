@@ -582,11 +582,31 @@ async function createLeaveRequestRevision(tx, payload) {
 	};
 }
 
-async function listApprovalsForEmployee(employeeId) {
+async function listApprovalsForEmployee(employeeId, options = {}) {
+	const { status, startDate, endDate } = options;
+	
+	const whereClause = {
+		approverEmployeeId: employeeId,
+	};
+
+	if (status) {
+		whereClause.status = status;
+	}
+
+	if (startDate || endDate) {
+		whereClause.employeeLeave = {
+			periodStart: {},
+		};
+		if (startDate) {
+			whereClause.employeeLeave.periodStart.gte = new Date(startDate);
+		}
+		if (endDate) {
+			whereClause.employeeLeave.periodStart.lte = new Date(`${endDate}T23:59:59.999Z`);
+		}
+	}
+
 	const rows = await prisma.employeeLeaveApproval.findMany({
-		where: {
-			approverEmployeeId: employeeId,
-		},
+		where: whereClause,
 		include: {
 			approverEmployee: {
 				include: {
