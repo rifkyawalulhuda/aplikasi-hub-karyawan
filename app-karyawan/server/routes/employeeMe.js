@@ -446,13 +446,31 @@ router.get('/warning-letters', async (req, res, next) => {
 
 router.get('/leave-requests', async (req, res, next) => {
 	try {
+		const { status, startDate, endDate } = req.query;
 		const currentYear = new Date().getFullYear();
+
+		const whereClause = {
+			employeeId: req.employee.id,
+		};
+
+		if (status) {
+			whereClause.status = status;
+		}
+
+		if (startDate || endDate) {
+			whereClause.periodStart = {};
+			if (startDate) {
+				whereClause.periodStart.gte = new Date(startDate);
+			}
+			if (endDate) {
+				whereClause.periodStart.lte = new Date(`${endDate}T23:59:59.999Z`);
+			}
+		}
+
 		const [balance, rows] = await Promise.all([
 			getLeaveDatabaseBalance(prisma, req.employee.id, currentYear).catch(() => null),
 			prisma.employeeLeave.findMany({
-				where: {
-					employeeId: req.employee.id,
-				},
+				where: whereClause,
 				include: {
 					employee: true,
 					masterCutiKaryawan: true,
@@ -832,7 +850,8 @@ router.post('/leave-requests/:id/cancel', async (req, res, next) => {
 
 router.get('/leave-approvals', async (req, res, next) => {
 	try {
-		const rows = await listApprovalsForEmployee(req.employee.id);
+		const { status, startDate, endDate } = req.query;
+		const rows = await listApprovalsForEmployee(req.employee.id, { status, startDate, endDate });
 		return res.json(rows);
 	} catch (error) {
 		return next(error);
