@@ -53,7 +53,6 @@ function UnitLicenseCertificationsPage() {
 	const [dateFrom, setDateFrom] = useState('');
 	const [dateTo, setDateTo] = useState('');
 	const [statusFilter, setStatusFilter] = useState('ALL');
-	const [selectedRowIds, setSelectedRowIds] = useState([]);
 
 	useEffect(() => {
 		const init = async () => {
@@ -115,24 +114,6 @@ function UnitLicenseCertificationsPage() {
 		);
 	});
 
-	useEffect(() => {
-		const filteredRowIdSet = new Set(filteredRows.map((row) => row.id));
-
-		setSelectedRowIds((currentIds) => {
-			const nextIds = currentIds.filter((id) => filteredRowIdSet.has(id));
-
-			if (nextIds.length === currentIds.length && nextIds.every((id, index) => id === currentIds[index])) {
-				return currentIds;
-			}
-
-			return nextIds;
-		});
-	}, [filteredRows]);
-
-	const selectedRows = filteredRows.filter((row) => selectedRowIds.includes(row.id));
-	const allRowsSelected = filteredRows.length > 0 && selectedRows.length === filteredRows.length;
-	const someRowsSelected = selectedRows.length > 0 && selectedRows.length < filteredRows.length;
-
 	const closeFormDialog = () => {
 		setFormOpen(false);
 		setSelectedItem(null);
@@ -141,20 +122,6 @@ function UnitLicenseCertificationsPage() {
 	const closeDeleteDialog = () => {
 		setDeleteOpen(false);
 		setSelectedItem(null);
-	};
-
-	const handleToggleSelectRow = (id, checked) => {
-		setSelectedRowIds((currentIds) => {
-			if (checked) {
-				return currentIds.includes(id) ? currentIds : [...currentIds, id];
-			}
-
-			return currentIds.filter((currentId) => currentId !== id);
-		});
-	};
-
-	const handleToggleSelectAll = (checked) => {
-		setSelectedRowIds(checked ? filteredRows.map((row) => row.id) : []);
 	};
 
 	const handleSubmit = async (values) => {
@@ -376,15 +343,6 @@ function UnitLicenseCertificationsPage() {
 						</Grid>
 						<Grid item xs={12} md="auto" sx={{ ml: { md: 'auto' } }}>
 							<Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
-								{selectedRows.length > 0 && (
-									<Typography
-										variant="body2"
-										color="text.secondary"
-										sx={{ alignSelf: 'center', minWidth: { sm: 120 } }}
-									>
-										{selectedRows.length} data dipilih
-									</Typography>
-								)}
 								<Button
 									variant="outlined"
 									startIcon={<DownloadOutlinedIcon />}
@@ -412,11 +370,6 @@ function UnitLicenseCertificationsPage() {
 				) : (
 					<UnitLicenseCertificationTable
 						rows={filteredRows}
-						selectedRowIds={selectedRowIds}
-						allRowsSelected={allRowsSelected}
-						someRowsSelected={someRowsSelected}
-						onToggleSelectAll={handleToggleSelectAll}
-						onToggleSelectRow={handleToggleSelectRow}
 						onEdit={(item) => {
 							setSelectedItem(item);
 							setFormOpen(true);
