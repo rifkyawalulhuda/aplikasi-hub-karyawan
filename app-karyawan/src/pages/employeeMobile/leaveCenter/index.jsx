@@ -60,16 +60,12 @@ function LeaveRequestCard({ item, onOpen }) {
 				<Typography variant="body2" color="text.secondary">
 					{formatLongDate(item.periodStart)} - {formatLongDate(item.periodEnd)} | {item.leaveDays} hari
 				</Typography>
-				{item.status === 'IN_APPROVAL' && (
-					<>
-						<Typography variant="body2" color="text.secondary">
-							Stage aktif: {item.activeStageLabel || '-'}
-						</Typography>
-						<Typography variant="body2" color="text.secondary">
-							Approver aktif: {item.activeApproverNames || '-'}
-						</Typography>
-					</>
-				)}
+				<Typography variant="body2" color="text.secondary">
+					Stage aktif: {item.activeStageLabel || '-'}
+				</Typography>
+				<Typography variant="body2" color="text.secondary">
+					Approver aktif: {item.activeApproverNames || '-'}
+				</Typography>
 				<Button variant="text" endIcon={<ArrowForwardOutlinedIcon />} onClick={() => onOpen(item.id)}>
 					Lihat Detail
 				</Button>
