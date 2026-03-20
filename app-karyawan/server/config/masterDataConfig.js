@@ -203,6 +203,33 @@ const MASTER_DATA_CONFIG = {
 			},
 		],
 	},
+	'master-holidays': {
+		label: 'Master Hari Libur',
+		model: 'masterHoliday',
+		path: 'master-holidays',
+		fields: [
+			{
+				name: 'year',
+				label: 'Periode Tahun',
+				type: 'number',
+				required: true,
+				searchable: true,
+			},
+			{
+				name: 'holidayDate',
+				label: 'Tanggal',
+				type: 'date',
+				required: true,
+				searchable: true,
+			},
+			{
+				name: 'name',
+				label: 'Nama Hari Libur',
+				required: true,
+				searchable: true,
+			},
+		],
+	},
 };
 
 export default MASTER_DATA_CONFIG;

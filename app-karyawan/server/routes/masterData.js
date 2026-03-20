@@ -54,6 +54,19 @@ function getFields(config) {
 }
 
 function normalizeFieldValue(fieldConfig, value) {
+	if (value === undefined || value === null || value === '') {
+		return null;
+	}
+
+	if (fieldConfig.type === 'number') {
+		return Number(value);
+	}
+
+	if (fieldConfig.type === 'date') {
+		const date = new Date(value);
+		return Number.isNaN(date.getTime()) ? null : date;
+	}
+
 	if (fieldConfig.type === 'multiline') {
 		return normalizeMultilineString(value);
 	}
@@ -69,7 +82,7 @@ async function buildPayload(config, body = {}, currentId = null) {
 	for (const fieldConfig of fields) {
 		const value = normalizeFieldValue(fieldConfig, body?.[fieldConfig.name]);
 
-		if (fieldConfig.required && !value) {
+		if (fieldConfig.required && value === null) {
 			throw Object.assign(new Error(`${fieldConfig.label} wajib diisi.`), { statusCode: 400 });
 		}
 
@@ -83,12 +96,15 @@ async function buildPayload(config, body = {}, currentId = null) {
 		}
 
 		if (fieldConfig.unique && value) {
+			const isString = typeof value === 'string';
 			const duplicate = await delegate.findFirst({
 				where: {
-					[fieldConfig.name]: {
-						equals: value,
-						mode: 'insensitive',
-					},
+					[fieldConfig.name]: isString
+						? {
+								equals: value,
+								mode: 'insensitive',
+						  }
+						: value,
 					...(currentId ? { NOT: { id: currentId } } : {}),
 				},
 			});
@@ -327,7 +343,7 @@ router.get(
 
 			if (fieldConfig?.options?.length) {
 				const colLetter = dataSheet.getColumn(colIndex + 1).letter;
-				const options = fieldConfig.options;
+				const { options } = fieldConfig;
 
 				// Write options to Constants sheet
 				options.forEach((option, index) => {
@@ -353,14 +369,8 @@ router.get(
 			}
 		});
 
-		res.setHeader(
-			'Content-Type',
-			'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-		);
-		res.setHeader(
-			'Content-Disposition',
-			`attachment; filename=${req.params.resource}-import-template.xlsx`,
-		);
+		res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+		res.setHeader('Content-Disposition', `attachment; filename=${req.params.resource}-import-template.xlsx`);
 
 		await workbook.xlsx.write(res);
 		res.end();

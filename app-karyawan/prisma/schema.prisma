@@ -191,6 +191,17 @@ model MasterCutiKaryawan {
   @@map("master_cuti_karyawan")
 }
 
+model MasterHoliday {
+  id          Int      @id @default(autoincrement())
+  year        Int
+  holidayDate DateTime @db.Date
+  name        String   @db.VarChar(255)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("master_holidays")
+}
+
 model MasterGroupShift {
   id             Int                 @id @default(autoincrement())
   groupShiftName String              @db.VarChar(255)

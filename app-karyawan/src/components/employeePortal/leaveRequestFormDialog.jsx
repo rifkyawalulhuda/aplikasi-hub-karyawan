@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Controller, useFieldArray, useForm } from 'react-hook-form';
 
 import Autocomplete from '@mui/material/Autocomplete';
@@ -14,7 +14,7 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 
 import AddCircleOutlineOutlinedIcon from '@mui/icons-material/AddCircleOutlineOutlined';
-import calculateWorkingDays from '@/utils/dateUtils';
+import calculateWorkingDays, { fetchNationalHolidays } from '@/utils/dateUtils';
 import DeleteOutlineOutlinedIcon from '@mui/icons-material/DeleteOutlineOutlined';
 
 function getDefaultReplacementEmployeeIds(initialValue = null) {
@@ -132,16 +132,34 @@ function LeaveRequestFormDialog({
 
 	const periodStartValue = watch('periodStart');
 	const periodEndValue = watch('periodEnd');
+	const [nationalHolidays, setNationalHolidays] = useState([]);
+
+	useEffect(() => {
+		let isMounted = true;
+		const loadHolidays = async () => {
+			const yearToFetch = periodStartValue ? new Date(periodStartValue).getFullYear() : new Date().getFullYear();
+			if (!Number.isNaN(yearToFetch)) {
+				const data = await fetchNationalHolidays(yearToFetch);
+				if (isMounted) {
+					setNationalHolidays(data);
+				}
+			}
+		};
+		loadHolidays();
+		return () => {
+			isMounted = false;
+		};
+	}, [periodStartValue]);
 
 	useEffect(() => {
 		if (periodStartValue && periodEndValue) {
-			const calculatedDays = calculateWorkingDays(periodStartValue, periodEndValue);
+			const calculatedDays = calculateWorkingDays(periodStartValue, periodEndValue, nationalHolidays);
 			setValue('leaveDays', calculatedDays > 0 ? calculatedDays : '', {
 				shouldValidate: true,
 				shouldDirty: true,
 			});
 		}
-	}, [periodStartValue, periodEndValue, setValue]);
+	}, [periodStartValue, periodEndValue, setValue, nationalHolidays]);
 
 	const handleFormSubmit = (values) => {
 		onSubmit({

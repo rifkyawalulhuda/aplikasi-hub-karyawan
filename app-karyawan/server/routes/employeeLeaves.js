@@ -1,11 +1,7 @@
 import { Router } from 'express';
 
 import prisma from '../lib/prisma.js';
-import {
-	getLeaveRequestOrThrow,
-	mapLeaveRequestDetail,
-	mapLeaveRequestSummary,
-} from '../lib/leaveWorkflow.js';
+import { getLeaveRequestOrThrow, mapLeaveRequestDetail, mapLeaveRequestSummary } from '../lib/leaveWorkflow.js';
 
 const router = Router();
 

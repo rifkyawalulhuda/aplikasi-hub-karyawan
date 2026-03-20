@@ -257,10 +257,9 @@ async function getBalanceSeed(tx, employeeId, leaveYear) {
 	});
 
 	if (!seed) {
-		throw Object.assign(
-			new Error(`Saldo cuti tahunan ${leaveYear} belum disiapkan untuk karyawan ini.`),
-			{ statusCode: 400 },
-		);
+		throw Object.assign(new Error(`Saldo cuti tahunan ${leaveYear} belum disiapkan untuk karyawan ini.`), {
+			statusCode: 400,
+		});
 	}
 
 	return seed;
@@ -367,7 +366,10 @@ function mapApprovalRow(approval, activeApproverId = null) {
 		statusLabel: getApprovalStatusLabel(approval.status),
 		actionNote: approval.actionNote || '',
 		actedAt: approval.actedAt ? approval.actedAt.toISOString() : null,
-		isActionable: activeApproverId != null && approval.status === 'PENDING' && approval.approverEmployeeId === activeApproverId,
+		isActionable:
+			activeApproverId != null &&
+			approval.status === 'PENDING' &&
+			approval.approverEmployeeId === activeApproverId,
 		approver: {
 			id: approval.approverEmployee.id,
 			fullName: approval.approverEmployee.fullName,
@@ -584,7 +586,7 @@ async function createLeaveRequestRevision(tx, payload) {
 
 async function listApprovalsForEmployee(employeeId, options = {}) {
 	const { status, startDate, endDate } = options;
-	
+
 	const whereClause = {
 		approverEmployeeId: employeeId,
 	};

@@ -223,7 +223,9 @@ async function resolveEmployeeFromImport(employeeName, employeeNo) {
 
 		if (normalizeString(employeeByNo.fullName).toLowerCase() !== normalizedEmployeeName.toLowerCase()) {
 			throw Object.assign(
-				new Error(`NIK ${employeeByNo.employeeNo} tidak sesuai dengan Nama Karyawan "${normalizedEmployeeName}".`),
+				new Error(
+					`NIK ${employeeByNo.employeeNo} tidak sesuai dengan Nama Karyawan "${normalizedEmployeeName}".`,
+				),
 				{ statusCode: 400 },
 			);
 		}
@@ -355,7 +357,9 @@ async function ensureUpdatePayloadAvailable(tx, id, payload) {
 
 	if (conflict && conflict.id !== id) {
 		throw Object.assign(
-			new Error('Data Cuti Karyawan untuk kombinasi karyawan, jenis cuti, dan tahun ini sudah digunakan row lain.'),
+			new Error(
+				'Data Cuti Karyawan untuk kombinasi karyawan, jenis cuti, dan tahun ini sudah digunakan row lain.',
+			),
 			{ statusCode: 409 },
 		);
 	}
@@ -767,7 +771,9 @@ router.get(
 					leaveType: row.masterCutiKaryawan.leaveType,
 					source: getLeaveDatabaseHistorySourceLabel(history.sourceType),
 					requestNumber: history.employeeLeave?.requestNumber || '-',
-					submittedAt: history.employeeLeave?.submittedAt ? history.employeeLeave.submittedAt.toISOString().slice(0, 10) : '-',
+					submittedAt: history.employeeLeave?.submittedAt
+						? history.employeeLeave.submittedAt.toISOString().slice(0, 10)
+						: '-',
 					periodStart: history.periodStart ? history.periodStart.toISOString().slice(0, 10) : '-',
 					periodEnd: history.periodEnd ? history.periodEnd.toISOString().slice(0, 10) : '-',
 					changeDate: history.changeDate.toISOString().slice(0, 10),

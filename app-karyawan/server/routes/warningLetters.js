@@ -56,7 +56,10 @@ function formatDateForClient(value) {
 		return null;
 	}
 
-	return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(2, '0')}`;
+	return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(
+		2,
+		'0',
+	)}`;
 }
 
 function addSixMonths(value) {
@@ -183,8 +186,7 @@ async function getActiveWarningRule({ employeeId, referenceDate, excludeId }) {
 	return {
 		activeLetters,
 		highestActiveLevel,
-		recommendedLevel:
-			highestActiveLevel <= 0 ? DEFAULT_WARNING_LEVEL : Math.min(highestActiveLevel + 1, 3),
+		recommendedLevel: highestActiveLevel <= 0 ? DEFAULT_WARNING_LEVEL : Math.min(highestActiveLevel + 1, 3),
 	};
 }
 
@@ -222,10 +224,7 @@ async function validatePayload(payload, currentId) {
 		throw Object.assign(new Error('Superior wajib dipilih.'), { statusCode: 400 });
 	}
 
-	if (
-		category === DISCIPLINE_LETTER_CATEGORIES.WARNING_LETTER &&
-		!WARNING_LEVELS.includes(warningLevel)
-	) {
+	if (category === DISCIPLINE_LETTER_CATEGORIES.WARNING_LETTER && !WARNING_LEVELS.includes(warningLevel)) {
 		throw Object.assign(new Error('Surat Peringatan ke harus dipilih.'), { statusCode: 400 });
 	}
 

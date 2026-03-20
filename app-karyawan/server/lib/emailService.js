@@ -13,8 +13,7 @@ function getSmtpConfig() {
 	const pass = process.env.SMTP_PASS || '';
 	const fromEmail = process.env.SMTP_FROM || user;
 	const fromName = (process.env.SMTP_FROM_NAME || '').trim();
-	const from =
-		fromEmail && fromName ? `"${fromName.replace(/"/g, '\\"')}" <${fromEmail}>` : fromEmail;
+	const from = fromEmail && fromName ? `"${fromName.replace(/"/g, '\\"')}" <${fromEmail}>` : fromEmail;
 
 	return {
 		host,

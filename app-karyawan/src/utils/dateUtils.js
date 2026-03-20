@@ -1,32 +1,11 @@
-/**
- * Date utility functions for the Hub Karyawan application.
- */
-
-// Example list of Indonesian national holidays for 2026 (Format: DD/MM/YYYY).
-// This can be expanded or fetched from an API in a real-world scenario.
-const NATIONAL_HOLIDAYS_2026 = [
-	'01/01/2026', // Tahun Baru Masehi
-	'17/02/2026', // Isra Mikraj Nabi Muhammad SAW
-	'03/03/2026', // Hari Suci Nyepi
-	'20/03/2026', // Hari Raya Idul Fitri (Estimasi)
-	'21/03/2026', // Hari Raya Idul Fitri (Estimasi)
-	'03/04/2026', // Wafat Isa Almasih
-	'01/05/2026', // Hari Buruh Internasional
-	'14/05/2026', // Kenaikan Isa Almasih
-	'27/05/2026', // Hari Raya Idul Adha (Estimasi)
-	'01/06/2026', // Hari Lahir Pancasila
-	'16/07/2026', // Tahun Baru Islam (Estimasi)
-	'17/08/2026', // Hari Kemerdekaan RI
-	'25/09/2026', // Maulid Nabi Muhammad SAW (Estimasi)
-	'25/12/2026', // Hari Raya Natal
-];
+import apiRequest from '@/services/api';
 
 /**
  * Normalizes a date string or Date object to a DD/MM/YYYY string format in local time.
  * @param {string|Date} date
  * @returns {string} DD/MM/YYYY
  */
-function toLocalDateString(date) {
+export function toLocalDateString(date) {
 	const d = new Date(date);
 	if (Number.isNaN(d.getTime())) return null;
 
@@ -36,15 +15,46 @@ function toLocalDateString(date) {
 	return `${day}/${month}/${year}`;
 }
 
+// Memory cache for holidays per year
+const holidaysCache = {};
+
+/**
+ * Fetches national holidays from the local Master Data API.
+ * Returns an array of strings in DD/MM/YYYY format.
+ * @param {number|string} year
+ * @returns {Promise<string[]>}
+ */
+export async function fetchNationalHolidays(year) {
+	if (holidaysCache[year]) {
+		return holidaysCache[year];
+	}
+
+	try {
+		const data = await apiRequest('/master/master-holidays');
+		// Filter by year if needed, although usually we want all or just current
+		const formattedHolidays = data
+			.filter((item) => String(item.year) === String(year))
+			.map((item) => toLocalDateString(item.holidayDate));
+
+		holidaysCache[year] = formattedHolidays;
+		return formattedHolidays;
+	} catch (error) {
+		console.error('Error fetching national holidays:', error);
+		// Return empty array if request fails, so it doesn't break the app
+		return [];
+	}
+}
+
 /**
  * Calculates the number of working days between two dates, inclusive.
  * Skips weekends (Saturday, Sunday) and predefined national holidays.
  *
  * @param {string|Date} startDate
  * @param {string|Date} endDate
+ * @param {string[]} nationalHolidays Array of dates in DD/MM/YYYY format
  * @returns {number} Number of working days, or 0 if dates are invalid or start > end.
  */
-export default function calculateWorkingDays(startDate, endDate) {
+export default function calculateWorkingDays(startDate, endDate, nationalHolidays = []) {
 	if (!startDate || !endDate) return 0;
 
 	const start = new Date(startDate);
@@ -66,7 +76,7 @@ export default function calculateWorkingDays(startDate, endDate) {
 
 		// dayOfWeek: 0 = Sunday, 6 = Saturday
 		const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-		const isHoliday = NATIONAL_HOLIDAYS_2026.includes(dateString);
+		const isHoliday = nationalHolidays.includes(dateString);
 
 		if (!isWeekend && !isHoliday) {
 			workingDays += 1;

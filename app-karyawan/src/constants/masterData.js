@@ -271,6 +271,46 @@ const MASTER_DATA_PAGE_CONFIG = {
 			{ id: 'leaveType', label: 'JENIS CUTI' },
 		],
 	},
+	masterHolidays: {
+		resource: 'master-holidays',
+		title: 'Master Hari Libur',
+		breadcrumb: 'Master Hari Libur',
+		groupBreadcrumb: 'Master Data Dokumen',
+		fieldLabel: 'Master Hari Libur',
+		fieldPlaceholder: 'Masukkan nama hari libur',
+		description: 'Kelola daftar hari libur nasional untuk perhitungan hari kerja pada aplikasi.',
+		searchPlaceholder: 'Nama hari libur, tahun...',
+		itemNameField: 'name',
+		fields: [
+			{
+				name: 'year',
+				label: 'Periode Tahun',
+				placeholder: 'Masukkan tahun (maks 5 karakter)',
+				type: 'number',
+				maxLength: 5,
+				searchable: true,
+			},
+			{
+				name: 'holidayDate',
+				label: 'Tanggal',
+				placeholder: 'Pilih tanggal hari libur',
+				type: 'date',
+				searchable: true,
+			},
+			{
+				name: 'name',
+				label: 'Nama Hari Libur',
+				placeholder: 'Masukkan nama hari libur',
+				searchable: true,
+			},
+		],
+		tableColumns: [
+			{ id: 'id', label: 'NO' },
+			{ id: 'year', label: 'PERIODE TAHUN' },
+			{ id: 'holidayDate', label: 'TANGGAL', type: 'date' },
+			{ id: 'name', label: 'NAMA HARI LIBUR' },
+		],
+	},
 };
 
 export default MASTER_DATA_PAGE_CONFIG;
