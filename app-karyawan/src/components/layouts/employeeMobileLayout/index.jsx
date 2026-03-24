@@ -2,10 +2,16 @@ import { useEffect, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 
 import Badge from '@mui/material/Badge';
+import Button from '@mui/material/Button';
 
 import Box from '@mui/material/Box';
 import BottomNavigation from '@mui/material/BottomNavigation';
 import BottomNavigationAction from '@mui/material/BottomNavigationAction';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogTitle from '@mui/material/DialogTitle';
 import IconButton from '@mui/material/IconButton';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
@@ -103,6 +109,7 @@ function EmployeeMobileLayout() {
 	const { user: employee, logout } = useEmployeeAuth();
 	const [drawerOpen, setDrawerOpen] = useState(false);
 	const [pendingApprovalsCount, setPendingApprovalsCount] = useState(0);
+	const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
 
 	useEffect(() => {
 		if (employee?.id) {
@@ -172,8 +179,7 @@ function EmployeeMobileLayout() {
 							<IconButton
 								aria-label="logout"
 								onClick={() => {
-									logout();
-									navigate('/karyawan/login', { replace: true });
+									setLogoutConfirmOpen(true);
 								}}
 								sx={{
 									bgcolor: 'rgba(18,59,102,0.06)',
@@ -190,6 +196,27 @@ function EmployeeMobileLayout() {
 					<Outlet />
 				</Box>
 			</Box>
+			<Dialog open={logoutConfirmOpen} onClose={() => setLogoutConfirmOpen(false)} fullWidth maxWidth="xs">
+				<DialogTitle sx={{ pb: 1 }}>Konfirmasi Logout</DialogTitle>
+				<DialogContent sx={{ pt: '4px !important' }}>
+					<DialogContentText>Anda yakin ingin keluar dari aplikasi PWA Karyawan?</DialogContentText>
+				</DialogContent>
+				<DialogActions sx={{ px: 3, pb: 2 }}>
+					<Button onClick={() => setLogoutConfirmOpen(false)} color="inherit">
+						Batal
+					</Button>
+					<Button
+						variant="contained"
+						onClick={() => {
+							setLogoutConfirmOpen(false);
+							logout();
+							navigate('/karyawan/login', { replace: true });
+						}}
+					>
+						Ya, Logout
+					</Button>
+				</DialogActions>
+			</Dialog>
 
 			<Paper
 				elevation={10}
