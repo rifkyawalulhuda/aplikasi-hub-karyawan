@@ -403,6 +403,14 @@ Modul ini digunakan agar karyawan dapat login dari HP dan melihat data dirinya s
   - service worker
   - ikon install app
   - `start_url` ke `/karyawan/login`
+- Frontend sekarang diarahkan ke deployment Cloudflare-only:
+  - admin: `https://admin.aplikasi-hub.my.id`
+  - PWA: `https://pwa.aplikasi-hub.my.id`
+- Domain custom PWA dipisahkan ke `pwa.aplikasi-hub.my.id`.
+- Hostname guard PWA ditambahkan di frontend agar akses root pada host PWA otomatis diarahkan ke `/karyawan/login`.
+- Konfigurasi build production frontend menyetel `VITE_API_BASE_URL` ke `https://api.aplikasi-hub.my.id/api`.
+- Ditambahkan file `.env.production` agar build production frontend selalu mengarah ke `https://api.aplikasi-hub.my.id/api` dan tidak lagi memakai base URL lokal LAN.
+- Konfigurasi CORS backend diperluas untuk mengizinkan origin subdomain Cloudflare (`pwa/admin`) dan origin lokal development.
 - Strategi PWA untuk data sensitif bersifat online-first:
   - shell aplikasi dapat dicache
   - request `/api/*` tidak menyimpan cache persisten data karyawan

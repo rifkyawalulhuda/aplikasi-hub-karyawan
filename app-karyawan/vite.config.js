@@ -11,7 +11,7 @@ export default defineConfig({
 		eslint(),
 		VitePWA({
 			registerType: 'autoUpdate',
-			includeAssets: ['pwa/icon.svg', 'pwa/icon-192.png', 'pwa/icon-512.png'],
+			includeAssets: ['pwa/icon-192.png', 'pwa/icon-512.png'],
 			manifest: {
 				name: 'Sankyu Hub Karyawan',
 				short_name: 'Hub Karyawan',
@@ -35,18 +35,13 @@ export default defineConfig({
 						type: 'image/png',
 						purpose: 'any maskable',
 					},
-					{
-						src: '/pwa/icon.svg',
-						sizes: 'any',
-						type: 'image/svg+xml',
-						purpose: 'any',
-					},
 				],
 			},
 			workbox: {
 				globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
 				navigateFallback: 'index.html',
 				cleanupOutdatedCaches: true,
+				importScripts: ['push-sw.js'],
 				runtimeCaching: [
 					{
 						urlPattern: ({ url }) => url.pathname.startsWith('/api/'),
@@ -58,6 +53,8 @@ export default defineConfig({
 		}),
 	],
 	server: {
+		host: '0.0.0.0',
+		allowedHosts: ['aplikasi-hub.my.id', 'www.aplikasi-hub.my.id', 'pwa.aplikasi-hub.my.id', 'api.aplikasi-hub.my.id'],
 		proxy: {
 			'/api': {
 				target: 'http://localhost:4000',

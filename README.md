@@ -38,7 +38,7 @@ It can be used for most type of dashboard and app templates like analytics, admi
 ⭐ ⭐ ⭐ Do not forget to star (Top right of this page) it if you like the theme ⭐ ⭐ ⭐
 </div>
 
-![slim-free-react-mui-template netlify app_](https://github.com/Tono2007/slim-free-react-mui-template/assets/35477201/89d5c71f-b25d-4627-83d2-580ff845927d)
+![slim-free-react-mui-template preview](https://github.com/Tono2007/slim-free-react-mui-template/assets/35477201/89d5c71f-b25d-4627-83d2-580ff845927d)
 
 -   Support React18.
 -   Professional user interface.
@@ -52,8 +52,7 @@ It can be used for most type of dashboard and app templates like analytics, admi
 
 ## Free SLIM MUI React js version
 
--   [Complete Version Preview](https://slim-free-react-mui-template.netlify.app/)
--   [Clean Version Preview](https://slim-free-react-mui-clean-template.netlify.app/)
+-   Complete/Clean template preview mengikuti repositori asal.
 Version with only components, styles, theme and sample page
 -   [Download from Github](https://github.com/Tono2007/slim-free-react-mui-template/releases)
 

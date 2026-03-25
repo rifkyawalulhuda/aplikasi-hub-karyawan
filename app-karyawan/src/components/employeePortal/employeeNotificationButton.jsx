@@ -24,6 +24,11 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import CheckCircleOutlineOutlinedIcon from '@mui/icons-material/CheckCircleOutlineOutlined';
 
 import { useEmployeeAuth } from '@/contexts/employeeAuthContext';
+import {
+	enableEmployeePushSubscription,
+	getEmployeePushStatus,
+	syncEmployeePushSubscription,
+} from '@/services/employeePush';
 import { employeeMeRequest } from '@/services/employeeApi';
 
 function getSeverityIcon(severity) {
@@ -48,6 +53,13 @@ function EmployeeNotificationButton() {
 	const [unreadCount, setUnreadCount] = useState(0);
 	const [loading, setLoading] = useState(true);
 	const [errorMessage, setErrorMessage] = useState('');
+	const [pushStatus, setPushStatus] = useState({
+		supported: false,
+		configured: false,
+		permission: 'unsupported',
+		subscribed: false,
+	});
+	const [pushActionLoading, setPushActionLoading] = useState(false);
 
 	const open = Boolean(anchorEl);
 	const badgeCount = useMemo(() => Math.min(unreadCount, 99), [unreadCount]);
@@ -86,10 +98,49 @@ function EmployeeNotificationButton() {
 	useEffect(() => {
 		loadNotifications();
 	}, [loadNotifications]);
+	const loadPushStatus = useCallback(async () => {
+		if (!employee?.id) {
+			setPushStatus({
+				supported: false,
+				configured: false,
+				permission: 'unsupported',
+				subscribed: false,
+			});
+			return;
+		}
+
+		try {
+			const currentStatus = await getEmployeePushStatus();
+
+			if (currentStatus.permission === 'granted' && currentStatus.configured) {
+				await syncEmployeePushSubscription();
+				const refreshedStatus = await getEmployeePushStatus();
+				setPushStatus(refreshedStatus);
+				return;
+			}
+
+			setPushStatus(currentStatus);
+		} catch {
+			setPushStatus({
+				supported: false,
+				configured: false,
+				permission: 'unsupported',
+				subscribed: false,
+			});
+		}
+	}, [employee?.id]);
+
+	useEffect(() => {
+		loadPushStatus();
+	}, [loadPushStatus]);
 
 	useEffect(() => {
 		if (open) loadNotifications({ silent: true });
 	}, [open, loadNotifications]);
+
+	useEffect(() => {
+		if (open) loadPushStatus();
+	}, [open, loadPushStatus]);
 
 	const handleOpen = (event) => setAnchorEl(event.currentTarget);
 	const handleClose = () => setAnchorEl(null);
@@ -127,6 +178,21 @@ function EmployeeNotificationButton() {
 		setUnreadCount(0);
 	}, [items, employee?.id]);
 
+	const handleEnablePush = useCallback(async () => {
+		setPushActionLoading(true);
+
+		try {
+			await enableEmployeePushSubscription();
+			await loadPushStatus();
+			setErrorMessage('');
+		} catch (error) {
+			setErrorMessage(error.message || 'Gagal mengaktifkan push notification.');
+			await loadPushStatus();
+		} finally {
+			setPushActionLoading(false);
+		}
+	}, [loadPushStatus]);
+
 	const handleNavigate = async (item) => {
 		if (!item.isRead) {
 			try {
@@ -147,6 +213,16 @@ function EmployeeNotificationButton() {
 		handleClose();
 		navigate(item.href || item.targetPath || '/karyawan');
 	};
+
+	const isPushEnabled = pushStatus.subscribed && pushStatus.permission === 'granted';
+	const pushButtonVariant = isPushEnabled ? 'outlined' : 'contained';
+	let pushButtonLabel = 'Aktifkan Push';
+
+	if (pushActionLoading) {
+		pushButtonLabel = 'Memproses...';
+	} else if (isPushEnabled) {
+		pushButtonLabel = 'Push Aktif';
+	}
 
 	let content = (
 		<List disablePadding sx={{ maxHeight: 440, overflowY: 'auto' }}>
@@ -262,6 +338,16 @@ function EmployeeNotificationButton() {
 							</Typography>
 						</Box>
 						<Stack direction="row" spacing={1}>
+							{pushStatus.supported && pushStatus.configured ? (
+								<Button
+									size="small"
+									variant={pushButtonVariant}
+									onClick={handleEnablePush}
+									disabled={pushActionLoading || isPushEnabled}
+								>
+									{pushButtonLabel}
+								</Button>
+							) : null}
 							<Button size="small" onClick={markAllAsRead} disabled={!unreadCount}>
 								Tandai semua
 							</Button>
@@ -274,6 +360,11 @@ function EmployeeNotificationButton() {
 							</Button>
 						</Stack>
 					</Stack>
+					{pushStatus.supported && pushStatus.configured && pushStatus.permission === 'denied' ? (
+						<Typography variant="caption" color="warning.main" sx={{ px: 2, pb: 1.25 }}>
+							Izin notifikasi diblokir. Aktifkan lewat pengaturan browser perangkat Anda.
+						</Typography>
+					) : null}
 					<Divider />
 					{content}
 				</Stack>
