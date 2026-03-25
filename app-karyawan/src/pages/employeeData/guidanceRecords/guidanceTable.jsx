@@ -3,6 +3,8 @@ import { useMemo, useState } from 'react';
 import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
 import Paper from '@mui/material/Paper';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
@@ -13,8 +15,6 @@ import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 
 import { DataGrid } from '@mui/x-data-grid';
 
-import TableRowActionMenu from '@/components/tableRowActionMenu';
-
 import { formatGuidanceDate, guidanceCategoryConfigs } from './constants';
 
 function GuidanceTable({ rows, selectedRowIds, onSelectionChange, onView, onEdit, onDelete }) {
@@ -22,6 +22,8 @@ function GuidanceTable({ rows, selectedRowIds, onSelectionChange, onView, onEdit
 		page: 0,
 		pageSize: 15,
 	});
+	const [contextMenu, setContextMenu] = useState(null);
+	const rowLookup = useMemo(() => new Map(rows.map((row) => [String(row.id), row])), [rows]);
 
 	const columns = useMemo(
 		() => [
@@ -83,48 +85,59 @@ function GuidanceTable({ rows, selectedRowIds, onSelectionChange, onView, onEdit
 				minWidth: 180,
 				flex: 1,
 			},
-			{
-				field: 'actions',
-				headerName: 'AKSI',
-				width: 92,
-				sortable: false,
-				filterable: false,
-				disableColumnMenu: true,
-				align: 'center',
-				headerAlign: 'center',
-				cellClassName: 'guidance-actions-cell',
-				headerClassName: 'guidance-actions-header',
-				renderCell: (params) => (
-					<Stack direction="row" justifyContent="center" sx={{ width: '100%' }}>
-						<TableRowActionMenu
-							row={params.row}
-							actions={[
-								{
-									key: 'detail',
-									label: 'Detail',
-									icon: <VisibilityOutlinedIcon fontSize="small" color="info" />,
-									onClick: onView,
-								},
-								{
-									key: 'edit',
-									label: 'Edit',
-									icon: <EditOutlinedIcon fontSize="small" color="primary" />,
-									onClick: onEdit,
-								},
-								{
-									key: 'delete',
-									label: 'Hapus',
-									icon: <DeleteOutlineOutlinedIcon fontSize="small" color="error" />,
-									onClick: onDelete,
-								},
-							]}
-						/>
-					</Stack>
-				),
-			},
 		],
 		[onDelete, onEdit, onView],
 	);
+
+	const closeContextMenu = () => {
+		setContextMenu(null);
+	};
+
+	const handleGridContextMenu = (event) => {
+		const rowElement = event.target.closest('.MuiDataGrid-row');
+
+		if (!rowElement || event.target.closest('.MuiDataGrid-cellCheckbox')) {
+			closeContextMenu();
+			return;
+		}
+
+		const row = rowLookup.get(rowElement.getAttribute('data-id'));
+
+		if (!row) {
+			closeContextMenu();
+			return;
+		}
+
+		event.preventDefault();
+		setContextMenu({
+			mouseX: event.clientX + 2,
+			mouseY: event.clientY - 6,
+			row,
+		});
+	};
+
+	const handleContextAction = (action) => {
+		if (!contextMenu?.row) {
+			return;
+		}
+
+		const { row } = contextMenu;
+		closeContextMenu();
+
+		if (action === 'detail') {
+			onView(row);
+			return;
+		}
+
+		if (action === 'edit') {
+			onEdit(row);
+			return;
+		}
+
+		if (action === 'delete') {
+			onDelete(row);
+		}
+	};
 
 	if (rows.length === 0) {
 		return (
@@ -183,17 +196,8 @@ function GuidanceTable({ rows, selectedRowIds, onSelectionChange, onView, onEdit
 					'& .MuiDataGrid-columnSeparator': {
 						color: 'rgba(15, 23, 42, 0.12)',
 					},
-					'& .guidance-actions-header, & .guidance-actions-cell': {
-						position: 'sticky',
-						right: 0,
-						backgroundColor: '#FFFFFF',
-						zIndex: 3,
-					},
-					'& .guidance-actions-header': {
-						backgroundColor: '#F4F7FB',
-						zIndex: 4,
-					},
 				}}
+				onContextMenu={handleGridContextMenu}
 			>
 				<DataGrid
 					rows={rows}
@@ -216,8 +220,38 @@ function GuidanceTable({ rows, selectedRowIds, onSelectionChange, onView, onEdit
 						'& .MuiDataGrid-columnHeaderCheckbox .MuiCheckbox-root': {
 							color: '#1976d2',
 						},
+						'& .MuiDataGrid-row': {
+							cursor: 'context-menu',
+						},
 					}}
 				/>
+				<Menu
+					open={contextMenu !== null}
+					onClose={closeContextMenu}
+					anchorReference="anchorPosition"
+					anchorPosition={
+						contextMenu !== null ? { top: contextMenu.mouseY, left: contextMenu.mouseX } : undefined
+					}
+				>
+					<MenuItem onClick={() => handleContextAction('detail')}>
+						<Stack direction="row" spacing={1} alignItems="center">
+							<VisibilityOutlinedIcon fontSize="small" color="info" />
+							<Typography variant="body2">Detail</Typography>
+						</Stack>
+					</MenuItem>
+					<MenuItem onClick={() => handleContextAction('edit')}>
+						<Stack direction="row" spacing={1} alignItems="center">
+							<EditOutlinedIcon fontSize="small" color="primary" />
+							<Typography variant="body2">Edit</Typography>
+						</Stack>
+					</MenuItem>
+					<MenuItem onClick={() => handleContextAction('delete')}>
+						<Stack direction="row" spacing={1} alignItems="center">
+							<DeleteOutlineOutlinedIcon fontSize="small" color="error" />
+							<Typography variant="body2">Hapus</Typography>
+						</Stack>
+					</MenuItem>
+				</Menu>
 			</Box>
 			<Box
 				sx={{
@@ -241,7 +275,7 @@ function GuidanceTable({ rows, selectedRowIds, onSelectionChange, onView, onEdit
 					}}
 				/>
 				<Typography variant="caption" color="text.secondary">
-					Tampilan spreadsheet pilot dengan sorting, selection, dan action menu.
+					Tampilan spreadsheet pilot dengan sorting, selection, dan klik kanan untuk aksi.
 				</Typography>
 			</Box>
 		</Paper>
