@@ -1,19 +1,18 @@
-import IconButton from '@mui/material/IconButton';
 import Stack from '@mui/material/Stack';
 import TableCell from '@mui/material/TableCell';
 import TableRow from '@mui/material/TableRow';
-import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 
 import DeleteOutlineOutlinedIcon from '@mui/icons-material/DeleteOutlineOutlined';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 
 import EnhancedTable from '@/components/dataTable';
+import TableRowActionMenu from '@/components/tableRowActionMenu';
 
 const stickyActionCellSx = {
 	position: 'sticky',
 	right: 0,
-	minWidth: 128,
+	minWidth: 84,
 	backgroundColor: 'background.paper',
 	zIndex: 2,
 	boxShadow: '-6px 0 8px -8px rgba(15, 23, 42, 0.35)',
@@ -56,17 +55,24 @@ function AdminTable({ rows, onEdit, onDelete }) {
 					<TableCell>{row.password}</TableCell>
 					<TableCell sx={{ textTransform: 'lowercase' }}>{row.role}</TableCell>
 					<TableCell sx={stickyActionCellSx}>
-						<Stack direction="row" spacing={1}>
-							<Tooltip title="Edit">
-								<IconButton color="primary" onClick={() => onEdit(row)}>
-									<EditOutlinedIcon />
-								</IconButton>
-							</Tooltip>
-							<Tooltip title="Hapus">
-								<IconButton color="error" onClick={() => onDelete(row)}>
-									<DeleteOutlineOutlinedIcon />
-								</IconButton>
-							</Tooltip>
+						<Stack direction="row" justifyContent="center">
+							<TableRowActionMenu
+								row={row}
+								actions={[
+									{
+										key: 'edit',
+										label: 'Edit',
+										icon: <EditOutlinedIcon fontSize="small" color="primary" />,
+										onClick: onEdit,
+									},
+									{
+										key: 'delete',
+										label: 'Hapus',
+										icon: <DeleteOutlineOutlinedIcon fontSize="small" color="error" />,
+										onClick: onDelete,
+									},
+								]}
+							/>
 						</Stack>
 					</TableCell>
 				</TableRow>

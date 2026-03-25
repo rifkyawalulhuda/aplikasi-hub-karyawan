@@ -5,7 +5,6 @@ import Breadcrumbs from '@mui/material/Breadcrumbs';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
 import CircularProgress from '@mui/material/CircularProgress';
-import IconButton from '@mui/material/IconButton';
 import InputAdornment from '@mui/material/InputAdornment';
 import Link from '@mui/material/Link';
 import MenuItem from '@mui/material/MenuItem';
@@ -29,6 +28,7 @@ import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import CardHeader from '@/components/cardHeader';
 import LeaveStatusChip from '@/components/employeePortal/leaveStatusChip';
 import LeaveRequestDetailDialog from '@/components/leaveAdmin/leaveRequestDetailDialog';
+import TableRowActionMenu from '@/components/tableRowActionMenu';
 import useUrlSearchKeyword from '@/hooks/useUrlSearchKeyword';
 import PageHeader from '@/components/pageHeader';
 import apiRequest from '@/services/api';
@@ -312,21 +312,39 @@ function EmployeeLeaveFlowPage() {
 													<LeaveStatusChip status={row.status} label={row.statusLabel} />
 												</TableCell>
 												<TableCell align="right">
-													<Stack direction="row" justifyContent="flex-end" spacing={0.5}>
-														<IconButton
-															color="primary"
-															onClick={() => handleOpenDetail(row.id)}
-														>
-															<VisibilityOutlinedIcon fontSize="small" />
-														</IconButton>
-														{row.status === 'APPROVED' ? (
-															<IconButton
-																color="primary"
-																onClick={() => handleOpenPrint(row.id)}
-															>
-																<PrintOutlinedIcon fontSize="small" />
-															</IconButton>
-														) : null}
+													<Stack direction="row" justifyContent="flex-end">
+														<TableRowActionMenu
+															row={row}
+															actions={[
+																{
+																	key: 'detail',
+																	label: 'Detail',
+																	icon: (
+																		<VisibilityOutlinedIcon
+																			fontSize="small"
+																			color="info"
+																		/>
+																	),
+																	onClick: (item) => handleOpenDetail(item.id),
+																},
+																...(row.status === 'APPROVED'
+																	? [
+																			{
+																				key: 'print',
+																				label: 'Print A4',
+																				icon: (
+																					<PrintOutlinedIcon
+																						fontSize="small"
+																						color="primary"
+																					/>
+																				),
+																				onClick: (item) =>
+																					handleOpenPrint(item.id),
+																			},
+																	  ]
+																	: []),
+															]}
+														/>
 													</Stack>
 												</TableCell>
 											</TableRow>
