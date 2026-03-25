@@ -7,16 +7,47 @@ import AccordionDetails from '@mui/material/AccordionDetails';
 import AccordionSummary from '@mui/material/AccordionSummary';
 import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
+import Divider from '@mui/material/Divider';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
+import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
+import InputAdornment from '@mui/material/InputAdornment';
 
+import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
 import ExpandMoreRoundedIcon from '@mui/icons-material/ExpandMoreRounded';
+import ClearRoundedIcon from '@mui/icons-material/ClearRounded';
 
 import FeedbackState from '@/components/employeePortal/feedbackState';
 import { useEmployeeAuth } from '@/contexts/employeeAuthContext';
 import { employeeMeRequest } from '@/services/employeeApi';
 import { formatLongDate, getEmployeePortalErrorMessage, handleEmployeeUnauthorized } from '@/utils/employeePortal';
+
+const LEVEL_FILTERS = [
+	{ label: 'Semua', value: 'ALL' },
+	{ label: 'Surat Teguran', value: 'NONE' },
+	{ label: 'SP 1', value: '1' },
+	{ label: 'SP 2', value: '2' },
+	{ label: 'SP 3', value: '3' },
+];
+
+function normalizeSearchValue(value = '') {
+	return String(value).toLowerCase().replace(/\s+/g, ' ').trim();
+}
+
+function buildSearchText(item) {
+	return [
+		item.warningLevel ? `Surat Peringatan ${item.warningLevel}` : 'Surat Teguran',
+		formatLongDate(item.letterDate),
+		item.letterNumber,
+		item.jobLevelName,
+		item.violation,
+		item.articleLabel,
+		item.articleContent,
+		item.superiorName,
+		item.superiorJobLevelName,
+	].join(' ');
+}
 
 function WarningLetterCard({ item }) {
 	return (
@@ -135,6 +166,8 @@ function EmployeeWarningLettersPage() {
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState('');
 	const [rows, setRows] = useState([]);
+	const [searchQuery, setSearchQuery] = useState('');
+	const [levelFilter, setLevelFilter] = useState('ALL');
 
 	const loadData = async () => {
 		setLoading(true);
@@ -165,6 +198,16 @@ function EmployeeWarningLettersPage() {
 		loadData();
 	}, []);
 
+	const normalizedSearchQuery = normalizeSearchValue(searchQuery);
+	const filteredRows = rows.filter((item) => {
+		const currentLevel = item.warningLevel ? String(item.warningLevel) : 'NONE';
+		const matchesLevel = levelFilter === 'ALL' || currentLevel === levelFilter;
+		const matchesSearch =
+			!normalizedSearchQuery || normalizeSearchValue(buildSearchText(item)).includes(normalizedSearchQuery);
+
+		return matchesLevel && matchesSearch;
+	});
+
 	if (loading) {
 		return <FeedbackState loading />;
 	}
@@ -192,9 +235,116 @@ function EmployeeWarningLettersPage() {
 
 	return (
 		<Stack spacing={1.5}>
-			{rows.map((item) => (
-				<WarningLetterCard key={item.id} item={item} />
-			))}
+			<Paper
+				elevation={0}
+				sx={{
+					p: 2,
+					borderRadius: 4,
+					border: '1px solid rgba(18,59,102,0.08)',
+					background: 'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(244,249,255,0.98) 100%)',
+				}}
+			>
+				<Stack spacing={1.5}>
+					<Box>
+						<Typography variant="subtitle1" sx={{ color: '#123B66', fontWeight: 800 }}>
+							Filter & Pencarian
+						</Typography>
+						<Typography variant="body2" color="text.secondary">
+							Cari surat peringatan berdasarkan nomor, pelanggaran, atau superior.
+						</Typography>
+					</Box>
+					<TextField
+						fullWidth
+						size="small"
+						placeholder="Cari data surat, pelanggaran, atau superior..."
+						value={searchQuery}
+						onChange={(event) => setSearchQuery(event.target.value)}
+						InputProps={{
+							startAdornment: (
+								<InputAdornment position="start">
+									<SearchRoundedIcon sx={{ color: '#5D738B' }} />
+								</InputAdornment>
+							),
+							endAdornment: searchQuery ? (
+								<InputAdornment position="end">
+									<Chip
+										label="Bersihkan"
+										size="small"
+										variant="outlined"
+										icon={<ClearRoundedIcon sx={{ fontSize: 14 }} />}
+										onClick={() => setSearchQuery('')}
+										sx={{
+											cursor: 'pointer',
+											'& .MuiChip-icon': { ml: 0.5 },
+										}}
+									/>
+								</InputAdornment>
+							) : null,
+						}}
+						sx={{
+							'& .MuiOutlinedInput-root': {
+								borderRadius: 3,
+								backgroundColor: '#FFFFFF',
+							},
+						}}
+					/>
+					<Box
+						sx={{
+							display: 'flex',
+							flexWrap: 'wrap',
+							gap: 1,
+							alignItems: 'center',
+						}}
+					>
+						{LEVEL_FILTERS.map((item) => (
+							<Chip
+								key={item.value}
+								label={item.label}
+								clickable
+								color={levelFilter === item.value ? 'primary' : 'default'}
+								variant={levelFilter === item.value ? 'filled' : 'outlined'}
+								onClick={() => setLevelFilter(item.value)}
+								sx={{
+									fontWeight: 700,
+									borderRadius: 999,
+									px: 0.5,
+									height: 34,
+									'& .MuiChip-label': {
+										px: 1.15,
+									},
+								}}
+							/>
+						))}
+					</Box>
+					<Divider />
+					<Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1}>
+						<Typography variant="body2" color="text.secondary">
+							Menampilkan <strong>{filteredRows.length}</strong> dari <strong>{rows.length}</strong> data
+						</Typography>
+						{searchQuery || levelFilter !== 'ALL' ? (
+							<Typography
+								variant="caption"
+								sx={{ color: '#7B8FA3', cursor: 'pointer' }}
+								onClick={() => {
+									setSearchQuery('');
+									setLevelFilter('ALL');
+								}}
+							>
+								Reset filter
+							</Typography>
+						) : null}
+					</Stack>
+				</Stack>
+			</Paper>
+
+			{filteredRows.length ? (
+				filteredRows.map((item) => <WarningLetterCard key={item.id} item={item} />)
+			) : (
+				<FeedbackState
+					title="Data tidak ditemukan."
+					description="Coba ubah kata kunci pencarian atau pilih level peringatan yang lain."
+				/>
+			)}
 		</Stack>
 	);
 }
