@@ -155,22 +155,6 @@ function GuidanceRecordsPage() {
 	}, [filteredRows]);
 
 	const selectedRows = filteredRows.filter((row) => selectedRowIds.includes(row.id));
-	const allRowsSelected = filteredRows.length > 0 && selectedRows.length === filteredRows.length;
-	const someRowsSelected = selectedRows.length > 0 && selectedRows.length < filteredRows.length;
-
-	const handleToggleSelectRow = (id, checked) => {
-		setSelectedRowIds((currentIds) => {
-			if (checked) {
-				return currentIds.includes(id) ? currentIds : [...currentIds, id];
-			}
-
-			return currentIds.filter((currentId) => currentId !== id);
-		});
-	};
-
-	const handleToggleSelectAll = (checked) => {
-		setSelectedRowIds(checked ? filteredRows.map((row) => row.id) : []);
-	};
 
 	const handleExportExcel = async () => {
 		if (filteredRows.length === 0) {
@@ -468,10 +452,7 @@ function GuidanceRecordsPage() {
 					<GuidanceTable
 						rows={filteredRows}
 						selectedRowIds={selectedRowIds}
-						allRowsSelected={allRowsSelected}
-						someRowsSelected={someRowsSelected}
-						onToggleSelectAll={handleToggleSelectAll}
-						onToggleSelectRow={handleToggleSelectRow}
+						onSelectionChange={setSelectedRowIds}
 						onView={(item) => {
 							navigate(`/data-karyawan/bimbingan-pengarahan/${item.id}`);
 						}}
