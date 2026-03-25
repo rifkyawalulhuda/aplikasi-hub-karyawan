@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import cors from 'cors';
 import express from 'express';
+import http from 'http';
 
 import prisma from './lib/prisma.js';
 import authRouter from './routes/auth.js';
@@ -23,10 +24,57 @@ import warningLettersRouter from './routes/warningLetters.js';
 
 const app = express();
 const port = Number(process.env.PORT || 4000);
+const DEFAULT_ALLOWED_ORIGINS = [
+	'http://localhost:5173',
+	'http://127.0.0.1:5173',
+	'https://aplikasi-hub.my.id',
+	'https://www.aplikasi-hub.my.id',
+	'https://pwa.aplikasi-hub.my.id',
+	'https://admin.aplikasi-hub.my.id',
+	'https://app.aplikasi-hub.my.id',
+];
+
+function parseAllowedOrigins(rawValue = '') {
+	const parsed = rawValue
+		.split(',')
+		.map((item) => item.trim().replace(/\/+$/, ''))
+		.filter(Boolean);
+
+	if (parsed.length > 0) {
+		return parsed;
+	}
+
+	return DEFAULT_ALLOWED_ORIGINS;
+}
+
+const allowedOrigins = parseAllowedOrigins(process.env.CORS_ALLOWED_ORIGINS || '');
+
+function isOriginAllowed(origin) {
+	const normalizedOrigin = String(origin || '')
+		.trim()
+		.replace(/\/+$/, '');
+	return allowedOrigins.includes(normalizedOrigin);
+}
 
 app.use(
 	cors({
-		origin: true,
+		origin(origin, callback) {
+			if (!origin) {
+				callback(null, true);
+				return;
+			}
+
+			if (isOriginAllowed(origin)) {
+				callback(null, true);
+				return;
+			}
+
+			callback(
+				Object.assign(new Error(`Origin ${origin} tidak diizinkan oleh CORS.`), {
+					statusCode: 403,
+				}),
+			);
+		},
 		credentials: true,
 	}),
 );
@@ -92,6 +140,17 @@ app.use((error, req, res, next) => {
 	});
 });
 
-app.listen(port, () => {
+const server = http.createServer(app);
+
+server.on('error', (error) => {
+	if (error?.code === 'EADDRINUSE') {
+		console.warn(`Port ${port} sudah dipakai proses lain. Server dev tidak dijalankan ulang.`);
+		return;
+	}
+
+	throw error;
+});
+
+server.listen(port, () => {
 	console.log(`API server running on http://localhost:${port}`);
 });

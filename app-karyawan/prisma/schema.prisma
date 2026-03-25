@@ -268,6 +268,7 @@ model Employee {
   leaveReplacementAssignments EmployeeLeaveReplacementAssignee[] @relation("EmployeeLeaveReplacementAssigneeEmployee")
   groupShiftAssignments  GroupShiftForeman[]
   notificationReadStates AdminNotificationReadState[]
+  pushSubscriptions      EmployeePushSubscription[]
 
   @@index([departmentId])
   @@index([groupShiftId])
@@ -496,6 +497,27 @@ model AdminNotificationReadState {
   @@index([employeeId])
   @@index([readAt])
   @@map("admin_notification_read_states")
+}
+
+model EmployeePushSubscription {
+  id              Int      @id @default(autoincrement())
+  employeeId      Int
+  endpoint        String   @db.Text
+  p256dh          String   @db.Text
+  auth            String   @db.Text
+  expirationTime  DateTime?
+  userAgent       String?  @db.Text
+  isActive        Boolean  @default(true)
+  lastUsedAt      DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  employee        Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([employeeId, endpoint])
+  @@index([employeeId])
+  @@index([isActive])
+  @@index([lastUsedAt])
+  @@map("employee_push_subscriptions")
 }
 
 model MasterAdmin {

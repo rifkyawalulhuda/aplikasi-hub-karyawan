@@ -23,6 +23,12 @@ import {
 	getLeaveDatabaseBalance,
 	listLeaveTypeBalancesForEmployeeYear,
 } from '../lib/leaveDatabase.js';
+import {
+	getPushConfig,
+	removeEmployeePushSubscription,
+	saveEmployeePushSubscription,
+	sendEmployeePushNotification,
+} from '../lib/pushNotificationService.js';
 import requireEmployeeAuth from '../middleware/requireEmployeeAuth.js';
 
 const router = Router();
@@ -241,6 +247,52 @@ function formatReplacementEmployeesForEmail(record) {
 	}
 
 	return replacements.map((item, index) => `${index + 1}. ${item.fullName} (${item.employeeNo})`).join('\n');
+}
+
+async function sendSubmittedPush(record) {
+	await sendEmployeePushNotification(prisma, {
+		employeeIds: [record.employeeId],
+		title: `Pengajuan cuti dikirim: ${record.requestNumber}`,
+		body: `Pengajuan cuti ${record.masterCutiKaryawan.leaveType} berhasil dikirim dan sedang diproses.`,
+		url: `/karyawan/cuti/${record.id}`,
+		tag: `leave-submitted-${record.id}-${record.revisionNo}`,
+	});
+}
+
+async function sendStageActivationPush(record) {
+	const activeApprovals = getActiveApprovals(record);
+
+	await Promise.allSettled(
+		activeApprovals.map((approval) =>
+			sendEmployeePushNotification(prisma, {
+				employeeIds: [approval.approverEmployeeId],
+				title: `Approval cuti: ${record.requestNumber}`,
+				body: `${record.employee.fullName} menunggu persetujuan Anda.`,
+				url: `/karyawan/cuti/approval/${approval.id}`,
+				tag: `leave-approval-${approval.id}-${record.revisionNo}`,
+			}),
+		),
+	);
+}
+
+async function sendRejectedPush(record) {
+	await sendEmployeePushNotification(prisma, {
+		employeeIds: [record.employeeId],
+		title: `Cuti ditolak: ${record.requestNumber}`,
+		body: 'Pengajuan cuti Anda ditolak. Silakan cek detail untuk resubmit atau cancel.',
+		url: `/karyawan/cuti/${record.id}`,
+		tag: `leave-rejected-${record.id}-${record.revisionNo}`,
+	});
+}
+
+async function sendApprovedPush(record) {
+	await sendEmployeePushNotification(prisma, {
+		employeeIds: [record.employeeId],
+		title: `Cuti disetujui: ${record.requestNumber}`,
+		body: `Pengajuan cuti Anda sudah selesai di-approve. Sisa cuti: ${record.remainingLeave}.`,
+		url: `/karyawan/cuti/${record.id}`,
+		tag: `leave-approved-${record.id}-${record.revisionNo}`,
+	});
 }
 
 async function sendSubmittedEmail(record) {
@@ -648,7 +700,12 @@ router.post('/leave-requests', async (req, res, next) => {
 		});
 
 		const record = await getLeaveRequestOrThrow(prisma, result);
-		await Promise.allSettled([sendSubmittedEmail(record), sendStageActivationEmails(record)]);
+		await Promise.allSettled([
+			sendSubmittedEmail(record),
+			sendStageActivationEmails(record),
+			sendSubmittedPush(record),
+			sendStageActivationPush(record),
+		]);
 
 		return res.status(201).json(mapLeaveRequestDetail(record, req.employee.id));
 	} catch (error) {
@@ -777,7 +834,12 @@ router.post('/leave-requests/:id/resubmit', async (req, res, next) => {
 		});
 
 		const record = await getLeaveRequestOrThrow(prisma, result);
-		await Promise.allSettled([sendSubmittedEmail(record), sendStageActivationEmails(record)]);
+		await Promise.allSettled([
+			sendSubmittedEmail(record),
+			sendStageActivationEmails(record),
+			sendSubmittedPush(record),
+			sendStageActivationPush(record),
+		]);
 
 		return res.json(mapLeaveRequestDetail(record, req.employee.id));
 	} catch (error) {
@@ -1103,9 +1165,9 @@ router.post('/leave-approvals/:id/approve', async (req, res, next) => {
 		const record = await getLeaveRequestOrThrow(prisma, result);
 
 		if (record.status === 'APPROVED') {
-			await sendApprovedEmail(record);
+			await Promise.allSettled([sendApprovedEmail(record), sendApprovedPush(record)]);
 		} else {
-			await sendStageActivationEmails(record);
+			await Promise.allSettled([sendStageActivationEmails(record), sendStageActivationPush(record)]);
 		}
 
 		const approval = await prisma.employeeLeaveApproval.findUnique({
@@ -1245,7 +1307,7 @@ router.post('/leave-approvals/:id/reject', async (req, res, next) => {
 		});
 
 		const record = await getLeaveRequestOrThrow(prisma, result);
-		await sendRejectedEmail(record);
+		await Promise.allSettled([sendRejectedEmail(record), sendRejectedPush(record)]);
 
 		const approval = await prisma.employeeLeaveApproval.findUnique({
 			where: { id },
@@ -1525,6 +1587,58 @@ router.post('/notifications/read-all', async (req, res, next) => {
 		const notificationIds = Array.isArray(req.body?.notificationIds) ? req.body.notificationIds : [];
 
 		await markEmployeeNotificationsRead(employeeId, notificationIds);
+		return res.status(204).send();
+	} catch (error) {
+		return next(error);
+	}
+});
+
+router.get('/push-config', async (req, res, next) => {
+	try {
+		const config = getPushConfig();
+
+		return res.json({
+			enabled: config.enabled,
+			vapidPublicKey: config.enabled ? config.publicKey : '',
+		});
+	} catch (error) {
+		return next(error);
+	}
+});
+
+router.post('/push-subscriptions', async (req, res, next) => {
+	try {
+		const subscription = req.body?.subscription;
+
+		if (!subscription) {
+			return res.status(400).json({ message: 'subscription wajib diisi.' });
+		}
+
+		await saveEmployeePushSubscription(prisma, {
+			employeeId: req.employee.id,
+			subscription,
+			userAgent: String(req.headers['user-agent'] || ''),
+		});
+
+		return res.status(204).send();
+	} catch (error) {
+		return next(error);
+	}
+});
+
+router.delete('/push-subscriptions', async (req, res, next) => {
+	try {
+		const endpoint = String(req.body?.endpoint || '').trim();
+
+		if (!endpoint) {
+			return res.status(400).json({ message: 'endpoint wajib diisi.' });
+		}
+
+		await removeEmployeePushSubscription(prisma, {
+			employeeId: req.employee.id,
+			endpoint,
+		});
+
 		return res.status(204).send();
 	} catch (error) {
 		return next(error);

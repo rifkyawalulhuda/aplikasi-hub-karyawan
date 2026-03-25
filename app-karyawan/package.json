@@ -53,6 +53,7 @@
 		"react-text-mask": "^5.5.0",
 		"react-transition-group": "^4.4.5",
 		"uuid": "^9.0.0",
+		"web-push": "^3.6.7",
 		"yup": "^1.0.2"
 	},
 	"devDependencies": {

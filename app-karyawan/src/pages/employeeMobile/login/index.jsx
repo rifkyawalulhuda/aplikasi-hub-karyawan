@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useSnackbar } from 'notistack';
 
 import Box from '@mui/material/Box';
+import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
 import Checkbox from '@mui/material/Checkbox';
@@ -16,6 +17,7 @@ import Typography from '@mui/material/Typography';
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
 import LockOpenOutlinedIcon from '@mui/icons-material/LockOpenOutlined';
 import LoginRoundedIcon from '@mui/icons-material/LoginRounded';
+import DownloadForOfflineOutlinedIcon from '@mui/icons-material/DownloadForOfflineOutlined';
 
 import { useEmployeeAuth } from '@/contexts/employeeAuthContext';
 import { employeeAuthRequest } from '@/services/employeeApi';
@@ -31,8 +33,38 @@ function EmployeeLoginPage() {
 	const [password, setPassword] = useState('');
 	const [showPassword, setShowPassword] = useState(false);
 	const [submitting, setSubmitting] = useState(false);
+	const [installEvent, setInstallEvent] = useState(null);
+	const [installing, setInstalling] = useState(false);
+	const [isStandalone, setIsStandalone] = useState(() => {
+		if (typeof window === 'undefined') {
+			return false;
+		}
+
+		return window.matchMedia('(display-mode: standalone)').matches;
+	});
 
 	const redirectTo = location.state?.from?.pathname || '/karyawan';
+
+	useEffect(() => {
+		const handleBeforeInstallPrompt = (event) => {
+			event.preventDefault();
+			setInstallEvent(event);
+		};
+
+		const handleInstalled = () => {
+			setIsStandalone(true);
+			setInstallEvent(null);
+			enqueueSnackbar('Aplikasi berhasil dipasang di perangkat Anda.', { variant: 'success' });
+		};
+
+		window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+		window.addEventListener('appinstalled', handleInstalled);
+
+		return () => {
+			window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+			window.removeEventListener('appinstalled', handleInstalled);
+		};
+	}, [enqueueSnackbar]);
 
 	const handleSubmit = async (event) => {
 		event.preventDefault();
@@ -59,6 +91,24 @@ function EmployeeLoginPage() {
 			enqueueSnackbar(error.message, { variant: 'error' });
 		} finally {
 			setSubmitting(false);
+		}
+	};
+
+	const handleInstallApp = async () => {
+		if (!installEvent) {
+			enqueueSnackbar('Install belum tersedia otomatis. Buka menu browser lalu pilih Add to Home Screen.', {
+				variant: 'info',
+			});
+			return;
+		}
+
+		setInstalling(true);
+		try {
+			await installEvent.prompt();
+			await installEvent.userChoice;
+			setInstallEvent(null);
+		} finally {
+			setInstalling(false);
 		}
 	};
 
@@ -168,6 +218,40 @@ function EmployeeLoginPage() {
 					>
 						{submitting ? 'Memproses...' : 'Masuk'}
 					</Button>
+					{!isStandalone ? (
+						<Box sx={{ display: 'grid', gap: 1.25 }}>
+							<Button
+								type="button"
+								variant="outlined"
+								onClick={handleInstallApp}
+								disabled={submitting || installing}
+								startIcon={
+									installing ? (
+										<CircularProgress size={16} color="inherit" />
+									) : (
+										<DownloadForOfflineOutlinedIcon />
+									)
+								}
+								sx={{
+									minHeight: 46,
+									borderRadius: 3,
+									borderColor: '#2E7BD0',
+									color: '#1F5E9B',
+									opacity: installEvent ? 1 : 0.72,
+								}}
+							>
+								{installEvent ? 'Install App' : 'Install belum tersedia'}
+							</Button>
+							{!installEvent ? (
+								<Alert severity="info" variant="outlined" sx={{ alignItems: 'center' }}>
+									<Typography variant="body2">
+										Jika tombol install belum aktif, buka menu browser lalu pilih{' '}
+										<strong>Add to Home Screen</strong> atau <strong>Install App</strong>.
+									</Typography>
+								</Alert>
+							) : null}
+						</Box>
+					) : null}
 				</Stack>
 			</Box>
 		</Card>

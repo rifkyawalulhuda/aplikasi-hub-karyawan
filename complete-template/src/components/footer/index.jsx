@@ -150,7 +150,7 @@ function Footer() {
 							sx={{
 								cursor: 'pointer',
 							}}
-							href="https://antonioayola.netlify.app/"
+							href="https://www.linkedin.com/in/antonio-ayola/"
 							target="_blank"
 							rel="noreferrer noopener"
 							fontWeight="medium"
