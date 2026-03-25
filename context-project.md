@@ -481,7 +481,7 @@ Modul ini digunakan agar karyawan dapat login dari HP dan melihat data dirinya s
     - `Pelanggaran`
     - `Pasal PKB` dari `Master Dok PKB`
     - `Isi Pasal` autofill dari master dokumen
-    - `Superior` hanya menampilkan karyawan dengan `Job Level = Department Manager`
+    - `Superior` hanya menampilkan karyawan dengan `Job Level = Dept. Manager` dan tetap kompatibel dengan data lama `Department Manager`
   - struktur input `Surat Teguran`:
     - `Nama` dari `Master Karyawan`
     - `NIK` autofill dari `Employee No`
@@ -490,7 +490,7 @@ Modul ini digunakan agar karyawan dapat login dari HP dan melihat data dirinya s
     - `Nomor Surat` maksimal 25 karakter
     - `Tanggal`
     - `Pelanggaran`
-    - `Superior` hanya menampilkan karyawan dengan `Job Level = Department Manager`
+    - `Superior` hanya menampilkan karyawan dengan `Job Level = Dept. Manager` dan tetap kompatibel dengan data lama `Department Manager`
   - halaman detail dengan tombol `Print A4`
   - layout print A4 mengikuti `sample Warning Letter.pdf` dengan pendekatan overlay data di atas template visual PDF
   - layout print A4 `Surat Teguran` mengikuti dokumen `Surat Teguran.pdf` dengan komposisi manual A4 berbasis struktur PDF

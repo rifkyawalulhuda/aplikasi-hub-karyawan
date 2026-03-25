@@ -415,7 +415,7 @@ function WarningLetterFormDialog({
 									renderInput={(params) => (
 										<TextField
 											{...params}
-											label="Superior (Department Manager)"
+											label="Superior (Dept. Manager)"
 											error={Boolean(errors.superiorEmployeeId)}
 											helperText={errors.superiorEmployeeId?.message || ' '}
 										/>

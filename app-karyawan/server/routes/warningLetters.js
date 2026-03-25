@@ -4,7 +4,9 @@ import prisma from '../lib/prisma.js';
 
 const router = Router();
 const WARNING_LEVELS = [1, 2, 3];
-const SUPERIOR_JOB_LEVEL = 'Department Manager';
+const SUPERIOR_JOB_LEVEL = 'Dept. Manager';
+const SUPERIOR_JOB_LEVEL_ALIASES = ['Dept. Manager', 'Department Manager'];
+const NORMALIZED_SUPERIOR_JOB_LEVELS = SUPERIOR_JOB_LEVEL_ALIASES.map((value) => value.toLowerCase());
 const DEFAULT_WARNING_LEVEL = 1;
 const DISCIPLINE_LETTER_CATEGORIES = {
 	WARNING_LETTER: 'WARNING_LETTER',
@@ -249,8 +251,8 @@ async function validatePayload(payload, currentId) {
 			  })
 			: null;
 
-	if (normalizeString(superiorEmployee.jobLevel?.name).toLowerCase() !== SUPERIOR_JOB_LEVEL.toLowerCase()) {
-		throw Object.assign(new Error('Superior harus memiliki Job Level Department Manager.'), { statusCode: 400 });
+	if (!NORMALIZED_SUPERIOR_JOB_LEVELS.includes(normalizeString(superiorEmployee.jobLevel?.name).toLowerCase())) {
+		throw Object.assign(new Error(`Superior harus memiliki Job Level ${SUPERIOR_JOB_LEVEL}.`), { statusCode: 400 });
 	}
 
 	if (
