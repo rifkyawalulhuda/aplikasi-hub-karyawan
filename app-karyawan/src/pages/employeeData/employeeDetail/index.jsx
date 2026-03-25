@@ -19,6 +19,7 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TablePagination from '@mui/material/TablePagination';
 import TableRow from '@mui/material/TableRow';
+import TableSortLabel from '@mui/material/TableSortLabel';
 import TextField from '@mui/material/TextField';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
@@ -32,6 +33,15 @@ import useUrlSearchKeyword from '@/hooks/useUrlSearchKeyword';
 import apiRequest from '@/services/api';
 
 const ROWS_PER_PAGE_OPTIONS = [15, 30, 50, 100];
+const SORTABLE_COLUMNS = [
+	{ id: 'id', label: 'NO' },
+	{ id: 'fullName', label: 'KARYAWAN' },
+	{ id: 'employeeNo', label: 'NIK' },
+	{ id: 'departmentName', label: 'DEPARTEMEN' },
+	{ id: 'jobLevelName', label: 'JOB LEVEL' },
+	{ id: 'jobRoleName', label: 'JOB ROLE' },
+	{ id: 'employmentType', label: 'TIPE' },
+];
 
 async function fetchEmployees() {
 	return apiRequest('/master/employees');
@@ -55,6 +65,8 @@ function EmployeeDetailListPage() {
 	const [departmentFilter, setDepartmentFilter] = useState('ALL');
 	const [page, setPage] = useState(0);
 	const [rowsPerPage, setRowsPerPage] = useState(15);
+	const [orderBy, setOrderBy] = useState('id');
+	const [orderDirection, setOrderDirection] = useState('asc');
 
 	useEffect(() => {
 		const init = async () => {
@@ -90,9 +102,31 @@ function EmployeeDetailListPage() {
 		});
 	}, [rows, searchKeyword, departmentFilter]);
 
+	const sortedRows = useMemo(() => {
+		const getValueByKey = (row, key) => {
+			if (key === 'id') return Number(row.id || 0);
+			return String(row?.[key] || '').toLowerCase();
+		};
+
+		return [...filteredRows].sort((left, right) => {
+			const leftValue = getValueByKey(left, orderBy);
+			const rightValue = getValueByKey(right, orderBy);
+
+			if (leftValue < rightValue) {
+				return orderDirection === 'asc' ? -1 : 1;
+			}
+
+			if (leftValue > rightValue) {
+				return orderDirection === 'asc' ? 1 : -1;
+			}
+
+			return 0;
+		});
+	}, [filteredRows, orderBy, orderDirection]);
+
 	const paginatedRows = useMemo(
-		() => filteredRows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage),
-		[filteredRows, page, rowsPerPage],
+		() => sortedRows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage),
+		[sortedRows, page, rowsPerPage],
 	);
 
 	const handlePageChange = (_e, newPage) => {
@@ -102,6 +136,16 @@ function EmployeeDetailListPage() {
 	const handleRowsPerPageChange = (e) => {
 		setRowsPerPage(Number(e.target.value));
 		setPage(0);
+	};
+
+	const handleSort = (columnId) => {
+		if (orderBy === columnId) {
+			setOrderDirection((currentDirection) => (currentDirection === 'asc' ? 'desc' : 'asc'));
+			return;
+		}
+
+		setOrderBy(columnId);
+		setOrderDirection('asc');
 	};
 
 	return (
@@ -171,13 +215,24 @@ function EmployeeDetailListPage() {
 									<TableRow
 										sx={{ '& th': { fontWeight: 700, bgcolor: 'primary.main', color: 'white' } }}
 									>
-										<TableCell>NO</TableCell>
-										<TableCell>KARYAWAN</TableCell>
-										<TableCell>NIK</TableCell>
-										<TableCell>DEPARTEMEN</TableCell>
-										<TableCell>JOB LEVEL</TableCell>
-										<TableCell>JOB ROLE</TableCell>
-										<TableCell>TIPE</TableCell>
+										{SORTABLE_COLUMNS.map((column) => (
+											<TableCell
+												key={column.id}
+												sortDirection={orderBy === column.id ? orderDirection : false}
+											>
+												<TableSortLabel
+													active={orderBy === column.id}
+													direction={orderBy === column.id ? orderDirection : 'asc'}
+													onClick={() => handleSort(column.id)}
+													sx={{
+														color: 'inherit',
+														'& .MuiTableSortLabel-icon': { color: 'inherit !important' },
+													}}
+												>
+													{column.label}
+												</TableSortLabel>
+											</TableCell>
+										))}
 										<TableCell align="center">AKSI</TableCell>
 									</TableRow>
 								</TableHead>
@@ -251,7 +306,7 @@ function EmployeeDetailListPage() {
 						</TableContainer>
 						<TablePagination
 							component="div"
-							count={filteredRows.length}
+							count={sortedRows.length}
 							page={page}
 							onPageChange={handlePageChange}
 							rowsPerPage={rowsPerPage}
