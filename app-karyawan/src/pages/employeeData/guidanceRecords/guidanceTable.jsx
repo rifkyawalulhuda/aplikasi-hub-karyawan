@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
@@ -17,15 +17,10 @@ import { DataGrid } from '@mui/x-data-grid';
 
 import { formatGuidanceDate, guidanceCategoryConfigs } from './constants';
 
-function GuidanceTable({ rows, selectedRowIds, onSelectionChange, onView, onEdit, onDelete }) {
-	const [paginationModel, setPaginationModel] = useState({
-		page: 0,
-		pageSize: 15,
-	});
-	const [contextMenu, setContextMenu] = useState(null);
-	const rowLookup = useMemo(() => new Map(rows.map((row) => [String(row.id), row])), [rows]);
+const COLUMN_RESIZE_STORAGE_KEY = 'table-widths:guidance-records-table';
 
-	const columns = useMemo(
+function GuidanceTable({ rows, selectedRowIds, onSelectionChange, onView, onEdit, onDelete }) {
+	const baseColumns = useMemo(
 		() => [
 			{
 				field: 'id',
@@ -49,8 +44,8 @@ function GuidanceTable({ rows, selectedRowIds, onSelectionChange, onView, onEdit
 			{
 				field: 'employeeName',
 				headerName: 'NAMA KARYAWAN',
+				width: 220,
 				minWidth: 180,
-				flex: 1,
 			},
 			{
 				field: 'meetingNumber',
@@ -71,8 +66,8 @@ function GuidanceTable({ rows, selectedRowIds, onSelectionChange, onView, onEdit
 			{
 				field: 'location',
 				headerName: 'TEMPAT',
+				width: 180,
 				minWidth: 160,
-				flex: 0.9,
 			},
 			{
 				field: 'employeeNo',
@@ -82,12 +77,108 @@ function GuidanceTable({ rows, selectedRowIds, onSelectionChange, onView, onEdit
 			{
 				field: 'departmentName',
 				headerName: 'DEPARTEMEN',
+				width: 220,
 				minWidth: 180,
-				flex: 1,
 			},
 		],
-		[onDelete, onEdit, onView],
+		[],
 	);
+	const [paginationModel, setPaginationModel] = useState({
+		page: 0,
+		pageSize: 15,
+	});
+	const [contextMenu, setContextMenu] = useState(null);
+	const [columnWidths, setColumnWidths] = useState(() => {
+		const fallbackWidths = Object.fromEntries(
+			baseColumns.map((column) => [column.field, column.width ?? column.minWidth ?? 120]),
+		);
+
+		if (typeof window === 'undefined') {
+			return fallbackWidths;
+		}
+
+		try {
+			return {
+				...fallbackWidths,
+				...JSON.parse(window.localStorage.getItem(COLUMN_RESIZE_STORAGE_KEY) || '{}'),
+			};
+		} catch (error) {
+			return fallbackWidths;
+		}
+	});
+	const rowLookup = useMemo(() => new Map(rows.map((row) => [String(row.id), row])), [rows]);
+
+	const handleColumnResizeStart = (event, field, minWidth = 80) => {
+		event.preventDefault();
+		event.stopPropagation();
+
+		const startX = event.clientX;
+		const initialWidth = columnWidths[field] ?? baseColumns.find((column) => column.field === field)?.width ?? 120;
+
+		const handleMouseMove = (moveEvent) => {
+			const nextWidth = Math.max(minWidth, Math.round(initialWidth + (moveEvent.clientX - startX)));
+
+			setColumnWidths((currentWidths) => {
+				if (currentWidths[field] === nextWidth) {
+					return currentWidths;
+				}
+
+				return {
+					...currentWidths,
+					[field]: nextWidth,
+				};
+			});
+		};
+
+		const handleMouseUp = () => {
+			window.removeEventListener('mousemove', handleMouseMove);
+			window.removeEventListener('mouseup', handleMouseUp);
+		};
+
+		window.addEventListener('mousemove', handleMouseMove);
+		window.addEventListener('mouseup', handleMouseUp);
+	};
+
+	const handleColumnHeaderMouseDown = (event) => {
+		if (event.button !== 0) {
+			return;
+		}
+
+		const headerElement = event.target.closest('.MuiDataGrid-columnHeader');
+		const field = headerElement?.getAttribute('data-field');
+
+		if (!headerElement || !field || field === '__check__') {
+			return;
+		}
+
+		const headerRect = headerElement.getBoundingClientRect();
+		const isInResizeZone = event.clientX >= headerRect.right - 10;
+
+		if (!isInResizeZone) {
+			return;
+		}
+
+		const minWidth = baseColumns.find((column) => column.field === field)?.minWidth ?? 80;
+		handleColumnResizeStart(event, field, minWidth);
+	};
+
+	const columns = useMemo(
+		() =>
+			baseColumns.map((column) => ({
+				...column,
+				width: columnWidths[column.field] ?? column.width ?? column.minWidth ?? 120,
+				flex: undefined,
+			})),
+		[baseColumns, columnWidths],
+	);
+
+	useEffect(() => {
+		if (typeof window === 'undefined') {
+			return;
+		}
+
+		window.localStorage.setItem(COLUMN_RESIZE_STORAGE_KEY, JSON.stringify(columnWidths));
+	}, [columnWidths]);
 
 	const closeContextMenu = () => {
 		setContextMenu(null);
@@ -197,6 +288,7 @@ function GuidanceTable({ rows, selectedRowIds, onSelectionChange, onView, onEdit
 						color: 'rgba(15, 23, 42, 0.12)',
 					},
 				}}
+				onMouseDownCapture={handleColumnHeaderMouseDown}
 				onContextMenu={handleGridContextMenu}
 			>
 				<DataGrid
@@ -219,6 +311,23 @@ function GuidanceTable({ rows, selectedRowIds, onSelectionChange, onView, onEdit
 					sx={{
 						'& .MuiDataGrid-columnHeaderCheckbox .MuiCheckbox-root': {
 							color: '#1976d2',
+						},
+						'& .MuiDataGrid-columnHeader': {
+							position: 'relative',
+						},
+						'& .MuiDataGrid-columnHeader::after': {
+							content: '""',
+							position: 'absolute',
+							top: 10,
+							right: 0,
+							width: 3,
+							height: 'calc(100% - 20px)',
+							borderRadius: 999,
+							backgroundColor: 'transparent',
+							transition: 'background-color 0.2s ease',
+						},
+						'& .MuiDataGrid-columnHeader:hover::after': {
+							backgroundColor: 'rgba(25, 118, 210, 0.2)',
 						},
 						'& .MuiDataGrid-row': {
 							cursor: 'context-menu',
