@@ -3,17 +3,51 @@ import { useNavigate } from 'react-router-dom';
 import { useSnackbar } from 'notistack';
 
 import Box from '@mui/material/Box';
+import CardActionArea from '@mui/material/CardActionArea';
 import Chip from '@mui/material/Chip';
 import Divider from '@mui/material/Divider';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
+import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
+import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined';
+import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
+import ReportGmailerrorredOutlinedIcon from '@mui/icons-material/ReportGmailerrorredOutlined';
+import ArrowForwardIosRoundedIcon from '@mui/icons-material/ArrowForwardIosRounded';
+
 import FeedbackState from '@/components/employeePortal/feedbackState';
 import InstallAppCard from '@/components/employeePortal/installAppCard';
 import { useEmployeeAuth } from '@/contexts/employeeAuthContext';
 import { employeeMeRequest } from '@/services/employeeApi';
 import { formatLongDate, getEmployeePortalErrorMessage, handleEmployeeUnauthorized } from '@/utils/employeePortal';
+
+const QUICK_MENU_ITEMS = [
+	{
+		title: 'Cuti Saya',
+		icon: <CalendarMonthOutlinedIcon />,
+		path: '/karyawan/cuti',
+		accent: 'linear-gradient(135deg, #1F5E9B 0%, #58A6F3 100%)',
+	},
+	{
+		title: 'Profil',
+		icon: <BadgeOutlinedIcon />,
+		path: '/karyawan/profil',
+		accent: 'linear-gradient(135deg, #123B66 0%, #2D73B9 100%)',
+	},
+	{
+		title: 'Bimbingan',
+		icon: <DescriptionOutlinedIcon />,
+		path: '/karyawan/bimbingan-pengarahan',
+		accent: 'linear-gradient(135deg, #174A7A 0%, #4E8ED6 100%)',
+	},
+	{
+		title: 'Peringatan',
+		icon: <ReportGmailerrorredOutlinedIcon />,
+		path: '/karyawan/surat-peringatan',
+		accent: 'linear-gradient(135deg, #4B2A78 0%, #8B5CF6 100%)',
+	},
+];
 
 function SummaryCard({ label, value, helper }) {
 	return (
@@ -52,6 +86,64 @@ function ActivityCard({ title, subtitle, description, meta }) {
 					{description}
 				</Typography>
 			</Stack>
+		</Paper>
+	);
+}
+
+function QuickMenuCard({ item, onClick }) {
+	return (
+		<Paper
+			elevation={0}
+			sx={{
+				borderRadius: 4,
+				overflow: 'hidden',
+				border: '1px solid rgba(18,59,102,0.08)',
+				backgroundColor: '#FFFFFF',
+			}}
+		>
+			<CardActionArea
+				onClick={onClick}
+				sx={{
+					height: '100%',
+					p: 0,
+				}}
+			>
+				<Stack direction="row" spacing={1.5} alignItems="center" sx={{ p: 1.5, minHeight: 92 }}>
+					<Box
+						sx={{
+							width: 52,
+							height: 52,
+							borderRadius: 3,
+							display: 'grid',
+							placeItems: 'center',
+							color: '#FFFFFF',
+							background: item.accent,
+							boxShadow: '0 10px 22px rgba(18,59,102,0.16)',
+							flexShrink: 0,
+						}}
+					>
+						{item.icon}
+					</Box>
+					<Box sx={{ flex: 1, minWidth: 0 }}>
+						<Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1}>
+							<Box sx={{ minWidth: 0 }}>
+								<Typography
+									variant="h6"
+									sx={{
+										color: '#123B66',
+										fontWeight: 700,
+										fontSize: '0.80rem',
+										lineHeight: 1.1,
+									}}
+								>
+									{item.title}
+								</Typography>
+							</Box>
+							<ArrowForwardIosRoundedIcon sx={{ fontSize: 16, color: '#9AB0C4', mt: 0.25 }} />
+						</Stack>
+					</Box>
+				</Stack>
+			</CardActionArea>
 		</Paper>
 	);
 }
@@ -149,6 +241,37 @@ function EmployeeDashboardPage() {
 			</Paper>
 
 			<InstallAppCard />
+
+			<Paper
+				sx={{
+					p: 2,
+					borderRadius: 4,
+					background: 'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(244,249,255,0.98) 100%)',
+					border: '1px solid rgba(18,59,102,0.08)',
+				}}
+			>
+				<Stack spacing={1.5}>
+					<Box>
+						<Typography variant="h6" sx={{ color: '#123B66', fontWeight: 800 }}>
+							Menu Cepat
+						</Typography>
+						<Typography variant="body2" color="text.secondary">
+							Pilih fitur utama yang paling sering Anda gunakan.
+						</Typography>
+					</Box>
+					<Box
+						sx={{
+							display: 'grid',
+							gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+							gap: 1.25,
+						}}
+					>
+						{QUICK_MENU_ITEMS.map((item) => (
+							<QuickMenuCard key={item.path} item={item} onClick={() => navigate(item.path)} />
+						))}
+					</Box>
+				</Stack>
+			</Paper>
 
 			<Box
 				sx={{
