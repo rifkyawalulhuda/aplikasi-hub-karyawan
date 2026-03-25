@@ -43,6 +43,9 @@ Folder ini dipilih sebagai basis utama pengembangan karena struktur template-nya
 - Area `Portal Mobile Karyawan` dibangun di project yang sama dengan prefix route `/karyawan`.
 - Area `Portal Mobile Karyawan` ditujukan mobile-first dan diaktifkan sebagai PWA installable.
 - Area admin desktop dan area mobile karyawan menggunakan auth context dan route guard yang terpisah agar session tidak saling bentrok.
+- PWA mobile sekarang memiliki domain khusus `pwa.aplikasi-hub.my.id` yang dilayani melalui Cloudflare Tunnel, bukan Cloudflare Pages.
+- Login PWA mobile menampilkan tombol `Install App` dengan fallback instruksi manual jika `beforeinstallprompt` belum tersedia di browser.
+- Manifest PWA sekarang memakai ikon PNG standar `pwa/icon-192.png` dan `pwa/icon-512.png`; SVG tidak lagi dipakai sebagai ikon utama agar kompatibilitas install lebih stabil.
 
 ### Backend dan Database
 
@@ -58,6 +61,12 @@ Folder ini dipilih sebagai basis utama pengembangan karena struktur template-nya
 - Ditambahkan auth flow khusus karyawan berbasis bearer token ringan dengan secret `EMPLOYEE_AUTH_SECRET`.
 - Login `Portal Mobile Karyawan` menggunakan `Employee No` sebagai NIK dan `password` dari tabel `employees`.
 - API self-service karyawan menggunakan endpoint khusus `/api/employee-me/*` dan seluruh data selalu difilter berdasarkan employee yang sedang login.
+- Deploy publik saat ini memakai arsitektur full lokal + Cloudflare Tunnel:
+  - frontend admin/PWA tetap berjalan di server lokal
+  - backend API tetap berjalan di server lokal
+  - domain publik `aplikasi-hub.my.id`, `www.aplikasi-hub.my.id`, `pwa.aplikasi-hub.my.id`, dan `api.aplikasi-hub.my.id` diarahkan melalui tunnel, bukan Cloudflare Pages atau Netlify
+- `APP_BASE_URL` dipakai untuk domain publik utama `https://aplikasi-hub.my.id`.
+- `VITE_API_BASE_URL` untuk build publik mengarah ke `https://api.aplikasi-hub.my.id/api`.
 - `Data Cuti Karyawan` sekarang diperlakukan sebagai saldo utama admin-only dengan satu row per kombinasi `Karyawan + Jenis Cuti + Tahun`.
 - Final approval cuti dari PWA tidak lagi menambah row baru pada `Data Cuti Karyawan`; sistem hanya mengurangi `Sisa Cuti` pada row utama yang sesuai.
 - Riwayat approval cuti dan perubahan admin/import untuk `Data Cuti Karyawan` ditampilkan melalui aksi `Detail`, bukan dengan menduplikasi row pada grid utama.
@@ -78,6 +87,8 @@ Folder ini dipilih sebagai basis utama pengembangan karena struktur template-nya
   - jika requester tidak punya `Group Shift`, tahap foreman hanya memakai foreman dalam department yang sama yang tidak punya assignment pada `group_shift_foremen`
   - jika kandidat foreman pada jalur aktif tidak ada, approval langsung naik ke job level berikutnya yang tersedia di department yang sama
   - stage `Foreman Group Shift` dan `Foreman` tidak boleh muncul dobel untuk approver yang sama
+- Frontend Vite development host sekarang di-whitelist untuk domain Cloudflare public agar tunnel dapat mengakses frontend lokal tanpa blok host.
+- Server backend dev sekarang memiliki guard `EADDRINUSE` agar proses lama di port `4000` tidak memunculkan crash berulang saat restart dev.
 
 ## Struktur Navigasi yang Sudah Disepakati
 
@@ -709,6 +720,11 @@ Yang sudah selesai:
 - Menambahkan route print admin dan PWA untuk `Form Permohonan Cuti dan Ijin`, beserta tombol `Print A4` pada flow cuti approved dan detail cuti approved.
 - Menambahkan dokumen print A4 khusus cuti approved dengan mapping field workflow cuti, checkbox jenis cuti, daftar pengganti repetitif, dan ringkasan approval bawah.
 - Menyesuaikan layout vertikal dokumen print cuti agar seluruh form tetap muat dalam satu halaman A4 tanpa memotong area approval bawah.
+- Menambahkan tombol `Install App` pada halaman login PWA Karyawan, beserta fallback informasi manual untuk browser yang belum memunculkan prompt install otomatis.
+- Menyesuaikan konfigurasi PWA agar manifest menggunakan ikon PNG standar (`pwa/icon-192.png` dan `pwa/icon-512.png`) untuk kompatibilitas install yang lebih stabil.
+- Mengubah favicon HTML agar menggunakan PNG standar dari `public/pwa`.
+- Menyesuaikan `vite.config.js` agar host development menerima domain Cloudflare public (`aplikasi-hub.my.id`, `www`, `pwa`, `api`) saat diakses lewat tunnel.
+- Menambahkan guard startup server Express agar port `4000` yang sedang dipakai tidak menyebabkan crash dev berulang.
 - Menambahkan endpoint live `/api/notifications` dan panel notifikasi pada header admin.
 - Menambahkan endpoint update status notifikasi:
   - `POST /api/notifications/read`

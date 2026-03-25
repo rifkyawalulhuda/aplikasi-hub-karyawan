@@ -1626,6 +1626,39 @@ router.post('/push-subscriptions', async (req, res, next) => {
 	}
 });
 
+router.post('/push-test', async (req, res, next) => {
+	try {
+		const activeSubscriptionCount = await prisma.employeePushSubscription.count({
+			where: {
+				employeeId: req.employee.id,
+				isActive: true,
+			},
+		});
+
+		if (activeSubscriptionCount === 0) {
+			return res.status(400).json({
+				message: 'Belum ada perangkat aktif untuk push. Klik "Aktifkan Push" dulu di menu notifikasi.',
+			});
+		}
+
+		const result = await sendEmployeePushNotification(prisma, {
+			employeeIds: [req.employee.id],
+			title: 'Tes Push Sankyu Hub Karyawan',
+			body: 'Jika notifikasi ini muncul, push notification di perangkat Anda sudah aktif.',
+			url: '/karyawan/cuti',
+			tag: `push-test-${req.employee.id}-${Date.now()}`,
+		});
+
+		return res.json({
+			message: 'Permintaan test push sudah diproses.',
+			subscriptions: activeSubscriptionCount,
+			...result,
+		});
+	} catch (error) {
+		return next(error);
+	}
+});
+
 router.delete('/push-subscriptions', async (req, res, next) => {
 	try {
 		const endpoint = String(req.body?.endpoint || '').trim();
