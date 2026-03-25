@@ -1,23 +1,13 @@
-import TableCell from '@mui/material/TableCell';
-import TableRow from '@mui/material/TableRow';
+import { useMemo } from 'react';
+
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import DeleteOutlineOutlinedIcon from '@mui/icons-material/DeleteOutlineOutlined';
 
-import EnhancedTable from '@/components/dataTable';
-import TableRowActionMenu from '@/components/tableRowActionMenu';
+import EnhancedTable, { createRowNumberColumn } from '@/components/dataTable';
 import { toLocalDateString } from '@/utils/dateUtils';
-
-const stickyActionCellSx = {
-	position: 'sticky',
-	right: 0,
-	minWidth: 84,
-	backgroundColor: 'background.paper',
-	zIndex: 2,
-	boxShadow: '-6px 0 8px -8px rgba(15, 23, 42, 0.35)',
-};
 
 function MasterDataTable({ rows, loading, config, onEdit, onDelete }) {
 	if (!loading && rows.length === 0) {
@@ -41,75 +31,63 @@ function MasterDataTable({ rows, loading, config, onEdit, onDelete }) {
 			label: 'NAMA',
 		},
 	];
+	const columns = useMemo(
+		() =>
+			dataColumns.map((column) => {
+				if (column.id === 'id') {
+					return createRowNumberColumn();
+				}
 
-	const headCells = [
-		...dataColumns,
-		{
-			id: 'actions',
-			label: 'AKSI',
-			disableSort: true,
-			sx: { ...stickyActionCellSx, zIndex: 4 },
-		},
-	];
+				return {
+					field: column.id,
+					headerName: column.label,
+					width: column.width,
+					minWidth:
+						column.id === 'content'
+							? 360
+							: column.minWidth ?? column.width ?? (column.type === 'date' ? 140 : 180),
+					sortable: column.disableSort !== true,
+					valueFormatter: column.type === 'date' ? (params) => toLocalDateString(params.value) : undefined,
+					renderCell:
+						column.id === 'content'
+							? (params) => (
+									<Typography
+										variant="body2"
+										sx={{
+											whiteSpace: 'pre-wrap',
+											wordBreak: 'break-word',
+											lineHeight: 1.5,
+										}}
+									>
+										{params.value || '-'}
+									</Typography>
+							  )
+							: undefined,
+				};
+			}),
+		[dataColumns],
+	);
 
 	return (
 		<EnhancedTable
 			rows={rows}
-			headCells={headCells}
-			stickyHeader
-			initialRowsPerPage={15}
-			rowsPerPageOptions={[15, 30, 50, 100]}
-			tableContainerProps={{
-				sx: {
-					maxHeight: 480,
+			columns={columns}
+			columnResizeKey={`master-data-${config?.resource || 'shared'}-table`}
+			getContextMenuActions={() => [
+				{
+					key: 'edit',
+					label: 'Edit',
+					icon: <EditOutlinedIcon fontSize="small" color="primary" />,
+					onClick: onEdit,
 				},
-			}}
-			render={(row, _index, { rowNumber }) => (
-				<TableRow hover key={row.id}>
-					{dataColumns.map((column) => (
-						<TableCell
-							key={`${row.id}-${column.id}`}
-							sx={
-								column.id === 'content'
-									? {
-											minWidth: 360,
-											maxWidth: 560,
-											whiteSpace: 'pre-wrap',
-											wordBreak: 'break-word',
-									  }
-									: undefined
-							}
-						>
-							{(() => {
-								if (column.id === 'id') return rowNumber;
-								if (column.type === 'date') return toLocalDateString(row[column.id]);
-								return row[column.id];
-							})()}
-						</TableCell>
-					))}
-					<TableCell sx={stickyActionCellSx}>
-						<Stack direction="row" justifyContent="center">
-							<TableRowActionMenu
-								row={row}
-								actions={[
-									{
-										key: 'edit',
-										label: 'Edit',
-										icon: <EditOutlinedIcon fontSize="small" color="primary" />,
-										onClick: onEdit,
-									},
-									{
-										key: 'delete',
-										label: 'Hapus',
-										icon: <DeleteOutlineOutlinedIcon fontSize="small" color="error" />,
-										onClick: onDelete,
-									},
-								]}
-							/>
-						</Stack>
-					</TableCell>
-				</TableRow>
-			)}
+				{
+					key: 'delete',
+					label: 'Hapus',
+					icon: <DeleteOutlineOutlinedIcon fontSize="small" color="error" />,
+					onClick: onDelete,
+				},
+			]}
+			height={480}
 		/>
 	);
 }

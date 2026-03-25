@@ -1,46 +1,13 @@
+import { useMemo } from 'react';
+
 import Stack from '@mui/material/Stack';
-import TableCell from '@mui/material/TableCell';
-import TableRow from '@mui/material/TableRow';
 import Typography from '@mui/material/Typography';
 
 import DeleteOutlineOutlinedIcon from '@mui/icons-material/DeleteOutlineOutlined';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 
-import EnhancedTable from '@/components/dataTable';
-import TableRowActionMenu from '@/components/tableRowActionMenu';
+import EnhancedTable, { createRowNumberColumn } from '@/components/dataTable';
 import { formatEmploymentTypeLabel, formatGradeLabel } from '@/constants/employeeMaster';
-
-const stickyActionCellSx = {
-	position: 'sticky',
-	right: 0,
-	minWidth: 84,
-	backgroundColor: 'background.paper',
-	zIndex: 2,
-	boxShadow: '-6px 0 8px -8px rgba(15, 23, 42, 0.35)',
-};
-
-const HEAD_CELLS = [
-	{ id: 'id', label: 'NO' },
-	{ id: 'employeeNo', label: 'EMPLOYEE NO' },
-	{ id: 'fullName', label: 'FULLNAME' },
-	{ id: 'employmentType', label: 'EMPLOYMENT TYPE' },
-	{ id: 'siteDiv', label: 'SITE / DIV' },
-	{ id: 'departmentName', label: 'DEPARTMENT' },
-	{ id: 'groupShiftName', label: 'GROUP SHIFT' },
-	{ id: 'lengthOfService', label: 'LENGTH OF SERVICE' },
-	{ id: 'age', label: 'AGE' },
-	{ id: 'birthDate', label: 'BIRTH DATE' },
-	{ id: 'gender', label: 'GENDER' },
-	{ id: 'workLocationName', label: 'WORK LOCATION' },
-	{ id: 'jobRoleName', label: 'JOB ROLE' },
-	{ id: 'jobLevelName', label: 'JOB LEVEL' },
-	{ id: 'educationLevel', label: 'EDUCATION LEVEL' },
-	{ id: 'grade', label: 'GRADE' },
-	{ id: 'joinDate', label: 'JOIN DATE' },
-	{ id: 'phoneNumber', label: 'PHONE NUMBER' },
-	{ id: 'email', label: 'EMAIL' },
-	{ id: 'actions', label: 'AKSI', disableSort: true, sx: { ...stickyActionCellSx, zIndex: 4 } },
-];
 
 function EmployeeTable({ rows, onEdit, onDelete }) {
 	if (rows.length === 0) {
@@ -54,58 +21,72 @@ function EmployeeTable({ rows, onEdit, onDelete }) {
 		);
 	}
 
+	const columns = useMemo(
+		() => [
+			createRowNumberColumn(),
+			{ field: 'employeeNo', headerName: 'EMPLOYEE NO', minWidth: 150 },
+			{ field: 'fullName', headerName: 'FULLNAME', minWidth: 220, flex: 1 },
+			{
+				field: 'employmentType',
+				headerName: 'EMPLOYMENT TYPE',
+				minWidth: 170,
+				renderCell: (params) => formatEmploymentTypeLabel(params.value),
+			},
+			{ field: 'siteDiv', headerName: 'SITE / DIV', minWidth: 130 },
+			{ field: 'departmentName', headerName: 'DEPARTMENT', minWidth: 180 },
+			{
+				field: 'groupShiftName',
+				headerName: 'GROUP SHIFT',
+				minWidth: 160,
+				renderCell: (params) => params.value || '-',
+			},
+			{ field: 'lengthOfService', headerName: 'LENGTH OF SERVICE', minWidth: 170 },
+			{ field: 'age', headerName: 'AGE', minWidth: 90 },
+			{ field: 'birthDate', headerName: 'BIRTH DATE', minWidth: 140 },
+			{ field: 'gender', headerName: 'GENDER', minWidth: 120 },
+			{ field: 'workLocationName', headerName: 'WORK LOCATION', minWidth: 170 },
+			{ field: 'jobRoleName', headerName: 'JOB ROLE', minWidth: 170 },
+			{ field: 'jobLevelName', headerName: 'JOB LEVEL', minWidth: 150 },
+			{ field: 'educationLevel', headerName: 'EDUCATION LEVEL', minWidth: 180 },
+			{
+				field: 'grade',
+				headerName: 'GRADE',
+				minWidth: 120,
+				renderCell: (params) => formatGradeLabel(params.value),
+			},
+			{ field: 'joinDate', headerName: 'JOIN DATE', minWidth: 140 },
+			{ field: 'phoneNumber', headerName: 'PHONE NUMBER', minWidth: 160 },
+			{
+				field: 'email',
+				headerName: 'EMAIL',
+				minWidth: 220,
+				flex: 1,
+				renderCell: (params) => params.value || '-',
+			},
+		],
+		[],
+	);
+
 	return (
 		<EnhancedTable
 			rows={rows}
-			headCells={HEAD_CELLS}
-			stickyHeader
-			initialRowsPerPage={15}
-			rowsPerPageOptions={[15, 30, 50, 100]}
-			tableContainerProps={{ sx: { maxHeight: 520 } }}
-			render={(row, _index, { rowNumber }) => (
-				<TableRow hover key={row.id}>
-					<TableCell>{rowNumber}</TableCell>
-					<TableCell>{row.employeeNo}</TableCell>
-					<TableCell>{row.fullName}</TableCell>
-					<TableCell>{formatEmploymentTypeLabel(row.employmentType)}</TableCell>
-					<TableCell>{row.siteDiv}</TableCell>
-					<TableCell>{row.departmentName}</TableCell>
-					<TableCell>{row.groupShiftName || '-'}</TableCell>
-					<TableCell>{row.lengthOfService}</TableCell>
-					<TableCell>{row.age}</TableCell>
-					<TableCell>{row.birthDate}</TableCell>
-					<TableCell>{row.gender}</TableCell>
-					<TableCell>{row.workLocationName}</TableCell>
-					<TableCell>{row.jobRoleName}</TableCell>
-					<TableCell>{row.jobLevelName}</TableCell>
-					<TableCell>{row.educationLevel}</TableCell>
-					<TableCell>{formatGradeLabel(row.grade)}</TableCell>
-					<TableCell>{row.joinDate}</TableCell>
-					<TableCell>{row.phoneNumber}</TableCell>
-					<TableCell>{row.email || '-'}</TableCell>
-					<TableCell sx={stickyActionCellSx}>
-						<Stack direction="row" justifyContent="center">
-							<TableRowActionMenu
-								row={row}
-								actions={[
-									{
-										key: 'edit',
-										label: 'Edit',
-										icon: <EditOutlinedIcon fontSize="small" color="primary" />,
-										onClick: onEdit,
-									},
-									{
-										key: 'delete',
-										label: 'Hapus',
-										icon: <DeleteOutlineOutlinedIcon fontSize="small" color="error" />,
-										onClick: onDelete,
-									},
-								]}
-							/>
-						</Stack>
-					</TableCell>
-				</TableRow>
-			)}
+			columns={columns}
+			columnResizeKey="master-employees-table"
+			getContextMenuActions={() => [
+				{
+					key: 'edit',
+					label: 'Edit',
+					icon: <EditOutlinedIcon fontSize="small" color="primary" />,
+					onClick: onEdit,
+				},
+				{
+					key: 'delete',
+					label: 'Hapus',
+					icon: <DeleteOutlineOutlinedIcon fontSize="small" color="error" />,
+					onClick: onDelete,
+				},
+			]}
+			height={520}
 		/>
 	);
 }

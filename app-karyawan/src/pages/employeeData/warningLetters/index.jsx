@@ -161,8 +161,6 @@ function WarningLettersPage() {
 	}, [filteredRows]);
 
 	const selectedRows = filteredRows.filter((row) => selectedRowIds.includes(row.id));
-	const allRowsSelected = filteredRows.length > 0 && selectedRows.length === filteredRows.length;
-	const someRowsSelected = selectedRows.length > 0 && selectedRows.length < filteredRows.length;
 	const isCreateMenuOpen = Boolean(createMenuAnchorEl);
 
 	const handleOpenCreateForm = (category) => {
@@ -170,20 +168,6 @@ function WarningLettersPage() {
 		setSelectedItem(null);
 		setFormOpen(true);
 		setCreateMenuAnchorEl(null);
-	};
-
-	const handleToggleSelectRow = (id, checked) => {
-		setSelectedRowIds((currentIds) => {
-			if (checked) {
-				return currentIds.includes(id) ? currentIds : [...currentIds, id];
-			}
-
-			return currentIds.filter((currentId) => currentId !== id);
-		});
-	};
-
-	const handleToggleSelectAll = (checked) => {
-		setSelectedRowIds(checked ? filteredRows.map((row) => row.id) : []);
 	};
 
 	const handleSubmit = async (values) => {
@@ -499,10 +483,9 @@ function WarningLettersPage() {
 					<WarningLetterTable
 						rows={filteredRows}
 						selectedRowIds={selectedRowIds}
-						allRowsSelected={allRowsSelected}
-						someRowsSelected={someRowsSelected}
-						onToggleSelectAll={handleToggleSelectAll}
-						onToggleSelectRow={handleToggleSelectRow}
+						onSelectionChange={(selectionModel) =>
+							setSelectedRowIds(selectionModel.map((id) => Number(id)))
+						}
 						onView={(item) => navigate(`/data-karyawan/data-surat-peringatan/${item.id}`)}
 						onEdit={(item) => {
 							setSelectedItem(item);

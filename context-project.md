@@ -46,6 +46,23 @@ Folder ini dipilih sebagai basis utama pengembangan karena struktur template-nya
 - PWA mobile sekarang memiliki domain khusus `pwa.aplikasi-hub.my.id` yang dilayani melalui Cloudflare Tunnel, bukan Cloudflare Pages.
 - Login PWA mobile menampilkan tombol `Install App` dengan fallback instruksi manual jika `beforeinstallprompt` belum tersedia di browser.
 - Manifest PWA sekarang memakai ikon PNG standar `pwa/icon-192.png` dan `pwa/icon-512.png`; SVG tidak lagi dipakai sebagai ikon utama agar kompatibilitas install lebih stabil.
+- Standar global `table list` desktop sekarang mengikuti pola halaman `Bimbingan & Pengarahan`, kecuali halaman `Detail Karyawan`.
+
+### Standar Global Table List Desktop
+
+- Berlaku untuk halaman daftar data desktop yang memakai komponen tabel bersama maupun halaman list custom yang sudah diselaraskan.
+- Halaman `Detail Karyawan` dikecualikan dan tetap memakai pola tabel/ringkasan khususnya sendiri.
+- Library standar untuk tabel list desktop adalah `MUI X Data Grid`, mengikuti pola implementasi pada halaman `Bimbingan & Pengarahan`.
+- Tampilan tabel list desktop sekarang memakai gaya spreadsheet ringan:
+  - header abu muda
+  - garis pemisah vertikal antar kolom
+  - hover state lembut per baris
+  - pagination standar `15 / 30 / 50 / 100`
+- Aksi row seperti `Detail`, `Edit`, `Hapus`, dan `Print A4` dipindahkan dari kolom `AKSI` ke menu `klik kanan` pada baris data.
+- Jika halaman membutuhkan bulk action, selection memakai `checkboxSelection` bawaan `Data Grid`, bukan checkbox manual pada tabel HTML biasa.
+- Resize antar kolom diaktifkan sebagai perilaku standar pada tabel list desktop melalui drag di sisi kanan header kolom.
+- Lebar kolom tabel list yang memakai `columnResizeKey` disimpan ke `localStorage` browser agar konsisten saat halaman dibuka ulang.
+- Komponen acuan global untuk perilaku ini adalah shared `EnhancedTable` yang sekarang menjadi wrapper `MUI X Data Grid`, sedangkan halaman `Bimbingan & Pengarahan` tetap menjadi referensi visual utama.
 
 ### Backend dan Database
 
