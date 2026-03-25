@@ -1,5 +1,7 @@
 export const WARNING_LEVEL_OPTIONS = [1, 2, 3];
-export const SUPERIOR_JOB_LEVEL = 'Department Manager';
+export const SUPERIOR_JOB_LEVEL = 'Dept. Manager';
+export const SUPERIOR_JOB_LEVEL_ALIASES = [SUPERIOR_JOB_LEVEL, 'Department Manager'];
+const NORMALIZED_SUPERIOR_JOB_LEVELS = SUPERIOR_JOB_LEVEL_ALIASES.map((value) => value.toLowerCase());
 const DEFAULT_WARNING_LEVEL = 1;
 export const DISCIPLINE_LETTER_CATEGORIES = {
 	WARNING_LETTER: 'WARNING_LETTER',
@@ -85,11 +87,12 @@ export function getWarningEndDate(value) {
 }
 
 export function getSuperiorOptions(employeeOptions = []) {
-	return employeeOptions.filter(
-		(item) =>
+	return employeeOptions.filter((item) =>
+		NORMALIZED_SUPERIOR_JOB_LEVELS.includes(
 			String(item.jobLevelName || '')
 				.trim()
-				.toLowerCase() === SUPERIOR_JOB_LEVEL.toLowerCase(),
+				.toLowerCase(),
+		),
 	);
 }
 
