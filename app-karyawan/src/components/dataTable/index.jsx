@@ -1,188 +1,222 @@
 import { useEffect, useMemo, useState } from 'react';
-import Table from '@mui/material/Table';
 
-import TableBody from '@mui/material/TableBody';
-import TableCell from '@mui/material/TableCell';
-import TableContainer from '@mui/material/TableContainer';
-import TableHead from '@mui/material/TableHead';
-import TablePagination from '@mui/material/TablePagination';
-import TableRow from '@mui/material/TableRow';
-import TableSortLabel from '@mui/material/TableSortLabel';
+import Box from '@mui/material/Box';
+import ListItemIcon from '@mui/material/ListItemIcon';
+import ListItemText from '@mui/material/ListItemText';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
+import Paper from '@mui/material/Paper';
+import Typography from '@mui/material/Typography';
 
-function getInitialColumnWidths(headCells = []) {
-	return headCells.reduce((accumulator, headCell) => {
-		const configuredWidth = headCell.width ?? headCell.sx?.width ?? headCell.sx?.minWidth;
+import { DataGrid } from '@mui/x-data-grid';
 
-		if (configuredWidth) {
-			accumulator[headCell.id] = configuredWidth;
+const DEFAULT_GRID_HEIGHT = 540;
+const DEFAULT_PAGE_SIZE = 15;
+const DEFAULT_PAGE_SIZE_OPTIONS = [15, 30, 50, 100];
+
+const PAPER_SX = {
+	borderRadius: 3,
+	overflow: 'hidden',
+	borderColor: 'rgba(15, 23, 42, 0.12)',
+	boxShadow: '0 12px 30px rgba(15, 23, 42, 0.06)',
+	backgroundColor: '#FFFFFF',
+};
+
+const GRID_WRAPPER_SX = {
+	width: '100%',
+	'& .MuiDataGrid-root': {
+		border: 'none',
+	},
+	'& .MuiDataGrid-columnHeaders': {
+		backgroundColor: '#F4F7FB',
+		borderBottom: '1px solid rgba(15, 23, 42, 0.12)',
+		borderTop: '1px solid rgba(15, 23, 42, 0.02)',
+	},
+	'& .MuiDataGrid-columnHeaderTitle': {
+		fontWeight: 800,
+		fontSize: '0.78rem',
+		letterSpacing: '0.02em',
+		color: '#20324A',
+	},
+	'& .MuiDataGrid-cell': {
+		borderBottom: '1px solid rgba(15, 23, 42, 0.08)',
+		alignItems: 'center',
+		py: 1.15,
+	},
+	'& .MuiDataGrid-row:hover': {
+		backgroundColor: 'rgba(25, 118, 210, 0.03)',
+	},
+	'& .MuiDataGrid-row.Mui-selected': {
+		backgroundColor: 'rgba(25, 118, 210, 0.06)',
+	},
+	'& .MuiDataGrid-row.Mui-selected:hover': {
+		backgroundColor: 'rgba(25, 118, 210, 0.08)',
+	},
+	'& .MuiDataGrid-cell:focus, & .MuiDataGrid-columnHeader:focus': {
+		outline: 'none',
+	},
+	'& .MuiDataGrid-columnSeparator': {
+		color: 'rgba(15, 23, 42, 0.12)',
+	},
+	'& .MuiDataGrid-footerContainer': {
+		borderTop: '1px solid rgba(15, 23, 42, 0.08)',
+		backgroundColor: '#FBFCFE',
+	},
+};
+
+const GRID_SX = {
+	'& .MuiDataGrid-columnHeaderCheckbox .MuiCheckbox-root': {
+		color: '#1976d2',
+	},
+	'& .MuiDataGrid-columnHeader': {
+		position: 'relative',
+	},
+	'& .MuiDataGrid-columnHeader::after': {
+		content: '""',
+		position: 'absolute',
+		top: 10,
+		right: 0,
+		width: 3,
+		height: 'calc(100% - 20px)',
+		borderRadius: 999,
+		backgroundColor: 'transparent',
+		transition: 'background-color 0.2s ease',
+	},
+	'& .MuiDataGrid-columnHeader:hover::after': {
+		backgroundColor: 'rgba(25, 118, 210, 0.2)',
+	},
+	'& .MuiDataGrid-row': {
+		cursor: 'context-menu',
+	},
+};
+
+function getInitialColumnWidths(columns = []) {
+	return columns.reduce((accumulator, column) => {
+		const configuredWidth = column.width ?? column.minWidth;
+
+		if (column.field && configuredWidth) {
+			accumulator[column.field] = configuredWidth;
 		}
 
 		return accumulator;
 	}, {});
 }
 
-function descendingComparator(a, b, orderBy) {
-	if (b[orderBy] < a[orderBy]) {
-		return -1;
-	}
-	if (b[orderBy] > a[orderBy]) {
-		return 1;
-	}
-	return 0;
+function getColumnMinWidth(columns, field) {
+	const safeColumns = columns || [];
+	const column = safeColumns.find((item) => item.field === field);
+	const rawMinWidth = column?.minWidth ?? 80;
+	return Number.parseFloat(rawMinWidth) || 80;
 }
 
-function getComparator(order, orderBy) {
-	return order === 'desc'
-		? (a, b) => descendingComparator(a, b, orderBy)
-		: (a, b) => -descendingComparator(a, b, orderBy);
+function getDefaultRowId(row) {
+	return row.id;
 }
 
-function EnhancedTableHead(props) {
-	const { order, orderBy, onRequestSort, headCells, columnWidths, onResizeStart, resizableColumns } = props;
-	const createSortHandler = (property) => (event) => {
-		onRequestSort(event, property);
+export function createRowNumberColumn(overrides = {}) {
+	const defaultRenderCell = (params) => {
+		const rowIndex = params.api.getRowIndexRelativeToVisibleRows(params.id);
+
+		return (
+			<Typography variant="body2" sx={{ fontWeight: 700, color: '#123B66' }}>
+				{rowIndex != null ? rowIndex + 1 : params.value}
+			</Typography>
+		);
 	};
 
-	return (
-		<TableHead sx={{ bgcolor: 'background.default' }}>
-			<TableRow>
-				{headCells.map((headCell, i) => (
-					<TableCell
-						key={headCell.id || i}
-						align={headCell.numeric ? 'right' : 'left'}
-						padding={headCell.disablePadding ? 'none' : 'normal'}
-						sortDirection={orderBy === headCell.id ? order : false}
-						sx={{
-							position: 'relative',
-							...(columnWidths[headCell.id]
-								? {
-										width: columnWidths[headCell.id],
-										minWidth: columnWidths[headCell.id],
-										maxWidth: columnWidths[headCell.id],
-								  }
-								: {}),
-							...headCell.sx,
-						}}
-					>
-						<div style={{ paddingRight: resizableColumns ? 10 : 0 }}>
-							{headCell.disableSort ? (
-								headCell.label
-							) : (
-								<TableSortLabel
-									active={orderBy === headCell.id}
-									direction={orderBy === headCell.id ? order : 'asc'}
-									onClick={createSortHandler(headCell.id)}
-								>
-									{headCell.label}
-									{orderBy === headCell.id ? (
-										<span
-											style={{
-												fontSize: '10px',
-											}}
-										>
-											{order === 'desc' ? 'Descending' : 'Ascending'}
-										</span>
-									) : null}
-								</TableSortLabel>
-							)}
-						</div>
-						{resizableColumns && headCell.id ? (
-							<button
-								type="button"
-								aria-label={`Resize column ${headCell.id}`}
-								onMouseDown={(event) => onResizeStart(event, headCell.id)}
-								style={{
-									position: 'absolute',
-									top: 0,
-									right: 0,
-									width: 10,
-									height: '100%',
-									cursor: 'col-resize',
-									userSelect: 'none',
-									border: 0,
-									padding: 0,
-									background: 'transparent',
-								}}
-							/>
-						) : null}
-					</TableCell>
-				))}
-			</TableRow>
-		</TableHead>
-	);
+	return {
+		field: 'id',
+		headerName: 'NO',
+		width: 88,
+		sortable: true,
+		...overrides,
+		renderCell: overrides.renderCell || defaultRenderCell,
+	};
 }
 
 /**
  * @param {object} props
  * @param {Array} props.rows
- * @param {Function} props.render
- * @param {boolean} props.dense
- * @param {Object} props.emptyRowsHeight
- * @param {Boolean} props.stickyHeader
- * @param {object} props.tableContainerProps
- * @param {number=} props.initialRowsPerPage
- * @param {number[]=} props.rowsPerPageOptions
- * @param {boolean=} props.resizableColumns
+ * @param {Array} props.columns
+ * @param {Function=} props.getRowId
+ * @param {Function=} props.getContextMenuActions
+ * @param {Array=} props.rowSelectionModel
+ * @param {Function=} props.onRowSelectionModelChange
+ * @param {boolean=} props.checkboxSelection
+ * @param {boolean=} props.disableRowSelectionOnClick
+ * @param {boolean=} props.hideFooterSelectedRowCount
+ * @param {number=} props.height
+ * @param {number=} props.initialPageSize
+ * @param {number[]=} props.pageSizeOptions
  * @param {string=} props.columnResizeKey
- * @param {object=} props.tableSx
+ * @param {object=} props.paperSx
+ * @param {object=} props.gridWrapperSx
+ * @param {object=} props.gridSx
+ * @param {React.ReactNode=} props.footerContent
  */
 function EnhancedTable(props) {
 	const {
 		rows,
-		headCells,
-		render,
-		dense = false,
-		emptyRowsHeight = { default: 76, dense: 43 },
-		stickyHeader,
-		tableContainerProps,
-		initialRowsPerPage = 5,
-		rowsPerPageOptions = [5, 10, 25],
-		resizableColumns = false,
+		columns,
+		getRowId = getDefaultRowId,
+		getContextMenuActions,
+		rowSelectionModel,
+		onRowSelectionModelChange,
+		checkboxSelection = false,
+		disableRowSelectionOnClick = true,
+		hideFooterSelectedRowCount = true,
+		height = DEFAULT_GRID_HEIGHT,
+		initialPageSize = DEFAULT_PAGE_SIZE,
+		pageSizeOptions = DEFAULT_PAGE_SIZE_OPTIONS,
 		columnResizeKey,
-		tableSx,
+		paperSx,
+		gridWrapperSx,
+		gridSx,
+		footerContent,
 	} = props;
-	const [order, setOrder] = useState('desc');
-	const [orderBy, setOrderBy] = useState('');
-	const [page, setPage] = useState(0);
-	const [rowsPerPage, setRowsPerPage] = useState(initialRowsPerPage);
+
+	const [paginationModel, setPaginationModel] = useState({
+		page: 0,
+		pageSize: initialPageSize,
+	});
+	const [contextMenu, setContextMenu] = useState(null);
 	const [columnWidths, setColumnWidths] = useState(() => {
-		const fallbackWidths = getInitialColumnWidths(headCells);
+		const fallbackWidths = getInitialColumnWidths(columns);
 
 		if (!columnResizeKey || typeof window === 'undefined') {
 			return fallbackWidths;
 		}
 
 		try {
-			const storedWidths = window.localStorage.getItem(`table-widths:${columnResizeKey}`);
-			return storedWidths ? { ...fallbackWidths, ...JSON.parse(storedWidths) } : fallbackWidths;
+			return {
+				...fallbackWidths,
+				...JSON.parse(window.localStorage.getItem(`table-widths:${columnResizeKey}`) || '{}'),
+			};
 		} catch (error) {
 			return fallbackWidths;
 		}
 	});
 
-	const visibleColumns = useMemo(
+	const rowLookup = useMemo(() => new Map(rows.map((row) => [String(getRowId(row)), row])), [getRowId, rows]);
+
+	const resolvedColumns = useMemo(
 		() =>
-			headCells.map((headCell) => ({
-				id: headCell.id,
-				width: columnWidths[headCell.id],
+			columns.map((column) => ({
+				...column,
+				width: column.field
+					? columnWidths[column.field] ?? column.width ?? column.minWidth ?? 120
+					: column.width,
+				flex: undefined,
 			})),
-		[headCells, columnWidths],
+		[columns, columnWidths],
 	);
 
-	const handleRequestSort = (event, property) => {
-		const isAsc = orderBy === property && order === 'asc';
-		setOrder(isAsc ? 'desc' : 'asc');
-		setOrderBy(property);
-	};
-
-	const handleChangePage = (event, newPage) => {
-		setPage(newPage);
-	};
-
-	const handleChangeRowsPerPage = (event) => {
-		setRowsPerPage(parseInt(event.target.value, 10));
-		setPage(0);
-	};
+	useEffect(() => {
+		setColumnWidths((currentWidths) => ({
+			...getInitialColumnWidths(columns),
+			...currentWidths,
+		}));
+	}, [columns]);
 
 	useEffect(() => {
 		if (!columnResizeKey || typeof window === 'undefined') {
@@ -192,21 +226,36 @@ function EnhancedTable(props) {
 		window.localStorage.setItem(`table-widths:${columnResizeKey}`, JSON.stringify(columnWidths));
 	}, [columnResizeKey, columnWidths]);
 
-	const handleResizeStart = (event, columnId) => {
+	const closeContextMenu = () => {
+		setContextMenu(null);
+	};
+
+	const getAvailableContextActions = (row) =>
+		(typeof getContextMenuActions === 'function' ? getContextMenuActions(row) : []).filter(
+			(action) => action && typeof action.label === 'string' && typeof action.onClick === 'function',
+		);
+
+	const handleColumnResizeStart = (event, field) => {
 		event.preventDefault();
 		event.stopPropagation();
 
-		const initialWidth =
-			Number.parseFloat(columnWidths[columnId]) || event.currentTarget.parentElement.offsetWidth || 120;
+		const initialWidth = columnWidths[field] ?? columns.find((column) => column.field === field)?.width ?? 120;
+		const minWidth = getColumnMinWidth(columns, field);
 		const startX = event.clientX;
 
 		const handleMouseMove = (moveEvent) => {
-			const nextWidth = Math.max(60, Math.round(initialWidth + (moveEvent.clientX - startX)));
+			const nextWidth = Math.max(minWidth, Math.round(initialWidth + (moveEvent.clientX - startX)));
 
-			setColumnWidths((currentWidths) => ({
-				...currentWidths,
-				[columnId]: nextWidth,
-			}));
+			setColumnWidths((currentWidths) => {
+				if (currentWidths[field] === nextWidth) {
+					return currentWidths;
+				}
+
+				return {
+					...currentWidths,
+					[field]: nextWidth,
+				};
+			});
 		};
 
 		const handleMouseUp = () => {
@@ -218,72 +267,125 @@ function EnhancedTable(props) {
 		window.addEventListener('mouseup', handleMouseUp);
 	};
 
-	const formatDisplayedRows = ({ from, to, count }) => `${from}-${to} of ${count !== -1 ? count : `more than ${to}`}`;
+	const handleColumnHeaderMouseDown = (event) => {
+		if (event.button !== 0) {
+			return;
+		}
 
-	// Avoid a layout jump when reaching the last page with empty rows.
-	const emptyRows = page > 0 ? Math.max(0, (1 + page) * rowsPerPage - rows.length) : 0;
-	const sortedRows = rows.slice().sort(getComparator(order, orderBy));
-	const paginatedRows = sortedRows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+		const headerElement = event.target.closest('.MuiDataGrid-columnHeader');
+		const field = headerElement?.getAttribute('data-field');
+
+		if (!headerElement || !field || field === '__check__') {
+			return;
+		}
+
+		const headerRect = headerElement.getBoundingClientRect();
+		const isInResizeZone = event.clientX >= headerRect.right - 10;
+
+		if (!isInResizeZone) {
+			return;
+		}
+
+		handleColumnResizeStart(event, field);
+	};
+
+	const handleGridContextMenu = (event) => {
+		const rowElement = event.target.closest('.MuiDataGrid-row');
+
+		if (
+			!rowElement ||
+			event.target.closest('.MuiDataGrid-cellCheckbox') ||
+			event.target.closest(
+				'button, a, input, textarea, select, [role="button"], [data-disable-row-context-menu="true"]',
+			)
+		) {
+			closeContextMenu();
+			return;
+		}
+
+		const row = rowLookup.get(rowElement.getAttribute('data-id'));
+		const actions = getAvailableContextActions(row);
+
+		if (!row || !actions.length) {
+			closeContextMenu();
+			return;
+		}
+
+		event.preventDefault();
+		setContextMenu({
+			mouseX: event.clientX + 2,
+			mouseY: event.clientY - 6,
+			row,
+			actions,
+		});
+	};
+
+	const handleContextAction = (action) => {
+		if (!contextMenu?.row || !action || typeof action.onClick !== 'function' || action.disabled) {
+			return;
+		}
+
+		const { row } = contextMenu;
+		closeContextMenu();
+		action.onClick(row);
+	};
 
 	return (
-		<>
-			<TableContainer {...tableContainerProps}>
-				<Table
-					sx={{ width: '100%', ...tableSx }}
-					stickyHeader={stickyHeader}
-					aria-labelledby="tableTitle"
-					size={dense ? 'small' : 'medium'}
+		<Paper variant="outlined" sx={{ ...PAPER_SX, ...paperSx }}>
+			<Box
+				sx={{
+					height,
+					...GRID_WRAPPER_SX,
+					...gridWrapperSx,
+				}}
+				onMouseDownCapture={handleColumnHeaderMouseDown}
+				onContextMenu={handleGridContextMenu}
+			>
+				<DataGrid
+					rows={rows}
+					columns={resolvedColumns}
+					getRowId={getRowId}
+					density="compact"
+					checkboxSelection={checkboxSelection}
+					disableRowSelectionOnClick={disableRowSelectionOnClick}
+					rowSelectionModel={rowSelectionModel}
+					onRowSelectionModelChange={onRowSelectionModelChange}
+					pagination
+					paginationModel={paginationModel}
+					onPaginationModelChange={setPaginationModel}
+					pageSizeOptions={pageSizeOptions}
+					columnHeaderHeight={56}
+					rowHeight={52}
+					hideFooterSelectedRowCount={hideFooterSelectedRowCount}
+					showCellVerticalBorder
+					showColumnVerticalBorder
+					sx={{
+						...GRID_SX,
+						...gridSx,
+					}}
+				/>
+				<Menu
+					open={contextMenu !== null}
+					onClose={closeContextMenu}
+					anchorReference="anchorPosition"
+					anchorPosition={
+						contextMenu !== null ? { top: contextMenu.mouseY, left: contextMenu.mouseX } : undefined
+					}
 				>
-					{resizableColumns ? (
-						<colgroup>
-							{visibleColumns.map((column, index) => (
-								<col
-									key={column.id || index}
-									style={column.width ? { width: column.width } : undefined}
-								/>
-							))}
-						</colgroup>
-					) : null}
-					<EnhancedTableHead
-						order={order}
-						orderBy={orderBy}
-						onRequestSort={handleRequestSort}
-						rowCount={rows.length}
-						headCells={headCells}
-						columnWidths={columnWidths}
-						onResizeStart={handleResizeStart}
-						resizableColumns={resizableColumns}
-					/>
-					<TableBody>
-						{paginatedRows.map((row, i) =>
-							render(row, i, {
-								rowNumber: page * rowsPerPage + i + 1,
-							}),
-						)}
-						{emptyRows > 0 && (
-							<TableRow
-								style={{
-									height: (dense ? emptyRowsHeight.dense : emptyRowsHeight.default) * emptyRows,
-								}}
-							>
-								<TableCell colSpan="100%" />
-							</TableRow>
-						)}
-					</TableBody>
-				</Table>
-			</TableContainer>
-			<TablePagination
-				rowsPerPageOptions={rowsPerPageOptions}
-				component="div"
-				count={rows.length}
-				rowsPerPage={rowsPerPage}
-				page={page}
-				onPageChange={handleChangePage}
-				onRowsPerPageChange={handleChangeRowsPerPage}
-				labelRowsPerPage="Rows per page"
-				labelDisplayedRows={formatDisplayedRows}
-			/>
-		</>
+					{contextMenu?.actions?.map((action) => (
+						<MenuItem
+							key={action.key || action.label}
+							onClick={() => handleContextAction(action)}
+							disabled={Boolean(action.disabled)}
+						>
+							{action.icon ? <ListItemIcon sx={{ minWidth: 32 }}>{action.icon}</ListItemIcon> : null}
+							<ListItemText>{action.label}</ListItemText>
+						</MenuItem>
+					))}
+				</Menu>
+			</Box>
+			{footerContent || null}
+		</Paper>
 	);
 }
 

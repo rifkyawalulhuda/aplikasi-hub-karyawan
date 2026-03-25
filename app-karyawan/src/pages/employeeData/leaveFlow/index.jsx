@@ -10,13 +10,6 @@ import Link from '@mui/material/Link';
 import MenuItem from '@mui/material/MenuItem';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
-import Table from '@mui/material/Table';
-import TableBody from '@mui/material/TableBody';
-import TableCell from '@mui/material/TableCell';
-import TableContainer from '@mui/material/TableContainer';
-import TableHead from '@mui/material/TableHead';
-import TablePagination from '@mui/material/TablePagination';
-import TableRow from '@mui/material/TableRow';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 
@@ -26,9 +19,9 @@ import PrintOutlinedIcon from '@mui/icons-material/PrintOutlined';
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 
 import CardHeader from '@/components/cardHeader';
+import EnhancedTable from '@/components/dataTable';
 import LeaveStatusChip from '@/components/employeePortal/leaveStatusChip';
 import LeaveRequestDetailDialog from '@/components/leaveAdmin/leaveRequestDetailDialog';
-import TableRowActionMenu from '@/components/tableRowActionMenu';
 import useUrlSearchKeyword from '@/hooks/useUrlSearchKeyword';
 import PageHeader from '@/components/pageHeader';
 import apiRequest from '@/services/api';
@@ -65,8 +58,6 @@ function EmployeeLeaveFlowPage() {
 	const [searchKeyword, setSearchKeyword] = useUrlSearchKeyword();
 	const [statusFilter, setStatusFilter] = useState('ALL');
 	const [stageFilter, setStageFilter] = useState('ALL');
-	const [page, setPage] = useState(0);
-	const [rowsPerPage, setRowsPerPage] = useState(15);
 
 	const loadData = async () => {
 		setLoading(true);
@@ -124,15 +115,6 @@ function EmployeeLeaveFlowPage() {
 		});
 	}, [rows, searchKeyword, statusFilter, stageFilter]);
 
-	useEffect(() => {
-		setPage(0);
-	}, [searchKeyword, statusFilter, stageFilter]);
-
-	const paginatedRows = useMemo(
-		() => filteredRows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage),
-		[filteredRows, page, rowsPerPage],
-	);
-
 	const summary = useMemo(
 		() => ({
 			activeRoutes: rows.filter((item) => item.status === 'IN_APPROVAL').length,
@@ -141,6 +123,70 @@ function EmployeeLeaveFlowPage() {
 			rejected: rows.filter((item) => item.status === 'REJECTED').length,
 		}),
 		[rows],
+	);
+	const columns = useMemo(
+		() => [
+			{
+				field: 'requestNumber',
+				headerName: 'REQUEST',
+				minWidth: 220,
+				flex: 1,
+				renderCell: (params) => (
+					<Stack spacing={0.25}>
+						<Typography variant="body2" sx={{ fontWeight: 700 }}>
+							{params.row.requestNumber}
+						</Typography>
+						<Typography variant="caption" color="text.secondary">
+							{params.row.leaveType}
+							{' | '}
+							Revisi {params.row.revisionNo}
+						</Typography>
+					</Stack>
+				),
+			},
+			{
+				field: 'employeeName',
+				headerName: 'KARYAWAN',
+				minWidth: 220,
+				flex: 1,
+				renderCell: (params) => (
+					<Stack spacing={0.25}>
+						<Typography variant="body2">{params.row.employeeName}</Typography>
+						<Typography variant="caption" color="text.secondary">
+							{params.row.employeeNo}
+						</Typography>
+					</Stack>
+				),
+			},
+			{
+				field: 'periodStart',
+				headerName: 'PERIODE',
+				minWidth: 190,
+				sortable: false,
+				renderCell: (params) =>
+					`${formatLeaveDate(params.row.periodStart)} - ${formatLeaveDate(params.row.periodEnd)}`,
+			},
+			{
+				field: 'activeStageLabel',
+				headerName: 'STAGE AKTIF',
+				minWidth: 180,
+				renderCell: (params) => params.value || '-',
+			},
+			{
+				field: 'activeApproverNames',
+				headerName: 'APPROVER AKTIF',
+				minWidth: 220,
+				flex: 1,
+				renderCell: (params) => params.value || '-',
+			},
+			{
+				field: 'statusLabel',
+				headerName: 'STATUS',
+				minWidth: 150,
+				renderCell: (params) => <LeaveStatusChip status={params.row.status} label={params.row.statusLabel} />,
+			},
+		],
+		[],
 	);
 
 	const handleOpenDetail = async (id) => {
@@ -265,112 +311,30 @@ function EmployeeLeaveFlowPage() {
 							<CircularProgress />
 						</Stack>
 					) : (
-						<TableContainer component={Paper} variant="outlined">
-							<Table size="small">
-								<TableHead>
-									<TableRow>
-										<TableCell>Request</TableCell>
-										<TableCell>Karyawan</TableCell>
-										<TableCell>Periode</TableCell>
-										<TableCell>Stage Aktif</TableCell>
-										<TableCell>Approver Aktif</TableCell>
-										<TableCell>Status</TableCell>
-										<TableCell align="right">Aksi</TableCell>
-									</TableRow>
-								</TableHead>
-								<TableBody>
-									{paginatedRows.length ? (
-										paginatedRows.map((row) => (
-											<TableRow key={row.id} hover>
-												<TableCell>
-													<Stack spacing={0.25}>
-														<Typography variant="body2" sx={{ fontWeight: 700 }}>
-															{row.requestNumber}
-														</Typography>
-														<Typography variant="caption" color="text.secondary">
-															{row.leaveType}
-															{' | '}
-															Revisi {row.revisionNo}
-														</Typography>
-													</Stack>
-												</TableCell>
-												<TableCell>
-													<Stack spacing={0.25}>
-														<Typography variant="body2">{row.employeeName}</Typography>
-														<Typography variant="caption" color="text.secondary">
-															{row.employeeNo}
-														</Typography>
-													</Stack>
-												</TableCell>
-												<TableCell>
-													{formatLeaveDate(row.periodStart)} -{' '}
-													{formatLeaveDate(row.periodEnd)}
-												</TableCell>
-												<TableCell>{row.activeStageLabel || '-'}</TableCell>
-												<TableCell>{row.activeApproverNames || '-'}</TableCell>
-												<TableCell>
-													<LeaveStatusChip status={row.status} label={row.statusLabel} />
-												</TableCell>
-												<TableCell align="right">
-													<Stack direction="row" justifyContent="flex-end">
-														<TableRowActionMenu
-															row={row}
-															actions={[
-																{
-																	key: 'detail',
-																	label: 'Detail',
-																	icon: (
-																		<VisibilityOutlinedIcon
-																			fontSize="small"
-																			color="info"
-																		/>
-																	),
-																	onClick: (item) => handleOpenDetail(item.id),
-																},
-																...(row.status === 'APPROVED'
-																	? [
-																			{
-																				key: 'print',
-																				label: 'Print A4',
-																				icon: (
-																					<PrintOutlinedIcon
-																						fontSize="small"
-																						color="primary"
-																					/>
-																				),
-																				onClick: (item) =>
-																					handleOpenPrint(item.id),
-																			},
-																	  ]
-																	: []),
-															]}
-														/>
-													</Stack>
-												</TableCell>
-											</TableRow>
-										))
-									) : (
-										<TableRow>
-											<TableCell colSpan={7} align="center">
-												Belum ada flow cuti yang cocok dengan filter.
-											</TableCell>
-										</TableRow>
-									)}
-								</TableBody>
-							</Table>
-							<TablePagination
-								rowsPerPageOptions={[15, 30, 50, 100]}
-								component="div"
-								count={filteredRows.length}
-								rowsPerPage={rowsPerPage}
-								page={page}
-								onPageChange={(event, newPage) => setPage(newPage)}
-								onRowsPerPageChange={(event) => {
-									setRowsPerPage(parseInt(event.target.value, 10));
-									setPage(0);
-								}}
-							/>
-						</TableContainer>
+						<EnhancedTable
+							rows={filteredRows}
+							columns={columns}
+							columnResizeKey="leave-flow-table"
+							height={520}
+							getContextMenuActions={(row) => [
+								{
+									key: 'detail',
+									label: 'Detail',
+									icon: <VisibilityOutlinedIcon fontSize="small" color="info" />,
+									onClick: (item) => handleOpenDetail(item.id),
+								},
+								...(row.status === 'APPROVED'
+									? [
+											{
+												key: 'print',
+												label: 'Print A4',
+												icon: <PrintOutlinedIcon fontSize="small" color="primary" />,
+												onClick: (item) => handleOpenPrint(item.id),
+											},
+									  ]
+									: []),
+							]}
+						/>
 					)}
 				</Card>
 			</Stack>
