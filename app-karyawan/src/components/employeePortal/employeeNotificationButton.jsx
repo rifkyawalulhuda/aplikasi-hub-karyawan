@@ -27,6 +27,7 @@ import { useEmployeeAuth } from '@/contexts/employeeAuthContext';
 import {
 	enableEmployeePushSubscription,
 	getEmployeePushStatus,
+	sendEmployeePushTestNotification,
 	syncEmployeePushSubscription,
 } from '@/services/employeePush';
 import { employeeMeRequest } from '@/services/employeeApi';
@@ -60,6 +61,8 @@ function EmployeeNotificationButton() {
 		subscribed: false,
 	});
 	const [pushActionLoading, setPushActionLoading] = useState(false);
+	const [pushTestLoading, setPushTestLoading] = useState(false);
+	const [pushStatusMessage, setPushStatusMessage] = useState('');
 
 	const open = Boolean(anchorEl);
 	const badgeCount = useMemo(() => Math.min(unreadCount, 99), [unreadCount]);
@@ -180,11 +183,13 @@ function EmployeeNotificationButton() {
 
 	const handleEnablePush = useCallback(async () => {
 		setPushActionLoading(true);
+		setPushStatusMessage('');
 
 		try {
 			await enableEmployeePushSubscription();
 			await loadPushStatus();
 			setErrorMessage('');
+			setPushStatusMessage('Push berhasil diaktifkan untuk perangkat ini.');
 		} catch (error) {
 			setErrorMessage(error.message || 'Gagal mengaktifkan push notification.');
 			await loadPushStatus();
@@ -192,6 +197,21 @@ function EmployeeNotificationButton() {
 			setPushActionLoading(false);
 		}
 	}, [loadPushStatus]);
+
+	const handleSendPushTest = useCallback(async () => {
+		setPushTestLoading(true);
+		setPushStatusMessage('');
+
+		try {
+			const response = await sendEmployeePushTestNotification();
+			setErrorMessage('');
+			setPushStatusMessage(response?.message || 'Test push berhasil dikirim.');
+		} catch (error) {
+			setErrorMessage(error.message || 'Gagal mengirim test push notification.');
+		} finally {
+			setPushTestLoading(false);
+		}
+	}, []);
 
 	const handleNavigate = async (item) => {
 		if (!item.isRead) {
@@ -339,14 +359,26 @@ function EmployeeNotificationButton() {
 						</Box>
 						<Stack direction="row" spacing={1}>
 							{pushStatus.supported && pushStatus.configured ? (
-								<Button
-									size="small"
-									variant={pushButtonVariant}
-									onClick={handleEnablePush}
-									disabled={pushActionLoading || isPushEnabled}
-								>
-									{pushButtonLabel}
-								</Button>
+								<Stack direction="row" spacing={1}>
+									<Button
+										size="small"
+										variant={pushButtonVariant}
+										onClick={handleEnablePush}
+										disabled={pushActionLoading || isPushEnabled}
+									>
+										{pushButtonLabel}
+									</Button>
+									{isPushEnabled ? (
+										<Button
+											size="small"
+											variant="text"
+											onClick={handleSendPushTest}
+											disabled={pushTestLoading}
+										>
+											{pushTestLoading ? 'Mengirim...' : 'Test Push'}
+										</Button>
+									) : null}
+								</Stack>
 							) : null}
 							<Button size="small" onClick={markAllAsRead} disabled={!unreadCount}>
 								Tandai semua
@@ -363,6 +395,11 @@ function EmployeeNotificationButton() {
 					{pushStatus.supported && pushStatus.configured && pushStatus.permission === 'denied' ? (
 						<Typography variant="caption" color="warning.main" sx={{ px: 2, pb: 1.25 }}>
 							Izin notifikasi diblokir. Aktifkan lewat pengaturan browser perangkat Anda.
+						</Typography>
+					) : null}
+					{pushStatusMessage ? (
+						<Typography variant="caption" color="success.main" sx={{ px: 2, pb: 1.25 }}>
+							{pushStatusMessage}
 						</Typography>
 					) : null}
 					<Divider />

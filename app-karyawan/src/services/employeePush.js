@@ -119,4 +119,16 @@ async function syncEmployeePushSubscription() {
 	});
 }
 
-export { enableEmployeePushSubscription, getEmployeePushStatus, isPushSupported, syncEmployeePushSubscription };
+async function sendEmployeePushTestNotification() {
+	return employeeMeRequest('/push-test', {
+		method: 'POST',
+	});
+}
+
+export {
+	enableEmployeePushSubscription,
+	getEmployeePushStatus,
+	isPushSupported,
+	sendEmployeePushTestNotification,
+	syncEmployeePushSubscription,
+};
