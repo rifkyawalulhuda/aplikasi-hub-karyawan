@@ -5,3 +5,30 @@ D:\Github\aplikasi-hub-karyawan\app-karyawan\npm run dev:full
 
 npm run dev:server
 npm run dev:host
+
+
+cd folder_docker
+docker compose up -d
+
+
+SETIAP KALI PINDAH LAPTOP (RITUAL WAJIB
+
+git pull
+docker compose up -d (docker)
+npm run build (backend)
+npx prisma migrate dev (backend) (Development only)
+npm run prisma:generate
+npm run prisma:migrate:deploy
+npm install (jika ada perubahan dependency) (Backend)
+npm run dev (front end)
+
+npm ci
+npx prisma -v
+npx prisma migrate dev
+npx prisma migrate status
+npx prisma studio   (masuk ke Prisma Studio)
+
+npm run prisma:seed:login   (untuk membuat akun dummy)
+
+
+Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned

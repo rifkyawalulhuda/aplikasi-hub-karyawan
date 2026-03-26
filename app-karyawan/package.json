@@ -16,6 +16,7 @@
 		"server": "node server/index.js",
 		"prisma:generate": "prisma generate",
 		"prisma:migrate": "prisma migrate dev",
+		"prisma:seed:login": "node prisma/seed-login.mjs",
 		"prisma:studio": "prisma studio",
 		"db:up": "docker compose up -d",
 		"db:down": "docker compose down",
@@ -56,6 +57,9 @@
 		"uuid": "^9.0.0",
 		"web-push": "^3.6.7",
 		"yup": "^1.0.2"
+	},
+	"prisma": {
+		"seed": "node prisma/seed-login.mjs"
 	},
 	"devDependencies": {
 		"@types/react": "^18.0.28",
