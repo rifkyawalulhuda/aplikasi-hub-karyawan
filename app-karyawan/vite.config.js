@@ -53,6 +53,7 @@ export default defineConfig({
 		}),
 	],
 	server: {
+		port: 5173,
 		host: '0.0.0.0',
 		allowedHosts: ['aplikasi-hub.my.id', 'www.aplikasi-hub.my.id', 'pwa.aplikasi-hub.my.id', 'api.aplikasi-hub.my.id'],
 		proxy: {
