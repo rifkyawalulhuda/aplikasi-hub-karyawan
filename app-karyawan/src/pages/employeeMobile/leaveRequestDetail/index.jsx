@@ -127,6 +127,12 @@ function EmployeeLeaveRequestDetailPage() {
 		};
 	};
 
+	const handleInvalidLeaveSubmit = (message) => {
+		if (message === 'Minimal 1 pengganti selama cuti wajib dipilih.') {
+			enqueueSnackbar('Harus memilih minimal 1 orang Pengganti', { variant: 'warning' });
+		}
+	};
+
 	const handleOpenPrint = () => {
 		window.open(`/karyawan/cuti/${id}/print`, '_blank', 'noopener,noreferrer');
 	};
@@ -226,6 +232,7 @@ function EmployeeLeaveRequestDetailPage() {
 				onClose={() => setResubmitOpen(false)}
 				onSubmit={handleResubmit}
 				onLoadReplacementOptions={handleLoadReplacementOptions}
+				onInvalidSubmit={handleInvalidLeaveSubmit}
 			/>
 			<LeaveDecisionDialog
 				open={cancelOpen}

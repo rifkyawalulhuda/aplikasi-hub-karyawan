@@ -76,6 +76,7 @@ function LeaveRequestFormDialog({
 	onClose,
 	onSubmit,
 	onLoadReplacementOptions,
+	onInvalidSubmit,
 }) {
 	const {
 		control,
@@ -279,6 +280,16 @@ function LeaveRequestFormDialog({
 		});
 	};
 
+	const handleFormInvalid = (formErrors) => {
+		const replacementError =
+			formErrors?.replacementEmployeesInput?.find((item) => item?.replacementEmployeeId)?.replacementEmployeeId
+				?.message || '';
+
+		if (replacementError && typeof onInvalidSubmit === 'function') {
+			onInvalidSubmit(replacementError, formErrors);
+		}
+	};
+
 	return (
 		<Dialog open={open} onClose={loading ? undefined : onClose} fullWidth maxWidth="sm">
 			<DialogTitle>{title}</DialogTitle>
@@ -289,7 +300,7 @@ function LeaveRequestFormDialog({
 					component="form"
 					id="employee-leave-request-form"
 					sx={{ pt: 1 }}
-					onSubmit={handleSubmit(handleFormSubmit)}
+					onSubmit={handleSubmit(handleFormSubmit, handleFormInvalid)}
 				>
 					<Grid item xs={12}>
 						<TextField
