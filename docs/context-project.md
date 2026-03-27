@@ -276,9 +276,28 @@ Catatan implementasi:
 - Ditempatkan pada grup menu `Master Data Karyawan`
 - Form input mengikuti pola halaman master yang sudah ada, dengan field:
   - `Nama Group Shift`
-  - `Foreman` sebagai input repetitif dropdown searchable dari `Master Karyawan`
+  - `Foreman` sebagai multi select searchable dari `Master Karyawan`
+  - `Karyawan` sebagai multi select searchable dari `Master Karyawan`
 - Opsi `Foreman` hanya menampilkan karyawan dengan `Job Level = Foreman`
 - Satu `Master Group Shift` dapat memiliki lebih dari satu foreman yang terhubung
+- Satu `Master Group Shift` dapat memiliki lebih dari satu karyawan yang terhubung
+- Satu karyawan hanya boleh memiliki satu assignment `Group Shift` aktif pada saat yang sama melalui field `Employee.groupShiftId`
+- `Master Group Shift` sekarang menjadi source of truth untuk assignment massal `Group Shift` pada `Master Karyawan`
+- Saat `Master Group Shift` dibuat, diubah, dihapus, atau diimport:
+  - assignment karyawan pada field `Group Shift` di `Master Karyawan` otomatis tersinkron
+  - karyawan yang dipindahkan ke group lain otomatis dilepas dari assignment group sebelumnya
+- Halaman `Master Group Shift` sekarang memiliki kolom list `Karyawan`
+- Sudah tersedia template Excel bulk import untuk `Master Group Shift`
+- Sudah tersedia fitur `Download Template` dan `Import Excel` pada halaman `Master Group Shift`
+- Template import `Master Group Shift` sekarang dihasilkan dinamis dari backend
+- Template import `Master Group Shift` minimal memiliki kolom:
+  - `Nama Group Shift`
+  - `Foreman`
+  - `Karyawan`
+- Kolom `Foreman` dan `Karyawan` pada template import mendukung banyak nama dalam satu sel dengan delimiter `;`
+- Import `Master Group Shift` mendukung partial success:
+  - baris valid tetap diproses
+  - baris gagal menghasilkan file error report `.xlsx`
 - Kolom `NO` pada tabel menggunakan nomor urut tampilan dan otomatis rapat kembali saat ada row yang dihapus.
 
 #### Master Unit
@@ -694,6 +713,7 @@ Yang sudah selesai:
 - Menambahkan schema, API, route, menu, dan halaman `Master Karyawan` berdasarkan file Excel sumber.
 - Menambahkan schema, migration, API CRUD, route, menu, dan halaman `Master Admin` dengan field `Nama`, `NIK`, `Password`, dan `Role`.
 - Menambahkan schema, migration, API CRUD, route, menu, dan halaman `Master Group Shift` dengan field `Nama Group Shift` dan relasi banyak `Foreman` dari `Master Karyawan`.
+- Memperluas `Master Group Shift` dengan field multi select `Karyawan`, sinkronisasi otomatis ke `Master Karyawan -> Group Shift`, serta fitur `Download Template` dan `Import Excel` dengan partial success + file error report.
 - Menambahkan relasi `Group Shift` pada `Master Karyawan`, dengan sumber dropdown dari `Master Group Shift` dan posisi kolom setelah `Department`.
 - Menambahkan schema, migration, API CRUD, route, menu, dan halaman `Master Dok Karyawan` dengan field `Nama Dokumen`, `Jenis Dokumen`, dan `Penerbit`.
 - Menambahkan schema, migration, resource master data generic, route, menu, dan halaman `Master Cuti Karyawan` dengan field `Jenis Cuti`.
