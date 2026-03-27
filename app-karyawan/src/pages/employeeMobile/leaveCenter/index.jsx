@@ -215,6 +215,12 @@ function EmployeeLeaveCenterPage() {
 		};
 	};
 
+	const handleInvalidLeaveSubmit = (message) => {
+		if (message === 'Minimal 1 pengganti selama cuti wajib dipilih.') {
+			enqueueSnackbar('Harus memilih minimal 1 orang Pengganti', { variant: 'warning' });
+		}
+	};
+
 	if (loading) {
 		return <FeedbackState loading />;
 	}
@@ -406,6 +412,7 @@ function EmployeeLeaveCenterPage() {
 				onClose={() => setDialogOpen(false)}
 				onSubmit={handleSubmit}
 				onLoadReplacementOptions={handleLoadReplacementOptions}
+				onInvalidSubmit={handleInvalidLeaveSubmit}
 			/>
 		</>
 	);
