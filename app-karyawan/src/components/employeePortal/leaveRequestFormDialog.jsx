@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, useFieldArray, useForm } from 'react-hook-form';
 
 import Autocomplete from '@mui/material/Autocomplete';
@@ -61,16 +61,21 @@ function formatDateForDisplay(value) {
 	return `${day}/${month}/${year}`;
 }
 
+const DEFAULT_REPLACEMENT_OPTIONS_MESSAGE =
+	'Pilih periode cuti terlebih dahulu untuk melihat kandidat pengganti yang valid.';
+
 function LeaveRequestFormDialog({
 	open,
 	loading,
 	leaveTypeOptions = [],
 	replacementOptions = [],
+	replacementOptionsMessage = '',
 	submissionDate = '',
 	initialValue,
 	title,
 	onClose,
 	onSubmit,
+	onLoadReplacementOptions,
 }) {
 	const {
 		control,
@@ -120,11 +125,7 @@ function LeaveRequestFormDialog({
 		new Set(filledReplacementIds.map((value) => Number(value))).size !== filledReplacementIds.length;
 	const canAddReplacement = fields.length < 4;
 	const isSubmitDisabled =
-		loading ||
-		leaveTypeOptions.length === 0 ||
-		replacementOptions.length === 0 ||
-		leaveDaysExceeded ||
-		hasDuplicateReplacementIds;
+		loading || leaveTypeOptions.length === 0 || leaveDaysExceeded || hasDuplicateReplacementIds;
 
 	useEffect(() => {
 		reset(toDefaultValues(initialValue));
@@ -133,6 +134,19 @@ function LeaveRequestFormDialog({
 	const periodStartValue = watch('periodStart');
 	const periodEndValue = watch('periodEnd');
 	const [nationalHolidays, setNationalHolidays] = useState([]);
+	const [resolvedReplacementOptions, setResolvedReplacementOptions] = useState(replacementOptions);
+	const [, setResolvedReplacementOptionsMessage] = useState(
+		replacementOptionsMessage || DEFAULT_REPLACEMENT_OPTIONS_MESSAGE,
+	);
+	const [replacementOptionsLoading, setReplacementOptionsLoading] = useState(false);
+	const loadReplacementOptionsRef = useRef(onLoadReplacementOptions);
+	const hasAvailableReplacementOptions = resolvedReplacementOptions.length > 0;
+	const getReplacementRequiredMessage = (index) =>
+		index === 0 ? 'Minimal 1 pengganti selama cuti wajib dipilih.' : 'Pengganti selama cuti wajib dipilih.';
+
+	useEffect(() => {
+		loadReplacementOptionsRef.current = onLoadReplacementOptions;
+	}, [onLoadReplacementOptions]);
 
 	useEffect(() => {
 		let isMounted = true;
@@ -160,6 +174,103 @@ function LeaveRequestFormDialog({
 			});
 		}
 	}, [periodStartValue, periodEndValue, setValue, nationalHolidays]);
+
+	useEffect(() => {
+		setResolvedReplacementOptions(replacementOptions);
+		setResolvedReplacementOptionsMessage(replacementOptionsMessage || DEFAULT_REPLACEMENT_OPTIONS_MESSAGE);
+	}, [replacementOptions, replacementOptionsMessage]);
+
+	useEffect(() => {
+		if (!open) {
+			return undefined;
+		}
+
+		let isMounted = true;
+
+		const syncReplacementOptions = async () => {
+			if (!periodStartValue || !periodEndValue) {
+				if (isMounted) {
+					setResolvedReplacementOptions([]);
+					setResolvedReplacementOptionsMessage(DEFAULT_REPLACEMENT_OPTIONS_MESSAGE);
+					setReplacementOptionsLoading(false);
+				}
+				return;
+			}
+
+			if (typeof loadReplacementOptionsRef.current !== 'function') {
+				setReplacementOptionsLoading(false);
+				return;
+			}
+
+			setReplacementOptionsLoading(true);
+
+			try {
+				const response = await loadReplacementOptionsRef.current({
+					periodStart: periodStartValue,
+					periodEnd: periodEndValue,
+				});
+
+				if (!isMounted) {
+					return;
+				}
+
+				setResolvedReplacementOptions(response?.replacementOptions || []);
+				setResolvedReplacementOptionsMessage(
+					response?.replacementOptionsMessage ||
+						'Tidak ada kandidat pengganti yang valid untuk periode cuti yang dipilih.',
+				);
+			} catch (error) {
+				if (!isMounted) {
+					return;
+				}
+
+				setResolvedReplacementOptions([]);
+				setResolvedReplacementOptionsMessage(
+					error.message || 'Kandidat pengganti tidak dapat dimuat. Silakan coba lagi.',
+				);
+			} finally {
+				if (isMounted) {
+					setReplacementOptionsLoading(false);
+				}
+			}
+		};
+
+		syncReplacementOptions();
+
+		return () => {
+			isMounted = false;
+		};
+	}, [open, periodEndValue, periodStartValue]);
+
+	useEffect(() => {
+		if (replacementOptionsLoading || !periodStartValue || !periodEndValue) {
+			return;
+		}
+
+		const validReplacementIds = new Set(resolvedReplacementOptions.map((item) => item.id));
+
+		replacementEmployeesInput.forEach((item, index) => {
+			const numericValue = Number(item?.replacementEmployeeId);
+
+			if (!Number.isInteger(numericValue)) {
+				return;
+			}
+
+			if (!validReplacementIds.has(numericValue)) {
+				setValue(`replacementEmployeesInput.${index}.replacementEmployeeId`, '', {
+					shouldDirty: true,
+					shouldValidate: true,
+				});
+			}
+		});
+	}, [
+		periodEndValue,
+		periodStartValue,
+		replacementEmployeesInput,
+		replacementOptionsLoading,
+		resolvedReplacementOptions,
+		setValue,
+	]);
 
 	const handleFormSubmit = (values) => {
 		onSubmit({
@@ -340,7 +451,7 @@ function LeaveRequestFormDialog({
 						/>
 					</Grid>
 					<Grid item xs={12}>
-						<Stack spacing={1.5}>
+						<Stack spacing={2}>
 							<Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1}>
 								<Typography variant="subtitle2" sx={{ color: '#123B66', fontWeight: 700 }}>
 									Pengganti Selama Cuti
@@ -361,7 +472,7 @@ function LeaveRequestFormDialog({
 									.filter((_, selectedIndex) => selectedIndex !== index)
 									.map((value) => Number(value))
 									.filter((value) => Number.isInteger(value));
-								const availableOptions = replacementOptions.filter(
+								const availableOptions = resolvedReplacementOptions.filter(
 									(option) =>
 										option.id === Number(currentValue) ||
 										!selectedIdsFromOtherFields.includes(option.id),
@@ -369,30 +480,44 @@ function LeaveRequestFormDialog({
 								const fieldError = errors.replacementEmployeesInput?.[index]?.replacementEmployeeId;
 
 								return (
-									<Stack key={fieldItem.id} direction="row" spacing={1} alignItems="flex-start">
+									<Stack
+										key={fieldItem.id}
+										direction="row"
+										spacing={1}
+										alignItems="flex-start"
+										sx={{
+											pb: 0.75,
+											'& .MuiFormControl-root': {
+												flex: 1,
+											},
+										}}
+									>
 										<Controller
 											name={`replacementEmployeesInput.${index}.replacementEmployeeId`}
 											control={control}
 											rules={{
-												required:
-													index === 0
-														? 'Minimal 1 pengganti selama cuti wajib dipilih.'
-														: 'Pengganti selama cuti wajib dipilih.',
+												required: getReplacementRequiredMessage(index),
 												validate: (value) => {
 													if (
 														value === '' ||
 														typeof value === 'undefined' ||
 														value === null
 													) {
-														return index === 0
-															? 'Minimal 1 pengganti selama cuti wajib dipilih.'
-															: 'Pengganti selama cuti wajib dipilih.';
+														return getReplacementRequiredMessage(index);
 													}
 
 													const numericValue = Number(value);
 
 													if (!Number.isInteger(numericValue)) {
 														return 'Pengganti selama cuti tidak valid.';
+													}
+
+													const isValidCandidate = resolvedReplacementOptions.some(
+														(option) => option.id === numericValue,
+													);
+
+													if (!isValidCandidate) {
+														return 'Pengganti selama cuti tidak valid untuk periode yang dipilih.';
 													}
 
 													const duplicateCount = replacementEmployeeIds.filter(
@@ -410,8 +535,11 @@ function LeaveRequestFormDialog({
 												<Autocomplete
 													fullWidth
 													options={availableOptions}
+													loading={replacementOptionsLoading}
+													loadingText=""
+													noOptionsText=""
 													value={
-														replacementOptions.find(
+														resolvedReplacementOptions.find(
 															(option) => option.id === Number(field.value),
 														) || null
 													}
@@ -429,12 +557,6 @@ function LeaveRequestFormDialog({
 															{...params}
 															label={`Pengganti ${index + 1}`}
 															error={Boolean(fieldError)}
-															helperText={
-																fieldError?.message ||
-																(index === 0
-																	? 'Pilih minimal 1 dan maksimal 4 pengganti dari kandidat yang tersedia.'
-																	: ' ')
-															}
 														/>
 													)}
 												/>
@@ -452,15 +574,6 @@ function LeaveRequestFormDialog({
 									</Stack>
 								);
 							})}
-							{hasDuplicateReplacementIds ? (
-								<Typography variant="caption" color="error.main">
-									Pengganti selama cuti tidak boleh duplikat.
-								</Typography>
-							) : (
-								<Typography variant="caption" color="text.secondary">
-									Kandidat dipilih dari job role dan department yang sesuai.
-								</Typography>
-							)}
 						</Stack>
 					</Grid>
 				</Grid>
@@ -473,7 +586,13 @@ function LeaveRequestFormDialog({
 					type="submit"
 					form="employee-leave-request-form"
 					variant="contained"
-					disabled={isSubmitDisabled}
+					disabled={
+						isSubmitDisabled ||
+						replacementOptionsLoading ||
+						!hasAvailableReplacementOptions ||
+						!periodStartValue ||
+						!periodEndValue
+					}
 				>
 					{loading ? 'Memproses...' : 'Simpan'}
 				</Button>

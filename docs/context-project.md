@@ -548,6 +548,22 @@ Aturan approval yang sudah disebutkan:
 - Jika pengaju adalah Foreman, approval masuk ke General Foreman pada department terkait.
 - Approval lanjutan mengikuti flow approval route perusahaan.
 
+#### Rule Pengganti Selama Cuti di PWA Mobile
+
+- Dropdown `Pengganti Selama Cuti` pada form `Pengajuan Cuti` PWA difilter dari backend dan baru dimuat setelah user memilih `Periode Dari` dan `Periode Sampai`.
+- Rule default kandidat pengganti:
+  - wajib dari `Department` yang sama
+  - wajib memiliki `Group Shift` dan `Job Role` yang sama dengan requester
+- Jika requester tidak memiliki `Group Shift`, fallback memakai kandidat dengan `Job Role` yang sama dalam `Department` yang sama.
+- Jika requester tidak memiliki `Job Role`, fallback memakai kandidat dalam `Department` yang sama dengan mengecualikan `Dy. Dept. Manager`, `Dept. Manager`, dan `Site/Div. Manager`.
+- Special case `Job Role`:
+  - `Dy. Dept. Manager` hanya boleh memilih kandidat dari `General Foreman`, `Section Chief`, `Dy. Dept. Manager`, atau `Dept. Manager`, dan tetap wajib satu department
+  - `Dept. Manager` boleh memilih kandidat dari `Section Chief`, `Dy. Dept. Manager`, `Dept. Manager`, atau `Site/Div. Manager`, termasuk lintas department
+  - `Site/Div. Manager` boleh memilih kandidat dari `Dy. Dept. Manager`, `Dept. Manager`, atau `Site/Div. Manager`, termasuk lintas department
+- Kandidat pengganti yang sedang memiliki cuti overlap pada periode pengajuan tidak boleh ditampilkan di dropdown.
+- Jika tidak ada kandidat valid, pengajuan cuti tidak boleh disubmit dan UI wajib menampilkan pesan error yang jelas.
+- Validasi kandidat pengganti wajib dijalankan di frontend dan backend untuk mencegah race condition saat submit/resubmit.
+
 #### Data Cuti Karyawan
 
 - Menyediakan halaman `Data Cuti Karyawan` di bawah menu `Data Karyawan`.
@@ -774,6 +790,11 @@ Yang sudah selesai:
 - Menyesuaikan bottom navigation PWA Karyawan dengan menggabungkan menu `Bimbingan` dan `Peringatan` ke dalam tab `Catatan` yang memicu *Bottom Sheet* Drawer.
 - Memperbaiki styling bottom navigation PWA untuk memastikan ikon tab aktif selalu konsisten berwarna biru saat diklik.
 - Menyesuaikan UI dashboard cuti PWA karyawan untuk menampilkan kartu ringkasan saldo riil untuk masing-masing jenis cuti aktif.
+- Menambahkan rule backend + frontend baru untuk dropdown `Pengganti Selama Cuti` di form cuti PWA:
+  - kandidat dimuat ulang setelah periode cuti dipilih
+  - filter mengikuti kombinasi `Department`, `Group Shift`, `Job Role`, dan special case jabatan manager
+  - kandidat yang sedang cuti overlap tidak ditampilkan
+  - submit/resubmit ditolak jika pengganti kosong atau sudah tidak valid pada saat proses simpan
 - Menambahkan tombol dropdown notifikasi (lonceng) pada header PWA khusus Karyawan beserta badge _unread_.
 - Menambahkan endpoint live `/api/employee-me/notifications` khusus PWA.
 - Menambahkan fungsi klik/baca notifikasi khusus PWA melalui `/api/employee-me/notifications/read` dan `read-all` yang transparan menggunakan tabel read-state Admin berbasis `employeeId`.

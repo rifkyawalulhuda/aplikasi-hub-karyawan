@@ -123,6 +123,7 @@ function EmployeeLeaveCenterPage() {
 		year: new Date().getFullYear(),
 		leaveTypeOptions: [],
 		replacementOptions: [],
+		replacementOptionsMessage: '',
 	});
 	const [requestData, setRequestData] = useState({ year: new Date().getFullYear(), balance: null, rows: [] });
 	const [approvalRows, setApprovalRows] = useState([]);
@@ -193,6 +194,25 @@ function EmployeeLeaveCenterPage() {
 		} finally {
 			setSubmitting(false);
 		}
+	};
+
+	const handleLoadReplacementOptions = async ({ periodStart, periodEnd }) => {
+		const queryParams = new URLSearchParams();
+		if (periodStart) queryParams.set('periodStart', periodStart);
+		if (periodEnd) queryParams.set('periodEnd', periodEnd);
+
+		const response = await employeeMeRequest(`/leave-form-options?${queryParams.toString()}`);
+
+		setFormOptions((currentValue) => ({
+			...currentValue,
+			replacementOptions: response.replacementOptions || [],
+			replacementOptionsMessage: response.replacementOptionsMessage || '',
+		}));
+
+		return {
+			replacementOptions: response.replacementOptions || [],
+			replacementOptionsMessage: response.replacementOptionsMessage || '',
+		};
 	};
 
 	if (loading) {
@@ -380,10 +400,12 @@ function EmployeeLeaveCenterPage() {
 				loading={submitting}
 				leaveTypeOptions={formOptions.leaveTypeOptions}
 				replacementOptions={formOptions.replacementOptions}
+				replacementOptionsMessage={formOptions.replacementOptionsMessage}
 				submissionDate={formOptions.submissionDate}
 				title="Ajukan Cuti"
 				onClose={() => setDialogOpen(false)}
 				onSubmit={handleSubmit}
+				onLoadReplacementOptions={handleLoadReplacementOptions}
 			/>
 		</>
 	);

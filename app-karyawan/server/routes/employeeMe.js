@@ -11,6 +11,7 @@ import {
 	createLeaveRequestRevision,
 	getActiveApprovals,
 	getLeaveRequestOrThrow,
+	listOverlappingLeaveEmployeeIds,
 	listApprovalsForEmployee,
 	mapApprovalRow,
 	mapLeaveRequestDetail,
@@ -32,6 +33,12 @@ import {
 import requireEmployeeAuth from '../middleware/requireEmployeeAuth.js';
 
 const router = Router();
+const EXCLUDED_FALLBACK_JOB_ROLES = ['Dy. Dept. Manager', 'Dept. Manager', 'Site/Div. Manager'];
+const SPECIAL_REPLACEMENT_JOB_ROLE_GROUPS = {
+	'dy. dept. manager': ['General Foreman', 'Section Chief', 'Dy. Dept. Manager', 'Dept. Manager'],
+	'dept. manager': ['Section Chief', 'Dy. Dept. Manager', 'Dept. Manager', 'Site/Div. Manager'],
+	'site/div. manager': ['Dy. Dept. Manager', 'Dept. Manager', 'Site/Div. Manager'],
+};
 
 router.use(requireEmployeeAuth);
 
@@ -128,6 +135,21 @@ function validateLeavePayload(payload = {}) {
 	};
 }
 
+function normalizeJobRoleName(value = '') {
+	return normalizeString(value).toLowerCase();
+}
+
+function buildCaseInsensitiveJobRoleFilter(jobRoleNames = []) {
+	return jobRoleNames.map((jobRoleName) => ({
+		jobRole: {
+			name: {
+				equals: jobRoleName,
+				mode: 'insensitive',
+			},
+		},
+	}));
+}
+
 function mapReplacementOption(employee) {
 	return {
 		id: employee.id,
@@ -135,40 +157,101 @@ function mapReplacementOption(employee) {
 		employeeNo: employee.employeeNo,
 		departmentName: employee.department?.name || '',
 		jobRoleName: employee.jobRole?.name || '',
+		groupShiftName: employee.groupShift?.groupShiftName || '',
 	};
 }
 
-async function getReplacementOptions(employee, tx = prisma) {
-	const sameRoleAndDepartment = await tx.employee.findMany({
-		where: {
+async function getReplacementRequesterOrThrow(employeeId, tx = prisma) {
+	const employee = await tx.employee.findUnique({
+		where: { id: employeeId },
+		include: {
+			department: true,
+			groupShift: true,
+			jobRole: true,
+		},
+	});
+
+	if (!employee) {
+		throw Object.assign(new Error('Karyawan tidak ditemukan.'), { statusCode: 404 });
+	}
+
+	return employee;
+}
+
+function buildReplacementCandidateWhere(employee) {
+	const requesterJobRoleName = normalizeJobRoleName(employee.jobRole?.name);
+	const specialJobRoleNames = SPECIAL_REPLACEMENT_JOB_ROLE_GROUPS[requesterJobRoleName];
+
+	if (specialJobRoleNames) {
+		return {
+			id: { not: employee.id },
+			...(requesterJobRoleName === 'dy. dept. manager' ? { departmentId: employee.departmentId } : {}),
+			OR: buildCaseInsensitiveJobRoleFilter(specialJobRoleNames),
+		};
+	}
+
+	if (employee.groupShiftId && employee.jobRoleId) {
+		return {
+			id: { not: employee.id },
+			departmentId: employee.departmentId,
+			groupShiftId: employee.groupShiftId,
+			jobRoleId: employee.jobRoleId,
+		};
+	}
+
+	if (employee.jobRoleId) {
+		return {
 			id: { not: employee.id },
 			departmentId: employee.departmentId,
 			jobRoleId: employee.jobRoleId,
-		},
-		include: {
-			department: true,
-			jobRole: true,
-		},
-		orderBy: [{ fullName: 'asc' }, { employeeNo: 'asc' }],
-	});
-
-	if (sameRoleAndDepartment.length > 0) {
-		return sameRoleAndDepartment.map(mapReplacementOption);
+		};
 	}
 
-	const sameDepartment = await tx.employee.findMany({
-		where: {
-			id: { not: employee.id },
-			departmentId: employee.departmentId,
+	return {
+		id: { not: employee.id },
+		departmentId: employee.departmentId,
+		NOT: {
+			OR: buildCaseInsensitiveJobRoleFilter(EXCLUDED_FALLBACK_JOB_ROLES),
 		},
+	};
+}
+
+async function getReplacementOptionSet(employeeId, { periodStart = null, periodEnd = null, tx = prisma } = {}) {
+	const employee = await getReplacementRequesterOrThrow(employeeId, tx);
+	const candidates = await tx.employee.findMany({
+		where: buildReplacementCandidateWhere(employee),
 		include: {
 			department: true,
 			jobRole: true,
+			groupShift: true,
 		},
 		orderBy: [{ fullName: 'asc' }, { employeeNo: 'asc' }],
 	});
 
-	return sameDepartment.map(mapReplacementOption);
+	let filteredCandidates = candidates;
+	if (periodStart && periodEnd) {
+		const overlappingEmployeeIds = await listOverlappingLeaveEmployeeIds(tx, {
+			employeeIds: candidates.map((item) => item.id),
+			periodStart,
+			periodEnd,
+		});
+		const overlappingEmployeeIdSet = new Set(overlappingEmployeeIds);
+
+		filteredCandidates = candidates.filter((item) => !overlappingEmployeeIdSet.has(item.id));
+	}
+
+	let message = '';
+	if (!periodStart || !periodEnd) {
+		message = 'Pilih periode cuti terlebih dahulu untuk melihat kandidat pengganti yang valid.';
+	} else if (filteredCandidates.length === 0) {
+		message = 'Tidak ada kandidat pengganti yang valid untuk periode cuti yang dipilih.';
+	}
+
+	return {
+		requester: employee,
+		replacementOptions: filteredCandidates.map(mapReplacementOption),
+		replacementOptionsMessage: message,
+	};
 }
 
 async function getAvailableLeaveTypeOptions(employeeId, year, tx = prisma) {
@@ -187,9 +270,25 @@ async function getAvailableLeaveTypeOptions(employeeId, year, tx = prisma) {
 		}));
 }
 
-async function assertReplacementEmployeesValid(employee, replacementEmployeeIds, tx = prisma) {
-	const options = await getReplacementOptions(employee, tx);
-	const optionMap = new Map(options.map((item) => [item.id, item]));
+async function assertReplacementEmployeesValid(
+	employeeId,
+	replacementEmployeeIds,
+	{ periodStart, periodEnd } = {},
+	tx = prisma,
+) {
+	const { replacementOptions } = await getReplacementOptionSet(employeeId, {
+		periodStart,
+		periodEnd,
+		tx,
+	});
+	const optionMap = new Map(replacementOptions.map((item) => [item.id, item]));
+
+	if (periodStart && periodEnd && replacementOptions.length === 0) {
+		throw Object.assign(new Error('Tidak ada kandidat pengganti yang valid untuk periode cuti yang dipilih.'), {
+			statusCode: 400,
+		});
+	}
+
 	const seenIds = new Set();
 	const matches = replacementEmployeeIds.map((replacementEmployeeId) => {
 		if (seenIds.has(replacementEmployeeId)) {
@@ -202,9 +301,12 @@ async function assertReplacementEmployeesValid(employee, replacementEmployeeIds,
 		const match = optionMap.get(replacementEmployeeId);
 
 		if (!match) {
-			throw Object.assign(new Error('Pengganti selama cuti tidak valid untuk karyawan ini.'), {
-				statusCode: 400,
-			});
+			throw Object.assign(
+				new Error('Pengganti selama cuti tidak valid atau sedang bentrok pada periode yang dipilih.'),
+				{
+					statusCode: 400,
+				},
+			);
 		}
 
 		return match;
@@ -559,9 +661,14 @@ router.get('/leave-form-options', async (req, res, next) => {
 	try {
 		const now = new Date();
 		const currentYear = now.getFullYear();
-		const [leaveTypeOptions, replacementOptions] = await Promise.all([
+		const periodStart = toDateOnly(req.query?.periodStart);
+		const periodEnd = toDateOnly(req.query?.periodEnd);
+		const [leaveTypeOptions, replacementOptionSet] = await Promise.all([
 			getAvailableLeaveTypeOptions(req.employee.id, currentYear),
-			getReplacementOptions(req.employee),
+			getReplacementOptionSet(req.employee.id, {
+				periodStart,
+				periodEnd,
+			}),
 		]);
 
 		return res.json({
@@ -570,7 +677,8 @@ router.get('/leave-form-options', async (req, res, next) => {
 			).padStart(2, '0')}`,
 			year: currentYear,
 			leaveTypeOptions,
-			replacementOptions,
+			replacementOptions: replacementOptionSet.replacementOptions,
+			replacementOptionsMessage: replacementOptionSet.replacementOptionsMessage,
 		});
 	} catch (error) {
 		return next(error);
@@ -610,7 +718,15 @@ router.post('/leave-requests', async (req, res, next) => {
 				leaveYear,
 				tx,
 			);
-			await assertReplacementEmployeesValid(req.employee, payload.replacementEmployeeIds, tx);
+			await assertReplacementEmployeesValid(
+				req.employee.id,
+				payload.replacementEmployeeIds,
+				{
+					periodStart: payload.periodStart,
+					periodEnd: payload.periodEnd,
+				},
+				tx,
+			);
 
 			if (payload.leaveDays > availableBalance.currentBalance) {
 				throw Object.assign(new Error('Jumlah cuti tidak cukup untuk jenis cuti yang dipilih.'), {
@@ -747,7 +863,15 @@ router.post('/leave-requests/:id/resubmit', async (req, res, next) => {
 				leaveYear,
 				tx,
 			);
-			await assertReplacementEmployeesValid(req.employee, payload.replacementEmployeeIds, tx);
+			await assertReplacementEmployeesValid(
+				req.employee.id,
+				payload.replacementEmployeeIds,
+				{
+					periodStart: payload.periodStart,
+					periodEnd: payload.periodEnd,
+				},
+				tx,
+			);
 
 			if (payload.leaveDays > availableBalance.currentBalance) {
 				throw Object.assign(new Error('Jumlah cuti tidak cukup untuk jenis cuti yang dipilih.'), {
