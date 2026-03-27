@@ -13,13 +13,15 @@ import Typography from '@mui/material/Typography';
 
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
+import UploadFileOutlinedIcon from '@mui/icons-material/UploadFileOutlined';
 
 import CardHeader from '@/components/cardHeader';
 import DeleteConfirmDialog from '@/components/masterData/deleteConfirmDialog';
 import PageHeader from '@/components/pageHeader';
-import apiRequest from '@/services/api';
+import apiRequest, { getApiBaseUrl } from '@/services/api';
 
 import GroupShiftFormDialog from './groupShiftFormDialog';
+import GroupShiftImportDialog from './groupShiftImportDialog';
 import GroupShiftTable from './groupShiftTable';
 
 async function fetchGroupShifts() {
@@ -30,6 +32,19 @@ async function fetchEmployeeOptions() {
 	return apiRequest('/master/employees');
 }
 
+function sortEmployeeOptions(items = []) {
+	return items.slice().sort((left, right) => {
+		const leftName = String(left.fullName || '').toLowerCase();
+		const rightName = String(right.fullName || '').toLowerCase();
+
+		if (leftName !== rightName) {
+			return leftName.localeCompare(rightName);
+		}
+
+		return left.id - right.id;
+	});
+}
+
 function GroupShiftsPage() {
 	const { enqueueSnackbar } = useSnackbar();
 	const [rows, setRows] = useState([]);
@@ -37,18 +52,23 @@ function GroupShiftsPage() {
 	const [loading, setLoading] = useState(true);
 	const [submitting, setSubmitting] = useState(false);
 	const [formOpen, setFormOpen] = useState(false);
+	const [importOpen, setImportOpen] = useState(false);
 	const [deleteOpen, setDeleteOpen] = useState(false);
 	const [selectedItem, setSelectedItem] = useState(null);
 	const [searchKeyword, setSearchKeyword] = useState('');
+
+	const refreshPageData = async () => {
+		const [groupShifts, employees] = await Promise.all([fetchGroupShifts(), fetchEmployeeOptions()]);
+		setRows(groupShifts);
+		setEmployeeOptions(sortEmployeeOptions(employees));
+	};
 
 	useEffect(() => {
 		const init = async () => {
 			setLoading(true);
 
 			try {
-				const [groupShifts, employees] = await Promise.all([fetchGroupShifts(), fetchEmployeeOptions()]);
-				setRows(groupShifts);
-				setEmployeeOptions(employees);
+				await refreshPageData();
 			} catch (error) {
 				enqueueSnackbar(error.message, { variant: 'error' });
 			} finally {
@@ -76,7 +96,7 @@ function GroupShiftsPage() {
 			return true;
 		}
 
-		const searchableValues = [row.id, row.groupShiftName, row.foremanNames];
+		const searchableValues = [row.id, row.groupShiftName, row.foremanNames, row.employeeNames];
 
 		return searchableValues.some((value) =>
 			String(value || '')
@@ -99,27 +119,19 @@ function GroupShiftsPage() {
 		setSubmitting(true);
 
 		try {
-			let savedItem;
-
 			if (selectedItem) {
-				savedItem = await apiRequest(`/master/group-shifts/${selectedItem.id}`, {
+				await apiRequest(`/master/group-shifts/${selectedItem.id}`, {
 					method: 'PUT',
 					body: JSON.stringify(values),
 				});
 			} else {
-				savedItem = await apiRequest('/master/group-shifts', {
+				await apiRequest('/master/group-shifts', {
 					method: 'POST',
 					body: JSON.stringify(values),
 				});
 			}
 
-			setRows((currentRows) => {
-				if (selectedItem) {
-					return currentRows.map((item) => (item.id === savedItem.id ? savedItem : item));
-				}
-
-				return [...currentRows, savedItem].sort((a, b) => a.id - b.id);
-			});
+			await refreshPageData();
 			closeFormDialog();
 			enqueueSnackbar(`Master Group Shift berhasil ${selectedItem ? 'diperbarui' : 'ditambahkan'}.`, {
 				variant: 'success',
@@ -142,11 +154,55 @@ function GroupShiftsPage() {
 			await apiRequest(`/master/group-shifts/${selectedItem.id}`, {
 				method: 'DELETE',
 			});
-			setRows((currentRows) => currentRows.filter((item) => item.id !== selectedItem.id));
+			await refreshPageData();
 			closeDeleteDialog();
 			enqueueSnackbar('Master Group Shift berhasil dihapus.', { variant: 'error' });
 		} catch (error) {
 			enqueueSnackbar(error.message, { variant: 'error' });
+		} finally {
+			setSubmitting(false);
+		}
+	};
+
+	const handleImport = async (file) => {
+		setSubmitting(true);
+
+		try {
+			const formData = new FormData();
+			formData.append('file', file);
+
+			const response = await apiRequest('/master/group-shifts/import', {
+				method: 'POST',
+				body: formData,
+			});
+
+			await refreshPageData();
+			setImportOpen(false);
+
+			if (response.errorReportUrl) {
+				const downloadUrl = `${getApiBaseUrl()}${response.errorReportUrl}`;
+				const link = document.createElement('a');
+				link.href = downloadUrl;
+				link.target = '_blank';
+				link.rel = 'noreferrer';
+				document.body.appendChild(link);
+				link.click();
+				document.body.removeChild(link);
+
+				enqueueSnackbar(
+					`${response.message} Berhasil: ${response.importedCount}, gagal: ${response.failedCount}. File error diunduh otomatis.`,
+					{ variant: 'warning' },
+				);
+			} else {
+				enqueueSnackbar(`${response.message} Total import: ${response.importedCount}.`, {
+					variant: 'success',
+				});
+			}
+
+			return true;
+		} catch (error) {
+			enqueueSnackbar(error.message, { variant: 'error' });
+			return false;
 		} finally {
 			setSubmitting(false);
 		}
@@ -166,18 +222,18 @@ function GroupShiftsPage() {
 			<Card sx={{ minHeight: '60vh', p: 3 }}>
 				<CardHeader
 					title="Master Group Shift"
-					subtitle="Kelola daftar group shift dan foreman yang terhubung ke masing-masing group."
+					subtitle="Kelola daftar group shift, foreman, dan assignment karyawan yang terhubung ke masing-masing group."
 					size="small"
 					sx={{ mb: 2.5, alignItems: 'flex-start', gap: 1.5 }}
 				>
-					<Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5} alignItems={{ md: 'center' }}>
+					<Stack direction={{ xs: 'column', lg: 'row' }} spacing={1.5} alignItems={{ lg: 'center' }}>
 						<TextField
 							size="small"
 							label="Cari Data"
 							value={searchKeyword}
 							onChange={(event) => setSearchKeyword(event.target.value)}
-							placeholder="Nama group shift, foreman..."
-							sx={{ minWidth: { xs: '100%', md: 320 } }}
+							placeholder="Nama group shift, foreman, karyawan..."
+							sx={{ minWidth: { xs: '100%', lg: 360 } }}
 							InputProps={{
 								startAdornment: (
 									<InputAdornment position="start">
@@ -186,9 +242,22 @@ function GroupShiftsPage() {
 								),
 							}}
 						/>
-						<Button variant="contained" startIcon={<AddOutlinedIcon />} onClick={() => setFormOpen(true)}>
-							Tambah Data
-						</Button>
+						<Stack direction="row" spacing={1} flexWrap="wrap">
+							<Button
+								variant="outlined"
+								startIcon={<UploadFileOutlinedIcon />}
+								onClick={() => setImportOpen(true)}
+							>
+								Import Excel
+							</Button>
+							<Button
+								variant="contained"
+								startIcon={<AddOutlinedIcon />}
+								onClick={() => setFormOpen(true)}
+							>
+								Tambah Data
+							</Button>
+						</Stack>
 					</Stack>
 				</CardHeader>
 				{loading ? (
@@ -214,8 +283,15 @@ function GroupShiftsPage() {
 				loading={submitting}
 				initialValue={selectedItem}
 				foremanOptions={foremanOptions}
+				employeeOptions={employeeOptions}
 				onClose={closeFormDialog}
 				onSubmit={handleSubmit}
+			/>
+			<GroupShiftImportDialog
+				open={importOpen}
+				loading={submitting}
+				onClose={() => setImportOpen(false)}
+				onImport={handleImport}
 			/>
 			<DeleteConfirmDialog
 				open={deleteOpen}

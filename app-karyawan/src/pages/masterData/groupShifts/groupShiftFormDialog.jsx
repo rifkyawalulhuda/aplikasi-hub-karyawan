@@ -1,34 +1,41 @@
 import { useEffect } from 'react';
-import { Controller, useFieldArray, useForm, useWatch } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 
 import Autocomplete from '@mui/material/Autocomplete';
 import Button from '@mui/material/Button';
+import Chip from '@mui/material/Chip';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import Grid from '@mui/material/Grid';
-import IconButton from '@mui/material/IconButton';
-import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
-import Typography from '@mui/material/Typography';
-
-import AddCircleOutlineOutlinedIcon from '@mui/icons-material/AddCircleOutlineOutlined';
-import RemoveCircleOutlineOutlinedIcon from '@mui/icons-material/RemoveCircleOutlineOutlined';
 
 import FormInput from '@/components/formInput';
 
 function toDefaultValues(initialValue) {
 	return {
 		groupShiftName: initialValue?.groupShiftName || '',
-		foremen:
-			initialValue?.foremanIds?.length > 0
-				? initialValue.foremanIds.map((employeeId) => ({ employeeId }))
-				: [{ employeeId: '' }],
+		foremanIds: initialValue?.foremanIds || [],
+		employeeIds: initialValue?.employeeIds || [],
 	};
 }
 
-function GroupShiftFormDialog({ open, loading, initialValue, foremanOptions, onClose, onSubmit }) {
+function getEmployeeOptionLabel(option, showGroupShift = false) {
+	if (!option) {
+		return '';
+	}
+
+	const baseLabel = `${option.fullName} (${option.employeeNo})`;
+
+	if (showGroupShift && option.groupShiftName) {
+		return `${baseLabel} - ${option.groupShiftName}`;
+	}
+
+	return baseLabel;
+}
+
+function GroupShiftFormDialog({ open, loading, initialValue, foremanOptions, employeeOptions, onClose, onSubmit }) {
 	const isEditMode = Boolean(initialValue);
 	const {
 		control,
@@ -38,14 +45,6 @@ function GroupShiftFormDialog({ open, loading, initialValue, foremanOptions, onC
 	} = useForm({
 		defaultValues: toDefaultValues(initialValue),
 	});
-	const { fields, append, remove } = useFieldArray({
-		control,
-		name: 'foremen',
-	});
-	const watchedForemen = useWatch({
-		control,
-		name: 'foremen',
-	});
 
 	useEffect(() => {
 		reset(toDefaultValues(initialValue));
@@ -54,7 +53,8 @@ function GroupShiftFormDialog({ open, loading, initialValue, foremanOptions, onC
 	const handleFormSubmit = (values) => {
 		onSubmit({
 			groupShiftName: values.groupShiftName,
-			foremanIds: values.foremen.map((item) => Number(item.employeeId)).filter(Boolean),
+			foremanIds: values.foremanIds || [],
+			employeeIds: values.employeeIds || [],
 		});
 	};
 
@@ -83,81 +83,94 @@ function GroupShiftFormDialog({ open, loading, initialValue, foremanOptions, onC
 						/>
 					</Grid>
 					<Grid item xs={12}>
-						<Stack spacing={1.5}>
-							<Stack direction="row" justifyContent="space-between" alignItems="center">
-								<Typography variant="subtitle2">Foreman</Typography>
-								<Button
-									size="small"
-									startIcon={<AddCircleOutlineOutlinedIcon />}
-									onClick={() => append({ employeeId: '' })}
-								>
-									Tambah Foreman
-								</Button>
-							</Stack>
-							{fields.map((field, index) => {
-								const selectedIds = (watchedForemen || [])
-									.map((item) => Number(item?.employeeId))
-									.filter((value) => Number.isInteger(value));
-								const currentId = Number(watchedForemen?.[index]?.employeeId);
-								const availableOptions = foremanOptions.filter((option) => {
-									if (option.id === currentId) {
-										return true;
+						<Controller
+							name="foremanIds"
+							control={control}
+							rules={{
+								validate: (value) =>
+									Array.isArray(value) && value.length > 0
+										? true
+										: 'Minimal satu Foreman wajib dipilih.',
+							}}
+							render={({ field }) => (
+								<Autocomplete
+									multiple
+									disableCloseOnSelect
+									filterSelectedOptions
+									options={foremanOptions}
+									value={foremanOptions.filter((option) => (field.value || []).includes(option.id))}
+									onChange={(_, selectedOptions) =>
+										field.onChange(selectedOptions.map((option) => option.id))
 									}
-
-									return !selectedIds.includes(option.id);
-								});
-
-								return (
-									<Stack key={field.id} direction="row" spacing={1} alignItems="flex-start">
-										<Controller
-											name={`foremen.${index}.employeeId`}
-											control={control}
-											rules={{ required: 'Foreman wajib dipilih.' }}
-											render={({ field: controllerField }) => (
-												<Autocomplete
-													fullWidth
-													options={availableOptions}
-													value={
-														foremanOptions.find(
-															(option) => option.id === Number(controllerField.value),
-														) || null
-													}
-													onChange={(_, option) => controllerField.onChange(option?.id || '')}
-													isOptionEqualToValue={(option, value) => option.id === value.id}
-													getOptionLabel={(option) =>
-														option ? `${option.fullName} (${option.employeeNo})` : ''
-													}
-													renderInput={(params) => (
-														<TextField
-															{...params}
-															label={`Foreman ${index + 1}`}
-															error={Boolean(errors.foremen?.[index]?.employeeId)}
-															helperText={
-																errors.foremen?.[index]?.employeeId?.message || ' '
-															}
-														/>
-													)}
-												/>
-											)}
+									isOptionEqualToValue={(option, value) => option.id === value.id}
+									getOptionLabel={(option) => getEmployeeOptionLabel(option)}
+									renderTags={(value, getTagProps) =>
+										value.map((option, index) => (
+											<Chip
+												{...getTagProps({ index })}
+												key={option.id}
+												label={getEmployeeOptionLabel(option)}
+												size="small"
+											/>
+										))
+									}
+									renderInput={(params) => (
+										<TextField
+											{...params}
+											label="Foreman"
+											error={Boolean(errors.foremanIds)}
+											helperText={
+												errors.foremanIds?.message ||
+												'Pilih satu atau lebih foreman dengan Job Level Foreman.'
+											}
 										/>
-										<IconButton
-											color="error"
-											sx={{ mt: 1 }}
-											onClick={() => {
-												if (fields.length === 1) {
-													return;
-												}
-
-												remove(index);
-											}}
-											disabled={fields.length === 1}
-										>
-											<RemoveCircleOutlineOutlinedIcon />
-										</IconButton>
-									</Stack>
-								);
-							})}
-						</Stack>
+									)}
+									fullWidth
+								/>
+							)}
+						/>
+					</Grid>
+					<Grid item xs={12}>
+						<Controller
+							name="employeeIds"
+							control={control}
+							render={({ field }) => (
+								<Autocomplete
+									multiple
+									disableCloseOnSelect
+									filterSelectedOptions
+									options={employeeOptions}
+									value={employeeOptions.filter((option) => (field.value || []).includes(option.id))}
+									onChange={(_, selectedOptions) =>
+										field.onChange(selectedOptions.map((option) => option.id))
+									}
+									isOptionEqualToValue={(option, value) => option.id === value.id}
+									getOptionLabel={(option) => getEmployeeOptionLabel(option, true)}
+									renderTags={(value, getTagProps) =>
+										value.map((option, index) => (
+											<Chip
+												{...getTagProps({ index })}
+												key={option.id}
+												label={getEmployeeOptionLabel(option)}
+												size="small"
+											/>
+										))
+									}
+									renderInput={(params) => (
+										<TextField
+											{...params}
+											label="Karyawan"
+											error={Boolean(errors.employeeIds)}
+											helperText={
+												errors.employeeIds?.message ||
+												'Pilih karyawan yang terhubung ke group ini. Jika karyawan masih berada di group lain, assignment lama akan dipindahkan otomatis saat disimpan.'
+											}
+										/>
+									)}
+									fullWidth
+								/>
+							)}
+						/>
 					</Grid>
 				</Grid>
 			</DialogContent>
