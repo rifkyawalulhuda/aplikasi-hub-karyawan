@@ -296,6 +296,46 @@ async function validateOverlappingLeave(tx, { employeeId, periodStart, periodEnd
 	}
 }
 
+async function listOverlappingLeaveEmployeeIds(
+	tx,
+	{ employeeIds = [], periodStart, periodEnd, ignoreLeaveId = null, statuses = ['SUBMITTED', 'IN_APPROVAL', 'APPROVED'] },
+) {
+	const uniqueEmployeeIds = [...new Set(employeeIds)].filter((value) => Number.isInteger(value));
+
+	if (!uniqueEmployeeIds.length || !periodStart || !periodEnd) {
+		return [];
+	}
+
+	const overlappingRecords = await tx.employeeLeave.findMany({
+		where: {
+			employeeId: {
+				in: uniqueEmployeeIds,
+			},
+			...(ignoreLeaveId ? { id: { not: ignoreLeaveId } } : {}),
+			status: {
+				in: statuses,
+			},
+			AND: [
+				{
+					periodStart: {
+						lte: periodEnd,
+					},
+				},
+				{
+					periodEnd: {
+						gte: periodStart,
+					},
+				},
+			],
+		},
+		select: {
+			employeeId: true,
+		},
+	});
+
+	return [...new Set(overlappingRecords.map((item) => item.employeeId))];
+}
+
 async function getBalanceBefore(tx, employeeId, leaveYear, masterCutiKaryawanId) {
 	const balance = await getLeaveDatabaseBalance(tx, employeeId, leaveYear, masterCutiKaryawanId);
 
@@ -692,5 +732,6 @@ export {
 	normalizeString,
 	resolveApprovalStages,
 	toDateOnly,
+	listOverlappingLeaveEmployeeIds,
 	validateOverlappingLeave,
 };
