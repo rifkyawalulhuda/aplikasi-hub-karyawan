@@ -32,3 +32,19 @@ npm run prisma:seed:login   (untuk membuat akun dummy)
 
 
 Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+
+
+Ada 3 tempat utama pengaturan PORT:
+
+Port frontend dev server (default Vite 5173)
+Ubah di vite.config.js pada server, tambahkan:
+
+server: {
+  port: 3000,
+  // ...
+}
+Whitelist CORS backend untuk frontend local
+Ubah CORS_ALLOWED_ORIGINS di .env (dan kalau perlu .env.example) dari :5173 ke port baru Anda.
+
+Fallback hardcoded di backend
+Jika env kosong, backend pakai default 5173 di server/index.js dan server/lib/emailService.js.
