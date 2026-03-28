@@ -810,6 +810,10 @@ Yang sudah selesai:
 - Menambahkan endpoint live `/api/employee-me/notifications` khusus PWA.
 - Menambahkan fungsi klik/baca notifikasi khusus PWA melalui `/api/employee-me/notifications/read` dan `read-all` yang transparan menggunakan tabel read-state Admin berbasis `employeeId`.
 - Fitur notifikasi PWA sekarang menyaring status Cuti Menunggu Approval, Cuti Disetujui/Ditolak (14 hari terakhir), Bimbingan (14 hari), dan Peringatan (30 hari).
+- Panel notifikasi PWA sekarang memakai gaya `mini inbox` yang lebih minimalis:
+  - header ringkas dengan badge jumlah notifikasi baru
+  - action dipisah antara kontrol utama push dan aksi utilitas seperti `Refresh` / `Tandai semua`
+  - item notifikasi tampil sebagai kartu ringan dengan hierarchy judul, waktu, isi singkat, dan status baca yang lebih jelas
 - Menyelesaikan perbaikan _bug_ destructuring auth pada fungsionalitas _hooks_ React di notifikasi PWA Karyawan.
 - Menambahkan halaman **Detail Karyawan** di bawah menu Data Karyawan, yang menampilkan:
   - Halaman daftar karyawan (`/data-karyawan/detail-karyawan`) dengan tabel searchable + filter departemen + pagination 15/30/50/100
