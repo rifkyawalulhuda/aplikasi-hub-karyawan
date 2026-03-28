@@ -39,6 +39,14 @@ function MasterDataPage({ config }) {
 	const [deleteOpen, setDeleteOpen] = useState(false);
 	const [searchKeyword, setSearchKeyword] = useUrlSearchKeyword();
 
+	let resolvedTemplateHref = '';
+
+	if (config.import?.templateHref) {
+		resolvedTemplateHref = config.import.templateHref.startsWith('/api/')
+			? `${getApiBaseUrl()}${config.import.templateHref.slice(4)}`
+			: config.import.templateHref;
+	}
+
 	const closeFormDialog = () => {
 		setFormOpen(false);
 		setSelectedItem(null);
@@ -313,7 +321,7 @@ function MasterDataPage({ config }) {
 					loading={submitting}
 					title={config.import.title}
 					description={config.import.description}
-					templateHref={config.import.templateHref}
+					templateHref={resolvedTemplateHref}
 					onClose={() => setImportOpen(false)}
 					onImport={handleImport}
 				/>

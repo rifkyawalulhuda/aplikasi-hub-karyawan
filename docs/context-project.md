@@ -830,6 +830,11 @@ Yang sudah selesai:
   - Input field: `Periode Tahun` (max 5 karakter, number), `Tanggal`, dan `Nama Hari Libur`.
   - Berhasil menangani normalisasi data tipe angka dan tanggal pada API master data generik.
   - Form Edit diperbaiki agar format tanggal `YYYY-MM-DD` muncul dengan benar di native input browser.
+  - Halaman **Master Hari Libur** sekarang mendukung `Download Template` dan `Import Excel` bulk melalui flow generik master data.
+  - Template import memakai kolom `Periode Tahun`, `Tanggal`, dan `Nama Hari Libur`.
+  - Kolom `Tanggal` pada template Excel dipreset ke format `DD/MM/YYYY`.
+  - Import bulk mendukung partial success dengan file error report `.xlsx` untuk baris yang gagal.
+  - Validasi backend memastikan `Periode Tahun` valid, `Tanggal` valid, tahun sesuai dengan tanggal, dan kombinasi `tahun + tanggal + nama` tidak duplikat.
 - Mengubah sumber data hari libur pada kalkulasi otomatis "Jumlah Hari Cuti":
   - Tidak lagi mengambil dari API eksternal `libur.deno.dev`.
   - Sekarang sepenuhnya mengambil dari database **Master Hari Libur** yang dikelola oleh Admin.

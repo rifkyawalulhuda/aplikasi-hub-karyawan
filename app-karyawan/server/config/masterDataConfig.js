@@ -213,6 +213,10 @@ const MASTER_DATA_CONFIG = {
 				label: 'Periode Tahun',
 				type: 'number',
 				required: true,
+				integer: true,
+				min: 1900,
+				max: 9999,
+				invalidMessage: 'Periode Tahun harus berupa tahun yang valid.',
 				searchable: true,
 			},
 			{
@@ -220,6 +224,8 @@ const MASTER_DATA_CONFIG = {
 				label: 'Tanggal',
 				type: 'date',
 				required: true,
+				invalidMessage: 'Tanggal harus berupa tanggal yang valid.',
+				excelNumberFormat: 'dd/mm/yyyy',
 				searchable: true,
 			},
 			{
@@ -229,6 +235,52 @@ const MASTER_DATA_CONFIG = {
 				searchable: true,
 			},
 		],
+		validatePayload: async ({ payload, currentId, delegate, helpers }) => {
+			const normalizedName = helpers.normalizeString(payload.name || '');
+
+			if (!normalizedName) {
+				return;
+			}
+
+			if (payload.holidayDate.getUTCFullYear() !== payload.year) {
+				throw Object.assign(
+					new Error('Tanggal hari libur harus berada pada periode tahun yang sama.'),
+					{ statusCode: 400 },
+				);
+			}
+
+			const duplicate = await delegate.findFirst({
+				where: {
+					year: payload.year,
+					holidayDate: payload.holidayDate,
+					name: {
+						equals: normalizedName,
+						mode: 'insensitive',
+					},
+					...(currentId ? { NOT: { id: currentId } } : {}),
+				},
+			});
+
+			if (duplicate) {
+				throw Object.assign(
+					new Error(
+						`Hari libur "${normalizedName}" pada ${helpers.formatDateId(payload.holidayDate)} untuk periode ${payload.year} sudah ada.`,
+					),
+					{ statusCode: 409 },
+				);
+			}
+		},
+		import: {
+			worksheetName: 'Data Import',
+			dataStartRow: 2,
+			headers: ['Periode Tahun', 'Tanggal', 'Nama Hari Libur'],
+			instructionRowValues: {
+				'Periode Tahun': 'Isi tahun 4 digit, contoh: 2026',
+				Tanggal: 'Isi tanggal, contoh: 20/03/2026',
+				'Nama Hari Libur': 'Contoh: Libur Lebaran',
+			},
+			errorFilePrefix: 'master-hari-libur-import-errors',
+		},
 	},
 };
 
