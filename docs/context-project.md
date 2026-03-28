@@ -814,6 +814,7 @@ Yang sudah selesai:
   - header ringkas dengan badge jumlah notifikasi baru
   - action dipisah antara kontrol utama push dan aksi utilitas seperti `Refresh` / `Tandai semua`
   - item notifikasi tampil sebagai kartu ringan dengan hierarchy judul, waktu, isi singkat, dan status baca yang lebih jelas
+  - trigger ikon lonceng memiliki state aktif saat panel terbuka dengan highlight biru lembut tanpa mengganggu badge unread
 - Menyelesaikan perbaikan _bug_ destructuring auth pada fungsionalitas _hooks_ React di notifikasi PWA Karyawan.
 - Menambahkan halaman **Detail Karyawan** di bawah menu Data Karyawan, yang menampilkan:
   - Halaman daftar karyawan (`/data-karyawan/detail-karyawan`) dengan tabel searchable + filter departemen + pagination 15/30/50/100

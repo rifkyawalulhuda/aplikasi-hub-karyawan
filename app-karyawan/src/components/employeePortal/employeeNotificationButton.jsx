@@ -458,14 +458,35 @@ function EmployeeNotificationButton() {
 	return (
 		<>
 			<Tooltip title="Notifikasi">
-				<IconButton size="small" onClick={handleOpen}>
+				<IconButton
+					size="small"
+					onClick={handleOpen}
+					sx={{
+						width: 38,
+						height: 38,
+						borderRadius: 2.5,
+						color: open ? '#1976d2' : 'rgba(18,59,102,0.72)',
+						backgroundColor: open ? 'rgba(25, 118, 210, 0.12)' : 'transparent',
+						border: open ? '1px solid rgba(25, 118, 210, 0.18)' : '1px solid transparent',
+						boxShadow: open ? '0 8px 20px rgba(25, 118, 210, 0.12)' : 'none',
+						transition:
+							'background-color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, color 0.18s ease',
+						'&:hover': {
+							backgroundColor: open ? 'rgba(25, 118, 210, 0.16)' : 'rgba(18,59,102,0.06)',
+						},
+						'&.Mui-focusVisible': {
+							outline: '2px solid rgba(25, 118, 210, 0.22)',
+							outlineOffset: 1,
+						},
+					}}
+				>
 					<Badge
 						color="error"
 						overlap="rectangular"
 						badgeContent={badgeCount > 0 ? badgeCount : null}
 						max={99}
 					>
-						<NotificationsOutlinedIcon color="action" fontSize="medium" />
+						<NotificationsOutlinedIcon fontSize="medium" sx={{ color: 'inherit' }} />
 					</Badge>
 				</IconButton>
 			</Tooltip>
