@@ -2,8 +2,20 @@ import nodemailer from 'nodemailer';
 
 let cachedTransporter = null;
 
+function normalizeBaseUrl(value, fallbackValue) {
+	const normalized = String(value || fallbackValue || '')
+		.trim()
+		.replace(/\/+$/, '');
+
+	return normalized;
+}
+
 function getAppBaseUrl() {
-	return process.env.APP_BASE_URL || 'http://localhost:5173';
+	return normalizeBaseUrl(process.env.APP_BASE_URL, 'http://localhost:5173');
+}
+
+function getEmployeePortalBaseUrl() {
+	return normalizeBaseUrl(process.env.EMPLOYEE_PWA_BASE_URL, getAppBaseUrl());
 }
 
 function getSmtpConfig() {
@@ -134,4 +146,4 @@ async function queueAndSendEmail(prisma, payload) {
 	}
 }
 
-export { getAppBaseUrl, queueAndSendEmail };
+export { getAppBaseUrl, getEmployeePortalBaseUrl, queueAndSendEmail };

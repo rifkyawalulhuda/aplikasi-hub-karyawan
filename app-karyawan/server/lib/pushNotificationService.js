@@ -1,6 +1,6 @@
 import webpush from 'web-push';
 
-import { getAppBaseUrl } from './emailService.js';
+import { getEmployeePortalBaseUrl } from './emailService.js';
 
 let vapidInitialized = false;
 
@@ -34,9 +34,9 @@ function isPushConfigured() {
 }
 
 function toAbsoluteNotificationUrl(url) {
-	if (!url) return getAppBaseUrl();
+	if (!url) return getEmployeePortalBaseUrl();
 	if (url.startsWith('http://') || url.startsWith('https://')) return url;
-	return `${getAppBaseUrl()}${url.startsWith('/') ? url : `/${url}`}`;
+	return `${getEmployeePortalBaseUrl()}${url.startsWith('/') ? url : `/${url}`}`;
 }
 
 function normalizeSubscriptionPayload(subscription = {}) {

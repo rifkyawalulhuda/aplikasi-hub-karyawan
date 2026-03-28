@@ -90,6 +90,7 @@ Folder ini dipilih sebagai basis utama pengembangan karena struktur template-nya
   - Mobile PWA dapat dideploy terpisah ke Vercel dengan root directory `app-karyawan`
   - build Mobile PWA di Vercel tetap memakai `VITE_API_BASE_URL=https://api.aplikasi-hub.my.id/api`
 - CORS backend harus mengizinkan origin Cloudflare dan origin Vercel untuk Mobile PWA, termasuk pola `https://pwa-karyawan*.vercel.app` agar alias production dan deployment alias tetap bisa mengakses API publik.
+- Link email approval cuti dan payload push notification untuk portal karyawan harus memakai base URL khusus `EMPLOYEE_PWA_BASE_URL`, yang sekarang diarahkan ke `https://pwa-karyawan.vercel.app`.
 - `APP_BASE_URL` dipakai untuk domain publik utama `https://aplikasi-hub.my.id`.
 - `VITE_API_BASE_URL` untuk build publik mengarah ke `https://api.aplikasi-hub.my.id/api`.
 - `Data Cuti Karyawan` sekarang diperlakukan sebagai saldo utama admin-only dengan satu row per kombinasi `Karyawan + Jenis Cuti + Tahun`.

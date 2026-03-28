@@ -6,7 +6,7 @@ import {
 	mapEmployeeGuidanceRecord,
 	mapEmployeeWarningLetter,
 } from '../lib/employeePortal.js';
-import { getAppBaseUrl, queueAndSendEmail } from '../lib/emailService.js';
+import { getEmployeePortalBaseUrl, queueAndSendEmail } from '../lib/emailService.js';
 import {
 	createLeaveRequestRevision,
 	getActiveApprovals,
@@ -43,11 +43,11 @@ const SPECIAL_REPLACEMENT_JOB_ROLE_GROUPS = {
 router.use(requireEmployeeAuth);
 
 function buildLeaveRequestUrl(leaveRequestId) {
-	return `${getAppBaseUrl()}/karyawan/cuti/${leaveRequestId}`;
+	return `${getEmployeePortalBaseUrl()}/karyawan/cuti/${leaveRequestId}`;
 }
 
 function buildLeaveApprovalUrl(approvalId) {
-	return `${getAppBaseUrl()}/karyawan/cuti/approval/${approvalId}`;
+	return `${getEmployeePortalBaseUrl()}/karyawan/cuti/approval/${approvalId}`;
 }
 
 async function getLeaveTypeOrThrow(id, tx = prisma) {
