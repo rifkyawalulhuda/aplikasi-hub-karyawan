@@ -17,12 +17,14 @@ import Slider from '@mui/material/Slider';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import CloseIcon from '@mui/icons-material/Close';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
+import { isEmployeePortalHostname, isEmployeePortalPath } from '../../../../pwaHosts';
 
 function CustomizationLayout() {
 	const [showDrawer, setshowDrawer] = useState(false);
 	const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
+	const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
 
-	if (pathname.startsWith('/karyawan')) {
+	if (isEmployeePortalPath(pathname) || isEmployeePortalHostname(hostname)) {
 		return null;
 	}
 

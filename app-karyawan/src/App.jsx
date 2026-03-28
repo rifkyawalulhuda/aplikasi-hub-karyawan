@@ -18,22 +18,23 @@ import { Provider as SnackbarProvider } from '@/components/snackbar';
 import MUITheme from '@/utils/theme';
 import Router from '@/utils/routes';
 import CustomizationLayout from '@/components/layouts/customization';
-
-const PWA_HOSTNAMES = new Set(['pwa.aplikasi-hub.my.id']);
+import { getEmployeePortalRedirectTarget } from '../pwaHosts';
 
 function App() {
+	const employeePortalRedirectTarget =
+		typeof window !== 'undefined' ? getEmployeePortalRedirectTarget(window.location) : null;
+
 	useEffect(() => {
-		const { hostname, pathname, search, hash } = window.location;
-		if (!PWA_HOSTNAMES.has(hostname)) {
+		if (!employeePortalRedirectTarget) {
 			return;
 		}
 
-		if (pathname.startsWith('/karyawan')) {
-			return;
-		}
+		window.location.replace(employeePortalRedirectTarget);
+	}, [employeePortalRedirectTarget]);
 
-		window.location.replace(`/karyawan/login${search}${hash}`);
-	}, []);
+	if (employeePortalRedirectTarget) {
+		return null;
+	}
 
 	return (
 		<StoreProvider>

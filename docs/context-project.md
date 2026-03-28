@@ -44,6 +44,8 @@ Folder ini dipilih sebagai basis utama pengembangan karena struktur template-nya
 - Area `Portal Mobile Karyawan` ditujukan mobile-first dan diaktifkan sebagai PWA installable.
 - Area admin desktop dan area mobile karyawan menggunakan auth context dan route guard yang terpisah agar session tidak saling bentrok.
 - PWA mobile sekarang memiliki domain khusus `pwa.aplikasi-hub.my.id` yang dilayani melalui Cloudflare Tunnel, bukan Cloudflare Pages.
+- Mobile PWA juga disiapkan agar bisa dideploy ke Vercel pada domain khusus seperti `pwa-karyawan.vercel.app` tanpa memecah project frontend menjadi aplikasi baru.
+- Hostname `*.vercel.app` untuk deployment project ini diperlakukan sebagai host khusus PWA, sehingga akses root/non-`/karyawan` akan diarahkan ke `/karyawan/login` dan area admin desktop tidak dipakai pada domain tersebut.
 - Login PWA mobile menampilkan tombol `Install App` dengan fallback instruksi manual jika `beforeinstallprompt` belum tersedia di browser.
 - Manifest PWA sekarang memakai ikon PNG standar `pwa/icon-192.png` dan `pwa/icon-512.png`; SVG tidak lagi dipakai sebagai ikon utama agar kompatibilitas install lebih stabil.
 - Standar global `table list` desktop sekarang mengikuti pola halaman `Bimbingan & Pengarahan`, kecuali halaman `Detail Karyawan`.
@@ -82,6 +84,11 @@ Folder ini dipilih sebagai basis utama pengembangan karena struktur template-nya
   - frontend admin/PWA tetap berjalan di server lokal
   - backend API tetap berjalan di server lokal
   - domain publik `aplikasi-hub.my.id`, `www.aplikasi-hub.my.id`, `pwa.aplikasi-hub.my.id`, dan `api.aplikasi-hub.my.id` diarahkan melalui tunnel, bukan Cloudflare Pages atau Netlify
+- Arsitektur hybrid deploy yang sekarang didukung:
+  - admin desktop tetap berjalan dari frontend lokal / tunnel
+  - backend API tetap berjalan lokal dan dipublikasikan lewat Cloudflare Tunnel `hub-karyawan-api`
+  - Mobile PWA dapat dideploy terpisah ke Vercel dengan root directory `app-karyawan`
+  - build Mobile PWA di Vercel tetap memakai `VITE_API_BASE_URL=https://api.aplikasi-hub.my.id/api`
 - `APP_BASE_URL` dipakai untuk domain publik utama `https://aplikasi-hub.my.id`.
 - `VITE_API_BASE_URL` untuk build publik mengarah ke `https://api.aplikasi-hub.my.id/api`.
 - `Data Cuti Karyawan` sekarang diperlakukan sebagai saldo utama admin-only dengan satu row per kombinasi `Karyawan + Jenis Cuti + Tahun`.
@@ -777,6 +784,8 @@ Yang sudah selesai:
 - Menyesuaikan konfigurasi PWA agar manifest menggunakan ikon PNG standar (`pwa/icon-192.png` dan `pwa/icon-512.png`) untuk kompatibilitas install yang lebih stabil.
 - Mengubah favicon HTML agar menggunakan PNG standar dari `public/pwa`.
 - Menyesuaikan `vite.config.js` agar host development menerima domain Cloudflare public (`aplikasi-hub.my.id`, `www`, `pwa`, `api`) saat diakses lewat tunnel.
+- Menambahkan konfigurasi host PWA terpusat untuk domain Cloudflare dan Vercel, lengkap dengan redirect runtime agar host `*.vercel.app` hanya melayani area Mobile PWA (`/karyawan`).
+- Menambahkan `vercel.json` pada `app-karyawan` untuk memastikan deep-link SPA Vite tetap kembali ke `index.html` saat Mobile PWA dideploy ke Vercel.
 - Menambahkan guard startup server Express agar port `4000` yang sedang dipakai tidak menyebabkan crash dev berulang.
 - Menambahkan endpoint live `/api/notifications` dan panel notifikasi pada header admin.
 - Menambahkan endpoint update status notifikasi:
