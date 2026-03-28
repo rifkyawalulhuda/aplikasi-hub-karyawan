@@ -10,18 +10,22 @@ import Divider from '@mui/material/Divider';
 import IconButton from '@mui/material/IconButton';
 import List from '@mui/material/List';
 import ListItemButton from '@mui/material/ListItemButton';
-import ListItemText from '@mui/material/ListItemText';
 import Menu from '@mui/material/Menu';
 import Stack from '@mui/material/Stack';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
+import { alpha } from '@mui/material/styles';
 
+import AutorenewRoundedIcon from '@mui/icons-material/AutorenewRounded';
+import BoltRoundedIcon from '@mui/icons-material/BoltRounded';
+import CheckCircleOutlineOutlinedIcon from '@mui/icons-material/CheckCircleOutlineOutlined';
 import ErrorOutlineOutlinedIcon from '@mui/icons-material/ErrorOutlineOutlined';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import MarkEmailReadRoundedIcon from '@mui/icons-material/MarkEmailReadRounded';
+import NotificationsActiveRoundedIcon from '@mui/icons-material/NotificationsActiveRounded';
 import NotificationsOutlinedIcon from '@mui/icons-material/NotificationsOutlined';
 import RefreshOutlinedIcon from '@mui/icons-material/RefreshOutlined';
 import WarningAmberOutlinedIcon from '@mui/icons-material/WarningAmberOutlined';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import CheckCircleOutlineOutlinedIcon from '@mui/icons-material/CheckCircleOutlineOutlined';
 
 import { useEmployeeAuth } from '@/contexts/employeeAuthContext';
 import {
@@ -35,13 +39,42 @@ import { employeeMeRequest } from '@/services/employeeApi';
 function getSeverityIcon(severity) {
 	switch (severity) {
 		case 'error':
-			return <ErrorOutlineOutlinedIcon fontSize="small" color="error" />;
+			return <ErrorOutlineOutlinedIcon fontSize="small" sx={{ color: 'inherit' }} />;
 		case 'warning':
-			return <WarningAmberOutlinedIcon fontSize="small" color="warning" />;
+			return <WarningAmberOutlinedIcon fontSize="small" sx={{ color: 'inherit' }} />;
 		case 'success':
-			return <CheckCircleOutlineOutlinedIcon fontSize="small" color="success" />;
+			return <CheckCircleOutlineOutlinedIcon fontSize="small" sx={{ color: 'inherit' }} />;
 		default:
-			return <InfoOutlinedIcon fontSize="small" color="info" />;
+			return <InfoOutlinedIcon fontSize="small" sx={{ color: 'inherit' }} />;
+	}
+}
+
+function getSeverityStyles(severity, isRead) {
+	switch (severity) {
+		case 'error':
+			return {
+				iconColor: '#D14343',
+				accentColor: isRead ? 'rgba(209, 67, 67, 0.22)' : 'rgba(209, 67, 67, 0.9)',
+				iconBackground: 'rgba(209, 67, 67, 0.12)',
+			};
+		case 'warning':
+			return {
+				iconColor: '#D97706',
+				accentColor: isRead ? 'rgba(217, 119, 6, 0.22)' : 'rgba(217, 119, 6, 0.88)',
+				iconBackground: 'rgba(245, 158, 11, 0.12)',
+			};
+		case 'success':
+			return {
+				iconColor: '#1F8A5B',
+				accentColor: isRead ? 'rgba(31, 138, 91, 0.2)' : 'rgba(31, 138, 91, 0.85)',
+				iconBackground: 'rgba(31, 138, 91, 0.12)',
+			};
+		default:
+			return {
+				iconColor: '#2F6FB3',
+				accentColor: isRead ? 'rgba(47, 111, 179, 0.18)' : 'rgba(47, 111, 179, 0.82)',
+				iconBackground: 'rgba(47, 111, 179, 0.12)',
+			};
 	}
 }
 
@@ -78,7 +111,9 @@ function EmployeeNotificationButton() {
 				return;
 			}
 
-			if (!silent) setLoading(true);
+			if (!silent) {
+				setLoading(true);
+			}
 
 			try {
 				const response = await employeeMeRequest('/notifications');
@@ -92,7 +127,9 @@ function EmployeeNotificationButton() {
 				setUnreadCount(0);
 				setErrorMessage(error.message || 'Notifikasi tidak dapat dimuat.');
 			} finally {
-				if (!silent) setLoading(false);
+				if (!silent) {
+					setLoading(false);
+				}
 			}
 		},
 		[employee?.id],
@@ -101,6 +138,7 @@ function EmployeeNotificationButton() {
 	useEffect(() => {
 		loadNotifications();
 	}, [loadNotifications]);
+
 	const loadPushStatus = useCallback(async () => {
 		if (!employee?.id) {
 			setPushStatus({
@@ -138,11 +176,15 @@ function EmployeeNotificationButton() {
 	}, [loadPushStatus]);
 
 	useEffect(() => {
-		if (open) loadNotifications({ silent: true });
+		if (open) {
+			loadNotifications({ silent: true });
+		}
 	}, [open, loadNotifications]);
 
 	useEffect(() => {
-		if (open) loadPushStatus();
+		if (open) {
+			loadPushStatus();
+		}
 	}, [open, loadPushStatus]);
 
 	const handleOpen = (event) => setAnchorEl(event.currentTarget);
@@ -150,7 +192,9 @@ function EmployeeNotificationButton() {
 
 	const markNotificationAsRead = useCallback(
 		async (notificationId) => {
-			if (!employee?.id || !notificationId) return;
+			if (!employee?.id || !notificationId) {
+				return;
+			}
 
 			await employeeMeRequest('/notifications/read', {
 				method: 'POST',
@@ -161,10 +205,15 @@ function EmployeeNotificationButton() {
 	);
 
 	const markAllAsRead = useCallback(async () => {
-		if (!employee?.id) return;
+		if (!employee?.id) {
+			return;
+		}
 
 		const unreadNotificationIds = items.filter((item) => !item.isRead).map((item) => item.id);
-		if (!unreadNotificationIds.length) return;
+
+		if (!unreadNotificationIds.length) {
+			return;
+		}
 
 		await employeeMeRequest('/notifications/read-all', {
 			method: 'POST',
@@ -245,56 +294,128 @@ function EmployeeNotificationButton() {
 	}
 
 	let content = (
-		<List disablePadding sx={{ maxHeight: 440, overflowY: 'auto' }}>
-			{items.map((item, index) => (
-				<Box key={item.id}>
-					<ListItemButton
-						alignItems="flex-start"
-						onClick={() => handleNavigate(item)}
-						sx={{ bgcolor: item.isRead ? 'transparent' : 'rgba(25, 118, 210, 0.06)' }}
-					>
-						<Stack direction="row" spacing={1.25} sx={{ width: '100%' }}>
-							<Box sx={{ pt: 0.4 }}>{getSeverityIcon(item.severity)}</Box>
-							<ListItemText
-								primary={
-									<Stack spacing={0.35}>
-										<Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+		<List disablePadding sx={{ maxHeight: 432, overflowY: 'auto', px: 1.25, py: 1.25 }}>
+			{items.map((item, index) => {
+				const severityStyles = getSeverityStyles(item.severity, item.isRead);
+
+				return (
+					<Box key={item.id} sx={{ mb: index < items.length - 1 ? 1 : 0 }}>
+						<ListItemButton
+							alignItems="flex-start"
+							onClick={() => handleNavigate(item)}
+							sx={{
+								alignItems: 'stretch',
+								p: 0,
+								borderRadius: 3,
+								overflow: 'hidden',
+								border: '1px solid',
+								borderColor: item.isRead ? 'rgba(18,59,102,0.08)' : 'rgba(25, 118, 210, 0.18)',
+								backgroundColor: item.isRead ? '#FFFFFF' : 'rgba(25, 118, 210, 0.05)',
+								boxShadow: item.isRead
+									? '0 6px 18px rgba(18,59,102,0.04)'
+									: '0 10px 24px rgba(18,59,102,0.08)',
+								transition: 'transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease',
+								'&:hover': {
+									backgroundColor: item.isRead ? '#FFFFFF' : 'rgba(25, 118, 210, 0.06)',
+									borderColor: item.isRead ? 'rgba(18,59,102,0.12)' : 'rgba(25, 118, 210, 0.28)',
+									boxShadow: '0 12px 28px rgba(18,59,102,0.12)',
+									transform: 'translateY(-1px)',
+								},
+								'&.Mui-focusVisible': {
+									outline: '2px solid rgba(25, 118, 210, 0.28)',
+									outlineOffset: '-2px',
+								},
+							}}
+						>
+							<Box
+								sx={{
+									width: 4,
+									flexShrink: 0,
+									backgroundColor: severityStyles.accentColor,
+								}}
+							/>
+							<Stack direction="row" spacing={1.5} sx={{ width: '100%', p: 1.5, pr: 1.6 }}>
+								<Box
+									sx={{
+										mt: 0.2,
+										width: 38,
+										height: 38,
+										borderRadius: 2.5,
+										display: 'flex',
+										alignItems: 'center',
+										justifyContent: 'center',
+										flexShrink: 0,
+										backgroundColor: severityStyles.iconBackground,
+										color: severityStyles.iconColor,
+									}}
+								>
+									{getSeverityIcon(item.severity)}
+								</Box>
+								<Stack spacing={0.85} sx={{ minWidth: 0, flex: 1 }}>
+									<Stack
+										direction="row"
+										spacing={1}
+										alignItems="flex-start"
+										justifyContent="space-between"
+									>
+										<Box sx={{ minWidth: 0, flex: 1 }}>
 											<Typography
 												variant="body2"
-												sx={{ fontWeight: item.isRead ? 600 : 700, color: '#123B66' }}
+												sx={{
+													fontWeight: item.isRead ? 600 : 700,
+													color: '#123B66',
+													lineHeight: 1.4,
+													display: '-webkit-box',
+													WebkitLineClamp: 2,
+													WebkitBoxOrient: 'vertical',
+													overflow: 'hidden',
+												}}
 											>
 												{item.title}
 											</Typography>
+										</Box>
+										<Box
+											sx={{
+												flexShrink: 0,
+												px: 1,
+												py: 0.4,
+												borderRadius: 999,
+												backgroundColor: item.isRead
+													? 'rgba(18,59,102,0.06)'
+													: 'rgba(25, 118, 210, 0.12)',
+												color: item.isRead ? 'text.secondary' : 'primary.main',
+											}}
+										>
 											<Typography
 												variant="caption"
-												sx={{
-													color: item.isRead ? 'text.secondary' : 'primary.main',
-													fontWeight: item.isRead ? 400 : 700,
-												}}
+												sx={{ fontWeight: item.isRead ? 500 : 700, lineHeight: 1 }}
 											>
-												{item.isRead ? 'Sudah dibaca' : 'Belum dibaca'}
+												{item.isRead ? 'Dibaca' : 'Baru'}
 											</Typography>
-										</Stack>
-										<Typography variant="caption" color="text.secondary">
-											{item.dateLabel}
-										</Typography>
+										</Box>
 									</Stack>
-								}
-								secondary={
+									<Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.2 }}>
+										{item.dateLabel}
+									</Typography>
 									<Typography
 										variant="body2"
 										color="text.secondary"
-										sx={{ mt: 0.5, lineHeight: 1.45 }}
+										sx={{
+											lineHeight: 1.55,
+											display: '-webkit-box',
+											WebkitLineClamp: 2,
+											WebkitBoxOrient: 'vertical',
+											overflow: 'hidden',
+										}}
 									>
 										{item.description}
 									</Typography>
-								}
-							/>
-						</Stack>
-					</ListItemButton>
-					{index < items.length - 1 ? <Divider component="li" /> : null}
-				</Box>
-			))}
+								</Stack>
+							</Stack>
+						</ListItemButton>
+					</Box>
+				);
+			})}
 		</List>
 	);
 
@@ -312,8 +433,21 @@ function EmployeeNotificationButton() {
 		);
 	} else if (items.length === 0) {
 		content = (
-			<Stack spacing={0.75} alignItems="center" justifyContent="center" sx={{ py: 6, px: 3 }}>
-				<NotificationsOutlinedIcon color="disabled" />
+			<Stack spacing={0.9} alignItems="center" justifyContent="center" sx={{ py: 6, px: 3 }}>
+				<Box
+					sx={{
+						width: 52,
+						height: 52,
+						borderRadius: 3,
+						display: 'flex',
+						alignItems: 'center',
+						justifyContent: 'center',
+						backgroundColor: 'rgba(18,59,102,0.06)',
+						color: '#7C8EA5',
+					}}
+				>
+					<NotificationsOutlinedIcon />
+				</Box>
 				<Typography variant="body2" color="text.secondary" textAlign="center">
 					Belum ada notifikasi aktif.
 				</Typography>
@@ -343,67 +477,224 @@ function EmployeeNotificationButton() {
 				transformOrigin={{ vertical: 'top', horizontal: 'right' }}
 				slotProps={{
 					paper: {
-						sx: { width: 420, maxWidth: 'calc(100vw - 24px)', borderRadius: 3, overflow: 'hidden' },
+						sx: {
+							width: 388,
+							maxWidth: 'calc(100vw - 20px)',
+							borderRadius: 4,
+							overflow: 'hidden',
+							border: '1px solid rgba(18,59,102,0.08)',
+							boxShadow: '0 18px 48px rgba(18,59,102,0.18)',
+							backgroundImage:
+								'linear-gradient(180deg, rgba(247,251,255,0.98) 0%, rgba(255,255,255,0.98) 100%)',
+						},
 					},
 				}}
 			>
 				<Stack spacing={0}>
-					<Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ px: 2, py: 1.5 }}>
-						<Box>
-							<Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#123B66' }}>
-								Notifikasi
-							</Typography>
-							<Typography variant="caption" color="text.secondary">
-								{unreadCount} belum dibaca dari {totalCount} alert aktif
-							</Typography>
-						</Box>
-						<Stack direction="row" spacing={1}>
-							{pushStatus.supported && pushStatus.configured ? (
-								<Stack direction="row" spacing={1}>
-									<Button
-										size="small"
-										variant={pushButtonVariant}
-										onClick={handleEnablePush}
-										disabled={pushActionLoading || isPushEnabled}
-									>
-										{pushButtonLabel}
-									</Button>
-									{isPushEnabled ? (
+					<Box
+						sx={{
+							px: 1.5,
+							pt: 1.5,
+							pb: 1.25,
+							background:
+								'linear-gradient(180deg, rgba(247,251,255,0.96) 0%, rgba(241,247,253,0.88) 100%)',
+						}}
+					>
+						<Stack spacing={1.35}>
+							<Stack
+								direction="row"
+								spacing={1.25}
+								alignItems="flex-start"
+								justifyContent="space-between"
+							>
+								<Stack spacing={0.45} sx={{ minWidth: 0 }}>
+									<Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+										<Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#123B66' }}>
+											Notifikasi
+										</Typography>
+										<Box
+											sx={{
+												px: 1,
+												py: 0.35,
+												borderRadius: 999,
+												backgroundColor: unreadCount
+													? 'rgba(25, 118, 210, 0.12)'
+													: 'rgba(18,59,102,0.06)',
+												color: unreadCount ? 'primary.main' : 'text.secondary',
+											}}
+										>
+											<Typography variant="caption" sx={{ fontWeight: 700, lineHeight: 1 }}>
+												{unreadCount} baru
+											</Typography>
+										</Box>
+									</Stack>
+									<Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.4 }}>
+										{unreadCount} belum dibaca dari {totalCount} alert aktif
+									</Typography>
+								</Stack>
+								<IconButton
+									size="small"
+									onClick={() => loadNotifications()}
+									sx={{
+										mt: -0.2,
+										width: 36,
+										height: 36,
+										flexShrink: 0,
+										border: '1px solid rgba(18,59,102,0.08)',
+										backgroundColor: '#FFFFFF',
+										color: '#2F6FB3',
+									}}
+								>
+									<RefreshOutlinedIcon fontSize="small" />
+								</IconButton>
+							</Stack>
+
+							<Stack
+								spacing={1}
+								sx={{
+									p: 1.1,
+									borderRadius: 3,
+									border: '1px solid rgba(18,59,102,0.08)',
+									backgroundColor: alpha('#FFFFFF', 0.88),
+								}}
+							>
+								<Stack
+									direction="row"
+									spacing={1}
+									alignItems="center"
+									justifyContent="space-between"
+									flexWrap="wrap"
+									useFlexGap
+								>
+									<Stack direction="row" spacing={1} alignItems="center">
+										<Box
+											sx={{
+												width: 34,
+												height: 34,
+												borderRadius: 2.5,
+												display: 'flex',
+												alignItems: 'center',
+												justifyContent: 'center',
+												backgroundColor: isPushEnabled
+													? 'rgba(31, 138, 91, 0.12)'
+													: 'rgba(25, 118, 210, 0.1)',
+												color: isPushEnabled ? '#1F8A5B' : '#2F6FB3',
+											}}
+										>
+											<NotificationsActiveRoundedIcon fontSize="small" />
+										</Box>
+										<Box>
+											<Typography variant="caption" sx={{ color: '#4C6B88', fontWeight: 600 }}>
+												Push notification
+											</Typography>
+											<Typography
+												variant="body2"
+												sx={{ color: '#123B66', fontWeight: 700, lineHeight: 1.25 }}
+											>
+												{isPushEnabled ? 'Aktif di perangkat ini' : 'Belum aktif'}
+											</Typography>
+										</Box>
+									</Stack>
+
+									{pushStatus.supported && pushStatus.configured ? (
 										<Button
 											size="small"
-											variant="text"
+											variant={pushButtonVariant}
+											startIcon={<BoltRoundedIcon fontSize="small" />}
+											onClick={handleEnablePush}
+											disabled={pushActionLoading || isPushEnabled}
+											sx={{
+												minHeight: 36,
+												borderRadius: 999,
+												px: 1.5,
+												fontWeight: 700,
+												textTransform: 'none',
+												boxShadow: pushButtonVariant === 'contained' ? 'none' : undefined,
+											}}
+										>
+											{pushButtonLabel}
+										</Button>
+									) : null}
+								</Stack>
+
+								<Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+									{pushStatus.supported && pushStatus.configured && isPushEnabled ? (
+										<Button
+											size="small"
+											variant="outlined"
+											startIcon={
+												pushTestLoading ? (
+													<CircularProgress size={14} color="inherit" />
+												) : (
+													<AutorenewRoundedIcon fontSize="small" />
+												)
+											}
 											onClick={handleSendPushTest}
 											disabled={pushTestLoading}
+											sx={{
+												minHeight: 34,
+												borderRadius: 999,
+												px: 1.5,
+												fontWeight: 700,
+												textTransform: 'none',
+											}}
 										>
 											{pushTestLoading ? 'Mengirim...' : 'Test Push'}
 										</Button>
 									) : null}
+
+									<Button
+										size="small"
+										variant="text"
+										startIcon={<MarkEmailReadRoundedIcon fontSize="small" />}
+										onClick={markAllAsRead}
+										disabled={!unreadCount}
+										sx={{
+											minHeight: 34,
+											borderRadius: 999,
+											px: 1.2,
+											fontWeight: 700,
+											textTransform: 'none',
+										}}
+									>
+										Tandai semua
+									</Button>
 								</Stack>
+							</Stack>
+
+							{pushStatus.supported && pushStatus.configured && pushStatus.permission === 'denied' ? (
+								<Alert
+									severity="warning"
+									variant="outlined"
+									sx={{
+										borderRadius: 2.5,
+										py: 0.35,
+										alignItems: 'center',
+										'& .MuiAlert-message': { fontSize: 12.5, lineHeight: 1.45 },
+									}}
+								>
+									Izin notifikasi diblokir. Aktifkan lewat pengaturan browser perangkat Anda.
+								</Alert>
 							) : null}
-							<Button size="small" onClick={markAllAsRead} disabled={!unreadCount}>
-								Tandai semua
-							</Button>
-							<Button
-								size="small"
-								startIcon={<RefreshOutlinedIcon fontSize="small" />}
-								onClick={() => loadNotifications()}
-							>
-								Refresh
-							</Button>
+
+							{pushStatusMessage ? (
+								<Alert
+									severity="success"
+									variant="outlined"
+									sx={{
+										borderRadius: 2.5,
+										py: 0.35,
+										alignItems: 'center',
+										'& .MuiAlert-message': { fontSize: 12.5, lineHeight: 1.45 },
+									}}
+								>
+									{pushStatusMessage}
+								</Alert>
+							) : null}
 						</Stack>
-					</Stack>
-					{pushStatus.supported && pushStatus.configured && pushStatus.permission === 'denied' ? (
-						<Typography variant="caption" color="warning.main" sx={{ px: 2, pb: 1.25 }}>
-							Izin notifikasi diblokir. Aktifkan lewat pengaturan browser perangkat Anda.
-						</Typography>
-					) : null}
-					{pushStatusMessage ? (
-						<Typography variant="caption" color="success.main" sx={{ px: 2, pb: 1.25 }}>
-							{pushStatusMessage}
-						</Typography>
-					) : null}
+					</Box>
 					<Divider />
-					{content}
+					<Box sx={{ backgroundColor: 'rgba(255,255,255,0.92)' }}>{content}</Box>
 				</Stack>
 			</Menu>
 		</>
