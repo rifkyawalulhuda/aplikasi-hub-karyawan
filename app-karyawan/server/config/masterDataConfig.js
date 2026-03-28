@@ -141,22 +141,85 @@ const MASTER_DATA_CONFIG = {
 			{
 				name: 'phoneNumber',
 				label: 'Nomor Telfon',
-				required: true,
+				importHeader: 'Nomor Telepon',
+				required: false,
+				allowEmptyString: true,
+				defaultValue: '',
+				importDefaultValue: '',
+				invalidMessage: 'Nomor Telepon tidak valid.',
 				searchable: true,
 			},
 			{
 				name: 'email',
 				label: 'Email',
-				required: true,
+				required: false,
+				allowEmptyString: true,
+				defaultValue: '',
+				importDefaultValue: '',
+				invalidMessage: 'Email tidak valid.',
 				searchable: true,
 			},
 			{
 				name: 'detailLainnya',
 				label: 'Detail Lainnya',
 				required: true,
+				allowEmptyString: true,
+				importDefaultValue: '',
 				searchable: true,
 			},
 		],
+		validatePayload: async ({ payload, currentId, delegate, helpers }) => {
+			const normalizedVendorName = helpers.normalizeString(payload.vendorName || '');
+			const normalizedPhoneNumber = helpers.normalizeString(payload.phoneNumber || '');
+			const normalizedEmail = helpers.normalizeString(payload.email || '');
+
+			if (!normalizedVendorName) {
+				return;
+			}
+
+			if (normalizedPhoneNumber && !/^[0-9+\-() ]{6,20}$/.test(normalizedPhoneNumber)) {
+				throw Object.assign(new Error('Nomor Telepon harus berisi 6-20 karakter angka yang valid.'), {
+					statusCode: 400,
+				});
+			}
+
+			if (normalizedEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/i.test(normalizedEmail)) {
+				throw Object.assign(new Error('Email harus menggunakan format alamat email yang valid.'), {
+					statusCode: 400,
+				});
+			}
+
+			const duplicate = await delegate.findFirst({
+				where: {
+					vendorName: {
+						equals: normalizedVendorName,
+						mode: 'insensitive',
+					},
+					...(currentId ? { NOT: { id: currentId } } : {}),
+				},
+			});
+
+			if (duplicate) {
+				throw Object.assign(new Error(`Nama Vendor "${normalizedVendorName}" sudah ada.`), {
+					statusCode: 409,
+				});
+			}
+		},
+		import: {
+			worksheetName: 'Data Import',
+			dataStartRow: 2,
+			headers: ['Nama Vendor', 'Jenis Vendor', 'Alamat', 'Nama PIC', 'Nomor Telepon', 'Email', 'Detail Lainnya'],
+			instructionRowValues: {
+				'Nama Vendor': 'Contoh: PT. BSP',
+				'Jenis Vendor': 'Pilih dari dropdown atau isi manual untuk jenis vendor custom, contoh: Trucking',
+				Alamat: 'Contoh: BADAMI',
+				'Nama PIC': 'Contoh: Udin',
+				'Nomor Telepon': 'Opsional, contoh: 088989899999',
+				Email: 'Opsional, contoh: vendor@example.com',
+				'Detail Lainnya': 'Opsional, isi keterangan tambahan vendor bila ada',
+			},
+			errorFilePrefix: 'master-vendor-import-errors',
+		},
 	},
 	'master-dok-pkb': {
 		label: 'Master Dok PKB',

@@ -185,12 +185,14 @@ const MASTER_DATA_PAGE_CONFIG = {
 				name: 'phoneNumber',
 				label: 'Nomor Telfon',
 				placeholder: 'Masukkan nomor telfon',
+				required: false,
 				searchable: true,
 			},
 			{
 				name: 'email',
 				label: 'Email',
 				placeholder: 'Masukkan email',
+				required: false,
 				searchable: true,
 			},
 			{
@@ -210,6 +212,12 @@ const MASTER_DATA_PAGE_CONFIG = {
 			{ id: 'email', label: 'EMAIL' },
 			{ id: 'detailLainnya', label: 'DETAIL LAINNYA' },
 		],
+		import: {
+			title: 'Import Master Vendor',
+			description:
+				'Unduh template Excel resmi, isi data vendor secara bulk, lalu upload file `.xlsx` untuk import ke master vendor.',
+			templateHref: '/api/master/master-vendors/template',
+		},
 	},
 	masterDokPkb: {
 		resource: 'master-dok-pkb',

@@ -344,10 +344,25 @@ Catatan implementasi:
   - `Jenis Vendor` dengan pilihan `Consumable`, `Building`, `Trucking`, `Jasa`, `Warehousing`, `Disposable`, dan `Lainnya`
   - `Alamat`
   - `Nama PIC`
-  - `Nomor Telfon`
-  - `Email`
+  - `Nomor Telfon` opsional
+  - `Email` opsional
   - `Detail Lainnya`
 - Jika user memilih `Lainnya`, sistem menampilkan input manual tambahan untuk mengisi jenis vendor custom.
+- Sudah tersedia template Excel bulk import untuk `Master Vendor`.
+- Sudah tersedia fitur import bulk dari file Excel pada halaman `Master Vendor`.
+- Template import `Master Vendor` dihasilkan dinamis dari backend dengan kolom:
+  - `Nama Vendor`
+  - `Jenis Vendor`
+  - `Alamat`
+  - `Nama PIC`
+  - `Nomor Telepon`
+  - `Email`
+  - `Detail Lainnya`
+- Kolom `Jenis Vendor` pada template import `Master Vendor` menyediakan dropdown value standar seperti form input, tetapi tetap boleh diisi manual untuk vendor type custom.
+- Import `Master Vendor` mendukung partial success:
+  - baris valid tetap diimport
+  - baris gagal menghasilkan file error report `.xlsx`
+- Validasi import `Master Vendor` memeriksa duplikasi `Nama Vendor` secara no-case sensitive serta format `Nomor Telepon` dan `Email`.
 - Kolom `NO` pada tabel menggunakan nomor urut tampilan dan otomatis rapat kembali saat ada row yang dihapus.
 
 ### 2. History Karyawan (Report)
@@ -747,6 +762,7 @@ Yang sudah selesai:
 - Menyesuaikan template import `Data Cuti Karyawan` agar dropdown dan autofill mengikuti data master terbaru (`Nama Karyawan`, `NIK`, dan `Jenis Cuti`) serta menghapus sample data dari template.
 - Menambahkan schema, migration, resource master data generic, route, menu, dan halaman `Master Unit` dengan field `Nama Unit`, `Jenis Unit`, `Kapasitas`, `Unit/Serial Number`, dan `Detail Lainnya`.
 - Menambahkan schema, migration, resource master data generic, route, menu, dan halaman `Master Vendor` dengan field `Nama Vendor`, `Jenis Vendor`, `Alamat`, `Nama PIC`, `Nomor Telfon`, `Email`, dan `Detail Lainnya`.
+- Menambahkan template Excel bulk import dan fitur upload/import Excel untuk `Master Vendor`, beserta validasi duplikasi nama vendor, validasi format telepon/email, dan file error report per baris.
 - Menambahkan schema, migration, API CRUD, route, menu, dan halaman `Lisensi & Sertifikasi` dengan relasi ke `Master Karyawan` dan `Master Dok Karyawan`.
 - Menambahkan schema, migration, API CRUD, route, menu, dan halaman `Lisensi & Sertifikasi Unit` dengan relasi ke `Master Unit` dan `Master Vendor`.
 - Menambahkan fitur login aplikasi menggunakan kredensial `Master Admin` (`NIK` + `Password`).

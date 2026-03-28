@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { useSnackbar } from 'notistack';
 
 import AttachFileOutlinedIcon from '@mui/icons-material/AttachFileOutlined';
 import CloudUploadOutlinedIcon from '@mui/icons-material/CloudUploadOutlined';
@@ -11,12 +12,16 @@ import DialogTitle from '@mui/material/DialogTitle';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
+import { downloadFile } from '@/services/api';
+
 function MasterDataImportDialog({ open, loading, title, description, templateHref, onClose, onImport }) {
+	const { enqueueSnackbar } = useSnackbar();
 	const inputRef = useRef(null);
 	const [selectedFile, setSelectedFile] = useState(null);
+	const [downloadingTemplate, setDownloadingTemplate] = useState(false);
 
 	const handleClose = () => {
-		if (loading) {
+		if (loading || downloadingTemplate) {
 			return;
 		}
 
@@ -41,6 +46,25 @@ function MasterDataImportDialog({ open, loading, title, description, templateHre
 		}
 	};
 
+	const handleDownloadTemplate = async () => {
+		if (!templateHref || downloadingTemplate) {
+			return;
+		}
+
+		setDownloadingTemplate(true);
+
+		try {
+			const fallbackFileName = templateHref.split('/').filter(Boolean).pop() || 'template.xlsx';
+			await downloadFile(templateHref, fallbackFileName);
+		} catch (error) {
+			enqueueSnackbar(error.message || 'Download template gagal.', {
+				variant: 'error',
+			});
+		} finally {
+			setDownloadingTemplate(false);
+		}
+	};
+
 	return (
 		<Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
 			<DialogTitle>{title}</DialogTitle>
@@ -50,13 +74,12 @@ function MasterDataImportDialog({ open, loading, title, description, templateHre
 						{description}
 					</Typography>
 					<Button
-						component="a"
-						href={templateHref}
-						download
+						onClick={handleDownloadTemplate}
+						disabled={!templateHref || loading || downloadingTemplate}
 						variant="outlined"
 						startIcon={<DownloadOutlinedIcon />}
 					>
-						Download Template
+						{downloadingTemplate ? 'Mengunduh...' : 'Download Template'}
 					</Button>
 					<input
 						ref={inputRef}
@@ -80,12 +103,12 @@ function MasterDataImportDialog({ open, loading, title, description, templateHre
 				</Stack>
 			</DialogContent>
 			<DialogActions sx={{ px: 3, pb: 3 }}>
-				<Button onClick={handleClose} disabled={loading} color="inherit">
+				<Button onClick={handleClose} disabled={loading || downloadingTemplate} color="inherit">
 					Batal
 				</Button>
 				<Button
 					onClick={handleImport}
-					disabled={loading || !selectedFile}
+					disabled={loading || downloadingTemplate || !selectedFile}
 					variant="contained"
 					startIcon={<CloudUploadOutlinedIcon />}
 				>
