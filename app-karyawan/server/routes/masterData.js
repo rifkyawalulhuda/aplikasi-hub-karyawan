@@ -134,13 +134,17 @@ function getFields(config) {
 		  ];
 }
 
+function getFieldImportHeader(fieldConfig) {
+	return fieldConfig?.importHeader || fieldConfig?.label;
+}
+
 function normalizeFieldValue(fieldConfig, value) {
 	if (value === undefined || value === null) {
 		return null;
 	}
 
 	if (typeof value === 'string' && normalizeString(value) === '') {
-		return null;
+		return fieldConfig.allowEmptyString ? '' : null;
 	}
 
 	if (fieldConfig.type === 'number') {
@@ -163,13 +167,22 @@ function normalizeFieldValue(fieldConfig, value) {
 	return normalizeString(value);
 }
 
-async function buildPayload(config, body = {}, currentId = null) {
+async function buildPayload(config, body = {}, currentId = null, options = {}) {
 	const delegate = getDelegate(config.model);
 	const fields = getFields(config);
 	const payload = {};
+	const source = options.source || 'form';
 
 	for (const fieldConfig of fields) {
-		const value = normalizeFieldValue(fieldConfig, body?.[fieldConfig.name]);
+		let value = normalizeFieldValue(fieldConfig, body?.[fieldConfig.name]);
+		const fallbackValue =
+			source === 'import' && fieldConfig.importDefaultValue !== undefined
+				? fieldConfig.importDefaultValue
+				: fieldConfig.defaultValue;
+
+		if (value === null && fallbackValue !== undefined) {
+			value = normalizeFieldValue(fieldConfig, fallbackValue);
+		}
 
 		if (value === INVALID_FIELD_VALUE) {
 			throw Object.assign(new Error(fieldConfig.invalidMessage || `${fieldConfig.label} tidak valid.`), {
@@ -364,10 +377,10 @@ router.post(
 
 			try {
 				const body = fields.reduce((accumulator, fieldConfig) => {
-					accumulator[fieldConfig.name] = raw[fieldConfig.label];
+					accumulator[fieldConfig.name] = raw[getFieldImportHeader(fieldConfig)];
 					return accumulator;
 				}, {});
-				const data = await buildPayload(config, body);
+				const data = await buildPayload(config, body, null, { source: 'import' });
 				const item = await delegate.create({ data });
 
 				importedRows.push(item);
@@ -472,7 +485,7 @@ router.get(
 		// Setup dropdowns (lists)
 		let constantColIndex = 1;
 		importHeaders.forEach((header, colIndex) => {
-			const fieldConfig = fields.find((f) => f.label === header);
+			const fieldConfig = fields.find((f) => getFieldImportHeader(f) === header);
 			const colLetter = dataSheet.getColumn(colIndex + 1).letter;
 
 			if (fieldConfig?.excelNumberFormat) {
@@ -482,7 +495,9 @@ router.get(
 			}
 
 			if (fieldConfig?.options?.length) {
-				const { options } = fieldConfig;
+				const options = fieldConfig.allowCustomOption
+					? [...fieldConfig.options, fieldConfig.customOptionLabel].filter(Boolean)
+					: fieldConfig.options;
 
 				// Write options to Constants sheet
 				options.forEach((option, index) => {
@@ -498,7 +513,7 @@ router.get(
 						type: 'list',
 						allowBlank: true,
 						formulae: [`Constants!${range}`],
-						showErrorMessage: true,
+						showErrorMessage: !fieldConfig.allowCustomOption,
 						errorTitle: 'Input Tidak Valid',
 						error: `Silakan pilih salah satu opsi yang tersedia untuk ${header}.`,
 					};

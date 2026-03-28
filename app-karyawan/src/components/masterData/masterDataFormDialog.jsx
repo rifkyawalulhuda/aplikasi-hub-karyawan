@@ -103,6 +103,7 @@ function MasterDataFormDialog({ config, open, loading, initialValue, onClose, on
 					onSubmit={handleSubmit((values) => onSubmit(normalizeSubmitValues(values)))}
 				>
 					{fields.map((field, index) => {
+						const isFieldRequired = field.required !== false;
 						const selectOptions =
 							field.type === 'select'
 								? field.options?.map((option) => (
@@ -138,9 +139,13 @@ function MasterDataFormDialog({ config, open, loading, initialValue, onClose, on
 											control={control}
 											errors={errors}
 											dirtyFields={dirtyFields}
-											rules={{
-												required: `${field.label} wajib diisi.`,
-											}}
+											rules={
+												isFieldRequired
+													? {
+															required: `${field.label} wajib diisi.`,
+													  }
+													: {}
+											}
 											fullWidth
 											autoFocus={index === 0}
 											select
@@ -175,18 +180,27 @@ function MasterDataFormDialog({ config, open, loading, initialValue, onClose, on
 										control={control}
 										errors={errors}
 										dirtyFields={dirtyFields}
-										rules={{
-											required: `${field.label} wajib diisi.`,
-											validate: (value) => {
-												if (typeof value === 'string') {
-													return value.trim().length > 0 || `${field.label} wajib diisi.`;
-												}
-												return (
-													(value !== undefined && value !== null && value !== '') ||
-													`${field.label} wajib diisi.`
-												);
-											},
-										}}
+										rules={
+											isFieldRequired
+												? {
+														required: `${field.label} wajib diisi.`,
+														validate: (value) => {
+															if (typeof value === 'string') {
+																if (value.trim().length > 0) {
+																	return true;
+																}
+
+																return `${field.label} wajib diisi.`;
+															}
+															if (value !== undefined && value !== null && value !== '') {
+																return true;
+															}
+
+															return `${field.label} wajib diisi.`;
+														},
+												  }
+												: {}
+										}
 										fullWidth
 										autoFocus={index === 0}
 										multiline={field.type === 'multiline'}

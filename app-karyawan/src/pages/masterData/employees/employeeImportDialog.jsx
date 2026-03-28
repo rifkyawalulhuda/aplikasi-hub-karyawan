@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { useSnackbar } from 'notistack';
 
 import AttachFileOutlinedIcon from '@mui/icons-material/AttachFileOutlined';
 import CloudUploadOutlinedIcon from '@mui/icons-material/CloudUploadOutlined';
@@ -11,14 +12,16 @@ import DialogTitle from '@mui/material/DialogTitle';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
-import { getApiBaseUrl } from '@/services/api';
+import { downloadFile, getApiBaseUrl } from '@/services/api';
 
 function EmployeeImportDialog({ open, loading, onClose, onImport }) {
+	const { enqueueSnackbar } = useSnackbar();
 	const inputRef = useRef(null);
 	const [selectedFile, setSelectedFile] = useState(null);
+	const [downloadingTemplate, setDownloadingTemplate] = useState(false);
 
 	const handleClose = () => {
-		if (loading) {
+		if (loading || downloadingTemplate) {
 			return;
 		}
 
@@ -43,6 +46,27 @@ function EmployeeImportDialog({ open, loading, onClose, onImport }) {
 		}
 	};
 
+	const handleDownloadTemplate = async () => {
+		if (downloadingTemplate) {
+			return;
+		}
+
+		setDownloadingTemplate(true);
+
+		try {
+			await downloadFile(
+				`${getApiBaseUrl()}/master/employees/import-template`,
+				'master-employees-import-template.xlsx',
+			);
+		} catch (error) {
+			enqueueSnackbar(error.message || 'Download template gagal.', {
+				variant: 'error',
+			});
+		} finally {
+			setDownloadingTemplate(false);
+		}
+	};
+
 	return (
 		<Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
 			<DialogTitle>Import Master Karyawan</DialogTitle>
@@ -53,12 +77,12 @@ function EmployeeImportDialog({ open, loading, onClose, onImport }) {
 						import.
 					</Typography>
 					<Button
-						component="a"
-						href={`${getApiBaseUrl()}/master/employees/import-template`}
+						onClick={handleDownloadTemplate}
+						disabled={loading || downloadingTemplate}
 						variant="outlined"
 						startIcon={<DownloadOutlinedIcon />}
 					>
-						Download Template
+						{downloadingTemplate ? 'Mengunduh...' : 'Download Template'}
 					</Button>
 					<input
 						ref={inputRef}
@@ -82,12 +106,12 @@ function EmployeeImportDialog({ open, loading, onClose, onImport }) {
 				</Stack>
 			</DialogContent>
 			<DialogActions sx={{ px: 3, pb: 3 }}>
-				<Button onClick={handleClose} disabled={loading} color="inherit">
+				<Button onClick={handleClose} disabled={loading || downloadingTemplate} color="inherit">
 					Batal
 				</Button>
 				<Button
 					onClick={handleImport}
-					disabled={loading || !selectedFile}
+					disabled={loading || downloadingTemplate || !selectedFile}
 					variant="contained"
 					startIcon={<CloudUploadOutlinedIcon />}
 				>
