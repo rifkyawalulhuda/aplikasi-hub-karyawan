@@ -310,6 +310,12 @@ const MASTER_DATA_PAGE_CONFIG = {
 			{ id: 'holidayDate', label: 'TANGGAL', type: 'date' },
 			{ id: 'name', label: 'NAMA HARI LIBUR' },
 		],
+		import: {
+			title: 'Import Master Hari Libur',
+			description:
+				'Unduh template Excel resmi, isi data hari libur secara bulk, lalu upload file `.xlsx` untuk import ke master hari libur.',
+			templateHref: '/api/master/master-holidays/template',
+		},
 	},
 };
 

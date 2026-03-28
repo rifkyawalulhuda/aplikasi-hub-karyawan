@@ -40,6 +40,87 @@ function normalizeMultilineString(value = '') {
 	return String(value).replace(/\r\n/g, '\n').trim();
 }
 
+const INVALID_FIELD_VALUE = Symbol('invalid-field-value');
+
+function createUtcDate(year, month, day) {
+	const date = new Date(Date.UTC(year, month - 1, day));
+
+	if (
+		date.getUTCFullYear() !== year ||
+		date.getUTCMonth() !== month - 1 ||
+		date.getUTCDate() !== day
+	) {
+		return null;
+	}
+
+	return date;
+}
+
+function parseExcelDateValue(value) {
+	if (value instanceof Date) {
+		return createUtcDate(value.getUTCFullYear(), value.getUTCMonth() + 1, value.getUTCDate());
+	}
+
+	if (typeof value === 'number' && Number.isFinite(value)) {
+		const excelEpochUtc = Date.UTC(1899, 11, 30);
+		const parsedDate = new Date(excelEpochUtc + Math.round(value * 24 * 60 * 60 * 1000));
+
+		return createUtcDate(
+			parsedDate.getUTCFullYear(),
+			parsedDate.getUTCMonth() + 1,
+			parsedDate.getUTCDate(),
+		);
+	}
+
+	const normalizedValue = normalizeString(value);
+
+	if (!normalizedValue) {
+		return null;
+	}
+
+	if (/^\d{5,}$/.test(normalizedValue)) {
+		return parseExcelDateValue(Number(normalizedValue));
+	}
+
+	let match = normalizedValue.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})$/);
+
+	if (match) {
+		return createUtcDate(Number(match[1]), Number(match[2]), Number(match[3]));
+	}
+
+	match = normalizedValue.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})$/);
+
+	if (match) {
+		return createUtcDate(Number(match[3]), Number(match[2]), Number(match[1]));
+	}
+
+	const fallbackDate = new Date(normalizedValue);
+
+	if (Number.isNaN(fallbackDate.getTime())) {
+		return null;
+	}
+
+	return createUtcDate(
+		fallbackDate.getUTCFullYear(),
+		fallbackDate.getUTCMonth() + 1,
+		fallbackDate.getUTCDate(),
+	);
+}
+
+function formatDateId(value) {
+	const parsedDate = parseExcelDateValue(value);
+
+	if (!parsedDate) {
+		return '-';
+	}
+
+	const day = String(parsedDate.getUTCDate()).padStart(2, '0');
+	const month = String(parsedDate.getUTCMonth() + 1).padStart(2, '0');
+	const year = parsedDate.getUTCFullYear();
+
+	return `${day}/${month}/${year}`;
+}
+
 function getFields(config) {
 	return config?.fields?.length
 		? config.fields
@@ -54,17 +135,25 @@ function getFields(config) {
 }
 
 function normalizeFieldValue(fieldConfig, value) {
-	if (value === undefined || value === null || value === '') {
+	if (value === undefined || value === null) {
+		return null;
+	}
+
+	if (typeof value === 'string' && normalizeString(value) === '') {
 		return null;
 	}
 
 	if (fieldConfig.type === 'number') {
-		return Number(value);
+		if (typeof value === 'number') {
+			return Number.isFinite(value) ? value : INVALID_FIELD_VALUE;
+		}
+
+		const parsedNumber = Number(normalizeString(value));
+		return Number.isFinite(parsedNumber) ? parsedNumber : INVALID_FIELD_VALUE;
 	}
 
 	if (fieldConfig.type === 'date') {
-		const date = new Date(value);
-		return Number.isNaN(date.getTime()) ? null : date;
+		return parseExcelDateValue(value) || INVALID_FIELD_VALUE;
 	}
 
 	if (fieldConfig.type === 'multiline') {
@@ -82,8 +171,37 @@ async function buildPayload(config, body = {}, currentId = null) {
 	for (const fieldConfig of fields) {
 		const value = normalizeFieldValue(fieldConfig, body?.[fieldConfig.name]);
 
+		if (value === INVALID_FIELD_VALUE) {
+			throw Object.assign(new Error(fieldConfig.invalidMessage || `${fieldConfig.label} tidak valid.`), {
+				statusCode: 400,
+			});
+		}
+
 		if (fieldConfig.required && value === null) {
 			throw Object.assign(new Error(`${fieldConfig.label} wajib diisi.`), { statusCode: 400 });
+		}
+
+		if (fieldConfig.type === 'number' && value !== null) {
+			if (fieldConfig.integer && !Number.isInteger(value)) {
+				throw Object.assign(
+					new Error(fieldConfig.integerMessage || `${fieldConfig.label} harus berupa angka bulat.`),
+					{
+						statusCode: 400,
+					},
+				);
+			}
+
+			if (fieldConfig.min !== undefined && value < fieldConfig.min) {
+				throw Object.assign(new Error(`${fieldConfig.label} minimal ${fieldConfig.min}.`), {
+					statusCode: 400,
+				});
+			}
+
+			if (fieldConfig.max !== undefined && value > fieldConfig.max) {
+				throw Object.assign(new Error(`${fieldConfig.label} maksimal ${fieldConfig.max}.`), {
+					statusCode: 400,
+				});
+			}
 		}
 
 		if (
@@ -115,6 +233,19 @@ async function buildPayload(config, body = {}, currentId = null) {
 		}
 
 		payload[fieldConfig.name] = value;
+	}
+
+	if (typeof config.validatePayload === 'function') {
+		await config.validatePayload({
+			payload,
+			currentId,
+			delegate,
+			prisma,
+			helpers: {
+				normalizeString,
+				formatDateId,
+			},
+		});
 	}
 
 	return payload;
@@ -325,6 +456,8 @@ router.get(
 
 		const importHeaders = config.import.headers || [];
 		const fields = getFields(config);
+		const templateStartRow = config.import.dataStartRow || 2;
+		const templateEndRow = config.import.templateEndRow || 501;
 
 		// Add Header Row
 		dataSheet.addRow(importHeaders);
@@ -340,9 +473,15 @@ router.get(
 		let constantColIndex = 1;
 		importHeaders.forEach((header, colIndex) => {
 			const fieldConfig = fields.find((f) => f.label === header);
+			const colLetter = dataSheet.getColumn(colIndex + 1).letter;
+
+			if (fieldConfig?.excelNumberFormat) {
+				for (let i = templateStartRow; i <= templateEndRow; i += 1) {
+					dataSheet.getCell(`${colLetter}${i}`).numFmt = fieldConfig.excelNumberFormat;
+				}
+			}
 
 			if (fieldConfig?.options?.length) {
-				const colLetter = dataSheet.getColumn(colIndex + 1).letter;
 				const { options } = fieldConfig;
 
 				// Write options to Constants sheet
@@ -354,7 +493,7 @@ router.get(
 				const range = `$${constantsColLetter}$1:$${constantsColLetter}$${options.length}`;
 
 				// Apply validation to a large number of rows (e.g., 500)
-				for (let i = 2; i <= 501; i += 1) {
+				for (let i = templateStartRow; i <= templateEndRow; i += 1) {
 					dataSheet.getCell(`${colLetter}${i}`).dataValidation = {
 						type: 'list',
 						allowBlank: true,
