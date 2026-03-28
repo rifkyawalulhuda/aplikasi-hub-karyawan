@@ -30,6 +30,7 @@ const DEFAULT_ALLOWED_ORIGINS = [
 	'https://aplikasi-hub.my.id',
 	'https://www.aplikasi-hub.my.id',
 	'https://pwa.aplikasi-hub.my.id',
+	'https://pwa-karyawan*.vercel.app',
 	'https://admin.aplikasi-hub.my.id',
 	'https://app.aplikasi-hub.my.id',
 ];
@@ -40,20 +41,44 @@ function parseAllowedOrigins(rawValue = '') {
 		.map((item) => item.trim().replace(/\/+$/, ''))
 		.filter(Boolean);
 
-	if (parsed.length > 0) {
-		return parsed;
+	return [...new Set([...DEFAULT_ALLOWED_ORIGINS, ...parsed])];
+}
+
+function escapeRegex(value) {
+	return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function buildOriginPattern(originPattern) {
+	const normalizedPattern = String(originPattern || '')
+		.trim()
+		.replace(/\/+$/, '');
+
+	if (!normalizedPattern) {
+		return null;
 	}
 
-	return DEFAULT_ALLOWED_ORIGINS;
+	if (!normalizedPattern.includes('*')) {
+		return normalizedPattern;
+	}
+
+	return new RegExp(`^${escapeRegex(normalizedPattern).replace(/\\\*/g, '.*')}$`);
 }
 
 const allowedOrigins = parseAllowedOrigins(process.env.CORS_ALLOWED_ORIGINS || '');
+const allowedOriginPatterns = allowedOrigins.map(buildOriginPattern).filter(Boolean);
 
 function isOriginAllowed(origin) {
 	const normalizedOrigin = String(origin || '')
 		.trim()
 		.replace(/\/+$/, '');
-	return allowedOrigins.includes(normalizedOrigin);
+
+	return allowedOriginPatterns.some((allowedOriginPattern) => {
+		if (allowedOriginPattern instanceof RegExp) {
+			return allowedOriginPattern.test(normalizedOrigin);
+		}
+
+		return allowedOriginPattern === normalizedOrigin;
+	});
 }
 
 app.use(
