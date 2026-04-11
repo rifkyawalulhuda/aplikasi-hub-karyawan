@@ -40,6 +40,9 @@ Folder ini dipilih sebagai basis utama pengembangan karena struktur template-nya
 - Menggunakan template project yang sudah ada di folder proyek.
 - Menggunakan React JS + Vite.
 - Menggunakan Material UI sebagai library UI utama.
+- Standar desain UI global untuk seluruh project sekarang wajib mengacu pada referensi `MCP Material UI` yang disimpan di file `docs/llm-mui.md`.
+- Seluruh komponen, halaman, form, dialog, tabel, navigasi, dan elemen UI baru maupun revisi UI existing harus mengikuti pola, struktur, dan best practice Material UI dari referensi tersebut.
+- Jika ada keputusan desain UI yang lebih spesifik di level fitur, keputusan tersebut tetap harus berada dalam koridor template dan guideline `docs/llm-mui.md`.
 - Area `Portal Mobile Karyawan` dibangun di project yang sama dengan prefix route `/karyawan`.
 - Area `Portal Mobile Karyawan` ditujukan mobile-first dan diaktifkan sebagai PWA installable.
 - Area admin desktop dan area mobile karyawan menggunakan auth context dan route guard yang terpisah agar session tidak saling bentrok.
@@ -878,6 +881,7 @@ Yang sudah selesai:
 ## Catatan Penting
 
 - Template proyek yang tersedia saat ini sudah cocok dijadikan fondasi aplikasi admin/internal.
+- `docs/llm-mui.md` sekarang menjadi referensi UI utama yang wajib dipakai untuk seluruh implementasi desain pada project ini.
 - Detail final field, format print, dan approval matrix untuk modul bisnis lanjutan masih perlu dipastikan dari form atau dokumen resmi perusahaan.
 - File ini adalah dokumen konteks proyek dan harus diperbarui seiring perkembangan implementasi.
 
