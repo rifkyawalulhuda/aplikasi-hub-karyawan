@@ -537,10 +537,75 @@ async function sendApprovedEmail(record) {
 	});
 }
 
+function buildEmployeeActiveLeaveProcess({ approverApproval = null, approverCount = 0, requesterRecord = null, requesterCount = 0 }) {
+	if (approverApproval) {
+		const approval = mapApprovalRow(approverApproval, approverApproval.approverEmployeeId);
+		const request = mapLeaveRequestSummary(approverApproval.employeeLeave);
+
+		return {
+			role: 'APPROVER',
+			roleLabel: 'Perlu tindakan Anda',
+			title: 'Approval Cuti Aktif',
+			status: approval.status,
+			statusLabel: approval.statusLabel,
+			stageLabel: approval.stageLabel,
+			requestId: request.id,
+			approvalId: approval.id,
+			requestNumber: request.requestNumber,
+			leaveType: request.leaveType,
+			employeeName: request.employeeName,
+			employeeNo: request.employeeNo,
+			periodStart: request.periodStart,
+			periodEnd: request.periodEnd,
+			targetPath: `/karyawan/cuti/approval/${approval.id}`,
+			targetKind: 'APPROVAL',
+			isActionRequired: true,
+			totalActiveCount: approverCount,
+			description: `${request.employeeName} menunggu persetujuan Anda pada tahap ${approval.stageLabel}.`,
+		};
+	}
+
+	if (requesterRecord) {
+		const request = mapLeaveRequestSummary(requesterRecord);
+		const approvalSuffix = request.activeApproverNames ? ` Menunggu ${request.activeApproverNames}.` : '';
+
+		return {
+			role: 'REQUESTER',
+			roleLabel: 'Pengajuan Anda',
+			title: 'Proses Cuti Aktif',
+			status: request.status,
+			statusLabel: request.statusLabel,
+			stageLabel: request.activeStageLabel || '',
+			requestId: request.id,
+			approvalId: null,
+			requestNumber: request.requestNumber,
+			leaveType: request.leaveType,
+			employeeName: request.employeeName,
+			employeeNo: request.employeeNo,
+			periodStart: request.periodStart,
+			periodEnd: request.periodEnd,
+			targetPath: `/karyawan/cuti/${request.id}`,
+			targetKind: 'REQUEST',
+			isActionRequired: false,
+			totalActiveCount: requesterCount,
+			description: `${request.leaveType} sedang di tahap ${request.activeStageLabel || 'proses approval'}.${approvalSuffix}`,
+		};
+	}
+
+	return null;
+}
+
 router.get('/dashboard', async (req, res, next) => {
 	try {
-		const [guidanceCount, warningLetterCount, leaveRequestCount, guidanceRecords, warningLetters] =
-			await Promise.all([
+		const [
+			guidanceCount,
+			warningLetterCount,
+			leaveRequestCount,
+			guidanceRecords,
+			warningLetters,
+			requesterActiveLeaves,
+			approverPendingApprovals,
+		] = await Promise.all([
 				prisma.guidanceRecord.count({
 					where: { employeeId: req.employee.id },
 				}),
@@ -574,7 +639,85 @@ router.get('/dashboard', async (req, res, next) => {
 					orderBy: [{ letterDate: 'desc' }, { id: 'desc' }],
 					take: 3,
 				}),
+				prisma.employeeLeave.findMany({
+					where: {
+						employeeId: req.employee.id,
+						status: { in: ['SUBMITTED', 'IN_APPROVAL'] },
+					},
+					include: {
+						employee: {
+							include: {
+								department: true,
+								jobLevel: true,
+							},
+						},
+						masterCutiKaryawan: true,
+						approvals: {
+							include: {
+								approverEmployee: {
+									include: {
+										jobLevel: true,
+									},
+								},
+							},
+							orderBy: [{ revisionNo: 'desc' }, { stageOrder: 'asc' }, { id: 'asc' }],
+						},
+					},
+					orderBy: [{ submittedAt: 'desc' }, { updatedAt: 'desc' }, { id: 'desc' }],
+					take: 5,
+				}),
+				prisma.employeeLeaveApproval.findMany({
+					where: {
+						approverEmployeeId: req.employee.id,
+						status: 'PENDING',
+					},
+					include: {
+						approverEmployee: {
+							include: {
+								jobLevel: true,
+							},
+						},
+						employeeLeave: {
+							include: {
+								employee: {
+									include: {
+										department: true,
+										jobLevel: true,
+									},
+								},
+								masterCutiKaryawan: true,
+								approvals: {
+									include: {
+										approverEmployee: {
+											include: {
+												jobLevel: true,
+											},
+										},
+									},
+									orderBy: [{ revisionNo: 'desc' }, { stageOrder: 'asc' }, { id: 'asc' }],
+								},
+							},
+						},
+					},
+					orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+					take: 10,
+				}),
 			]);
+
+		const actionablePendingApprovals = approverPendingApprovals.filter(
+			(item) =>
+				item.employeeLeave.revisionNo === item.revisionNo &&
+				item.employeeLeave.currentStageOrder === item.stageOrder &&
+				['SUBMITTED', 'IN_APPROVAL'].includes(item.employeeLeave.status),
+		);
+		const approverActiveApproval = actionablePendingApprovals[0] || null;
+		const requesterActiveRecord = requesterActiveLeaves[0] || null;
+		const activeLeaveProcess = buildEmployeeActiveLeaveProcess({
+			approverApproval: approverActiveApproval,
+			approverCount: actionablePendingApprovals.length,
+			requesterRecord: requesterActiveRecord,
+			requesterCount: requesterActiveLeaves.length,
+		});
 
 		return res.json({
 			profile: buildEmployeePortalProfile(req.employee),
@@ -582,6 +725,7 @@ router.get('/dashboard', async (req, res, next) => {
 				guidanceCount,
 				warningLetterCount,
 				leaveRequestCount,
+				activeLeaveProcess,
 			},
 			recentGuidanceRecords: guidanceRecords.map(mapEmployeeGuidanceRecord),
 			recentWarningLetters: warningLetters.map(mapEmployeeWarningLetter),

@@ -86,6 +86,7 @@ Folder ini dipilih sebagai basis utama pengembangan karena struktur template-nya
 - Login `Portal Mobile Karyawan` menggunakan `Employee No` sebagai NIK dan `password` dari tabel `employees`.
 - API self-service karyawan menggunakan endpoint khusus `/api/employee-me/*` dan seluruh data selalu difilter berdasarkan employee yang sedang login.
 - Fitur self-service `Ubah Password` untuk PWA Karyawan tersedia dari halaman `/karyawan/profil` dan diproses melalui endpoint `POST /api/employee-me/change-password`.
+- Endpoint `GET /api/employee-me/dashboard` sekarang juga mengembalikan ringkasan `activeLeaveProcess` untuk kebutuhan kartu `Quick Status` di beranda PWA, dengan prioritas menampilkan approval cuti yang sedang menunggu tindakan approver login, atau pengajuan cuti aktif milik requester bila masih dalam proses.
 - Deploy publik saat ini memakai arsitektur full lokal + Cloudflare Tunnel:
   - frontend admin/PWA tetap berjalan di server lokal
   - backend API tetap berjalan di server lokal
@@ -804,6 +805,10 @@ Yang sudah selesai:
 - Menambahkan halaman dashboard, profil, riwayat bimbingan, dan riwayat surat peringatan untuk karyawan login.
 - Menambahkan fitur `Ubah Password` pada halaman profil PWA Karyawan, lengkap dengan dialog form mobile-first dan endpoint self-service khusus employee login.
 - Refactor UI halaman Beranda PWA Karyawan menjadi lebih minimalis dan premium dengan hero card ringkas, quick status yang lebih fokus, menu cepat 2 kolom yang lebih rapi, ringkasan informasi karyawan yang dipadatkan termasuk kontak (`No Telepon` dan `Email`), serta aktivitas terbaru yang lebih ringan dipindai, tanpa mengubah header dan bottom navigation existing.
+- Menambahkan status proses cuti aktif pada section `Quick Status` di beranda PWA Karyawan:
+  - jika employee login adalah requester dan masih punya pengajuan cuti dengan status aktif (`Submitted` / `Dalam Approval`), kartu akan menampilkan status proses tersebut dan membuka detail request saat ditekan
+  - jika employee login adalah approver dan tahap approval aktif sudah sampai ke dirinya (`PENDING`), kartu akan memprioritaskan item approval tersebut dan membuka halaman approval saat ditekan
+  - status otomatis hilang ketika approval/reject sudah selesai atau proses request sudah tidak aktif
 - Mengaktifkan PWA pada project aktif dengan manifest, service worker, register SW, dan ikon install app untuk `Portal Mobile Karyawan`.
 - Menambahkan route print admin dan PWA untuk `Form Permohonan Cuti dan Ijin`, beserta tombol `Print A4` pada flow cuti approved dan detail cuti approved.
 - Menambahkan dokumen print A4 khusus cuti approved dengan mapping field workflow cuti, checkbox jenis cuti, daftar pengganti repetitif, dan ringkasan approval bawah.
