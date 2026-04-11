@@ -50,6 +50,38 @@ function buildLeaveApprovalUrl(approvalId) {
 	return `${getEmployeePortalBaseUrl()}/karyawan/cuti/approval/${approvalId}`;
 }
 
+function validateChangePasswordPayload(payload = {}) {
+	const currentPassword = normalizeString(payload.currentPassword || '');
+	const newPassword = normalizeString(payload.newPassword || '');
+	const confirmNewPassword = normalizeString(payload.confirmNewPassword || '');
+
+	if (!currentPassword) {
+		throw Object.assign(new Error('Password Saat Ini wajib diisi.'), { statusCode: 400 });
+	}
+
+	if (!newPassword) {
+		throw Object.assign(new Error('Password Baru wajib diisi.'), { statusCode: 400 });
+	}
+
+	if (!confirmNewPassword) {
+		throw Object.assign(new Error('Konfirmasi Password Baru wajib diisi.'), { statusCode: 400 });
+	}
+
+	if (newPassword !== confirmNewPassword) {
+		throw Object.assign(new Error('Konfirmasi password baru tidak cocok.'), { statusCode: 400 });
+	}
+
+	if (newPassword === currentPassword) {
+		throw Object.assign(new Error('Password baru tidak boleh sama dengan password saat ini.'), { statusCode: 400 });
+	}
+
+	return {
+		currentPassword,
+		newPassword,
+		confirmNewPassword,
+	};
+}
+
 async function getLeaveTypeOrThrow(id, tx = prisma) {
 	const leaveType = await tx.masterCutiKaryawan.findUnique({
 		where: { id },
@@ -560,6 +592,29 @@ router.get('/dashboard', async (req, res, next) => {
 });
 
 router.get('/profile', async (req, res) => res.json(buildEmployeePortalProfile(req.employee)));
+
+router.post('/change-password', async (req, res, next) => {
+	try {
+		const { currentPassword, newPassword } = validateChangePasswordPayload(req.body);
+
+		if (normalizeString(req.employee.password || '') !== currentPassword) {
+			return res.status(400).json({ message: 'Password Saat Ini tidak sesuai.' });
+		}
+
+		await prisma.employee.update({
+			where: { id: req.employee.id },
+			data: {
+				password: newPassword,
+			},
+		});
+
+		return res.json({
+			message: 'Password berhasil diperbarui.',
+		});
+	} catch (error) {
+		return next(error);
+	}
+});
 
 router.get('/guidance-records', async (req, res, next) => {
 	try {

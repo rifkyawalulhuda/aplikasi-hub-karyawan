@@ -2,14 +2,18 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSnackbar } from 'notistack';
 
+import Button from '@mui/material/Button';
 import Divider from '@mui/material/Divider';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
+import LockResetOutlinedIcon from '@mui/icons-material/LockResetOutlined';
+
+import ChangePasswordDialog from '@/components/employeePortal/changePasswordDialog';
 import FeedbackState from '@/components/employeePortal/feedbackState';
 import { useEmployeeAuth } from '@/contexts/employeeAuthContext';
-import { employeeMeRequest } from '@/services/employeeApi';
+import { changeEmployeePassword, employeeMeRequest } from '@/services/employeeApi';
 import { formatLongDate, getEmployeePortalErrorMessage, handleEmployeeUnauthorized } from '@/utils/employeePortal';
 
 function FieldItem({ label, value }) {
@@ -32,6 +36,9 @@ function EmployeeProfilePage() {
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState('');
 	const [profile, setProfile] = useState(null);
+	const [changePasswordOpen, setChangePasswordOpen] = useState(false);
+	const [changePasswordLoading, setChangePasswordLoading] = useState(false);
+	const [changePasswordError, setChangePasswordError] = useState('');
 
 	const loadProfile = async () => {
 		setLoading(true);
@@ -58,6 +65,48 @@ function EmployeeProfilePage() {
 		}
 	};
 
+	const handleOpenChangePassword = () => {
+		setChangePasswordError('');
+		setChangePasswordOpen(true);
+	};
+
+	const handleCloseChangePassword = () => {
+		if (changePasswordLoading) {
+			return;
+		}
+
+		setChangePasswordError('');
+		setChangePasswordOpen(false);
+	};
+
+	const handleSubmitChangePassword = async (values) => {
+		setChangePasswordLoading(true);
+		setChangePasswordError('');
+
+		try {
+			const response = await changeEmployeePassword(values);
+			enqueueSnackbar(response.message || 'Password berhasil diperbarui.', {
+				variant: 'success',
+			});
+			setChangePasswordOpen(false);
+		} catch (requestError) {
+			if (
+				handleEmployeeUnauthorized({
+					error: requestError,
+					logout,
+					navigate,
+					enqueueSnackbar,
+				})
+			) {
+				return;
+			}
+
+			setChangePasswordError(getEmployeePortalErrorMessage(requestError));
+		} finally {
+			setChangePasswordLoading(false);
+		}
+	};
+
 	useEffect(() => {
 		loadProfile();
 	}, []);
@@ -79,51 +128,94 @@ function EmployeeProfilePage() {
 	}
 
 	return (
-		<Stack spacing={2}>
-			<Paper sx={{ p: 2.5, borderRadius: 4 }}>
-				<Stack spacing={1.5}>
-					<Typography variant="h6" sx={{ color: '#123B66', fontWeight: 700 }}>
-						Identitas Utama
-					</Typography>
-					<Divider />
-					<FieldItem label="Nama Lengkap" value={profile?.fullName} />
-					<FieldItem label="NIK" value={profile?.employeeNo} />
-					<FieldItem label="Jenis Kelamin" value={profile?.genderLabel} />
-					<FieldItem label="Tanggal Lahir" value={formatLongDate(profile?.birthDate)} />
-					<FieldItem label="Usia" value={profile?.age ? `${profile.age} tahun` : '-'} />
-				</Stack>
-			</Paper>
+		<>
+			<Stack spacing={2}>
+				<Paper sx={{ p: 2.5, borderRadius: 4 }}>
+					<Stack spacing={1.5}>
+						<Typography variant="h6" sx={{ color: '#123B66', fontWeight: 700 }}>
+							Identitas Utama
+						</Typography>
+						<Divider />
+						<FieldItem label="Nama Lengkap" value={profile?.fullName} />
+						<FieldItem label="NIK" value={profile?.employeeNo} />
+						<FieldItem label="Jenis Kelamin" value={profile?.genderLabel} />
+						<FieldItem label="Tanggal Lahir" value={formatLongDate(profile?.birthDate)} />
+						<FieldItem label="Usia" value={profile?.age ? `${profile.age} tahun` : '-'} />
+					</Stack>
+				</Paper>
 
-			<Paper sx={{ p: 2.5, borderRadius: 4 }}>
-				<Stack spacing={1.5}>
-					<Typography variant="h6" sx={{ color: '#123B66', fontWeight: 700 }}>
-						Data Kepegawaian
-					</Typography>
-					<Divider />
-					<FieldItem label="Employment Type" value={profile?.employmentTypeLabel} />
-					<FieldItem label="Site / Div" value={profile?.siteDiv} />
-					<FieldItem label="Department" value={profile?.departmentName} />
-					<FieldItem label="Work Location" value={profile?.workLocationName} />
-					<FieldItem label="Job Role" value={profile?.jobRoleName} />
-					<FieldItem label="Job Level" value={profile?.jobLevelName} />
-					<FieldItem label="Education Level" value={profile?.educationLevel} />
-					<FieldItem label="Grade" value={profile?.gradeLabel} />
-					<FieldItem label="Join Date" value={formatLongDate(profile?.joinDate)} />
-					<FieldItem label="Length Of Service" value={profile?.lengthOfService} />
-				</Stack>
-			</Paper>
+				<Paper sx={{ p: 2.5, borderRadius: 4 }}>
+					<Stack spacing={1.5}>
+						<Typography variant="h6" sx={{ color: '#123B66', fontWeight: 700 }}>
+							Data Kepegawaian
+						</Typography>
+						<Divider />
+						<FieldItem label="Employment Type" value={profile?.employmentTypeLabel} />
+						<FieldItem label="Site / Div" value={profile?.siteDiv} />
+						<FieldItem label="Department" value={profile?.departmentName} />
+						<FieldItem label="Work Location" value={profile?.workLocationName} />
+						<FieldItem label="Job Role" value={profile?.jobRoleName} />
+						<FieldItem label="Job Level" value={profile?.jobLevelName} />
+						<FieldItem label="Education Level" value={profile?.educationLevel} />
+						<FieldItem label="Grade" value={profile?.gradeLabel} />
+						<FieldItem label="Join Date" value={formatLongDate(profile?.joinDate)} />
+						<FieldItem label="Length Of Service" value={profile?.lengthOfService} />
+					</Stack>
+				</Paper>
 
-			<Paper sx={{ p: 2.5, borderRadius: 4 }}>
-				<Stack spacing={1.5}>
-					<Typography variant="h6" sx={{ color: '#123B66', fontWeight: 700 }}>
-						Kontak
-					</Typography>
-					<Divider />
-					<FieldItem label="Phone Number" value={profile?.phoneNumber} />
-					<FieldItem label="Email" value={profile?.email} />
-				</Stack>
-			</Paper>
-		</Stack>
+				<Paper sx={{ p: 2.5, borderRadius: 4 }}>
+					<Stack spacing={1.5}>
+						<Typography variant="h6" sx={{ color: '#123B66', fontWeight: 700 }}>
+							Kontak
+						</Typography>
+						<Divider />
+						<FieldItem label="Phone Number" value={profile?.phoneNumber} />
+						<FieldItem label="Email" value={profile?.email} />
+					</Stack>
+				</Paper>
+
+				<Paper
+					sx={{
+						p: 2.5,
+						borderRadius: 4,
+						background: 'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(244,249,255,0.98) 100%)',
+					}}
+				>
+					<Stack spacing={2}>
+						<Stack spacing={0.75}>
+							<Typography variant="h6" sx={{ color: '#123B66', fontWeight: 700 }}>
+								Keamanan Akun
+							</Typography>
+							<Typography variant="body2" color="text.secondary">
+								Perbarui password akun Anda secara mandiri untuk menjaga keamanan akses Portal Karyawan.
+							</Typography>
+						</Stack>
+						<Button
+							variant="contained"
+							fullWidth
+							startIcon={<LockResetOutlinedIcon />}
+							onClick={handleOpenChangePassword}
+							sx={{
+								minHeight: 48,
+								borderRadius: 3,
+								background: 'linear-gradient(135deg, #123B66 0%, #3A93F2 100%)',
+								boxShadow: '0 14px 26px rgba(58, 147, 242, 0.22)',
+							}}
+						>
+							Ubah Password
+						</Button>
+					</Stack>
+				</Paper>
+			</Stack>
+
+			<ChangePasswordDialog
+				open={changePasswordOpen}
+				loading={changePasswordLoading}
+				errorMessage={changePasswordError}
+				onClose={handleCloseChangePassword}
+				onSubmit={handleSubmitChangePassword}
+			/>
+		</>
 	);
 }
 

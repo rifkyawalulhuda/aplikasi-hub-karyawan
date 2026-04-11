@@ -83,6 +83,7 @@ Folder ini dipilih sebagai basis utama pengembangan karena struktur template-nya
 - Ditambahkan auth flow khusus karyawan berbasis bearer token ringan dengan secret `EMPLOYEE_AUTH_SECRET`.
 - Login `Portal Mobile Karyawan` menggunakan `Employee No` sebagai NIK dan `password` dari tabel `employees`.
 - API self-service karyawan menggunakan endpoint khusus `/api/employee-me/*` dan seluruh data selalu difilter berdasarkan employee yang sedang login.
+- Fitur self-service `Ubah Password` untuk PWA Karyawan tersedia dari halaman `/karyawan/profil` dan diproses melalui endpoint `POST /api/employee-me/change-password`.
 - Deploy publik saat ini memakai arsitektur full lokal + Cloudflare Tunnel:
   - frontend admin/PWA tetap berjalan di server lokal
   - backend API tetap berjalan di server lokal
@@ -797,6 +798,7 @@ Yang sudah selesai:
   - `/karyawan/surat-peringatan`
 - Menambahkan layout mobile khusus karyawan dengan bottom navigation dan logout terpisah dari area admin.
 - Menambahkan halaman dashboard, profil, riwayat bimbingan, dan riwayat surat peringatan untuk karyawan login.
+- Menambahkan fitur `Ubah Password` pada halaman profil PWA Karyawan, lengkap dengan dialog form mobile-first dan endpoint self-service khusus employee login.
 - Mengaktifkan PWA pada project aktif dengan manifest, service worker, register SW, dan ikon install app untuk `Portal Mobile Karyawan`.
 - Menambahkan route print admin dan PWA untuk `Form Permohonan Cuti dan Ijin`, beserta tombol `Print A4` pada flow cuti approved dan detail cuti approved.
 - Menambahkan dokumen print A4 khusus cuti approved dengan mapping field workflow cuti, checkbox jenis cuti, daftar pengganti repetitif, dan ringkasan approval bawah.
@@ -817,7 +819,7 @@ Yang sudah selesai:
 - Menambahkan reminder operasional pada notifikasi header untuk flow cuti terlalu lama, cuti rejected, dan email workflow gagal.
 - Menambahkan status `Sudah dibaca` dan `Belum dibaca` pada panel notifikasi serta verifikasi UI klik/deep-link secara langsung di browser lokal.
 - Verifikasi `lint`, `build`, dan smoke test API ke database berhasil.
-- Menyesuaikan bottom navigation PWA Karyawan dengan menggabungkan menu `Bimbingan` dan `Peringatan` ke dalam tab `Catatan` yang memicu *Bottom Sheet* Drawer.
+- Menyesuaikan bottom navigation PWA Karyawan dengan menggabungkan menu `Bimbingan` dan `Peringatan` ke dalam tab `Catatan` yang memicu _Bottom Sheet_ Drawer.
 - Memperbaiki styling bottom navigation PWA untuk memastikan ikon tab aktif selalu konsisten berwarna biru saat diklik.
 - Menyesuaikan UI dashboard cuti PWA karyawan untuk menampilkan kartu ringkasan saldo riil untuk masing-masing jenis cuti aktif.
 - Menambahkan rule backend + frontend baru untuk dropdown `Pengganti Selama Cuti` di form cuti PWA:
@@ -861,6 +863,7 @@ Yang sudah selesai:
   - Halaman **Detail Cuti** (requester): Menghapus kartu detail redundan, memindahkan tombol Kembali dan Nomor Pengajuan ke header, serta memindahkan tombol **Print A4**, **Resubmit**, dan **Cancel** ke dalam kartu Flow Approval.
   - Halaman **Detail Approval** (approver): Kartu detail utama otomatis disembunyikan jika status bukan lagi "Menunggu Tindakan" agar user fokus ke Timeline Approval.
   - Halaman **Daftar Cuti**: Informasi "Stage aktif" dan "Approver aktif" pada kartu pengajuan disembunyikan jika status pengajuan bukan lagi "Dalam Approval" (PENDING_APPROVAL) untuk tampilan yang lebih ringkas.
+
 ## Struktur Teknis Awal yang Sudah Dibangun
 
 - Frontend:
