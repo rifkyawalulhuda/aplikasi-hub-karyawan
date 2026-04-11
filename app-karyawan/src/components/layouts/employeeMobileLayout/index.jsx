@@ -3,6 +3,7 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 
 import Badge from '@mui/material/Badge';
 import Button from '@mui/material/Button';
+import { alpha } from '@mui/material/styles';
 
 import Box from '@mui/material/Box';
 import BottomNavigation from '@mui/material/BottomNavigation';
@@ -15,12 +16,15 @@ import DialogTitle from '@mui/material/DialogTitle';
 import IconButton from '@mui/material/IconButton';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
+import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
 import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined';
+import DarkModeRoundedIcon from '@mui/icons-material/DarkModeRounded';
 import FeedOutlinedIcon from '@mui/icons-material/FeedOutlined';
 import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
+import LightModeRoundedIcon from '@mui/icons-material/LightModeRounded';
 import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
 import ReportGmailerrorredOutlinedIcon from '@mui/icons-material/ReportGmailerrorredOutlined';
 import Drawer from '@mui/material/Drawer';
@@ -33,6 +37,7 @@ import ListItemText from '@mui/material/ListItemText';
 import EmployeeNotificationButton from '@/components/employeePortal/employeeNotificationButton';
 import { useEmployeeAuth } from '@/contexts/employeeAuthContext';
 import { employeeMeRequest } from '@/services/employeeApi';
+import { useEmployeeTheme } from '@/contexts/employeeThemeContext';
 
 import logo from '@/assets/images/logo/png/logo_sankyu.png';
 
@@ -107,6 +112,7 @@ function EmployeeMobileLayout() {
 	const location = useLocation();
 	const navigate = useNavigate();
 	const { user: employee, logout } = useEmployeeAuth();
+	const { isDarkMode, toggleColorMode } = useEmployeeTheme();
 	const [drawerOpen, setDrawerOpen] = useState(false);
 	const [pendingApprovalsCount, setPendingApprovalsCount] = useState(0);
 	const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
@@ -126,9 +132,8 @@ function EmployeeMobileLayout() {
 		<Box
 			sx={{
 				minHeight: '100vh',
-				backgroundColor: '#EEF4FA',
-				backgroundImage:
-					'radial-gradient(circle at top center, rgba(76, 154, 232, 0.24), transparent 22%), linear-gradient(180deg, #F7FBFF 0%, #EEF4FA 48%, #E5EEF8 100%)',
+				backgroundColor: (theme) => theme.palette.background.default,
+				backgroundImage: (theme) => theme.palette.employeeSurface.pageBackground,
 			}}
 		>
 			<Box
@@ -149,8 +154,9 @@ function EmployeeMobileLayout() {
 						zIndex: 10,
 						p: 1.5,
 						borderRadius: 4,
-						border: '1px solid rgba(18,59,102,0.08)',
-						backgroundColor: 'rgba(255,255,255,0.88)',
+						border: (theme) => `1px solid ${theme.palette.employeeSurface.borderSoft}`,
+						backgroundColor: (theme) => theme.palette.employeeSurface.glass,
+						boxShadow: (theme) => theme.palette.employeeSurface.shadowSoft,
 						backdropFilter: 'blur(16px)',
 					}}
 				>
@@ -163,18 +169,34 @@ function EmployeeMobileLayout() {
 								sx={{ width: 44, height: 44, objectFit: 'contain', borderRadius: 3 }}
 							/>
 							<Box>
-								<Typography variant="caption" sx={{ letterSpacing: '0.12em', color: '#4C6B88' }}>
+								<Typography variant="caption" sx={{ letterSpacing: '0.12em', color: 'text.secondary' }}>
 									SANKYU
 								</Typography>
 								<Typography
 									variant="subtitle1"
-									sx={{ fontWeight: 700, color: '#123B66', lineHeight: 1.2 }}
+									sx={{ fontWeight: 700, color: 'text.primary', lineHeight: 1.2 }}
 								>
 									{getPageTitle(location.pathname)}
 								</Typography>
 							</Box>
 						</Stack>
 						<Stack direction="row" spacing={0.5} alignItems="center">
+							<Tooltip title={isDarkMode ? 'Tema Terang' : 'Tema Gelap'}>
+								<IconButton
+									aria-label={isDarkMode ? 'gunakan tema terang' : 'gunakan tema gelap'}
+									onClick={toggleColorMode}
+									sx={{
+										bgcolor: (theme) =>
+											isDarkMode
+												? alpha(theme.palette.primary.main, 0.18)
+												: alpha(theme.palette.primary.main, 0.08),
+										color: isDarkMode ? 'primary.light' : 'primary.dark',
+										border: (theme) => `1px solid ${alpha(theme.palette.primary.main, 0.16)}`,
+									}}
+								>
+									{isDarkMode ? <LightModeRoundedIcon /> : <DarkModeRoundedIcon />}
+								</IconButton>
+							</Tooltip>
 							<EmployeeNotificationButton />
 							<IconButton
 								aria-label="logout"
@@ -182,8 +204,9 @@ function EmployeeMobileLayout() {
 									setLogoutConfirmOpen(true);
 								}}
 								sx={{
-									bgcolor: 'rgba(18,59,102,0.06)',
-									color: '#123B66',
+									bgcolor: (theme) =>
+										alpha(theme.palette.text.primary, theme.palette.mode === 'dark' ? 0.1 : 0.06),
+									color: 'text.primary',
 								}}
 							>
 								<LogoutRoundedIcon />
@@ -250,16 +273,16 @@ function EmployeeMobileLayout() {
 							borderRadius: 3,
 							my: 0.75,
 							mx: 0.5,
-							color: '#5D738B',
 							transition: 'all 0.2s ease-in-out',
 							'&:hover': {
-								backgroundColor: 'rgba(25, 118, 210, 0.04)',
+								backgroundColor: (theme) =>
+									alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.14 : 0.04),
 							},
 							'&.Mui-selected': {
-								backgroundColor: 'rgba(25, 118, 210, 0.08)',
-								color: '#1976d2',
+								backgroundColor: (theme) =>
+									alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.22 : 0.08),
 								'& .MuiSvgIcon-root': {
-									color: '#1976d2',
+									color: 'inherit',
 								},
 							},
 						},
@@ -305,6 +328,7 @@ function EmployeeMobileLayout() {
 						width: '100%',
 						maxWidth: 480,
 						mx: 'auto',
+						backgroundColor: (theme) => theme.palette.employeeSurface.card,
 					},
 				}}
 			>
@@ -313,13 +337,14 @@ function EmployeeMobileLayout() {
 						sx={{
 							width: 40,
 							height: 4,
-							bgcolor: 'rgba(0,0,0,0.1)',
+							bgcolor: (theme) =>
+								alpha(theme.palette.text.primary, theme.palette.mode === 'dark' ? 0.18 : 0.1),
 							borderRadius: 2,
 							mx: 'auto',
 							mb: 2,
 						}}
 					/>
-					<Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#123B66', mb: 1, px: 2 }}>
+					<Typography variant="subtitle1" sx={{ fontWeight: 700, color: 'text.primary', mb: 1, px: 2 }}>
 						Catatan Karyawan
 					</Typography>
 					<List>
@@ -331,12 +356,16 @@ function EmployeeMobileLayout() {
 								}}
 								sx={{ borderRadius: 2 }}
 							>
-								<ListItemIcon sx={{ color: '#123B66' }}>
+								<ListItemIcon sx={{ color: 'text.primary' }}>
 									<FeedOutlinedIcon />
 								</ListItemIcon>
 								<ListItemText
 									primary="Bimbingan & Pengarahan"
-									primaryTypographyProps={{ variant: 'body2', fontWeight: 600, color: '#123B66' }}
+									primaryTypographyProps={{
+										variant: 'body2',
+										fontWeight: 600,
+										color: 'text.primary',
+									}}
 									secondary="Riwayat konseling dan pengarahan"
 									secondaryTypographyProps={{ variant: 'caption' }}
 								/>
@@ -350,12 +379,16 @@ function EmployeeMobileLayout() {
 								}}
 								sx={{ borderRadius: 2 }}
 							>
-								<ListItemIcon sx={{ color: '#D32F2F' }}>
+								<ListItemIcon sx={{ color: 'error.main' }}>
 									<ReportGmailerrorredOutlinedIcon />
 								</ListItemIcon>
 								<ListItemText
 									primary="Surat Peringatan"
-									primaryTypographyProps={{ variant: 'body2', fontWeight: 600, color: '#123B66' }}
+									primaryTypographyProps={{
+										variant: 'body2',
+										fontWeight: 600,
+										color: 'text.primary',
+									}}
 									secondary="Riwayat peringatan dan teguran disipliner"
 									secondaryTypographyProps={{ variant: 'caption' }}
 								/>

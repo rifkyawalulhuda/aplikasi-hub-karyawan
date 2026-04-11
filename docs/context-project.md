@@ -45,10 +45,12 @@ Folder ini dipilih sebagai basis utama pengembangan karena struktur template-nya
 - Jika ada keputusan desain UI yang lebih spesifik di level fitur, keputusan tersebut tetap harus berada dalam koridor template dan guideline `docs/llm-mui.md`.
 - Area `Portal Mobile Karyawan` dibangun di project yang sama dengan prefix route `/karyawan`.
 - Area `Portal Mobile Karyawan` ditujukan mobile-first dan diaktifkan sebagai PWA installable.
+- Area `Portal Mobile Karyawan` sekarang memiliki theme provider tersendiri yang terpisah dari theme admin desktop, sehingga preferensi dark mode hanya berlaku di route `/karyawan` dan turunannya.
 - Area admin desktop dan area mobile karyawan menggunakan auth context dan route guard yang terpisah agar session tidak saling bentrok.
 - PWA mobile sekarang memiliki domain khusus `pwa.aplikasi-hub.my.id` yang dilayani melalui Cloudflare Tunnel, bukan Cloudflare Pages.
 - Mobile PWA juga disiapkan agar bisa dideploy ke Vercel pada domain khusus seperti `pwa-karyawan.vercel.app` tanpa memecah project frontend menjadi aplikasi baru.
 - Hostname `*.vercel.app` untuk deployment project ini diperlakukan sebagai host khusus PWA, sehingga akses root/non-`/karyawan` akan diarahkan ke `/karyawan/login` dan area admin desktop tidak dipakai pada domain tersebut.
+- Preferensi `Tema Gelap` untuk PWA Karyawan disimpan di `localStorage` browser dengan mode `light/dark`, dan diakses lewat toggle cepat di header mobile serta switch bertanda `Tema Gelap` pada halaman Profil.
 - Login PWA mobile menampilkan tombol `Install App` dengan fallback instruksi manual jika `beforeinstallprompt` belum tersedia di browser.
 - Manifest PWA sekarang memakai ikon PNG standar `pwa/icon-192.png` dan `pwa/icon-512.png`; SVG tidak lagi dipakai sebagai ikon utama agar kompatibilitas install lebih stabil.
 - Standar global `table list` desktop sekarang mengikuti pola halaman `Bimbingan & Pengarahan`, kecuali halaman `Detail Karyawan`.
@@ -844,6 +846,8 @@ Yang sudah selesai:
   - item notifikasi tampil sebagai kartu ringan dengan hierarchy judul, waktu, isi singkat, dan status baca yang lebih jelas
   - trigger ikon lonceng memiliki state aktif saat panel terbuka dengan highlight biru lembut tanpa mengganggu badge unread
 - Menyelesaikan perbaikan _bug_ destructuring auth pada fungsionalitas _hooks_ React di notifikasi PWA Karyawan.
+- Menambahkan dark mode khusus `Portal Mobile Karyawan` dengan nested Material UI theme provider, nested snackbar provider, dan persistensi `localStorage`, tanpa mengubah theme admin desktop.
+- Menyesuaikan surface dark mode pada halaman dashboard, profil, cuti, bimbingan, surat peringatan, login PWA, dialog, drawer, snackbar, bottom navigation, header mobile, dan panel notifikasi PWA agar tetap elegan, lembut, dan konsisten dengan aksen biru corporate-modern.
 - Menambahkan halaman **Detail Karyawan** di bawah menu Data Karyawan, yang menampilkan:
   - Halaman daftar karyawan (`/data-karyawan/detail-karyawan`) dengan tabel searchable + filter departemen + pagination 15/30/50/100
   - Halaman detail per karyawan (`/data-karyawan/detail-karyawan/:id`) menampilkan hero card profil lengkap dan ringkasan data dari semua modul:

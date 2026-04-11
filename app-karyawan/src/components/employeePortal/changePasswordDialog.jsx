@@ -14,7 +14,7 @@ import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import { useTheme } from '@mui/material/styles';
+import { alpha, useTheme } from '@mui/material/styles';
 
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined';
@@ -41,7 +41,7 @@ function PasswordTextField({
 			InputProps={{
 				startAdornment: (
 					<InputAdornment position="start">
-						<LockOutlinedIcon fontSize="small" />
+						<LockOutlinedIcon fontSize="small" sx={{ color: 'text.secondary' }} />
 					</InputAdornment>
 				),
 				endAdornment: (
@@ -115,6 +115,8 @@ function ChangePasswordDialog({ open, loading, errorMessage, onClose, onSubmit }
 					borderTopRightRadius: fullScreen ? 0 : 20,
 					borderBottomLeftRadius: 20,
 					borderBottomRightRadius: 20,
+					border: `1px solid ${theme.palette.employeeSurface.borderSoft}`,
+					backgroundColor: theme.palette.employeeSurface.card,
 				},
 			}}
 		>
@@ -124,7 +126,20 @@ function ChangePasswordDialog({ open, loading, errorMessage, onClose, onSubmit }
 					<Typography variant="body2" color="text.secondary">
 						Masukkan password saat ini, lalu simpan password baru Anda.
 					</Typography>
-					{errorMessage ? <Alert severity="error">{errorMessage}</Alert> : null}
+					{errorMessage ? (
+						<Alert
+							severity="error"
+							sx={{
+								border: '1px solid',
+								borderColor: alpha(
+									theme.palette.error.main,
+									theme.palette.mode === 'dark' ? 0.24 : 0.16,
+								),
+							}}
+						>
+							{errorMessage}
+						</Alert>
+					) : null}
 					<Controller
 						name="currentPassword"
 						control={control}

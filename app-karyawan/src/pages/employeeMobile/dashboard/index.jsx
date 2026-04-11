@@ -31,9 +31,6 @@ import { useEmployeeAuth } from '@/contexts/employeeAuthContext';
 import { employeeMeRequest } from '@/services/employeeApi';
 import { formatLongDate, getEmployeePortalErrorMessage, handleEmployeeUnauthorized } from '@/utils/employeePortal';
 
-const SURFACE_BORDER = 'rgba(18,59,102,0.08)';
-const SURFACE_SHADOW = '0 14px 34px rgba(18, 59, 102, 0.08)';
-
 const QUICK_MENU_ITEMS = [
 	{
 		title: 'Cuti Saya',
@@ -76,9 +73,9 @@ function SummaryCard({ label, value, helper, icon, accent = '#123B66' }) {
 			sx={{
 				p: 1.75,
 				borderRadius: 4,
-				border: `1px solid ${SURFACE_BORDER}`,
-				boxShadow: SURFACE_SHADOW,
-				backgroundColor: '#FFFFFF',
+				border: (theme) => `1px solid ${theme.palette.employeeSurface.borderSoft}`,
+				boxShadow: (theme) => theme.palette.employeeSurface.shadowSoft,
+				backgroundColor: (theme) => theme.palette.employeeSurface.card,
 			}}
 		>
 			<Stack spacing={1.25}>
@@ -95,14 +92,17 @@ function SummaryCard({ label, value, helper, icon, accent = '#123B66' }) {
 					>
 						{icon}
 					</Avatar>
-					<Typography variant="caption" sx={{ color: '#6D84A0', letterSpacing: '0.08em' }}>
+					<Typography variant="caption" sx={{ color: 'text.secondary', letterSpacing: '0.08em' }}>
 						{label}
 					</Typography>
 				</Stack>
-				<Typography variant="h5" sx={{ color: '#123B66', fontWeight: 700, lineHeight: 1.1 }}>
+				<Typography
+					variant="h6"
+					sx={{ color: 'text.primary', fontWeight: 700, lineHeight: 1.15, fontSize: '1.15rem' }}
+				>
 					{value}
 				</Typography>
-				<Typography variant="caption" sx={{ color: '#7B8FA5' }}>
+				<Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.72rem', lineHeight: 1.45 }}>
 					{helper}
 				</Typography>
 			</Stack>
@@ -117,8 +117,8 @@ function ActivityCard({ title, subtitle, description, meta, icon, accent = '#2F7
 			sx={{
 				p: 1.5,
 				borderRadius: 4,
-				border: `1px solid ${SURFACE_BORDER}`,
-				backgroundColor: '#FFFFFF',
+				border: (theme) => `1px solid ${theme.palette.employeeSurface.borderSoft}`,
+				backgroundColor: (theme) => theme.palette.employeeSurface.card,
 			}}
 		>
 			<Stack direction="row" spacing={1.5} alignItems="flex-start">
@@ -138,20 +138,24 @@ function ActivityCard({ title, subtitle, description, meta, icon, accent = '#2F7
 				<Stack spacing={0.5} sx={{ minWidth: 0, flex: 1 }}>
 					<Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1}>
 						<Box sx={{ minWidth: 0 }}>
-							<Typography variant="subtitle2" sx={{ color: '#123B66', fontWeight: 700 }}>
+							<Typography variant="subtitle2" sx={{ color: 'text.primary', fontWeight: 700 }}>
 								{title}
 							</Typography>
-							<Typography variant="caption" sx={{ color: '#6D84A0' }}>
+							<Typography variant="caption" color="text.secondary">
 								{subtitle}
 							</Typography>
 						</Box>
 						{meta ? (
-							<Typography variant="caption" sx={{ color: '#5D738B', textAlign: 'right', flexShrink: 0 }}>
+							<Typography
+								variant="caption"
+								color="text.secondary"
+								sx={{ textAlign: 'right', flexShrink: 0 }}
+							>
 								{meta}
 							</Typography>
 						) : null}
 					</Stack>
-					<Typography variant="body2" sx={{ color: '#526A85', lineHeight: 1.45 }}>
+					<Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.45 }}>
 						{description}
 					</Typography>
 				</Stack>
@@ -167,9 +171,9 @@ function QuickMenuCard({ item, onClick }) {
 			sx={{
 				borderRadius: 4,
 				overflow: 'hidden',
-				border: `1px solid ${SURFACE_BORDER}`,
-				backgroundColor: '#FFFFFF',
-				boxShadow: SURFACE_SHADOW,
+				border: (theme) => `1px solid ${theme.palette.employeeSurface.borderSoft}`,
+				backgroundColor: (theme) => theme.palette.employeeSurface.card,
+				boxShadow: (theme) => theme.palette.employeeSurface.shadowSoft,
 			}}
 		>
 			<CardActionArea
@@ -197,14 +201,14 @@ function QuickMenuCard({ item, onClick }) {
 					</Avatar>
 					<Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1}>
 						<Box sx={{ minWidth: 0 }}>
-							<Typography variant="subtitle2" sx={{ color: '#123B66', fontWeight: 700 }}>
+							<Typography variant="subtitle2" sx={{ color: 'text.primary', fontWeight: 700 }}>
 								{item.title}
 							</Typography>
-							<Typography variant="caption" sx={{ color: '#6D84A0', lineHeight: 1.4 }}>
+							<Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.4 }}>
 								{item.description}
 							</Typography>
 						</Box>
-						<ArrowForwardIosRoundedIcon sx={{ fontSize: 15, color: '#9AB0C4', mt: 0.25 }} />
+						<ArrowForwardIosRoundedIcon sx={{ fontSize: 15, color: 'text.secondary', mt: 0.25 }} />
 					</Stack>
 				</Stack>
 			</CardActionArea>
@@ -219,8 +223,8 @@ function InfoRow({ icon, label, value }) {
 			sx={{
 				p: 1.25,
 				borderRadius: 3.5,
-				border: `1px solid ${alpha('#123B66', 0.06)}`,
-				backgroundColor: alpha('#F7FAFD', 0.92),
+				border: (theme) => `1px solid ${theme.palette.employeeSurface.borderSoft}`,
+				backgroundColor: (theme) => theme.palette.employeeSurface.muted,
 			}}
 		>
 			<Stack direction="row" spacing={1} alignItems="flex-start">
@@ -229,7 +233,8 @@ function InfoRow({ icon, label, value }) {
 					sx={{
 						width: 30,
 						height: 30,
-						bgcolor: 'rgba(18,59,102,0.06)',
+						bgcolor: (theme) =>
+							alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.2 : 0.08),
 						color: '#356FA8',
 						borderRadius: 2.25,
 						flexShrink: 0,
@@ -242,7 +247,7 @@ function InfoRow({ icon, label, value }) {
 						variant="caption"
 						sx={{
 							display: 'block',
-							color: '#7B8FA5',
+							color: 'text.secondary',
 							letterSpacing: '0.1em',
 							fontSize: '0.58rem',
 							lineHeight: 1.3,
@@ -252,7 +257,7 @@ function InfoRow({ icon, label, value }) {
 					</Typography>
 					<Typography
 						sx={{
-							color: '#123B66',
+							color: 'text.primary',
 							fontWeight: 700,
 							fontSize: '0.84rem',
 							lineHeight: 1.35,
@@ -351,9 +356,9 @@ function EmployeeDashboardPage() {
 					overflow: 'hidden',
 					p: 2.5,
 					borderRadius: 6,
-					border: `1px solid ${alpha('#FFFFFF', 0.16)}`,
-					boxShadow: '0 20px 44px rgba(18, 59, 102, 0.16)',
-					background: 'linear-gradient(145deg, #123B66 0%, #1B5189 58%, #4A97E5 100%)',
+					border: (theme) => `1px solid ${alpha('#FFFFFF', theme.palette.mode === 'dark' ? 0.1 : 0.16)}`,
+					boxShadow: (theme) => theme.palette.employeeSurface.shadowFloating,
+					background: (theme) => theme.palette.employeeSurface.heroGradient,
 					color: '#FFFFFF',
 					'&::before': {
 						content: '""',
@@ -425,15 +430,15 @@ function EmployeeDashboardPage() {
 				sx={{
 					p: 2,
 					borderRadius: 5,
-					backgroundColor: 'rgba(255,255,255,0.82)',
-					border: `1px solid ${SURFACE_BORDER}`,
-					boxShadow: SURFACE_SHADOW,
+					backgroundColor: (theme) => theme.palette.employeeSurface.soft,
+					border: (theme) => `1px solid ${theme.palette.employeeSurface.borderSoft}`,
+					boxShadow: (theme) => theme.palette.employeeSurface.shadowSoft,
 					backdropFilter: 'blur(10px)',
 				}}
 			>
 				<Stack spacing={1.5}>
 					<Box>
-						<Typography variant="caption" sx={{ color: '#90A0B5', letterSpacing: '0.12em' }}>
+						<Typography variant="caption" sx={{ color: 'text.secondary', letterSpacing: '0.12em' }}>
 							QUICK STATUS
 						</Typography>
 					</Box>
@@ -470,14 +475,14 @@ function EmployeeDashboardPage() {
 				sx={{
 					p: 2,
 					borderRadius: 5,
-					background: 'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(246,250,255,0.98) 100%)',
-					border: `1px solid ${SURFACE_BORDER}`,
-					boxShadow: SURFACE_SHADOW,
+					background: (theme) => theme.palette.employeeSurface.cardGradient,
+					border: (theme) => `1px solid ${theme.palette.employeeSurface.borderSoft}`,
+					boxShadow: (theme) => theme.palette.employeeSurface.shadowSoft,
 				}}
 			>
 				<Stack spacing={1.5}>
 					<Box>
-						<Typography variant="h6" sx={{ color: '#123B66', fontWeight: 800 }}>
+						<Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 800 }}>
 							Quick Menu
 						</Typography>
 					</Box>
@@ -500,14 +505,15 @@ function EmployeeDashboardPage() {
 				sx={{
 					p: 2.5,
 					borderRadius: 5,
-					border: `1px solid ${SURFACE_BORDER}`,
-					boxShadow: SURFACE_SHADOW,
+					border: (theme) => `1px solid ${theme.palette.employeeSurface.borderSoft}`,
+					boxShadow: (theme) => theme.palette.employeeSurface.shadowSoft,
+					backgroundColor: (theme) => theme.palette.employeeSurface.card,
 				}}
 			>
 				<Stack spacing={2}>
 					<Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1}>
 						<Box>
-							<Typography variant="h6" sx={{ color: '#123B66', fontWeight: 700 }}>
+							<Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 700 }}>
 								Informasi Karyawan
 							</Typography>
 						</Box>
@@ -560,12 +566,13 @@ function EmployeeDashboardPage() {
 				sx={{
 					p: 2.5,
 					borderRadius: 5,
-					border: `1px solid ${SURFACE_BORDER}`,
-					boxShadow: SURFACE_SHADOW,
+					border: (theme) => `1px solid ${theme.palette.employeeSurface.borderSoft}`,
+					boxShadow: (theme) => theme.palette.employeeSurface.shadowSoft,
+					backgroundColor: (theme) => theme.palette.employeeSurface.card,
 				}}
 			>
 				<Stack spacing={1.5}>
-					<Typography variant="h6" sx={{ color: '#123B66', fontWeight: 700 }}>
+					<Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 700 }}>
 						Aktivitas Terbaru
 					</Typography>
 					<Stack spacing={1.25}>

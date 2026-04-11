@@ -19,10 +19,10 @@ import { formatLongDate, getEmployeePortalErrorMessage, handleEmployeeUnauthoriz
 function FieldItem({ label, value }) {
 	return (
 		<Stack spacing={0.5}>
-			<Typography variant="caption" sx={{ color: '#5D738B', letterSpacing: '0.08em' }}>
+			<Typography variant="caption" sx={{ color: 'text.secondary', letterSpacing: '0.08em' }}>
 				{label}
 			</Typography>
-			<Typography variant="body1" sx={{ color: '#123B66', fontWeight: 600 }}>
+			<Typography variant="body1" sx={{ color: 'text.primary', fontWeight: 600 }}>
 				{value || '-'}
 			</Typography>
 		</Stack>
@@ -130,9 +130,17 @@ function EmployeeProfilePage() {
 	return (
 		<>
 			<Stack spacing={2}>
-				<Paper sx={{ p: 2.5, borderRadius: 4 }}>
+				<Paper
+					sx={{
+						p: 2.5,
+						borderRadius: 4,
+						border: (theme) => `1px solid ${theme.palette.employeeSurface.borderSoft}`,
+						backgroundColor: (theme) => theme.palette.employeeSurface.card,
+						boxShadow: (theme) => theme.palette.employeeSurface.shadowSoft,
+					}}
+				>
 					<Stack spacing={1.5}>
-						<Typography variant="h6" sx={{ color: '#123B66', fontWeight: 700 }}>
+						<Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 700 }}>
 							Identitas Utama
 						</Typography>
 						<Divider />
@@ -144,9 +152,17 @@ function EmployeeProfilePage() {
 					</Stack>
 				</Paper>
 
-				<Paper sx={{ p: 2.5, borderRadius: 4 }}>
+				<Paper
+					sx={{
+						p: 2.5,
+						borderRadius: 4,
+						border: (theme) => `1px solid ${theme.palette.employeeSurface.borderSoft}`,
+						backgroundColor: (theme) => theme.palette.employeeSurface.card,
+						boxShadow: (theme) => theme.palette.employeeSurface.shadowSoft,
+					}}
+				>
 					<Stack spacing={1.5}>
-						<Typography variant="h6" sx={{ color: '#123B66', fontWeight: 700 }}>
+						<Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 700 }}>
 							Data Kepegawaian
 						</Typography>
 						<Divider />
@@ -163,9 +179,17 @@ function EmployeeProfilePage() {
 					</Stack>
 				</Paper>
 
-				<Paper sx={{ p: 2.5, borderRadius: 4 }}>
+				<Paper
+					sx={{
+						p: 2.5,
+						borderRadius: 4,
+						border: (theme) => `1px solid ${theme.palette.employeeSurface.borderSoft}`,
+						backgroundColor: (theme) => theme.palette.employeeSurface.card,
+						boxShadow: (theme) => theme.palette.employeeSurface.shadowSoft,
+					}}
+				>
 					<Stack spacing={1.5}>
-						<Typography variant="h6" sx={{ color: '#123B66', fontWeight: 700 }}>
+						<Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 700 }}>
 							Kontak
 						</Typography>
 						<Divider />
@@ -178,12 +202,14 @@ function EmployeeProfilePage() {
 					sx={{
 						p: 2.5,
 						borderRadius: 4,
-						background: 'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(244,249,255,0.98) 100%)',
+						background: (theme) => theme.palette.employeeSurface.cardGradient,
+						border: (theme) => `1px solid ${theme.palette.employeeSurface.borderSoft}`,
+						boxShadow: (theme) => theme.palette.employeeSurface.shadowSoft,
 					}}
 				>
 					<Stack spacing={2}>
 						<Stack spacing={0.75}>
-							<Typography variant="h6" sx={{ color: '#123B66', fontWeight: 700 }}>
+							<Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 700 }}>
 								Keamanan Akun
 							</Typography>
 							<Typography variant="body2" color="text.secondary">
@@ -198,8 +224,8 @@ function EmployeeProfilePage() {
 							sx={{
 								minHeight: 48,
 								borderRadius: 3,
-								background: 'linear-gradient(135deg, #123B66 0%, #3A93F2 100%)',
-								boxShadow: '0 14px 26px rgba(58, 147, 242, 0.22)',
+								background: (theme) =>
+									`linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.main} 100%)`,
 							}}
 						>
 							Ubah Password
