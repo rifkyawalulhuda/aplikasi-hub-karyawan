@@ -13,6 +13,7 @@ import InputAdornment from '@mui/material/InputAdornment';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
+import { alpha } from '@mui/material/styles';
 
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
 import LockOpenOutlinedIcon from '@mui/icons-material/LockOpenOutlined';
@@ -118,8 +119,9 @@ function EmployeeLoginPage() {
 			sx={{
 				width: '100%',
 				borderRadius: 6,
-				border: '1px solid rgba(255,255,255,0.14)',
-				backgroundColor: 'rgba(255,255,255,0.95)',
+				border: (theme) => `1px solid ${theme.palette.employeeSurface.borderSoft}`,
+				backgroundColor: (theme) => theme.palette.employeeSurface.soft,
+				boxShadow: (theme) => theme.palette.employeeSurface.shadowMedium,
 				backdropFilter: 'blur(14px)',
 				overflow: 'hidden',
 			}}
@@ -127,7 +129,7 @@ function EmployeeLoginPage() {
 			<Box
 				sx={{
 					p: 3,
-					background: 'linear-gradient(145deg, #0E2C4D 0%, #174A7E 56%, #4C9AE8 100%)',
+					background: (theme) => theme.palette.employeeSurface.heroGradient,
 					color: '#FFFFFF',
 				}}
 			>
@@ -144,10 +146,13 @@ function EmployeeLoginPage() {
 			<Box component="form" onSubmit={handleSubmit} sx={{ p: 3 }}>
 				<Stack spacing={2.5}>
 					<Box>
-						<Typography variant="overline" sx={{ color: '#1F5E9B', letterSpacing: '0.12em' }}>
+						<Typography
+							variant="overline"
+							sx={{ color: 'primary.main', letterSpacing: '0.12em', fontWeight: 700 }}
+						>
 							Login Karyawan
 						</Typography>
-						<Typography variant="h5" sx={{ color: '#123B66', fontWeight: 700 }}>
+						<Typography variant="h5" sx={{ color: 'text.primary', fontWeight: 700 }}>
 							Masuk dengan NIK
 						</Typography>
 						<Typography variant="body2" color="text.secondary" sx={{ mt: 0.75 }}>
@@ -209,8 +214,8 @@ function EmployeeLoginPage() {
 						sx={{
 							minHeight: 52,
 							borderRadius: 3,
-							background: 'linear-gradient(135deg, #123B66 0%, #3A93F2 100%)',
-							boxShadow: '0 16px 28px rgba(58, 147, 242, 0.22)',
+							background: (theme) =>
+								`linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.main} 100%)`,
 						}}
 					>
 						{submitting ? 'Memproses...' : 'Masuk'}
@@ -232,15 +237,26 @@ function EmployeeLoginPage() {
 								sx={{
 									minHeight: 46,
 									borderRadius: 3,
-									borderColor: '#2E7BD0',
-									color: '#1F5E9B',
+									borderColor: 'primary.main',
+									color: 'primary.main',
 									opacity: installEvent ? 1 : 0.72,
 								}}
 							>
 								{installEvent ? 'Install App' : 'Install belum tersedia'}
 							</Button>
 							{!installEvent ? (
-								<Alert severity="info" variant="outlined" sx={{ alignItems: 'center' }}>
+								<Alert
+									severity="info"
+									variant="outlined"
+									sx={{
+										alignItems: 'center',
+										borderColor: (theme) =>
+											alpha(
+												theme.palette.primary.main,
+												theme.palette.mode === 'dark' ? 0.28 : 0.16,
+											),
+									}}
+								>
 									<Typography variant="body2">
 										Jika tombol install belum aktif, buka menu browser lalu pilih{' '}
 										<strong>Add to Home Screen</strong> atau <strong>Install App</strong>.

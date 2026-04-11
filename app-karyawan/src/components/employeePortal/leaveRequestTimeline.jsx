@@ -19,10 +19,18 @@ function LeaveRequestTimeline({ revisions = [], approvals = [] }) {
 				const revisionApprovals = approvals.filter((approval) => approval.revisionNo === revision.revisionNo);
 
 				return (
-					<Paper key={revision.revisionNo} sx={{ p: 2.25, borderRadius: 4 }}>
+					<Paper
+						key={revision.revisionNo}
+						sx={{
+							p: 2.25,
+							borderRadius: 4,
+							border: (theme) => `1px solid ${theme.palette.employeeSurface.borderSoft}`,
+							backgroundColor: (theme) => theme.palette.employeeSurface.card,
+						}}
+					>
 						<Stack spacing={1.5}>
 							<Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1}>
-								<Typography variant="subtitle1" sx={{ color: '#123B66', fontWeight: 700 }}>
+								<Typography variant="subtitle1" sx={{ color: 'text.primary', fontWeight: 700 }}>
 									Revisi {revision.revisionNo}
 								</Typography>
 								<LeaveStatusChip status={revision.status} label={revision.statusLabel} />
@@ -70,7 +78,12 @@ function LeaveRequestTimeline({ revisions = [], approvals = [] }) {
 										<Paper
 											key={approval.id}
 											variant="outlined"
-											sx={{ p: 1.5, borderRadius: 3, borderColor: 'rgba(18,59,102,0.12)' }}
+											sx={{
+												p: 1.5,
+												borderRadius: 3,
+												borderColor: (theme) => theme.palette.employeeSurface.borderStrong,
+												backgroundColor: (theme) => theme.palette.employeeSurface.muted,
+											}}
 										>
 											<Stack spacing={0.75}>
 												<Stack
@@ -81,7 +94,7 @@ function LeaveRequestTimeline({ revisions = [], approvals = [] }) {
 												>
 													<Typography
 														variant="body2"
-														sx={{ color: '#123B66', fontWeight: 700 }}
+														sx={{ color: 'text.primary', fontWeight: 700 }}
 													>
 														Tahap {approval.stageOrder} - {approval.stageLabel}
 													</Typography>

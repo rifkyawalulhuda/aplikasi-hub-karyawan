@@ -7,6 +7,7 @@ import Divider from '@mui/material/Divider';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
+import { alpha } from '@mui/material/styles';
 
 import PrintOutlinedIcon from '@mui/icons-material/PrintOutlined';
 
@@ -162,14 +163,22 @@ function EmployeeLeaveRequestDetailPage() {
 					</Stack>
 				</Stack>
 
-				<Paper sx={{ p: 2.5, borderRadius: 4 }}>
+				<Paper
+					sx={{
+						p: 2.5,
+						borderRadius: 4,
+						border: (theme) => `1px solid ${theme.palette.employeeSurface.borderSoft}`,
+						backgroundColor: (theme) => theme.palette.employeeSurface.card,
+						boxShadow: (theme) => theme.palette.employeeSurface.shadowSoft,
+					}}
+				>
 					<Stack spacing={2}>
-						<Typography variant="h5" sx={{ color: '#123B66', fontWeight: 800 }}>
+						<Typography variant="h5" sx={{ color: 'text.primary', fontWeight: 800 }}>
 							{record?.requestNumber}
 						</Typography>
 
 						<Stack direction="row" justifyContent="space-between" alignItems="center">
-							<Typography variant="h6" sx={{ color: '#123B66', fontWeight: 700 }}>
+							<Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 700 }}>
 								Flow Approval
 							</Typography>
 							{record?.status === 'APPROVED' ? (
@@ -179,7 +188,11 @@ function EmployeeLeaveRequestDetailPage() {
 									size="small"
 									startIcon={<PrintOutlinedIcon />}
 									onClick={handleOpenPrint}
-									sx={{ borderRadius: 2 }}
+									sx={{
+										borderRadius: 2,
+										background: (theme) =>
+											`linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.main} 100%)`,
+									}}
 								>
 									Print A4
 								</Button>
@@ -247,7 +260,15 @@ function EmployeeLeaveRequestDetailPage() {
 
 function BoxButtonBack({ onBack }) {
 	return (
-		<Button variant="text" onClick={onBack}>
+		<Button
+			variant="text"
+			onClick={onBack}
+			sx={{
+				color: 'text.primary',
+				backgroundColor: (theme) =>
+					alpha(theme.palette.text.primary, theme.palette.mode === 'dark' ? 0.08 : 0.04),
+			}}
+		>
 			Kembali
 		</Button>
 	);

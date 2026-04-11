@@ -5,6 +5,7 @@ import Button from '@mui/material/Button';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
+import { alpha } from '@mui/material/styles';
 
 import DownloadForOfflineOutlinedIcon from '@mui/icons-material/DownloadForOfflineOutlined';
 
@@ -60,9 +61,9 @@ function InstallAppCard() {
 			sx={{
 				p: 2,
 				borderRadius: 5,
-				border: '1px solid rgba(18,59,102,0.08)',
-				backgroundColor: 'rgba(255,255,255,0.88)',
-				boxShadow: '0 14px 34px rgba(18, 59, 102, 0.08)',
+				border: (theme) => `1px solid ${theme.palette.employeeSurface.borderSoft}`,
+				backgroundColor: (theme) => theme.palette.employeeSurface.soft,
+				boxShadow: (theme) => theme.palette.employeeSurface.shadowSoft,
 				backdropFilter: 'blur(10px)',
 			}}
 		>
@@ -75,17 +76,18 @@ function InstallAppCard() {
 							display: 'grid',
 							placeItems: 'center',
 							borderRadius: 3,
-							bgcolor: 'rgba(58, 147, 242, 0.12)',
-							color: '#2F74BC',
+							bgcolor: (theme) =>
+								alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.22 : 0.12),
+							color: 'primary.main',
 						}}
 					>
 						<DownloadForOfflineOutlinedIcon fontSize="small" />
 					</Box>
 					<Box>
-						<Typography variant="subtitle1" sx={{ color: '#123B66', fontWeight: 700 }}>
+						<Typography variant="subtitle1" sx={{ color: 'text.primary', fontWeight: 700 }}>
 							Install aplikasi
 						</Typography>
-						<Typography variant="body2" sx={{ color: '#6D84A0' }}>
+						<Typography variant="body2" color="text.secondary">
 							Simpan Portal Karyawan di layar utama HP.
 						</Typography>
 					</Box>
@@ -96,8 +98,8 @@ function InstallAppCard() {
 					sx={{
 						alignSelf: 'flex-start',
 						borderRadius: 3,
-						background: 'linear-gradient(135deg, #123B66 0%, #3A93F2 100%)',
-						boxShadow: '0 12px 24px rgba(58, 147, 242, 0.18)',
+						background: (theme) =>
+							`linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.main} 100%)`,
 					}}
 				>
 					Install Sekarang
