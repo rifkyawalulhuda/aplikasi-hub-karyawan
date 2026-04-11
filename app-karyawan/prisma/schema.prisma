@@ -180,10 +180,10 @@ model MasterDokKaryawan {
 }
 
 model MasterCutiKaryawan {
-  id              Int                   @id @default(autoincrement())
-  leaveType       String                @db.VarChar(255)
-  createdAt       DateTime              @default(now())
-  updatedAt       DateTime              @updatedAt
+  id              Int                     @id @default(autoincrement())
+  leaveType       String                  @db.VarChar(255)
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
   records         EmployeeLeave[]
   revisionRecords EmployeeLeaveRevision[]
   databaseRecords EmployeeLeaveDatabase[]
@@ -229,46 +229,46 @@ model GroupShiftForeman {
 }
 
 model Employee {
-  id                     Int                            @id @default(autoincrement())
-  employeeNo             String                         @unique @db.VarChar(100)
-  password               String                         @db.VarChar(255)
-  fullName               String                         @db.VarChar(255)
-  employmentType         EmploymentType
-  siteDiv                String                         @default("CLC") @db.VarChar(100)
-  departmentId           Int
-  groupShiftId           Int?
-  birthDate              DateTime                       @db.Date
-  gender                 Gender
-  workLocationId         Int
-  jobRoleId              Int
-  jobLevelId             Int
-  educationLevel         EducationLevel
-  grade                  GradeRank
-  joinDate               DateTime                       @db.Date
-  phoneNumber            String                         @db.VarChar(50)
-  email                  String?                        @db.VarChar(255)
-  createdAt              DateTime                       @default(now())
-  updatedAt              DateTime                       @updatedAt
-  department             Department                     @relation(fields: [departmentId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  groupShift             MasterGroupShift?              @relation(fields: [groupShiftId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  workLocation           WorkLocation                   @relation(fields: [workLocationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  jobRole                JobRole                        @relation(fields: [jobRoleId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  jobLevel               JobLevel                       @relation(fields: [jobLevelId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  guidanceRecords        GuidanceRecord[]
-  warningLetters         WarningLetter[]                @relation("WarningLetterEmployee")
-  warningLetterApprovals WarningLetter[]                @relation("WarningLetterSuperior")
-  adminAccounts          MasterAdmin[]
-  licenseCertifications  EmployeeLicenseCertification[]
-  leaveRecords           EmployeeLeave[]                @relation("EmployeeLeaveRequester")
-  leaveReplacementRequests EmployeeLeave[]             @relation("EmployeeLeaveReplacement")
-  leaveDatabaseRecords   EmployeeLeaveDatabase[]
-  leaveApprovals         EmployeeLeaveApproval[]        @relation("EmployeeLeaveApprover")
-  leaveBalanceSeeds      EmployeeLeaveBalanceSeed[]
-  leaveRevisionReplacements EmployeeLeaveRevision[]     @relation("EmployeeLeaveRevisionReplacement")
+  id                          Int                                @id @default(autoincrement())
+  employeeNo                  String                             @unique @db.VarChar(100)
+  password                    String                             @db.VarChar(255)
+  fullName                    String                             @db.VarChar(255)
+  employmentType              EmploymentType
+  siteDiv                     String                             @default("CLC") @db.VarChar(100)
+  departmentId                Int
+  groupShiftId                Int?
+  birthDate                   DateTime                           @db.Date
+  gender                      Gender
+  workLocationId              Int
+  jobRoleId                   Int
+  jobLevelId                  Int
+  educationLevel              EducationLevel
+  grade                       GradeRank
+  joinDate                    DateTime                           @db.Date
+  phoneNumber                 String                             @db.VarChar(50)
+  email                       String?                            @db.VarChar(255)
+  createdAt                   DateTime                           @default(now())
+  updatedAt                   DateTime                           @updatedAt
+  department                  Department                         @relation(fields: [departmentId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  groupShift                  MasterGroupShift?                  @relation(fields: [groupShiftId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  workLocation                WorkLocation                       @relation(fields: [workLocationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  jobRole                     JobRole                            @relation(fields: [jobRoleId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  jobLevel                    JobLevel                           @relation(fields: [jobLevelId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  guidanceRecords             GuidanceRecord[]
+  warningLetters              WarningLetter[]                    @relation("WarningLetterEmployee")
+  warningLetterApprovals      WarningLetter[]                    @relation("WarningLetterSuperior")
+  adminAccounts               MasterAdmin[]
+  licenseCertifications       EmployeeLicenseCertification[]
+  leaveRecords                EmployeeLeave[]                    @relation("EmployeeLeaveRequester")
+  leaveReplacementRequests    EmployeeLeave[]                    @relation("EmployeeLeaveReplacement")
+  leaveDatabaseRecords        EmployeeLeaveDatabase[]
+  leaveApprovals              EmployeeLeaveApproval[]            @relation("EmployeeLeaveApprover")
+  leaveBalanceSeeds           EmployeeLeaveBalanceSeed[]
+  leaveRevisionReplacements   EmployeeLeaveRevision[]            @relation("EmployeeLeaveRevisionReplacement")
   leaveReplacementAssignments EmployeeLeaveReplacementAssignee[] @relation("EmployeeLeaveReplacementAssigneeEmployee")
-  groupShiftAssignments  GroupShiftForeman[]
-  notificationReadStates AdminNotificationReadState[]
-  pushSubscriptions      EmployeePushSubscription[]
+  groupShiftAssignments       GroupShiftForeman[]
+  notificationReadStates      AdminNotificationReadState[]
+  pushSubscriptions           EmployeePushSubscription[]
 
   @@index([departmentId])
   @@index([groupShiftId])
@@ -279,36 +279,36 @@ model Employee {
 }
 
 model EmployeeLeave {
-  id                   Int                   @id @default(autoincrement())
-  requestNumber        String                @unique @db.VarChar(50)
-  employeeId           Int
-  masterCutiKaryawanId Int
-  leaveYear            Int
-  revisionNo           Int                   @default(1)
-  status               LeaveRequestStatus    @default(SUBMITTED)
-  leaveDays            Int
-  periodStart          DateTime              @db.Date
-  periodEnd            DateTime              @db.Date
-  balanceBefore        Int
-  remainingLeave       Int
-  currentStageOrder    Int?
-  notes                String?               @db.Text
-  leaveAddress         String?               @db.Text
-  leaveReason          String?               @db.Text
-  replacementEmployeeId Int?
-  rejectionNote        String?               @db.Text
-  submittedAt          DateTime              @default(now())
-  approvedAt           DateTime?
-  rejectedAt           DateTime?
-  cancelledAt          DateTime?
-  createdAt            DateTime              @default(now())
-  updatedAt            DateTime              @updatedAt
-  employee             Employee              @relation("EmployeeLeaveRequester", fields: [employeeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  replacementEmployee  Employee?             @relation("EmployeeLeaveReplacement", fields: [replacementEmployeeId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  masterCutiKaryawan   MasterCutiKaryawan    @relation(fields: [masterCutiKaryawanId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  revisions            EmployeeLeaveRevision[]
-  approvals            EmployeeLeaveApproval[]
-  emailOutbox          EmailOutbox[]
+  id                     Int                                @id @default(autoincrement())
+  requestNumber          String                             @unique @db.VarChar(50)
+  employeeId             Int
+  masterCutiKaryawanId   Int
+  leaveYear              Int
+  revisionNo             Int                                @default(1)
+  status                 LeaveRequestStatus                 @default(SUBMITTED)
+  leaveDays              Int
+  periodStart            DateTime                           @db.Date
+  periodEnd              DateTime                           @db.Date
+  balanceBefore          Int
+  remainingLeave         Int
+  currentStageOrder      Int?
+  notes                  String?                            @db.Text
+  leaveAddress           String?                            @db.Text
+  leaveReason            String?                            @db.Text
+  replacementEmployeeId  Int?
+  rejectionNote          String?                            @db.Text
+  submittedAt            DateTime                           @default(now())
+  approvedAt             DateTime?
+  rejectedAt             DateTime?
+  cancelledAt            DateTime?
+  createdAt              DateTime                           @default(now())
+  updatedAt              DateTime                           @updatedAt
+  employee               Employee                           @relation("EmployeeLeaveRequester", fields: [employeeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  replacementEmployee    Employee?                          @relation("EmployeeLeaveReplacement", fields: [replacementEmployeeId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  masterCutiKaryawan     MasterCutiKaryawan                 @relation(fields: [masterCutiKaryawanId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  revisions              EmployeeLeaveRevision[]
+  approvals              EmployeeLeaveApproval[]
+  emailOutbox            EmailOutbox[]
   leaveDatabaseHistories EmployeeLeaveDatabaseHistory[]
   replacementAssignments EmployeeLeaveReplacementAssignee[]
 
@@ -321,19 +321,19 @@ model EmployeeLeave {
 }
 
 model EmployeeLeaveDatabase {
-  id                   Int               @id @default(autoincrement())
+  id                   Int                            @id @default(autoincrement())
   employeeId           Int
   masterCutiKaryawanId Int
   year                 Int
   leaveDays            Int
-  periodStart          DateTime          @db.Date
-  periodEnd            DateTime          @db.Date
+  periodStart          DateTime                       @db.Date
+  periodEnd            DateTime                       @db.Date
   remainingLeave       Int
-  notes                String?           @db.Text
-  createdAt            DateTime          @default(now())
-  updatedAt            DateTime          @updatedAt
-  employee             Employee          @relation(fields: [employeeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  masterCutiKaryawan   MasterCutiKaryawan @relation(fields: [masterCutiKaryawanId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  notes                String?                        @db.Text
+  createdAt            DateTime                       @default(now())
+  updatedAt            DateTime                       @updatedAt
+  employee             Employee                       @relation(fields: [employeeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  masterCutiKaryawan   MasterCutiKaryawan             @relation(fields: [masterCutiKaryawanId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   histories            EmployeeLeaveDatabaseHistory[]
 
   @@unique([employeeId, masterCutiKaryawanId, year])
@@ -345,20 +345,20 @@ model EmployeeLeaveDatabase {
 }
 
 model EmployeeLeaveDatabaseHistory {
-  id                     Int                           @id @default(autoincrement())
+  id                      Int                            @id @default(autoincrement())
   employeeLeaveDatabaseId Int
-  employeeLeaveId        Int?
-  sourceType             LeaveDatabaseHistorySourceType
-  changeDate             DateTime                      @default(now())
-  leaveDays              Int
-  periodStart            DateTime                      @db.Date
-  periodEnd              DateTime                      @db.Date
-  balanceBefore          Int
-  balanceAfter           Int
-  notes                  String?                       @db.Text
-  createdAt              DateTime                      @default(now())
-  employeeLeaveDatabase  EmployeeLeaveDatabase         @relation(fields: [employeeLeaveDatabaseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  employeeLeave          EmployeeLeave?                @relation(fields: [employeeLeaveId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  employeeLeaveId         Int?
+  sourceType              LeaveDatabaseHistorySourceType
+  changeDate              DateTime                       @default(now())
+  leaveDays               Int
+  periodStart             DateTime                       @db.Date
+  periodEnd               DateTime                       @db.Date
+  balanceBefore           Int
+  balanceAfter            Int
+  notes                   String?                        @db.Text
+  createdAt               DateTime                       @default(now())
+  employeeLeaveDatabase   EmployeeLeaveDatabase          @relation(fields: [employeeLeaveDatabaseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  employeeLeave           EmployeeLeave?                 @relation(fields: [employeeLeaveId], references: [id], onDelete: SetNull, onUpdate: Cascade)
 
   @@index([employeeLeaveDatabaseId])
   @@index([employeeLeaveId])
@@ -368,30 +368,30 @@ model EmployeeLeaveDatabaseHistory {
 }
 
 model EmployeeLeaveRevision {
-  id                   Int                @id @default(autoincrement())
-  employeeLeaveId      Int
-  revisionNo           Int
-  masterCutiKaryawanId Int
-  replacementEmployeeId Int?
-  status               LeaveRequestStatus
-  leaveDays            Int
-  periodStart          DateTime           @db.Date
-  periodEnd            DateTime           @db.Date
-  balanceBefore        Int
-  remainingLeave       Int
-  notes                String?            @db.Text
-  leaveAddress         String?            @db.Text
-  leaveReason          String?            @db.Text
-  rejectionNote        String?            @db.Text
-  submittedAt          DateTime           @default(now())
-  approvedAt           DateTime?
-  rejectedAt           DateTime?
-  cancelledAt          DateTime?
-  createdAt            DateTime           @default(now())
-  updatedAt            DateTime           @updatedAt
-  employeeLeave        EmployeeLeave      @relation(fields: [employeeLeaveId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  masterCutiKaryawan   MasterCutiKaryawan @relation(fields: [masterCutiKaryawanId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  replacementEmployee  Employee?          @relation("EmployeeLeaveRevisionReplacement", fields: [replacementEmployeeId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  id                     Int                                @id @default(autoincrement())
+  employeeLeaveId        Int
+  revisionNo             Int
+  masterCutiKaryawanId   Int
+  replacementEmployeeId  Int?
+  status                 LeaveRequestStatus
+  leaveDays              Int
+  periodStart            DateTime                           @db.Date
+  periodEnd              DateTime                           @db.Date
+  balanceBefore          Int
+  remainingLeave         Int
+  notes                  String?                            @db.Text
+  leaveAddress           String?                            @db.Text
+  leaveReason            String?                            @db.Text
+  rejectionNote          String?                            @db.Text
+  submittedAt            DateTime                           @default(now())
+  approvedAt             DateTime?
+  rejectedAt             DateTime?
+  cancelledAt            DateTime?
+  createdAt              DateTime                           @default(now())
+  updatedAt              DateTime                           @updatedAt
+  employeeLeave          EmployeeLeave                      @relation(fields: [employeeLeaveId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  masterCutiKaryawan     MasterCutiKaryawan                 @relation(fields: [masterCutiKaryawanId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  replacementEmployee    Employee?                          @relation("EmployeeLeaveRevisionReplacement", fields: [replacementEmployeeId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   replacementAssignments EmployeeLeaveReplacementAssignee[] @relation("EmployeeLeaveRevisionAssignments")
 
   @@unique([employeeLeaveId, revisionNo])
@@ -402,16 +402,16 @@ model EmployeeLeaveRevision {
 }
 
 model EmployeeLeaveReplacementAssignee {
-  id                   Int                  @id @default(autoincrement())
-  employeeLeaveId      Int
-  revisionNo           Int
+  id                    Int                   @id @default(autoincrement())
+  employeeLeaveId       Int
+  revisionNo            Int
   replacementEmployeeId Int
-  sequenceNo           Int
-  createdAt            DateTime             @default(now())
-  updatedAt            DateTime             @updatedAt
-  employeeLeave        EmployeeLeave        @relation(fields: [employeeLeaveId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  revision             EmployeeLeaveRevision @relation("EmployeeLeaveRevisionAssignments", fields: [employeeLeaveId, revisionNo], references: [employeeLeaveId, revisionNo], onDelete: Cascade, onUpdate: Cascade)
-  replacementEmployee  Employee             @relation("EmployeeLeaveReplacementAssigneeEmployee", fields: [replacementEmployeeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  sequenceNo            Int
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  employeeLeave         EmployeeLeave         @relation(fields: [employeeLeaveId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  revision              EmployeeLeaveRevision @relation("EmployeeLeaveRevisionAssignments", fields: [employeeLeaveId, revisionNo], references: [employeeLeaveId, revisionNo], onDelete: Cascade, onUpdate: Cascade)
+  replacementEmployee   Employee              @relation("EmployeeLeaveReplacementAssigneeEmployee", fields: [replacementEmployeeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
 
   @@unique([employeeLeaveId, revisionNo, sequenceNo], map: "elra_leave_rev_seq_key")
   @@unique([employeeLeaveId, revisionNo, replacementEmployeeId], map: "elra_leave_rev_emp_key")
@@ -422,20 +422,20 @@ model EmployeeLeaveReplacementAssignee {
 }
 
 model EmployeeLeaveApproval {
-  id               Int                @id @default(autoincrement())
-  employeeLeaveId  Int
-  revisionNo       Int
-  stageOrder       Int
-  stageType        LeaveStageType
+  id                 Int                 @id @default(autoincrement())
+  employeeLeaveId    Int
+  revisionNo         Int
+  stageOrder         Int
+  stageType          LeaveStageType
   approverEmployeeId Int
-  status           LeaveApprovalStatus @default(WAITING)
-  actionNote       String?             @db.Text
-  actedAt          DateTime?
-  createdAt        DateTime            @default(now())
-  updatedAt        DateTime            @updatedAt
-  employeeLeave    EmployeeLeave       @relation(fields: [employeeLeaveId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  approverEmployee Employee            @relation("EmployeeLeaveApprover", fields: [approverEmployeeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  emailOutbox      EmailOutbox[]
+  status             LeaveApprovalStatus @default(WAITING)
+  actionNote         String?             @db.Text
+  actedAt            DateTime?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  employeeLeave      EmployeeLeave       @relation(fields: [employeeLeaveId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  approverEmployee   Employee            @relation("EmployeeLeaveApprover", fields: [approverEmployeeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  emailOutbox        EmailOutbox[]
 
   @@unique([employeeLeaveId, revisionNo, stageOrder, approverEmployeeId])
   @@index([employeeLeaveId])
@@ -461,22 +461,22 @@ model EmployeeLeaveBalanceSeed {
 }
 
 model EmailOutbox {
-  id                    Int               @id @default(autoincrement())
-  employeeLeaveId       Int?
+  id                      Int                    @id @default(autoincrement())
+  employeeLeaveId         Int?
   employeeLeaveApprovalId Int?
-  revisionNo            Int?
-  recipientEmail        String            @db.VarChar(255)
-  recipientName         String?           @db.VarChar(255)
-  subject               String            @db.VarChar(255)
-  htmlBody              String?           @db.Text
-  textBody              String?           @db.Text
-  status                EmailOutboxStatus @default(PENDING)
-  sentAt                DateTime?
-  errorMessage          String?           @db.Text
-  createdAt             DateTime          @default(now())
-  updatedAt             DateTime          @updatedAt
-  employeeLeave         EmployeeLeave?    @relation(fields: [employeeLeaveId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  employeeLeaveApproval EmployeeLeaveApproval? @relation(fields: [employeeLeaveApprovalId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  revisionNo              Int?
+  recipientEmail          String                 @db.VarChar(255)
+  recipientName           String?                @db.VarChar(255)
+  subject                 String                 @db.VarChar(255)
+  htmlBody                String?                @db.Text
+  textBody                String?                @db.Text
+  status                  EmailOutboxStatus      @default(PENDING)
+  sentAt                  DateTime?
+  errorMessage            String?                @db.Text
+  createdAt               DateTime               @default(now())
+  updatedAt               DateTime               @updatedAt
+  employeeLeave           EmployeeLeave?         @relation(fields: [employeeLeaveId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  employeeLeaveApproval   EmployeeLeaveApproval? @relation(fields: [employeeLeaveApprovalId], references: [id], onDelete: SetNull, onUpdate: Cascade)
 
   @@index([employeeLeaveId])
   @@index([employeeLeaveApprovalId])
@@ -499,19 +499,45 @@ model AdminNotificationReadState {
   @@map("admin_notification_read_states")
 }
 
-model EmployeePushSubscription {
+model AdminNotificationRecord {
   id              Int      @id @default(autoincrement())
-  employeeId      Int
-  endpoint        String   @db.Text
-  p256dh          String   @db.Text
-  auth            String   @db.Text
-  expirationTime  DateTime?
-  userAgent       String?  @db.Text
+  notificationId  String   @unique @db.VarChar(255)
+  category        String   @db.VarChar(100)
+  severity        String   @db.VarChar(50)
+  title           String   @db.VarChar(255)
+  description     String   @db.Text
+  targetPath      String?  @db.VarChar(255)
+  targetSearch    String?  @db.VarChar(255)
+  href            String?  @db.VarChar(500)
+  dateLabel       String?  @db.VarChar(255)
+  sortDate        DateTime
+  firstDetectedAt DateTime @default(now())
+  lastDetectedAt  DateTime @default(now())
   isActive        Boolean  @default(true)
-  lastUsedAt      DateTime @default(now())
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
-  employee        Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([category])
+  @@index([severity])
+  @@index([sortDate])
+  @@index([lastDetectedAt])
+  @@index([isActive])
+  @@map("admin_notification_records")
+}
+
+model EmployeePushSubscription {
+  id             Int       @id @default(autoincrement())
+  employeeId     Int
+  endpoint       String    @db.Text
+  p256dh         String    @db.Text
+  auth           String    @db.Text
+  expirationTime DateTime?
+  userAgent      String?   @db.Text
+  isActive       Boolean   @default(true)
+  lastUsedAt     DateTime  @default(now())
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  employee       Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   @@unique([employeeId, endpoint])
   @@index([employeeId])

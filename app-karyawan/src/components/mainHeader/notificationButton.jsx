@@ -1,39 +1,127 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { alpha } from '@mui/material/styles';
 
 import Alert from '@mui/material/Alert';
+import Avatar from '@mui/material/Avatar';
 import Badge from '@mui/material/Badge';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
 import Divider from '@mui/material/Divider';
 import IconButton from '@mui/material/IconButton';
-import List from '@mui/material/List';
-import ListItemButton from '@mui/material/ListItemButton';
-import ListItemText from '@mui/material/ListItemText';
 import Menu from '@mui/material/Menu';
 import Stack from '@mui/material/Stack';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 
-import ErrorOutlineOutlinedIcon from '@mui/icons-material/ErrorOutlineOutlined';
+import DoneAllRoundedIcon from '@mui/icons-material/DoneAllRounded';
 import NotificationsOutlinedIcon from '@mui/icons-material/NotificationsOutlined';
 import RefreshOutlinedIcon from '@mui/icons-material/RefreshOutlined';
-import WarningAmberOutlinedIcon from '@mui/icons-material/WarningAmberOutlined';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import WestRoundedIcon from '@mui/icons-material/WestRounded';
 
 import { useAuth } from '@/contexts/authContext';
-import apiRequest from '@/services/api';
+import {
+	fetchAdminNotifications,
+	markAdminNotificationAsRead,
+	markAllAdminNotificationsAsRead,
+} from '@/services/adminNotifications';
+import {
+	getAdminNotificationCategoryLabel,
+	getAdminNotificationStatusLabel,
+	getAdminNotificationVisual,
+} from '@/utils/adminNotifications';
 
-function getSeverityIcon(severity) {
-	switch (severity) {
-		case 'error':
-			return <ErrorOutlineOutlinedIcon fontSize="small" color="error" />;
-		case 'warning':
-			return <WarningAmberOutlinedIcon fontSize="small" color="warning" />;
-		default:
-			return <InfoOutlinedIcon fontSize="small" color="info" />;
-	}
+const PANEL_LIMIT = 10;
+
+function NotificationMenuItem({ item, onOpen }) {
+	const visual = getAdminNotificationVisual(item);
+
+	return (
+		<Box
+			onClick={() => onOpen(item)}
+			sx={{
+				px: 1.5,
+				py: 1.25,
+				cursor: 'pointer',
+				borderRadius: 3,
+				backgroundColor: item.isRead ? 'transparent' : alpha('#F5F9FF', 0.92),
+				transition: 'background-color 0.2s ease',
+				'&:hover': {
+					backgroundColor: alpha('#F1F6FC', 0.98),
+				},
+			}}
+		>
+			<Stack direction="row" spacing={1.1} alignItems="flex-start">
+				<Avatar
+					variant="rounded"
+					sx={{
+						width: 30,
+						height: 30,
+						bgcolor: visual.tint,
+						color: visual.color,
+						borderRadius: 2.5,
+						flexShrink: 0,
+					}}
+				>
+					{visual.icon}
+				</Avatar>
+				<Stack spacing={0.45} sx={{ minWidth: 0, flex: 1 }}>
+					<Stack direction="row" spacing={0.75} alignItems="center" justifyContent="space-between">
+						<Typography
+							variant="body2"
+							sx={{
+								color: '#123B66',
+								fontWeight: item.isRead ? 700 : 800,
+								lineHeight: 1.3,
+								minWidth: 0,
+								flex: 1,
+								display: '-webkit-box',
+								overflow: 'hidden',
+								WebkitBoxOrient: 'vertical',
+								WebkitLineClamp: 1,
+							}}
+						>
+							{item.title}
+						</Typography>
+						<Box
+							sx={{
+								width: 7,
+								height: 7,
+								borderRadius: '50%',
+								bgcolor: item.isRead ? 'rgba(18,59,102,0.16)' : '#2F74BC',
+								flexShrink: 0,
+							}}
+						/>
+					</Stack>
+					<Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
+						<Typography variant="caption" sx={{ color: visual.color, fontWeight: 700 }}>
+							{getAdminNotificationCategoryLabel(item.category)}
+						</Typography>
+						<Typography variant="caption" sx={{ color: '#8CA0B4' }}>
+							{item.dateLabel}
+						</Typography>
+					</Stack>
+					<Typography
+						variant="caption"
+						sx={{
+							color: '#667D95',
+							lineHeight: 1.45,
+							display: '-webkit-box',
+							overflow: 'hidden',
+							WebkitBoxOrient: 'vertical',
+							WebkitLineClamp: 2,
+						}}
+					>
+						{item.description}
+					</Typography>
+					<Typography variant="caption" sx={{ color: '#96A7BA' }}>
+						{getAdminNotificationStatusLabel(item.isRead)}
+					</Typography>
+				</Stack>
+			</Stack>
+		</Box>
+	);
 }
 
 function NotificationsButton() {
@@ -65,11 +153,7 @@ function NotificationsButton() {
 			}
 
 			try {
-				const response = await apiRequest(`/notifications?employeeId=${user.employeeId}`, {
-					headers: {
-						'X-Admin-Employee-Id': String(user.employeeId),
-					},
-				});
+				const response = await fetchAdminNotifications(user, { limit: PANEL_LIMIT });
 				setItems(response.items || []);
 				setTotalCount(Number(response.totalCount || 0));
 				setUnreadCount(Number(response.unreadCount || 0));
@@ -85,7 +169,7 @@ function NotificationsButton() {
 				}
 			}
 		},
-		[user?.employeeId],
+		[user],
 	);
 
 	useEffect(() => {
@@ -96,7 +180,22 @@ function NotificationsButton() {
 		if (open) {
 			loadNotifications({ silent: true });
 		}
-	}, [open, loadNotifications]);
+	}, [loadNotifications, open]);
+
+	const patchItemAsRead = useCallback((notificationId) => {
+		setItems((currentItems) =>
+			currentItems.map((item) =>
+				item.id === notificationId
+					? {
+							...item,
+							isRead: true,
+							readAt: new Date().toISOString(),
+					  }
+					: item,
+			),
+		);
+		setUnreadCount((currentCount) => Math.max(0, currentCount - 1));
+	}, []);
 
 	const handleOpen = (event) => {
 		setAnchorEl(event.currentTarget);
@@ -106,168 +205,74 @@ function NotificationsButton() {
 		setAnchorEl(null);
 	};
 
-	const markNotificationAsRead = useCallback(
-		async (notificationId) => {
-			if (!user?.employeeId || !notificationId) {
-				return;
-			}
-
-			await apiRequest('/notifications/read', {
-				method: 'POST',
-				body: JSON.stringify({
-					employeeId: user.employeeId,
-					notificationId,
-				}),
-				headers: {
-					'X-Admin-Employee-Id': String(user.employeeId),
-				},
-			});
-		},
-		[user?.employeeId],
-	);
-
-	const markAllAsRead = useCallback(async () => {
-		if (!user?.employeeId) {
-			return;
-		}
-
-		const unreadNotificationIds = items.filter((item) => !item.isRead).map((item) => item.id);
-
-		if (!unreadNotificationIds.length) {
-			return;
-		}
-
-		await apiRequest('/notifications/read-all', {
-			method: 'POST',
-			body: JSON.stringify({
-				employeeId: user.employeeId,
-				notificationIds: unreadNotificationIds,
-			}),
-			headers: {
-				'X-Admin-Employee-Id': String(user.employeeId),
-			},
-		});
-
-		setItems((currentItems) =>
-			currentItems.map((item) =>
-				unreadNotificationIds.includes(item.id)
-					? {
-							...item,
-							isRead: true,
-							readAt: new Date().toISOString(),
-					  }
-					: item,
-			),
-		);
-		setUnreadCount(0);
-	}, [items, user?.employeeId]);
-
-	const handleNavigate = async (item) => {
-		if (!item.isRead) {
-			try {
-				await markNotificationAsRead(item.id);
-				setItems((currentItems) =>
-					currentItems.map((currentItem) =>
-						currentItem.id === item.id
-							? {
-									...currentItem,
-									isRead: true,
-									readAt: new Date().toISOString(),
-							  }
-							: currentItem,
-					),
-				);
-				setUnreadCount((currentCount) => Math.max(0, currentCount - 1));
-			} catch (error) {
-				setErrorMessage(error.message || 'Status baca notifikasi gagal diperbarui.');
-			}
-		}
-
+	const handleOpenHistory = () => {
 		handleClose();
-		navigate(item.href || item.targetPath || '/');
+		navigate('/notifikasi');
 	};
 
+	const handleNotificationOpen = useCallback(
+		async (item) => {
+			if (!item.isRead) {
+				try {
+					await markAdminNotificationAsRead(user, item.id);
+					patchItemAsRead(item.id);
+				} catch (error) {
+					setErrorMessage(error.message || 'Status baca notifikasi gagal diperbarui.');
+				}
+			}
+
+			handleClose();
+			navigate(item.href || item.targetPath || '/');
+		},
+		[navigate, patchItemAsRead, user],
+	);
+
+	const handleMarkAll = useCallback(async () => {
+		if (!user?.employeeId || !unreadCount) {
+			return;
+		}
+
+		try {
+			await markAllAdminNotificationsAsRead(user);
+			setItems((currentItems) =>
+				currentItems.map((item) => ({
+					...item,
+					isRead: true,
+					readAt: item.readAt || new Date().toISOString(),
+				})),
+			);
+			setUnreadCount(0);
+		} catch (error) {
+			setErrorMessage(error.message || 'Status baca notifikasi gagal diperbarui.');
+		}
+	}, [unreadCount, user]);
+
 	let content = (
-		<List
-			disablePadding
-			sx={{
-				maxHeight: 440,
-				overflowY: 'auto',
-			}}
-		>
-			{items.map((item, index) => (
-				<Box key={item.id}>
-					<ListItemButton
-						alignItems="flex-start"
-						onClick={() => handleNavigate(item)}
-						sx={{
-							bgcolor: item.isRead ? 'transparent' : 'rgba(25, 118, 210, 0.06)',
-						}}
-					>
-						<Stack direction="row" spacing={1.25} sx={{ width: '100%' }}>
-							<Box sx={{ pt: 0.4 }}>{getSeverityIcon(item.severity)}</Box>
-							<ListItemText
-								primary={
-									<Stack spacing={0.35}>
-										<Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
-											<Typography
-												variant="body2"
-												sx={{
-													fontWeight: item.isRead ? 600 : 700,
-													color: '#123B66',
-												}}
-											>
-												{item.title}
-											</Typography>
-											<Typography
-												variant="caption"
-												sx={{
-													color: item.isRead ? 'text.secondary' : 'primary.main',
-													fontWeight: item.isRead ? 400 : 700,
-												}}
-											>
-												{item.isRead ? 'Sudah dibaca' : 'Belum dibaca'}
-											</Typography>
-										</Stack>
-										<Typography variant="caption" color="text.secondary">
-											{item.dateLabel}
-										</Typography>
-									</Stack>
-								}
-								secondary={
-									<Typography
-										variant="body2"
-										color="text.secondary"
-										sx={{ mt: 0.5, lineHeight: 1.45 }}
-									>
-										{item.description}
-									</Typography>
-								}
-							/>
-						</Stack>
-					</ListItemButton>
-					{index < items.length - 1 ? <Divider component="li" /> : null}
-				</Box>
+		<Stack spacing={0.5} sx={{ px: 1, py: 1, maxHeight: 392, overflowY: 'auto' }}>
+			{items.map((item) => (
+				<NotificationMenuItem key={item.id} item={item} onOpen={handleNotificationOpen} />
 			))}
-		</List>
+		</Stack>
 	);
 
 	if (loading) {
 		content = (
-			<Stack alignItems="center" justifyContent="center" sx={{ py: 5, px: 2 }}>
-				<CircularProgress size={24} />
+			<Stack alignItems="center" justifyContent="center" sx={{ py: 5.5, px: 2 }}>
+				<CircularProgress size={22} />
 			</Stack>
 		);
 	} else if (errorMessage) {
 		content = (
-			<Stack sx={{ p: 2 }}>
-				<Alert severity="error">{errorMessage}</Alert>
+			<Stack sx={{ p: 1.5 }}>
+				<Alert severity="error" sx={{ borderRadius: 2.5 }}>
+					{errorMessage}
+				</Alert>
 			</Stack>
 		);
 	} else if (items.length === 0) {
 		content = (
-			<Stack spacing={0.75} alignItems="center" justifyContent="center" sx={{ py: 6, px: 3 }}>
-				<NotificationsOutlinedIcon color="disabled" />
+			<Stack spacing={0.85} alignItems="center" justifyContent="center" sx={{ py: 6, px: 3 }}>
+				<NotificationsOutlinedIcon sx={{ color: '#A9B8C9', fontSize: 22 }} />
 				<Typography variant="body2" color="text.secondary" textAlign="center">
 					Belum ada notifikasi aktif.
 				</Typography>
@@ -304,39 +309,70 @@ function NotificationsButton() {
 				slotProps={{
 					paper: {
 						sx: {
-							width: 420,
+							width: 360,
 							maxWidth: 'calc(100vw - 24px)',
-							borderRadius: 3,
+							mt: 1,
+							borderRadius: 3.5,
 							overflow: 'hidden',
+							border: '1px solid rgba(18,59,102,0.08)',
+							boxShadow: '0 18px 38px rgba(18, 59, 102, 0.12)',
 						},
 					},
 				}}
 			>
 				<Stack spacing={0}>
-					<Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ px: 2, py: 1.5 }}>
-						<Box>
-							<Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#123B66' }}>
-								Notifikasi
-							</Typography>
-							<Typography variant="caption" color="text.secondary">
-								{unreadCount} belum dibaca dari {totalCount} alert aktif
-							</Typography>
-						</Box>
-						<Stack direction="row" spacing={1}>
-							<Button size="small" onClick={markAllAsRead} disabled={!unreadCount}>
-								Tandai semua
-							</Button>
-							<Button
-								size="small"
-								startIcon={<RefreshOutlinedIcon fontSize="small" />}
-								onClick={() => loadNotifications()}
-							>
-								Refresh
-							</Button>
+					<Stack sx={{ px: 1.75, py: 1.5 }}>
+						<Stack direction="row" alignItems="flex-start" justifyContent="space-between" spacing={1.5}>
+							<Box>
+								<Typography
+									variant="subtitle1"
+									sx={{ fontWeight: 800, color: '#123B66', lineHeight: 1.2 }}
+								>
+									Notifikasi
+								</Typography>
+								<Typography variant="caption" sx={{ color: '#7B8FA5' }}>
+									{unreadCount} belum dibaca dari {totalCount} alert aktif
+								</Typography>
+							</Box>
+							<Stack direction="row" spacing={0.5}>
+								<Tooltip title="Tandai semua dibaca">
+									<span>
+										<IconButton size="small" onClick={handleMarkAll} disabled={!unreadCount}>
+											<DoneAllRoundedIcon fontSize="small" />
+										</IconButton>
+									</span>
+								</Tooltip>
+								<Tooltip title="Refresh">
+									<IconButton size="small" onClick={() => loadNotifications()}>
+										<RefreshOutlinedIcon fontSize="small" />
+									</IconButton>
+								</Tooltip>
+							</Stack>
 						</Stack>
 					</Stack>
+
 					<Divider />
 					{content}
+					<Divider />
+
+					<Box sx={{ p: 1 }}>
+						<Button
+							fullWidth
+							variant="text"
+							endIcon={<WestRoundedIcon sx={{ transform: 'rotate(180deg)' }} fontSize="small" />}
+							onClick={handleOpenHistory}
+							sx={{
+								justifyContent: 'space-between',
+								px: 1.25,
+								py: 0.9,
+								borderRadius: 2.5,
+								color: '#123B66',
+								fontWeight: 700,
+							}}
+						>
+							Lihat semua notifikasi
+						</Button>
+					</Box>
 				</Stack>
 			</Menu>
 		</>
