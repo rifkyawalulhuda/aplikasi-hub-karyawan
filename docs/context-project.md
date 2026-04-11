@@ -799,6 +799,7 @@ Yang sudah selesai:
 - Menambahkan layout mobile khusus karyawan dengan bottom navigation dan logout terpisah dari area admin.
 - Menambahkan halaman dashboard, profil, riwayat bimbingan, dan riwayat surat peringatan untuk karyawan login.
 - Menambahkan fitur `Ubah Password` pada halaman profil PWA Karyawan, lengkap dengan dialog form mobile-first dan endpoint self-service khusus employee login.
+- Refactor UI halaman Beranda PWA Karyawan menjadi lebih minimalis dan premium dengan hero card ringkas, quick status yang lebih fokus, menu cepat 2 kolom yang lebih rapi, ringkasan informasi karyawan yang dipadatkan termasuk kontak (`No Telepon` dan `Email`), serta aktivitas terbaru yang lebih ringan dipindai, tanpa mengubah header dan bottom navigation existing.
 - Mengaktifkan PWA pada project aktif dengan manifest, service worker, register SW, dan ikon install app untuk `Portal Mobile Karyawan`.
 - Menambahkan route print admin dan PWA untuk `Form Permohonan Cuti dan Ijin`, beserta tombol `Print A4` pada flow cuti approved dan detail cuti approved.
 - Menambahkan dokumen print A4 khusus cuti approved dengan mapping field workflow cuti, checkbox jenis cuti, daftar pengganti repetitif, dan ringkasan approval bawah.

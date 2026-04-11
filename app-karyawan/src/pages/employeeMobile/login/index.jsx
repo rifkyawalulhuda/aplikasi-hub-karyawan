@@ -137,10 +137,6 @@ function EmployeeLoginPage() {
 						<Typography variant="h4" sx={{ color: '#FFFFFF', fontWeight: 700 }}>
 							Portal Karyawan
 						</Typography>
-						<Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.82)', mt: 1 }}>
-							Akses data diri, bimbingan, dan surat peringatan langsung dari HP dalam tampilan yang
-							ringkas.
-						</Typography>
 					</Box>
 				</Stack>
 			</Box>
@@ -155,7 +151,8 @@ function EmployeeLoginPage() {
 							Masuk dengan NIK
 						</Typography>
 						<Typography variant="body2" color="text.secondary" sx={{ mt: 0.75 }}>
-							Gunakan NIK dan password yang tersedia di Data Master Karyawan.
+							Gunakan NIK dan password yang sudah diberikan oleh Admin, Jika lupa hubungi Admin untuk
+							dilakukan reset password.
 						</Typography>
 					</Box>
 
