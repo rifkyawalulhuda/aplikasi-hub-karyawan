@@ -108,7 +108,9 @@ Folder ini dipilih sebagai basis utama pengembangan karena struktur template-nya
   - cuti `Rejected`
   - email workflow cuti yang gagal terkirim
 - Status notifikasi admin sekarang disimpan per admin sebagai `baca / belum baca`.
+- Riwayat notifikasi admin sekarang memiliki snapshot record persisten pada tabel `admin_notification_records`, sehingga halaman record/inbox admin tetap bisa menampilkan histori notifikasi walau alert live sudah tidak aktif.
 - Badge lonceng sekarang menampilkan jumlah notifikasi `belum dibaca`, bukan jumlah total alert.
+- Endpoint admin `GET /api/notifications/history` tersedia untuk kebutuhan halaman record notifikasi dengan dukungan filter status baca, status aktif, kategori, keyword, dan pagination ringan.
 - Request cuti `Approved` sekarang memiliki fitur `Print A4` baik dari admin maupun dari PWA karyawan.
 - Dokumen print cuti menggunakan halaman HTML/CSS A4 khusus yang dikalibrasi mengikuti file referensi `Form Permohonan Cuti dan Ijin.pdf`.
 - Kolom approval pada dokumen print menampilkan tanggal dan nama requester/approver sesuai grup approval yang sudah disepakati.
@@ -815,10 +817,14 @@ Yang sudah selesai:
 - Menambahkan endpoint update status notifikasi:
   - `POST /api/notifications/read`
   - `POST /api/notifications/read-all`
+- Menambahkan endpoint riwayat notifikasi admin:
+  - `GET /api/notifications/history`
 - Menambahkan tabel `admin_notification_read_states` untuk menyimpan status baca per admin.
+- Menambahkan tabel `admin_notification_records` untuk menyimpan snapshot histori notifikasi admin yang pernah muncul.
 - Menambahkan notifikasi global untuk lisensi/sertifikasi karyawan dan unit yang akan expired atau expired.
 - Menambahkan reminder operasional pada notifikasi header untuk flow cuti terlalu lama, cuti rejected, dan email workflow gagal.
 - Menambahkan status `Sudah dibaca` dan `Belum dibaca` pada panel notifikasi serta verifikasi UI klik/deep-link secara langsung di browser lokal.
+- Menambahkan halaman admin `Record Notifikasi` pada route `/notifikasi` sebagai inbox/riwayat notifikasi lengkap, tetapi halaman ini tidak ditampilkan sebagai tab/menu utama navbar dan diakses dari panel lonceng header melalui CTA `Lihat semua notifikasi`.
 - Verifikasi `lint`, `build`, dan smoke test API ke database berhasil.
 - Menyesuaikan bottom navigation PWA Karyawan dengan menggabungkan menu `Bimbingan` dan `Peringatan` ke dalam tab `Catatan` yang memicu _Bottom Sheet_ Drawer.
 - Memperbaiki styling bottom navigation PWA untuk memastikan ikon tab aktif selalu konsisten berwarna biru saat diklik.
