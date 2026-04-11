@@ -66,46 +66,95 @@ const QUICK_MENU_ITEMS = [
 	},
 ];
 
-function SummaryCard({ label, value, helper, icon, accent = '#123B66' }) {
+function SummaryCard({ label, value, helper, icon, accent = '#123B66', badgeLabel = '', onClick = null }) {
+	const content = (
+		<Stack spacing={1.25} sx={{ p: 1.75 }}>
+			<Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1}>
+				<Avatar
+					variant="rounded"
+					sx={{
+						width: 38,
+						height: 38,
+						bgcolor: alpha(accent, 0.12),
+						color: accent,
+						borderRadius: 3,
+						flexShrink: 0,
+					}}
+				>
+					{icon}
+				</Avatar>
+				<Stack spacing={0.75} alignItems="flex-end" sx={{ minWidth: 0 }}>
+					{badgeLabel ? (
+						<Chip
+							label={badgeLabel}
+							size="small"
+							sx={{
+								height: 24,
+								borderRadius: 999,
+								fontWeight: 700,
+								bgcolor: (theme) => alpha(accent, theme.palette.mode === 'dark' ? 0.24 : 0.1),
+								color: accent,
+								maxWidth: '100%',
+							}}
+						/>
+					) : null}
+					<Typography
+						variant="caption"
+						sx={{ color: 'text.secondary', letterSpacing: '0.08em', textAlign: 'right' }}
+					>
+						{label}
+					</Typography>
+				</Stack>
+			</Stack>
+			<Typography
+				variant="h6"
+				sx={{ color: 'text.primary', fontWeight: 700, lineHeight: 1.15, fontSize: '1.05rem' }}
+			>
+				{value}
+			</Typography>
+			<Typography
+				variant="caption"
+				color="text.secondary"
+				sx={{
+					fontSize: '0.7rem',
+					lineHeight: 1.45,
+					display: '-webkit-box',
+					WebkitLineClamp: 2,
+					WebkitBoxOrient: 'vertical',
+					overflow: 'hidden',
+				}}
+			>
+				{helper}
+			</Typography>
+		</Stack>
+	);
+
 	return (
 		<Paper
 			elevation={0}
 			sx={{
-				p: 1.75,
 				borderRadius: 4,
 				border: (theme) => `1px solid ${theme.palette.employeeSurface.borderSoft}`,
 				boxShadow: (theme) => theme.palette.employeeSurface.shadowSoft,
 				backgroundColor: (theme) => theme.palette.employeeSurface.card,
+				overflow: 'hidden',
 			}}
 		>
-			<Stack spacing={1.25}>
-				<Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1}>
-					<Avatar
-						variant="rounded"
-						sx={{
-							width: 38,
-							height: 38,
-							bgcolor: alpha(accent, 0.12),
-							color: accent,
-							borderRadius: 3,
-						}}
-					>
-						{icon}
-					</Avatar>
-					<Typography variant="caption" sx={{ color: 'text.secondary', letterSpacing: '0.08em' }}>
-						{label}
-					</Typography>
-				</Stack>
-				<Typography
-					variant="h6"
-					sx={{ color: 'text.primary', fontWeight: 700, lineHeight: 1.15, fontSize: '1.15rem' }}
+			{onClick ? (
+				<CardActionArea
+					onClick={onClick}
+					sx={{
+						display: 'block',
+						'&:active': {
+							transform: 'scale(0.995)',
+						},
+					}}
 				>
-					{value}
-				</Typography>
-				<Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.72rem', lineHeight: 1.45 }}>
-					{helper}
-				</Typography>
-			</Stack>
+					{content}
+				</CardActionArea>
+			) : (
+				content
+			)}
 		</Paper>
 	);
 }
@@ -326,6 +375,7 @@ function EmployeeDashboardPage() {
 	}
 
 	const profile = data?.profile;
+	const activeLeaveProcess = data?.summary?.activeLeaveProcess;
 	const recentActivities = [
 		...(data?.recentGuidanceRecords || []).slice(0, 2).map((item) => ({
 			id: `guidance-${item.id}`,
@@ -443,6 +493,27 @@ function EmployeeDashboardPage() {
 						</Typography>
 					</Box>
 					<Stack spacing={1}>
+						{activeLeaveProcess ? (
+							<SummaryCard
+								label={activeLeaveProcess.title}
+								value={activeLeaveProcess.statusLabel}
+								helper={`${activeLeaveProcess.requestNumber} • ${activeLeaveProcess.description}`}
+								icon={
+									activeLeaveProcess.isActionRequired ? (
+										<AssignmentTurnedInRoundedIcon fontSize="small" />
+									) : (
+										<AccessTimeRoundedIcon fontSize="small" />
+									)
+								}
+								accent={activeLeaveProcess.isActionRequired ? '#356FA8' : '#2F74BC'}
+								badgeLabel={
+									activeLeaveProcess.totalActiveCount > 1
+										? `${activeLeaveProcess.totalActiveCount} aktif`
+										: activeLeaveProcess.roleLabel
+								}
+								onClick={() => navigate(activeLeaveProcess.targetPath)}
+							/>
+						) : null}
 						<SummaryCard
 							label="Pengajuan Cuti"
 							value={`${data?.summary?.leaveRequestCount ?? 0} Request`}

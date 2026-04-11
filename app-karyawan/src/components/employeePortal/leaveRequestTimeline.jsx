@@ -8,6 +8,17 @@ import { formatLongDate } from '@/utils/employeePortal';
 import ReplacementEmployeeList from './replacementEmployeeList';
 import LeaveStatusChip from './leaveStatusChip';
 
+function getSurfaceTokens(theme) {
+	return (
+		theme.palette.employeeSurface || {
+			borderSoft: theme.palette.divider || 'rgba(18,59,102,0.08)',
+			borderStrong: theme.palette.divider || 'rgba(18,59,102,0.12)',
+			card: theme.palette.background.paper,
+			muted: theme.palette.action?.hover || theme.palette.background.default,
+		}
+	);
+}
+
 function LeaveRequestTimeline({ revisions = [], approvals = [] }) {
 	if (!revisions.length) {
 		return null;
@@ -24,8 +35,8 @@ function LeaveRequestTimeline({ revisions = [], approvals = [] }) {
 						sx={{
 							p: 2.25,
 							borderRadius: 4,
-							border: (theme) => `1px solid ${theme.palette.employeeSurface.borderSoft}`,
-							backgroundColor: (theme) => theme.palette.employeeSurface.card,
+							border: (theme) => `1px solid ${getSurfaceTokens(theme).borderSoft}`,
+							backgroundColor: (theme) => getSurfaceTokens(theme).card,
 						}}
 					>
 						<Stack spacing={1.5}>
@@ -81,8 +92,8 @@ function LeaveRequestTimeline({ revisions = [], approvals = [] }) {
 											sx={{
 												p: 1.5,
 												borderRadius: 3,
-												borderColor: (theme) => theme.palette.employeeSurface.borderStrong,
-												backgroundColor: (theme) => theme.palette.employeeSurface.muted,
+												borderColor: (theme) => getSurfaceTokens(theme).borderStrong,
+												backgroundColor: (theme) => getSurfaceTokens(theme).muted,
 											}}
 										>
 											<Stack spacing={0.75}>

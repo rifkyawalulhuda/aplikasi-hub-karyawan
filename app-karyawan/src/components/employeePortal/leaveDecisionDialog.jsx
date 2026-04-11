@@ -9,6 +9,14 @@ import DialogTitle from '@mui/material/DialogTitle';
 import TextField from '@mui/material/TextField';
 import { alpha } from '@mui/material/styles';
 
+function getSurfaceTokens(theme) {
+	return (
+		theme.palette.employeeSurface || {
+			borderSoft: theme.palette.divider || 'rgba(18,59,102,0.08)',
+		}
+	);
+}
+
 function LeaveDecisionDialog({ open, loading, title, requireNote = false, onClose, onSubmit }) {
 	const {
 		control,
@@ -36,7 +44,7 @@ function LeaveDecisionDialog({ open, loading, title, requireNote = false, onClos
 			PaperProps={{
 				sx: {
 					borderRadius: 3,
-					border: (theme) => `1px solid ${theme.palette.employeeSurface.borderSoft}`,
+					border: (theme) => `1px solid ${getSurfaceTokens(theme).borderSoft}`,
 				},
 			}}
 		>
