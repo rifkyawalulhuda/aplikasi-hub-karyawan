@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 
+import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
@@ -55,33 +56,48 @@ function InstallAppCard() {
 
 	return (
 		<Paper
+			elevation={0}
 			sx={{
-				p: 2.5,
-				borderRadius: 4,
-				background: 'linear-gradient(145deg, #123B66 0%, #235D96 54%, #4C9AE8 100%)',
-				color: '#FFFFFF',
+				p: 2,
+				borderRadius: 5,
+				border: '1px solid rgba(18,59,102,0.08)',
+				backgroundColor: 'rgba(255,255,255,0.88)',
+				boxShadow: '0 14px 34px rgba(18, 59, 102, 0.08)',
+				backdropFilter: 'blur(10px)',
 			}}
 		>
 			<Stack spacing={1.5}>
 				<Stack direction="row" spacing={1.25} alignItems="center">
-					<DownloadForOfflineOutlinedIcon />
-					<Typography variant="h6" sx={{ color: '#FFFFFF' }}>
-						Install aplikasi
-					</Typography>
+					<Box
+						sx={{
+							width: 40,
+							height: 40,
+							display: 'grid',
+							placeItems: 'center',
+							borderRadius: 3,
+							bgcolor: 'rgba(58, 147, 242, 0.12)',
+							color: '#2F74BC',
+						}}
+					>
+						<DownloadForOfflineOutlinedIcon fontSize="small" />
+					</Box>
+					<Box>
+						<Typography variant="subtitle1" sx={{ color: '#123B66', fontWeight: 700 }}>
+							Install aplikasi
+						</Typography>
+						<Typography variant="body2" sx={{ color: '#6D84A0' }}>
+							Simpan Portal Karyawan di layar utama HP.
+						</Typography>
+					</Box>
 				</Stack>
-				<Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.82)' }}>
-					Pasang Hub Karyawan di layar utama HP agar akses login dan informasi karyawan lebih cepat.
-				</Typography>
 				<Button
 					variant="contained"
 					onClick={handleInstall}
 					sx={{
 						alignSelf: 'flex-start',
-						bgcolor: '#FFFFFF',
-						color: '#123B66',
-						'&:hover': {
-							bgcolor: '#EAF3FF',
-						},
+						borderRadius: 3,
+						background: 'linear-gradient(135deg, #123B66 0%, #3A93F2 100%)',
+						boxShadow: '0 12px 24px rgba(58, 147, 242, 0.18)',
 					}}
 				>
 					Install Sekarang
