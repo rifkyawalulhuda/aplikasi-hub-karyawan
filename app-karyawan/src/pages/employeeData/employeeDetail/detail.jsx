@@ -557,7 +557,9 @@ function EmployeeDetailPage() {
 					<Grid item xs={12} lg={6}>
 						<SectionCard title="Pelatihan Karyawan" icon={SchoolOutlinedIcon} color="warning.main">
 							<Box px={2.5} py={1.5}>
-								<StatBadge label="Total" value={summary.trainingCount} color="warning.main" />
+								<Stack direction="row" gap={1.5} mb={1.5}>
+									<StatBadge label="Total" value={summary.trainingCount} color="warning.main" />
+								</Stack>
 							</Box>
 							{recentTrainingRecords.length === 0 ? (
 								<EmptySection />
