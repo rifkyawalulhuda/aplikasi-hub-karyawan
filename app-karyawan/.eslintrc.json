@@ -13,7 +13,22 @@
 		"eslint-config-prettier",
 		"plugin:react/jsx-runtime"
 	],
-	"overrides": [],
+	"overrides": [
+		{
+			"files": ["**/*.{test,spec}.{js,jsx,ts,tsx}"],
+			"globals": {
+				"afterAll": "readonly",
+				"afterEach": "readonly",
+				"beforeAll": "readonly",
+				"beforeEach": "readonly",
+				"describe": "readonly",
+				"expect": "readonly",
+				"it": "readonly",
+				"test": "readonly",
+				"vi": "readonly"
+			}
+		}
+	],
 	"parserOptions": {
 		"ecmaVersion": "latest",
 		"sourceType": "module"
