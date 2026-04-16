@@ -54,6 +54,7 @@ Folder ini dipilih sebagai basis utama pengembangan karena struktur template-nya
 - Login PWA mobile menampilkan tombol `Install App` dengan fallback instruksi manual jika `beforeinstallprompt` belum tersedia di browser.
 - Manifest PWA sekarang memakai ikon PNG standar `pwa/icon-192.png` dan `pwa/icon-512.png`; SVG tidak lagi dipakai sebagai ikon utama agar kompatibilitas install lebih stabil.
 - Standar global `table list` desktop sekarang mengikuti pola halaman `Bimbingan & Pengarahan`, kecuali halaman `Detail Karyawan`.
+- Frontend testing sekarang tersedia melalui `Vitest` dengan environment `jsdom`, global test helpers, dan setup `@testing-library/jest-dom`.
 
 ### Standar Global Table List Desktop
 
@@ -898,6 +899,12 @@ Yang sudah selesai:
 - Database:
   - Docker Compose service PostgreSQL
   - Prisma migration awal
+- Testing frontend:
+  - `vitest`
+  - `jsdom`
+  - `@testing-library/react`
+  - `@testing-library/jest-dom`
+  - `@testing-library/user-event`
 
 ## Catatan Penting
 
