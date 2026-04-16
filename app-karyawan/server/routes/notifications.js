@@ -5,10 +5,18 @@ import prisma from '../lib/prisma.js';
 const router = Router();
 const EXPIRING_SOON_DAYS = 25;
 const STALE_APPROVAL_DAYS = 2;
+const PROFILE_CHANGE_DAYS = 30;
 const MAX_NOTIFICATION_ITEMS = 50;
 const DEFAULT_HISTORY_PAGE_SIZE = 20;
 const MAX_HISTORY_PAGE_SIZE = 100;
-const NOTIFICATION_CATEGORIES = ['EMPLOYEE_LICENSE', 'UNIT_LICENSE', 'LEAVE_FLOW', 'LEAVE_REJECTED', 'EMAIL_FAILED'];
+const NOTIFICATION_CATEGORIES = [
+	'EMPLOYEE_LICENSE',
+	'UNIT_LICENSE',
+	'LEAVE_FLOW',
+	'LEAVE_REJECTED',
+	'EMAIL_FAILED',
+	'EMPLOYEE_PROFILE_CHANGE',
+];
 
 function formatStageLabel(stageType = '') {
 	switch (stageType) {
@@ -112,6 +120,8 @@ function formatCategoryLabel(category = '') {
 			return 'Cuti Ditolak';
 		case 'EMAIL_FAILED':
 			return 'Email Gagal';
+		case 'EMPLOYEE_PROFILE_CHANGE':
+			return 'Perubahan Profil Karyawan';
 		default:
 			return category || 'Notifikasi';
 	}
@@ -135,6 +145,8 @@ function getPriority(item) {
 			return item.severity === 'error' ? 500 : 200;
 		case 'EMAIL_FAILED':
 			return 400;
+		case 'EMPLOYEE_PROFILE_CHANGE':
+			return 350;
 		case 'LEAVE_FLOW':
 			return 300;
 		case 'LEAVE_REJECTED':
@@ -390,9 +402,37 @@ function createFailedEmailNotification(record) {
 	};
 }
 
+function createEmployeeProfileChangeNotification(record) {
+	const changedAt = record.updatedAt || record.createdAt;
+	const employeeName = record.employee?.fullName || 'Karyawan';
+	const employeeNo = record.employee?.employeeNo || '';
+	const titleLabel =
+		record.changeType === 'PASSWORD'
+			? 'Password'
+			: record.changeType === 'CONTACT_EMAIL'
+			? 'Kontak dan Email'
+			: record.changeType === 'CONTACT'
+			? 'Kontak'
+			: 'Email';
+
+	return {
+		id: `profile-change-${record.id}`,
+		category: 'EMPLOYEE_PROFILE_CHANGE',
+		severity: record.changeType === 'PASSWORD' ? 'warning' : 'info',
+		title: `${employeeName} memperbarui ${titleLabel}`,
+		description: record.summary,
+		targetPath: `/data-karyawan/detail-karyawan/${record.employeeId}`,
+		targetSearch: employeeNo,
+		dateLabel: `Diperbarui: ${formatDateLabel(changedAt)}`,
+		sortDate: changedAt.toISOString(),
+		href: `/data-karyawan/detail-karyawan/${record.employeeId}`,
+	};
+}
+
 async function buildLiveNotifications() {
 	const staleThreshold = new Date(Date.now() - STALE_APPROVAL_DAYS * 24 * 60 * 60 * 1000);
-	const [employeeLicenses, unitLicenses, staleLeaveApprovals, rejectedLeaveRequests, failedEmails] =
+	const profileChangeThreshold = new Date(Date.now() - PROFILE_CHANGE_DAYS * 24 * 60 * 60 * 1000);
+	const [employeeLicenses, unitLicenses, staleLeaveApprovals, rejectedLeaveRequests, failedEmails, profileChanges] =
 		await Promise.all([
 			prisma.employeeLicenseCertification.findMany({
 				include: {
@@ -442,6 +482,17 @@ async function buildLiveNotifications() {
 				},
 				orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
 			}),
+			prisma.employeeSelfServiceChangeLog.findMany({
+				where: {
+					createdAt: {
+						gte: profileChangeThreshold,
+					},
+				},
+				include: {
+					employee: true,
+				},
+				orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+			}),
 		]);
 
 	return [
@@ -452,6 +503,7 @@ async function buildLiveNotifications() {
 			.map(createLeaveFlowNotification),
 		...rejectedLeaveRequests.map(createRejectedLeaveNotification),
 		...failedEmails.map(createFailedEmailNotification),
+		...profileChanges.map(createEmployeeProfileChangeNotification),
 	];
 }
 
