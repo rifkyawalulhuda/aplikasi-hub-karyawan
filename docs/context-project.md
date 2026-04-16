@@ -804,6 +804,7 @@ Yang sudah selesai:
 - Menambahkan layout mobile khusus karyawan dengan bottom navigation dan logout terpisah dari area admin.
 - Menambahkan halaman dashboard, profil, riwayat bimbingan, dan riwayat surat peringatan untuk karyawan login.
 - Menambahkan fitur `Ubah Password` pada halaman profil PWA Karyawan, lengkap dengan dialog form mobile-first dan endpoint self-service khusus employee login.
+- Menambahkan fitur self-service `Ubah Kontak & Email` pada halaman profil PWA Karyawan, lengkap dengan notifikasi admin ketika employee mengubah password, kontak, atau email melalui Portal Karyawan.
 - Refactor UI halaman Beranda PWA Karyawan menjadi lebih minimalis dan premium dengan hero card ringkas, quick status yang lebih fokus, menu cepat 2 kolom yang lebih rapi, ringkasan informasi karyawan yang dipadatkan termasuk kontak (`No Telepon` dan `Email`), serta aktivitas terbaru yang lebih ringan dipindai, tanpa mengubah header dan bottom navigation existing.
 - Menambahkan status proses cuti aktif pada section `Quick Status` di beranda PWA Karyawan:
   - jika employee login adalah requester dan masih punya pengajuan cuti dengan status aktif (`Submitted` / `Dalam Approval`), kartu akan menampilkan status proses tersebut dan membuka detail request saat ditekan

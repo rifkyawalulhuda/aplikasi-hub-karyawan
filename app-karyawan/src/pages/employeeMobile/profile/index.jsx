@@ -15,11 +15,13 @@ import Typography from '@mui/material/Typography';
 
 import LockResetOutlinedIcon from '@mui/icons-material/LockResetOutlined';
 import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
+import ModeEditOutlineOutlinedIcon from '@mui/icons-material/ModeEditOutlineOutlined';
 
 import ChangePasswordDialog from '@/components/employeePortal/changePasswordDialog';
+import EditContactDialog from '@/components/employeePortal/editContactDialog';
 import FeedbackState from '@/components/employeePortal/feedbackState';
 import { useEmployeeAuth } from '@/contexts/employeeAuthContext';
-import { changeEmployeePassword, employeeMeRequest } from '@/services/employeeApi';
+import { changeEmployeePassword, employeeMeRequest, updateEmployeeContactInfo } from '@/services/employeeApi';
 import { formatLongDate, getEmployeePortalErrorMessage, handleEmployeeUnauthorized } from '@/utils/employeePortal';
 
 function FieldItem({ label, value }) {
@@ -45,6 +47,9 @@ function EmployeeProfilePage() {
 	const [changePasswordOpen, setChangePasswordOpen] = useState(false);
 	const [changePasswordLoading, setChangePasswordLoading] = useState(false);
 	const [changePasswordError, setChangePasswordError] = useState('');
+	const [editContactOpen, setEditContactOpen] = useState(false);
+	const [editContactLoading, setEditContactLoading] = useState(false);
+	const [editContactError, setEditContactError] = useState('');
 	const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
 
 	const loadProfile = async () => {
@@ -111,6 +116,49 @@ function EmployeeProfilePage() {
 			setChangePasswordError(getEmployeePortalErrorMessage(requestError));
 		} finally {
 			setChangePasswordLoading(false);
+		}
+	};
+
+	const handleOpenEditContact = () => {
+		setEditContactError('');
+		setEditContactOpen(true);
+	};
+
+	const handleCloseEditContact = () => {
+		if (editContactLoading) {
+			return;
+		}
+
+		setEditContactError('');
+		setEditContactOpen(false);
+	};
+
+	const handleSubmitEditContact = async (values) => {
+		setEditContactLoading(true);
+		setEditContactError('');
+
+		try {
+			const response = await updateEmployeeContactInfo(values);
+			setProfile(response.profile);
+			enqueueSnackbar(response.message || 'Kontak dan email berhasil diperbarui.', {
+				variant: 'success',
+			});
+			setEditContactOpen(false);
+		} catch (requestError) {
+			if (
+				handleEmployeeUnauthorized({
+					error: requestError,
+					logout,
+					navigate,
+					enqueueSnackbar,
+				})
+			) {
+				return;
+			}
+
+			setEditContactError(getEmployeePortalErrorMessage(requestError));
+		} finally {
+			setEditContactLoading(false);
 		}
 	};
 
@@ -202,6 +250,18 @@ function EmployeeProfilePage() {
 						<Divider />
 						<FieldItem label="Phone Number" value={profile?.phoneNumber} />
 						<FieldItem label="Email" value={profile?.email} />
+						<Button
+							variant="outlined"
+							startIcon={<ModeEditOutlineOutlinedIcon />}
+							onClick={handleOpenEditContact}
+							sx={{
+								mt: 0.5,
+								borderRadius: 3,
+								minHeight: 44,
+							}}
+						>
+							Ubah Kontak & Email
+						</Button>
 					</Stack>
 				</Paper>
 
@@ -263,6 +323,17 @@ function EmployeeProfilePage() {
 				errorMessage={changePasswordError}
 				onClose={handleCloseChangePassword}
 				onSubmit={handleSubmitChangePassword}
+			/>
+			<EditContactDialog
+				open={editContactOpen}
+				loading={editContactLoading}
+				errorMessage={editContactError}
+				initialValues={{
+					phoneNumber: profile?.phoneNumber || '',
+					email: profile?.email || '',
+				}}
+				onClose={handleCloseEditContact}
+				onSubmit={handleSubmitEditContact}
 			/>
 			<Dialog open={logoutConfirmOpen} onClose={() => setLogoutConfirmOpen(false)} fullWidth maxWidth="xs">
 				<DialogTitle sx={{ pb: 1 }}>Konfirmasi Logout</DialogTitle>

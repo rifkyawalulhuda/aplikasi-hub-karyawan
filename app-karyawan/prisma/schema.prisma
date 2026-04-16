@@ -86,6 +86,13 @@ enum LeaveDatabaseHistorySourceType {
   ADMIN_IMPORT
 }
 
+enum EmployeeSelfServiceChangeType {
+  PASSWORD
+  CONTACT
+  EMAIL
+  CONTACT_EMAIL
+}
+
 model WorkLocation {
   id        Int        @id @default(autoincrement())
   name      String     @unique @db.VarChar(255)
@@ -269,6 +276,7 @@ model Employee {
   groupShiftAssignments       GroupShiftForeman[]
   notificationReadStates      AdminNotificationReadState[]
   pushSubscriptions           EmployeePushSubscription[]
+  selfServiceChangeLogs       EmployeeSelfServiceChangeLog[]
 
   @@index([departmentId])
   @@index([groupShiftId])
@@ -523,6 +531,21 @@ model AdminNotificationRecord {
   @@index([lastDetectedAt])
   @@index([isActive])
   @@map("admin_notification_records")
+}
+
+model EmployeeSelfServiceChangeLog {
+  id          Int                         @id @default(autoincrement())
+  employeeId  Int
+  changeType  EmployeeSelfServiceChangeType
+  summary     String                      @db.Text
+  createdAt   DateTime                    @default(now())
+  updatedAt   DateTime                    @updatedAt
+  employee    Employee                    @relation(fields: [employeeId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([employeeId])
+  @@index([changeType])
+  @@index([createdAt])
+  @@map("employee_self_service_change_logs")
 }
 
 model EmployeePushSubscription {
