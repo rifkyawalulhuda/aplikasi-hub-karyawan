@@ -3,12 +3,18 @@ import { useNavigate } from 'react-router-dom';
 import { useSnackbar } from 'notistack';
 
 import Button from '@mui/material/Button';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogTitle from '@mui/material/DialogTitle';
 import Divider from '@mui/material/Divider';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
 import LockResetOutlinedIcon from '@mui/icons-material/LockResetOutlined';
+import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
 
 import ChangePasswordDialog from '@/components/employeePortal/changePasswordDialog';
 import FeedbackState from '@/components/employeePortal/feedbackState';
@@ -39,6 +45,7 @@ function EmployeeProfilePage() {
 	const [changePasswordOpen, setChangePasswordOpen] = useState(false);
 	const [changePasswordLoading, setChangePasswordLoading] = useState(false);
 	const [changePasswordError, setChangePasswordError] = useState('');
+	const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
 
 	const loadProfile = async () => {
 		setLoading(true);
@@ -232,6 +239,22 @@ function EmployeeProfilePage() {
 						</Button>
 					</Stack>
 				</Paper>
+
+				<Button
+					variant="contained"
+					fullWidth
+					color="error"
+					startIcon={<LogoutRoundedIcon />}
+					onClick={() => setLogoutConfirmOpen(true)}
+					sx={{
+						minHeight: 50,
+						borderRadius: 3,
+						mt: 0.5,
+						boxShadow: 'none',
+					}}
+				>
+					Logout
+				</Button>
 			</Stack>
 
 			<ChangePasswordDialog
@@ -241,6 +264,28 @@ function EmployeeProfilePage() {
 				onClose={handleCloseChangePassword}
 				onSubmit={handleSubmitChangePassword}
 			/>
+			<Dialog open={logoutConfirmOpen} onClose={() => setLogoutConfirmOpen(false)} fullWidth maxWidth="xs">
+				<DialogTitle sx={{ pb: 1 }}>Konfirmasi Logout</DialogTitle>
+				<DialogContent sx={{ pt: '4px !important' }}>
+					<DialogContentText>Anda yakin ingin keluar dari aplikasi PWA Karyawan?</DialogContentText>
+				</DialogContent>
+				<DialogActions sx={{ px: 3, pb: 2 }}>
+					<Button onClick={() => setLogoutConfirmOpen(false)} color="inherit">
+						Batal
+					</Button>
+					<Button
+						variant="contained"
+						color="error"
+						onClick={() => {
+							setLogoutConfirmOpen(false);
+							logout();
+							navigate('/karyawan/login', { replace: true });
+						}}
+					>
+						Ya, Logout
+					</Button>
+				</DialogActions>
+			</Dialog>
 		</>
 	);
 }

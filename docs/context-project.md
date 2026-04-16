@@ -845,6 +845,7 @@ Yang sudah selesai:
 - Menambahkan endpoint live `/api/employee-me/notifications` khusus PWA.
 - Menambahkan fungsi klik/baca notifikasi khusus PWA melalui `/api/employee-me/notifications/read` dan `read-all` yang transparan menggunakan tabel read-state Admin berbasis `employeeId`.
 - Fitur notifikasi PWA sekarang menyaring status Cuti Menunggu Approval, Cuti Disetujui/Ditolak (14 hari terakhir), Bimbingan (14 hari), dan Peringatan (30 hari).
+- Tombol `Logout` untuk PWA Karyawan tidak lagi tampil di header mobile; aksi logout dipindahkan ke halaman `/karyawan/profil` sebagai tombol merah penuh di bagian paling bawah dengan dialog konfirmasi.
 - Panel notifikasi PWA sekarang memakai gaya `mini inbox` yang lebih minimalis:
   - header ringkas dengan badge jumlah notifikasi baru
   - action dipisah antara kontrol utama push dan aksi utilitas seperti `Refresh` / `Tandai semua`
