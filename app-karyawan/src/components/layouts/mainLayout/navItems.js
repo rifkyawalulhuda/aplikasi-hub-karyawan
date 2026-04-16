@@ -11,6 +11,7 @@ import ReceiptLongOutlinedIcon from '@mui/icons-material/ReceiptLongOutlined';
 import ReportGmailerrorredOutlinedIcon from '@mui/icons-material/ReportGmailerrorredOutlined';
 import SettingsApplicationsOutlinedIcon from '@mui/icons-material/SettingsApplicationsOutlined';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
+import CastForEducationOutlinedIcon from '@mui/icons-material/CastForEducationOutlined';
 
 /**
  * @example
@@ -183,6 +184,13 @@ const NAV_LINKS_CONFIG = [
 				title: 'Lisensi & Sertifikasi',
 				Icon: DescriptionOutlinedIcon,
 				href: '/data-karyawan/lisensi-sertifikasi',
+			},
+			{
+				id: uuid(),
+				type: 'item',
+				title: 'Pelatihan Karyawan',
+				Icon: CastForEducationOutlinedIcon,
+				href: '/data-karyawan/pelatihan-karyawan',
 			},
 			{
 				id: uuid(),
