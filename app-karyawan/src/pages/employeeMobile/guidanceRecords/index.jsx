@@ -13,6 +13,7 @@ import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import InputAdornment from '@mui/material/InputAdornment';
+import { alpha } from '@mui/material/styles';
 
 import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
 import ExpandMoreRoundedIcon from '@mui/icons-material/ExpandMoreRounded';
@@ -54,9 +55,9 @@ function GuidanceRecordCard({ item }) {
 			sx={{
 				borderRadius: 4,
 				overflow: 'hidden',
-				border: '1px solid rgba(18,59,102,0.08)',
-				backgroundColor: '#FFFFFF',
-				boxShadow: '0 10px 24px rgba(18,59,102,0.06)',
+				border: (theme) => `1px solid ${theme.palette.employeeSurface.borderSoft}`,
+				backgroundColor: (theme) => theme.palette.employeeSurface.card,
+				boxShadow: (theme) => theme.palette.employeeSurface.shadowSoft,
 			}}
 		>
 			<Accordion
@@ -77,14 +78,14 @@ function GuidanceRecordCard({ item }) {
 							my: 0,
 						},
 						'& .MuiAccordionSummary-expandIconWrapper': {
-							color: '#5D738B',
+							color: 'text.secondary',
 						},
 					}}
 				>
 					<Stack spacing={1} sx={{ width: '100%' }}>
 						<Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1}>
 							<Box sx={{ minWidth: 0, flex: 1 }}>
-								<Typography variant="subtitle1" sx={{ color: '#123B66', fontWeight: 800 }}>
+								<Typography variant="subtitle1" sx={{ color: 'text.primary', fontWeight: 800 }}>
 									{item.categoryLabel}
 								</Typography>
 								<Typography variant="body2" color="text.secondary" sx={{ mt: 0.35 }}>
@@ -101,7 +102,7 @@ function GuidanceRecordCard({ item }) {
 						</Stack>
 						<Typography
 							variant="caption"
-							sx={{ color: '#7B8FA3', letterSpacing: '0.04em', textTransform: 'uppercase' }}
+							sx={{ color: 'text.secondary', letterSpacing: '0.04em', textTransform: 'uppercase' }}
 						>
 							Tap untuk lihat detail
 						</Typography>
@@ -110,7 +111,7 @@ function GuidanceRecordCard({ item }) {
 				<AccordionDetails sx={{ px: 2, pb: 2 }}>
 					<Stack spacing={1.5}>
 						<Box>
-							<Typography variant="caption" sx={{ color: '#5D738B', letterSpacing: '0.08em' }}>
+							<Typography variant="caption" sx={{ color: 'text.secondary', letterSpacing: '0.08em' }}>
 								Permasalahan
 							</Typography>
 							<Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, lineHeight: 1.6 }}>
@@ -119,7 +120,7 @@ function GuidanceRecordCard({ item }) {
 						</Box>
 						{item.problemFacedSecondary ? (
 							<Box>
-								<Typography variant="caption" sx={{ color: '#5D738B', letterSpacing: '0.08em' }}>
+								<Typography variant="caption" sx={{ color: 'text.secondary', letterSpacing: '0.08em' }}>
 									Pengetahuan / Tanggung Jawab Tambahan
 								</Typography>
 								<Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, lineHeight: 1.6 }}>
@@ -128,7 +129,7 @@ function GuidanceRecordCard({ item }) {
 							</Box>
 						) : null}
 						<Box>
-							<Typography variant="caption" sx={{ color: '#5D738B', letterSpacing: '0.08em' }}>
+							<Typography variant="caption" sx={{ color: 'text.secondary', letterSpacing: '0.08em' }}>
 								Penyebab Masalah
 							</Typography>
 							<Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, lineHeight: 1.6 }}>
@@ -139,10 +140,10 @@ function GuidanceRecordCard({ item }) {
 							sx={{
 								p: 1.5,
 								borderRadius: 3,
-								backgroundColor: 'rgba(18,59,102,0.04)',
+								backgroundColor: (theme) => theme.palette.employeeSurface.muted,
 							}}
 						>
-							<Typography variant="caption" sx={{ color: '#5D738B', letterSpacing: '0.08em' }}>
+							<Typography variant="caption" sx={{ color: 'text.secondary', letterSpacing: '0.08em' }}>
 								Pemecahan Masalah
 							</Typography>
 							<Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, lineHeight: 1.6 }}>
@@ -239,13 +240,14 @@ function EmployeeGuidanceRecordsPage() {
 				sx={{
 					p: 2,
 					borderRadius: 4,
-					border: '1px solid rgba(18,59,102,0.08)',
-					background: 'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(244,249,255,0.98) 100%)',
+					border: (theme) => `1px solid ${theme.palette.employeeSurface.borderSoft}`,
+					background: (theme) => theme.palette.employeeSurface.cardGradient,
+					boxShadow: (theme) => theme.palette.employeeSurface.shadowSoft,
 				}}
 			>
 				<Stack spacing={1.5}>
 					<Box>
-						<Typography variant="subtitle1" sx={{ color: '#123B66', fontWeight: 800 }}>
+						<Typography variant="subtitle1" sx={{ color: 'text.primary', fontWeight: 800 }}>
 							Filter & Pencarian
 						</Typography>
 						<Typography variant="body2" color="text.secondary">
@@ -261,7 +263,7 @@ function EmployeeGuidanceRecordsPage() {
 						InputProps={{
 							startAdornment: (
 								<InputAdornment position="start">
-									<SearchRoundedIcon sx={{ color: '#5D738B' }} />
+									<SearchRoundedIcon sx={{ color: 'text.secondary' }} />
 								</InputAdornment>
 							),
 							endAdornment: searchQuery ? (
@@ -283,7 +285,8 @@ function EmployeeGuidanceRecordsPage() {
 						sx={{
 							'& .MuiOutlinedInput-root': {
 								borderRadius: 3,
-								backgroundColor: '#FFFFFF',
+								backgroundColor: (theme) =>
+									alpha(theme.palette.background.paper, theme.palette.mode === 'dark' ? 0.5 : 0.96),
 							},
 						}}
 					/>
@@ -312,7 +315,7 @@ function EmployeeGuidanceRecordsPage() {
 						{searchQuery || categoryFilter !== 'ALL' ? (
 							<Typography
 								variant="caption"
-								sx={{ color: '#7B8FA3', cursor: 'pointer' }}
+								sx={{ color: 'text.secondary', cursor: 'pointer' }}
 								onClick={() => {
 									setSearchQuery('');
 									setCategoryFilter('ALL');

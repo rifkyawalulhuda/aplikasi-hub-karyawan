@@ -7,6 +7,7 @@ import Divider from '@mui/material/Divider';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
+import { alpha } from '@mui/material/styles';
 
 import FeedbackState from '@/components/employeePortal/feedbackState';
 import LeaveDecisionDialog from '@/components/employeePortal/leaveDecisionDialog';
@@ -113,13 +114,30 @@ function EmployeeLeaveApprovalDetailPage() {
 	return (
 		<>
 			<Stack spacing={2}>
-				<Paper sx={{ p: 2.5, borderRadius: 4 }}>
+				<Paper
+					sx={{
+						p: 2.5,
+						borderRadius: 4,
+						border: (theme) => `1px solid ${theme.palette.employeeSurface.borderSoft}`,
+						backgroundColor: (theme) => theme.palette.employeeSurface.card,
+						boxShadow: (theme) => theme.palette.employeeSurface.shadowSoft,
+					}}
+				>
 					<Stack spacing={1.5}>
-						<Button variant="text" onClick={() => navigate('/karyawan/cuti')}>
+						<Button
+							variant="text"
+							onClick={() => navigate('/karyawan/cuti')}
+							sx={{
+								alignSelf: 'flex-start',
+								color: 'text.primary',
+								backgroundColor: (theme) =>
+									alpha(theme.palette.text.primary, theme.palette.mode === 'dark' ? 0.08 : 0.04),
+							}}
+						>
 							Kembali
 						</Button>
 						<Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1}>
-							<Typography variant="h6" sx={{ color: '#123B66', fontWeight: 700 }}>
+							<Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 700 }}>
 								Approval Cuti
 							</Typography>
 							<LeaveStatusChip
@@ -187,9 +205,17 @@ function EmployeeLeaveApprovalDetailPage() {
 					</Stack>
 				</Paper>
 
-				<Paper sx={{ p: 2.5, borderRadius: 4 }}>
+				<Paper
+					sx={{
+						p: 2.5,
+						borderRadius: 4,
+						border: (theme) => `1px solid ${theme.palette.employeeSurface.borderSoft}`,
+						backgroundColor: (theme) => theme.palette.employeeSurface.card,
+						boxShadow: (theme) => theme.palette.employeeSurface.shadowSoft,
+					}}
+				>
 					<Stack spacing={1.5}>
-						<Typography variant="h6" sx={{ color: '#123B66', fontWeight: 700 }}>
+						<Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 700 }}>
 							Timeline Approval
 						</Typography>
 						<LeaveRequestTimeline

@@ -2,23 +2,27 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSnackbar } from 'notistack';
 
+import Button from '@mui/material/Button';
 import Divider from '@mui/material/Divider';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
+import LockResetOutlinedIcon from '@mui/icons-material/LockResetOutlined';
+
+import ChangePasswordDialog from '@/components/employeePortal/changePasswordDialog';
 import FeedbackState from '@/components/employeePortal/feedbackState';
 import { useEmployeeAuth } from '@/contexts/employeeAuthContext';
-import { employeeMeRequest } from '@/services/employeeApi';
+import { changeEmployeePassword, employeeMeRequest } from '@/services/employeeApi';
 import { formatLongDate, getEmployeePortalErrorMessage, handleEmployeeUnauthorized } from '@/utils/employeePortal';
 
 function FieldItem({ label, value }) {
 	return (
 		<Stack spacing={0.5}>
-			<Typography variant="caption" sx={{ color: '#5D738B', letterSpacing: '0.08em' }}>
+			<Typography variant="caption" sx={{ color: 'text.secondary', letterSpacing: '0.08em' }}>
 				{label}
 			</Typography>
-			<Typography variant="body1" sx={{ color: '#123B66', fontWeight: 600 }}>
+			<Typography variant="body1" sx={{ color: 'text.primary', fontWeight: 600 }}>
 				{value || '-'}
 			</Typography>
 		</Stack>
@@ -32,6 +36,9 @@ function EmployeeProfilePage() {
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState('');
 	const [profile, setProfile] = useState(null);
+	const [changePasswordOpen, setChangePasswordOpen] = useState(false);
+	const [changePasswordLoading, setChangePasswordLoading] = useState(false);
+	const [changePasswordError, setChangePasswordError] = useState('');
 
 	const loadProfile = async () => {
 		setLoading(true);
@@ -58,6 +65,48 @@ function EmployeeProfilePage() {
 		}
 	};
 
+	const handleOpenChangePassword = () => {
+		setChangePasswordError('');
+		setChangePasswordOpen(true);
+	};
+
+	const handleCloseChangePassword = () => {
+		if (changePasswordLoading) {
+			return;
+		}
+
+		setChangePasswordError('');
+		setChangePasswordOpen(false);
+	};
+
+	const handleSubmitChangePassword = async (values) => {
+		setChangePasswordLoading(true);
+		setChangePasswordError('');
+
+		try {
+			const response = await changeEmployeePassword(values);
+			enqueueSnackbar(response.message || 'Password berhasil diperbarui.', {
+				variant: 'success',
+			});
+			setChangePasswordOpen(false);
+		} catch (requestError) {
+			if (
+				handleEmployeeUnauthorized({
+					error: requestError,
+					logout,
+					navigate,
+					enqueueSnackbar,
+				})
+			) {
+				return;
+			}
+
+			setChangePasswordError(getEmployeePortalErrorMessage(requestError));
+		} finally {
+			setChangePasswordLoading(false);
+		}
+	};
+
 	useEffect(() => {
 		loadProfile();
 	}, []);
@@ -79,51 +128,120 @@ function EmployeeProfilePage() {
 	}
 
 	return (
-		<Stack spacing={2}>
-			<Paper sx={{ p: 2.5, borderRadius: 4 }}>
-				<Stack spacing={1.5}>
-					<Typography variant="h6" sx={{ color: '#123B66', fontWeight: 700 }}>
-						Identitas Utama
-					</Typography>
-					<Divider />
-					<FieldItem label="Nama Lengkap" value={profile?.fullName} />
-					<FieldItem label="NIK" value={profile?.employeeNo} />
-					<FieldItem label="Jenis Kelamin" value={profile?.genderLabel} />
-					<FieldItem label="Tanggal Lahir" value={formatLongDate(profile?.birthDate)} />
-					<FieldItem label="Usia" value={profile?.age ? `${profile.age} tahun` : '-'} />
-				</Stack>
-			</Paper>
+		<>
+			<Stack spacing={2}>
+				<Paper
+					sx={{
+						p: 2.5,
+						borderRadius: 4,
+						border: (theme) => `1px solid ${theme.palette.employeeSurface.borderSoft}`,
+						backgroundColor: (theme) => theme.palette.employeeSurface.card,
+						boxShadow: (theme) => theme.palette.employeeSurface.shadowSoft,
+					}}
+				>
+					<Stack spacing={1.5}>
+						<Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 700 }}>
+							Identitas Utama
+						</Typography>
+						<Divider />
+						<FieldItem label="Nama Lengkap" value={profile?.fullName} />
+						<FieldItem label="NIK" value={profile?.employeeNo} />
+						<FieldItem label="Jenis Kelamin" value={profile?.genderLabel} />
+						<FieldItem label="Tanggal Lahir" value={formatLongDate(profile?.birthDate)} />
+						<FieldItem label="Usia" value={profile?.age ? `${profile.age} tahun` : '-'} />
+					</Stack>
+				</Paper>
 
-			<Paper sx={{ p: 2.5, borderRadius: 4 }}>
-				<Stack spacing={1.5}>
-					<Typography variant="h6" sx={{ color: '#123B66', fontWeight: 700 }}>
-						Data Kepegawaian
-					</Typography>
-					<Divider />
-					<FieldItem label="Employment Type" value={profile?.employmentTypeLabel} />
-					<FieldItem label="Site / Div" value={profile?.siteDiv} />
-					<FieldItem label="Department" value={profile?.departmentName} />
-					<FieldItem label="Work Location" value={profile?.workLocationName} />
-					<FieldItem label="Job Role" value={profile?.jobRoleName} />
-					<FieldItem label="Job Level" value={profile?.jobLevelName} />
-					<FieldItem label="Education Level" value={profile?.educationLevel} />
-					<FieldItem label="Grade" value={profile?.gradeLabel} />
-					<FieldItem label="Join Date" value={formatLongDate(profile?.joinDate)} />
-					<FieldItem label="Length Of Service" value={profile?.lengthOfService} />
-				</Stack>
-			</Paper>
+				<Paper
+					sx={{
+						p: 2.5,
+						borderRadius: 4,
+						border: (theme) => `1px solid ${theme.palette.employeeSurface.borderSoft}`,
+						backgroundColor: (theme) => theme.palette.employeeSurface.card,
+						boxShadow: (theme) => theme.palette.employeeSurface.shadowSoft,
+					}}
+				>
+					<Stack spacing={1.5}>
+						<Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 700 }}>
+							Data Kepegawaian
+						</Typography>
+						<Divider />
+						<FieldItem label="Employment Type" value={profile?.employmentTypeLabel} />
+						<FieldItem label="Site / Div" value={profile?.siteDiv} />
+						<FieldItem label="Department" value={profile?.departmentName} />
+						<FieldItem label="Work Location" value={profile?.workLocationName} />
+						<FieldItem label="Job Role" value={profile?.jobRoleName} />
+						<FieldItem label="Job Level" value={profile?.jobLevelName} />
+						<FieldItem label="Education Level" value={profile?.educationLevel} />
+						<FieldItem label="Grade" value={profile?.gradeLabel} />
+						<FieldItem label="Join Date" value={formatLongDate(profile?.joinDate)} />
+						<FieldItem label="Length Of Service" value={profile?.lengthOfService} />
+					</Stack>
+				</Paper>
 
-			<Paper sx={{ p: 2.5, borderRadius: 4 }}>
-				<Stack spacing={1.5}>
-					<Typography variant="h6" sx={{ color: '#123B66', fontWeight: 700 }}>
-						Kontak
-					</Typography>
-					<Divider />
-					<FieldItem label="Phone Number" value={profile?.phoneNumber} />
-					<FieldItem label="Email" value={profile?.email} />
-				</Stack>
-			</Paper>
-		</Stack>
+				<Paper
+					sx={{
+						p: 2.5,
+						borderRadius: 4,
+						border: (theme) => `1px solid ${theme.palette.employeeSurface.borderSoft}`,
+						backgroundColor: (theme) => theme.palette.employeeSurface.card,
+						boxShadow: (theme) => theme.palette.employeeSurface.shadowSoft,
+					}}
+				>
+					<Stack spacing={1.5}>
+						<Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 700 }}>
+							Kontak
+						</Typography>
+						<Divider />
+						<FieldItem label="Phone Number" value={profile?.phoneNumber} />
+						<FieldItem label="Email" value={profile?.email} />
+					</Stack>
+				</Paper>
+
+				<Paper
+					sx={{
+						p: 2.5,
+						borderRadius: 4,
+						background: (theme) => theme.palette.employeeSurface.cardGradient,
+						border: (theme) => `1px solid ${theme.palette.employeeSurface.borderSoft}`,
+						boxShadow: (theme) => theme.palette.employeeSurface.shadowSoft,
+					}}
+				>
+					<Stack spacing={2}>
+						<Stack spacing={0.75}>
+							<Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 700 }}>
+								Keamanan Akun
+							</Typography>
+							<Typography variant="body2" color="text.secondary">
+								Perbarui password akun Anda secara mandiri untuk menjaga keamanan akses Portal Karyawan.
+							</Typography>
+						</Stack>
+						<Button
+							variant="contained"
+							fullWidth
+							startIcon={<LockResetOutlinedIcon />}
+							onClick={handleOpenChangePassword}
+							sx={{
+								minHeight: 48,
+								borderRadius: 3,
+								background: (theme) =>
+									`linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.main} 100%)`,
+							}}
+						>
+							Ubah Password
+						</Button>
+					</Stack>
+				</Paper>
+			</Stack>
+
+			<ChangePasswordDialog
+				open={changePasswordOpen}
+				loading={changePasswordLoading}
+				errorMessage={changePasswordError}
+				onClose={handleCloseChangePassword}
+				onSubmit={handleSubmitChangePassword}
+			/>
+		</>
 	);
 }
 

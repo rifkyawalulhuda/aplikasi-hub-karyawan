@@ -13,6 +13,7 @@ import TextField from '@mui/material/TextField';
 import MenuItem from '@mui/material/MenuItem';
 import Typography from '@mui/material/Typography';
 import Badge from '@mui/material/Badge';
+import { alpha } from '@mui/material/styles';
 
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import ArrowForwardOutlinedIcon from '@mui/icons-material/ArrowForwardOutlined';
@@ -26,12 +27,20 @@ import { formatLongDate, getEmployeePortalErrorMessage, handleEmployeeUnauthoriz
 
 function InfoCard({ title, value, helper }) {
 	return (
-		<Paper sx={{ p: 2, borderRadius: 4 }}>
+		<Paper
+			sx={{
+				p: 2,
+				borderRadius: 4,
+				border: (theme) => `1px solid ${theme.palette.employeeSurface.borderSoft}`,
+				backgroundColor: (theme) => theme.palette.employeeSurface.card,
+				boxShadow: (theme) => theme.palette.employeeSurface.shadowSoft,
+			}}
+		>
 			<Stack spacing={0.5}>
-				<Typography variant="caption" sx={{ color: '#5D738B', letterSpacing: '0.08em' }}>
+				<Typography variant="caption" sx={{ color: 'text.secondary', letterSpacing: '0.08em' }}>
 					{title}
 				</Typography>
-				<Typography variant="h5" sx={{ color: '#123B66', fontWeight: 700 }}>
+				<Typography variant="h5" sx={{ color: 'text.primary', fontWeight: 700 }}>
 					{value}
 				</Typography>
 				<Typography variant="body2" color="text.secondary">
@@ -44,11 +53,19 @@ function InfoCard({ title, value, helper }) {
 
 function LeaveRequestCard({ item, onOpen }) {
 	return (
-		<Paper sx={{ p: 2.25, borderRadius: 4 }}>
+		<Paper
+			sx={{
+				p: 2.25,
+				borderRadius: 4,
+				border: (theme) => `1px solid ${theme.palette.employeeSurface.borderSoft}`,
+				backgroundColor: (theme) => theme.palette.employeeSurface.card,
+				boxShadow: (theme) => theme.palette.employeeSurface.shadowSoft,
+			}}
+		>
 			<Stack spacing={1.25}>
 				<Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1}>
 					<Box>
-						<Typography variant="subtitle1" sx={{ color: '#123B66', fontWeight: 700 }}>
+						<Typography variant="subtitle1" sx={{ color: 'text.primary', fontWeight: 700 }}>
 							{item.leaveType}
 						</Typography>
 						<Typography variant="body2" color="text.secondary">
@@ -76,11 +93,19 @@ function LeaveRequestCard({ item, onOpen }) {
 
 function LeaveApprovalCard({ item, onOpen }) {
 	return (
-		<Paper sx={{ p: 2.25, borderRadius: 4 }}>
+		<Paper
+			sx={{
+				p: 2.25,
+				borderRadius: 4,
+				border: (theme) => `1px solid ${theme.palette.employeeSurface.borderSoft}`,
+				backgroundColor: (theme) => theme.palette.employeeSurface.card,
+				boxShadow: (theme) => theme.palette.employeeSurface.shadowSoft,
+			}}
+		>
 			<Stack spacing={1.25}>
 				<Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1}>
 					<Box>
-						<Typography variant="subtitle1" sx={{ color: '#123B66', fontWeight: 700 }}>
+						<Typography variant="subtitle1" sx={{ color: 'text.primary', fontWeight: 700 }}>
 							{item.request.employeeName}
 						</Typography>
 						<Typography variant="body2" color="text.secondary">
@@ -255,9 +280,17 @@ function EmployeeLeaveCenterPage() {
 					/>
 				</Box>
 
-				<Paper sx={{ p: 2, borderRadius: 4 }}>
+				<Paper
+					sx={{
+						p: 2,
+						borderRadius: 4,
+						border: (theme) => `1px solid ${theme.palette.employeeSurface.borderSoft}`,
+						backgroundColor: (theme) => theme.palette.employeeSurface.card,
+						boxShadow: (theme) => theme.palette.employeeSurface.shadowSoft,
+					}}
+				>
 					<Stack spacing={1.5}>
-						<Typography variant="subtitle2" sx={{ color: '#123B66', fontWeight: 700 }}>
+						<Typography variant="subtitle2" sx={{ color: 'text.primary', fontWeight: 700 }}>
 							Saldo Cuti Tahun {formOptions.year || requestData.year}
 						</Typography>
 						<Divider />
@@ -273,7 +306,7 @@ function EmployeeLeaveCenterPage() {
 										<Typography variant="body2" color="text.secondary">
 											{type.leaveType}
 										</Typography>
-										<Typography variant="body2" sx={{ fontWeight: 700, color: '#123B66' }}>
+										<Typography variant="body2" sx={{ fontWeight: 700, color: 'text.primary' }}>
 											{type.availableLeaveBalance} hari
 										</Typography>
 									</Stack>
@@ -287,11 +320,19 @@ function EmployeeLeaveCenterPage() {
 					</Stack>
 				</Paper>
 
-				<Paper sx={{ p: 2.25, borderRadius: 4 }}>
+				<Paper
+					sx={{
+						p: 2.25,
+						borderRadius: 4,
+						border: (theme) => `1px solid ${theme.palette.employeeSurface.borderSoft}`,
+						background: (theme) => theme.palette.employeeSurface.cardGradient,
+						boxShadow: (theme) => theme.palette.employeeSurface.shadowSoft,
+					}}
+				>
 					<Stack spacing={1.5}>
 						<Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1}>
 							<Box>
-								<Typography variant="h6" sx={{ color: '#123B66', fontWeight: 700 }}>
+								<Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 700 }}>
 									Cuti Karyawan
 								</Typography>
 								<Typography variant="body2" color="text.secondary">
@@ -334,6 +375,15 @@ function EmployeeLeaveCenterPage() {
 								value={filters.status}
 								onChange={(e) => setFilters({ ...filters, status: e.target.value })}
 								InputLabelProps={{ shrink: true }}
+								sx={{
+									'& .MuiOutlinedInput-root': {
+										backgroundColor: (theme) =>
+											alpha(
+												theme.palette.background.paper,
+												theme.palette.mode === 'dark' ? 0.5 : 0.96,
+											),
+									},
+								}}
 							>
 								<MenuItem value="">Semua Status</MenuItem>
 								<MenuItem value="APPROVED">Approved</MenuItem>
@@ -349,6 +399,15 @@ function EmployeeLeaveCenterPage() {
 									value={filters.startDate}
 									onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
 									InputLabelProps={{ shrink: true }}
+									sx={{
+										'& .MuiOutlinedInput-root': {
+											backgroundColor: (theme) =>
+												alpha(
+													theme.palette.background.paper,
+													theme.palette.mode === 'dark' ? 0.5 : 0.96,
+												),
+										},
+									}}
 								/>
 								<TextField
 									type="date"
@@ -358,6 +417,15 @@ function EmployeeLeaveCenterPage() {
 									value={filters.endDate}
 									onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
 									InputLabelProps={{ shrink: true }}
+									sx={{
+										'& .MuiOutlinedInput-root': {
+											backgroundColor: (theme) =>
+												alpha(
+													theme.palette.background.paper,
+													theme.palette.mode === 'dark' ? 0.5 : 0.96,
+												),
+										},
+									}}
 								/>
 							</Stack>
 						</Stack>

@@ -309,16 +309,35 @@ function EmployeeNotificationButton() {
 								borderRadius: 3,
 								overflow: 'hidden',
 								border: '1px solid',
-								borderColor: item.isRead ? 'rgba(18,59,102,0.08)' : 'rgba(25, 118, 210, 0.18)',
-								backgroundColor: item.isRead ? '#FFFFFF' : 'rgba(25, 118, 210, 0.05)',
-								boxShadow: item.isRead
-									? '0 6px 18px rgba(18,59,102,0.04)'
-									: '0 10px 24px rgba(18,59,102,0.08)',
+								borderColor: (theme) =>
+									item.isRead
+										? theme.palette.employeeSurface.borderSoft
+										: alpha(theme.palette.primary.main, 0.2),
+								backgroundColor: (theme) =>
+									item.isRead
+										? theme.palette.employeeSurface.card
+										: alpha(
+												theme.palette.primary.main,
+												theme.palette.mode === 'dark' ? 0.14 : 0.05,
+										  ),
+								boxShadow: (theme) =>
+									item.isRead
+										? theme.palette.employeeSurface.shadowSoft
+										: theme.palette.employeeSurface.shadowMedium,
 								transition: 'transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease',
 								'&:hover': {
-									backgroundColor: item.isRead ? '#FFFFFF' : 'rgba(25, 118, 210, 0.06)',
-									borderColor: item.isRead ? 'rgba(18,59,102,0.12)' : 'rgba(25, 118, 210, 0.28)',
-									boxShadow: '0 12px 28px rgba(18,59,102,0.12)',
+									backgroundColor: (theme) =>
+										item.isRead
+											? theme.palette.employeeSurface.card
+											: alpha(
+													theme.palette.primary.main,
+													theme.palette.mode === 'dark' ? 0.18 : 0.08,
+											  ),
+									borderColor: (theme) =>
+										item.isRead
+											? theme.palette.employeeSurface.borderStrong
+											: alpha(theme.palette.primary.main, 0.32),
+									boxShadow: (theme) => theme.palette.employeeSurface.shadowMedium,
 									transform: 'translateY(-1px)',
 								},
 								'&.Mui-focusVisible': {
@@ -363,7 +382,7 @@ function EmployeeNotificationButton() {
 												variant="body2"
 												sx={{
 													fontWeight: item.isRead ? 600 : 700,
-													color: '#123B66',
+													color: 'text.primary',
 													lineHeight: 1.4,
 													display: '-webkit-box',
 													WebkitLineClamp: 2,
@@ -380,9 +399,13 @@ function EmployeeNotificationButton() {
 												px: 1,
 												py: 0.4,
 												borderRadius: 999,
-												backgroundColor: item.isRead
-													? 'rgba(18,59,102,0.06)'
-													: 'rgba(25, 118, 210, 0.12)',
+												backgroundColor: (theme) =>
+													item.isRead
+														? alpha(
+																theme.palette.text.primary,
+																theme.palette.mode === 'dark' ? 0.12 : 0.06,
+														  )
+														: alpha(theme.palette.primary.main, 0.14),
 												color: item.isRead ? 'text.secondary' : 'primary.main',
 											}}
 										>
@@ -442,8 +465,9 @@ function EmployeeNotificationButton() {
 						display: 'flex',
 						alignItems: 'center',
 						justifyContent: 'center',
-						backgroundColor: 'rgba(18,59,102,0.06)',
-						color: '#7C8EA5',
+						backgroundColor: (theme) =>
+							alpha(theme.palette.text.primary, theme.palette.mode === 'dark' ? 0.12 : 0.06),
+						color: 'text.secondary',
 					}}
 				>
 					<NotificationsOutlinedIcon />
@@ -465,14 +489,21 @@ function EmployeeNotificationButton() {
 						width: 38,
 						height: 38,
 						borderRadius: 2.5,
-						color: open ? '#1976d2' : 'rgba(18,59,102,0.72)',
-						backgroundColor: open ? 'rgba(25, 118, 210, 0.12)' : 'transparent',
-						border: open ? '1px solid rgba(25, 118, 210, 0.18)' : '1px solid transparent',
-						boxShadow: open ? '0 8px 20px rgba(25, 118, 210, 0.12)' : 'none',
+						color: open ? 'primary.main' : 'text.primary',
+						backgroundColor: (theme) =>
+							open
+								? alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.18 : 0.12)
+								: 'transparent',
+						border: (theme) =>
+							open ? `1px solid ${alpha(theme.palette.primary.main, 0.18)}` : `1px solid transparent`,
+						boxShadow: (theme) => (open ? theme.palette.employeeSurface.shadowSoft : 'none'),
 						transition:
 							'background-color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, color 0.18s ease',
 						'&:hover': {
-							backgroundColor: open ? 'rgba(25, 118, 210, 0.16)' : 'rgba(18,59,102,0.06)',
+							backgroundColor: (theme) =>
+								open
+									? alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.22 : 0.16)
+									: alpha(theme.palette.text.primary, theme.palette.mode === 'dark' ? 0.12 : 0.06),
 						},
 						'&.Mui-focusVisible': {
 							outline: '2px solid rgba(25, 118, 210, 0.22)',
@@ -503,10 +534,10 @@ function EmployeeNotificationButton() {
 							maxWidth: 'calc(100vw - 20px)',
 							borderRadius: 4,
 							overflow: 'hidden',
-							border: '1px solid rgba(18,59,102,0.08)',
-							boxShadow: '0 18px 48px rgba(18,59,102,0.18)',
-							backgroundImage:
-								'linear-gradient(180deg, rgba(247,251,255,0.98) 0%, rgba(255,255,255,0.98) 100%)',
+							border: (theme) => `1px solid ${theme.palette.employeeSurface.borderSoft}`,
+							boxShadow: (theme) => theme.palette.employeeSurface.shadowFloating,
+							backgroundImage: 'none',
+							backgroundColor: (theme) => theme.palette.employeeSurface.card,
 						},
 					},
 				}}
@@ -517,8 +548,7 @@ function EmployeeNotificationButton() {
 							px: 1.5,
 							pt: 1.5,
 							pb: 1.25,
-							background:
-								'linear-gradient(180deg, rgba(247,251,255,0.96) 0%, rgba(241,247,253,0.88) 100%)',
+							background: (theme) => theme.palette.employeeSurface.cardGradient,
 						}}
 					>
 						<Stack spacing={1.35}>
@@ -530,7 +560,7 @@ function EmployeeNotificationButton() {
 							>
 								<Stack spacing={0.45} sx={{ minWidth: 0 }}>
 									<Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
-										<Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#123B66' }}>
+										<Typography variant="subtitle1" sx={{ fontWeight: 700, color: 'text.primary' }}>
 											Notifikasi
 										</Typography>
 										<Box
@@ -538,9 +568,13 @@ function EmployeeNotificationButton() {
 												px: 1,
 												py: 0.35,
 												borderRadius: 999,
-												backgroundColor: unreadCount
-													? 'rgba(25, 118, 210, 0.12)'
-													: 'rgba(18,59,102,0.06)',
+												backgroundColor: (theme) =>
+													unreadCount
+														? alpha(theme.palette.primary.main, 0.14)
+														: alpha(
+																theme.palette.text.primary,
+																theme.palette.mode === 'dark' ? 0.12 : 0.06,
+														  ),
 												color: unreadCount ? 'primary.main' : 'text.secondary',
 											}}
 										>
@@ -561,9 +595,9 @@ function EmployeeNotificationButton() {
 										width: 36,
 										height: 36,
 										flexShrink: 0,
-										border: '1px solid rgba(18,59,102,0.08)',
-										backgroundColor: '#FFFFFF',
-										color: '#2F6FB3',
+										border: (theme) => `1px solid ${theme.palette.employeeSurface.borderSoft}`,
+										backgroundColor: (theme) => theme.palette.employeeSurface.card,
+										color: 'primary.main',
 									}}
 								>
 									<RefreshOutlinedIcon fontSize="small" />
@@ -575,8 +609,8 @@ function EmployeeNotificationButton() {
 								sx={{
 									p: 1.1,
 									borderRadius: 3,
-									border: '1px solid rgba(18,59,102,0.08)',
-									backgroundColor: alpha('#FFFFFF', 0.88),
+									border: (theme) => `1px solid ${theme.palette.employeeSurface.borderSoft}`,
+									backgroundColor: (theme) => theme.palette.employeeSurface.soft,
 								}}
 							>
 								<Stack
@@ -596,21 +630,25 @@ function EmployeeNotificationButton() {
 												display: 'flex',
 												alignItems: 'center',
 												justifyContent: 'center',
-												backgroundColor: isPushEnabled
-													? 'rgba(31, 138, 91, 0.12)'
-													: 'rgba(25, 118, 210, 0.1)',
-												color: isPushEnabled ? '#1F8A5B' : '#2F6FB3',
+												backgroundColor: (theme) =>
+													isPushEnabled
+														? 'rgba(31, 138, 91, 0.12)'
+														: alpha(theme.palette.primary.main, 0.1),
+												color: isPushEnabled ? '#1F8A5B' : 'primary.main',
 											}}
 										>
 											<NotificationsActiveRoundedIcon fontSize="small" />
 										</Box>
 										<Box>
-											<Typography variant="caption" sx={{ color: '#4C6B88', fontWeight: 600 }}>
+											<Typography
+												variant="caption"
+												sx={{ color: 'text.secondary', fontWeight: 600 }}
+											>
 												Push notification
 											</Typography>
 											<Typography
 												variant="body2"
-												sx={{ color: '#123B66', fontWeight: 700, lineHeight: 1.25 }}
+												sx={{ color: 'text.primary', fontWeight: 700, lineHeight: 1.25 }}
 											>
 												{isPushEnabled ? 'Aktif di perangkat ini' : 'Belum aktif'}
 											</Typography>
@@ -715,7 +753,7 @@ function EmployeeNotificationButton() {
 						</Stack>
 					</Box>
 					<Divider />
-					<Box sx={{ backgroundColor: 'rgba(255,255,255,0.92)' }}>{content}</Box>
+					<Box sx={{ backgroundColor: (theme) => theme.palette.employeeSurface.card }}>{content}</Box>
 				</Stack>
 			</Menu>
 		</>

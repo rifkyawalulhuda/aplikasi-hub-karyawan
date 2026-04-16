@@ -40,12 +40,17 @@ Folder ini dipilih sebagai basis utama pengembangan karena struktur template-nya
 - Menggunakan template project yang sudah ada di folder proyek.
 - Menggunakan React JS + Vite.
 - Menggunakan Material UI sebagai library UI utama.
+- Standar desain UI global untuk seluruh project sekarang wajib mengacu pada referensi `MCP Material UI` yang disimpan di file `docs/llm-mui.md`.
+- Seluruh komponen, halaman, form, dialog, tabel, navigasi, dan elemen UI baru maupun revisi UI existing harus mengikuti pola, struktur, dan best practice Material UI dari referensi tersebut.
+- Jika ada keputusan desain UI yang lebih spesifik di level fitur, keputusan tersebut tetap harus berada dalam koridor template dan guideline `docs/llm-mui.md`.
 - Area `Portal Mobile Karyawan` dibangun di project yang sama dengan prefix route `/karyawan`.
 - Area `Portal Mobile Karyawan` ditujukan mobile-first dan diaktifkan sebagai PWA installable.
+- Area `Portal Mobile Karyawan` sekarang memiliki theme provider tersendiri yang terpisah dari theme admin desktop, sehingga preferensi dark mode hanya berlaku di route `/karyawan` dan turunannya.
 - Area admin desktop dan area mobile karyawan menggunakan auth context dan route guard yang terpisah agar session tidak saling bentrok.
 - PWA mobile sekarang memiliki domain khusus `pwa.aplikasi-hub.my.id` yang dilayani melalui Cloudflare Tunnel, bukan Cloudflare Pages.
 - Mobile PWA juga disiapkan agar bisa dideploy ke Vercel pada domain khusus seperti `pwa-karyawan.vercel.app` tanpa memecah project frontend menjadi aplikasi baru.
 - Hostname `*.vercel.app` untuk deployment project ini diperlakukan sebagai host khusus PWA, sehingga akses root/non-`/karyawan` akan diarahkan ke `/karyawan/login` dan area admin desktop tidak dipakai pada domain tersebut.
+- Preferensi `Tema Gelap` untuk PWA Karyawan disimpan di `localStorage` browser dengan mode `light/dark`, dan diakses lewat toggle cepat di header mobile serta switch bertanda `Tema Gelap` pada halaman Profil.
 - Login PWA mobile menampilkan tombol `Install App` dengan fallback instruksi manual jika `beforeinstallprompt` belum tersedia di browser.
 - Manifest PWA sekarang memakai ikon PNG standar `pwa/icon-192.png` dan `pwa/icon-512.png`; SVG tidak lagi dipakai sebagai ikon utama agar kompatibilitas install lebih stabil.
 - Standar global `table list` desktop sekarang mengikuti pola halaman `Bimbingan & Pengarahan`, kecuali halaman `Detail Karyawan`.
@@ -80,6 +85,8 @@ Folder ini dipilih sebagai basis utama pengembangan karena struktur template-nya
 - Ditambahkan auth flow khusus karyawan berbasis bearer token ringan dengan secret `EMPLOYEE_AUTH_SECRET`.
 - Login `Portal Mobile Karyawan` menggunakan `Employee No` sebagai NIK dan `password` dari tabel `employees`.
 - API self-service karyawan menggunakan endpoint khusus `/api/employee-me/*` dan seluruh data selalu difilter berdasarkan employee yang sedang login.
+- Fitur self-service `Ubah Password` untuk PWA Karyawan tersedia dari halaman `/karyawan/profil` dan diproses melalui endpoint `POST /api/employee-me/change-password`.
+- Endpoint `GET /api/employee-me/dashboard` sekarang juga mengembalikan ringkasan `activeLeaveProcess` untuk kebutuhan kartu `Quick Status` di beranda PWA, dengan prioritas menampilkan approval cuti yang sedang menunggu tindakan approver login, atau pengajuan cuti aktif milik requester bila masih dalam proses.
 - Deploy publik saat ini memakai arsitektur full lokal + Cloudflare Tunnel:
   - frontend admin/PWA tetap berjalan di server lokal
   - backend API tetap berjalan di server lokal
@@ -104,7 +111,9 @@ Folder ini dipilih sebagai basis utama pengembangan karena struktur template-nya
   - cuti `Rejected`
   - email workflow cuti yang gagal terkirim
 - Status notifikasi admin sekarang disimpan per admin sebagai `baca / belum baca`.
+- Riwayat notifikasi admin sekarang memiliki snapshot record persisten pada tabel `admin_notification_records`, sehingga halaman record/inbox admin tetap bisa menampilkan histori notifikasi walau alert live sudah tidak aktif.
 - Badge lonceng sekarang menampilkan jumlah notifikasi `belum dibaca`, bukan jumlah total alert.
+- Endpoint admin `GET /api/notifications/history` tersedia untuk kebutuhan halaman record notifikasi dengan dukungan filter status baca, status aktif, kategori, keyword, dan pagination ringan.
 - Request cuti `Approved` sekarang memiliki fitur `Print A4` baik dari admin maupun dari PWA karyawan.
 - Dokumen print cuti menggunakan halaman HTML/CSS A4 khusus yang dikalibrasi mengikuti file referensi `Form Permohonan Cuti dan Ijin.pdf`.
 - Kolom approval pada dokumen print menampilkan tanggal dan nama requester/approver sesuai grup approval yang sudah disepakati.
@@ -794,6 +803,12 @@ Yang sudah selesai:
   - `/karyawan/surat-peringatan`
 - Menambahkan layout mobile khusus karyawan dengan bottom navigation dan logout terpisah dari area admin.
 - Menambahkan halaman dashboard, profil, riwayat bimbingan, dan riwayat surat peringatan untuk karyawan login.
+- Menambahkan fitur `Ubah Password` pada halaman profil PWA Karyawan, lengkap dengan dialog form mobile-first dan endpoint self-service khusus employee login.
+- Refactor UI halaman Beranda PWA Karyawan menjadi lebih minimalis dan premium dengan hero card ringkas, quick status yang lebih fokus, menu cepat 2 kolom yang lebih rapi, ringkasan informasi karyawan yang dipadatkan termasuk kontak (`No Telepon` dan `Email`), serta aktivitas terbaru yang lebih ringan dipindai, tanpa mengubah header dan bottom navigation existing.
+- Menambahkan status proses cuti aktif pada section `Quick Status` di beranda PWA Karyawan:
+  - jika employee login adalah requester dan masih punya pengajuan cuti dengan status aktif (`Submitted` / `Dalam Approval`), kartu akan menampilkan status proses tersebut dan membuka detail request saat ditekan
+  - jika employee login adalah approver dan tahap approval aktif sudah sampai ke dirinya (`PENDING`), kartu akan memprioritaskan item approval tersebut dan membuka halaman approval saat ditekan
+  - status otomatis hilang ketika approval/reject sudah selesai atau proses request sudah tidak aktif
 - Mengaktifkan PWA pada project aktif dengan manifest, service worker, register SW, dan ikon install app untuk `Portal Mobile Karyawan`.
 - Menambahkan route print admin dan PWA untuk `Form Permohonan Cuti dan Ijin`, beserta tombol `Print A4` pada flow cuti approved dan detail cuti approved.
 - Menambahkan dokumen print A4 khusus cuti approved dengan mapping field workflow cuti, checkbox jenis cuti, daftar pengganti repetitif, dan ringkasan approval bawah.
@@ -809,12 +824,16 @@ Yang sudah selesai:
 - Menambahkan endpoint update status notifikasi:
   - `POST /api/notifications/read`
   - `POST /api/notifications/read-all`
+- Menambahkan endpoint riwayat notifikasi admin:
+  - `GET /api/notifications/history`
 - Menambahkan tabel `admin_notification_read_states` untuk menyimpan status baca per admin.
+- Menambahkan tabel `admin_notification_records` untuk menyimpan snapshot histori notifikasi admin yang pernah muncul.
 - Menambahkan notifikasi global untuk lisensi/sertifikasi karyawan dan unit yang akan expired atau expired.
 - Menambahkan reminder operasional pada notifikasi header untuk flow cuti terlalu lama, cuti rejected, dan email workflow gagal.
 - Menambahkan status `Sudah dibaca` dan `Belum dibaca` pada panel notifikasi serta verifikasi UI klik/deep-link secara langsung di browser lokal.
+- Menambahkan halaman admin `Record Notifikasi` pada route `/notifikasi` sebagai inbox/riwayat notifikasi lengkap, tetapi halaman ini tidak ditampilkan sebagai tab/menu utama navbar dan diakses dari panel lonceng header melalui CTA `Lihat semua notifikasi`.
 - Verifikasi `lint`, `build`, dan smoke test API ke database berhasil.
-- Menyesuaikan bottom navigation PWA Karyawan dengan menggabungkan menu `Bimbingan` dan `Peringatan` ke dalam tab `Catatan` yang memicu *Bottom Sheet* Drawer.
+- Menyesuaikan bottom navigation PWA Karyawan dengan menggabungkan menu `Bimbingan` dan `Peringatan` ke dalam tab `Catatan` yang memicu _Bottom Sheet_ Drawer.
 - Memperbaiki styling bottom navigation PWA untuk memastikan ikon tab aktif selalu konsisten berwarna biru saat diklik.
 - Menyesuaikan UI dashboard cuti PWA karyawan untuk menampilkan kartu ringkasan saldo riil untuk masing-masing jenis cuti aktif.
 - Menambahkan rule backend + frontend baru untuk dropdown `Pengganti Selama Cuti` di form cuti PWA:
@@ -832,6 +851,8 @@ Yang sudah selesai:
   - item notifikasi tampil sebagai kartu ringan dengan hierarchy judul, waktu, isi singkat, dan status baca yang lebih jelas
   - trigger ikon lonceng memiliki state aktif saat panel terbuka dengan highlight biru lembut tanpa mengganggu badge unread
 - Menyelesaikan perbaikan _bug_ destructuring auth pada fungsionalitas _hooks_ React di notifikasi PWA Karyawan.
+- Menambahkan dark mode khusus `Portal Mobile Karyawan` dengan nested Material UI theme provider, nested snackbar provider, dan persistensi `localStorage`, tanpa mengubah theme admin desktop.
+- Menyesuaikan surface dark mode pada halaman dashboard, profil, cuti, bimbingan, surat peringatan, login PWA, dialog, drawer, snackbar, bottom navigation, header mobile, dan panel notifikasi PWA agar tetap elegan, lembut, dan konsisten dengan aksen biru corporate-modern.
 - Menambahkan halaman **Detail Karyawan** di bawah menu Data Karyawan, yang menampilkan:
   - Halaman daftar karyawan (`/data-karyawan/detail-karyawan`) dengan tabel searchable + filter departemen + pagination 15/30/50/100
   - Halaman detail per karyawan (`/data-karyawan/detail-karyawan/:id`) menampilkan hero card profil lengkap dan ringkasan data dari semua modul:
@@ -858,6 +879,7 @@ Yang sudah selesai:
   - Halaman **Detail Cuti** (requester): Menghapus kartu detail redundan, memindahkan tombol Kembali dan Nomor Pengajuan ke header, serta memindahkan tombol **Print A4**, **Resubmit**, dan **Cancel** ke dalam kartu Flow Approval.
   - Halaman **Detail Approval** (approver): Kartu detail utama otomatis disembunyikan jika status bukan lagi "Menunggu Tindakan" agar user fokus ke Timeline Approval.
   - Halaman **Daftar Cuti**: Informasi "Stage aktif" dan "Approver aktif" pada kartu pengajuan disembunyikan jika status pengajuan bukan lagi "Dalam Approval" (PENDING_APPROVAL) untuk tampilan yang lebih ringkas.
+
 ## Struktur Teknis Awal yang Sudah Dibangun
 
 - Frontend:
@@ -878,6 +900,7 @@ Yang sudah selesai:
 ## Catatan Penting
 
 - Template proyek yang tersedia saat ini sudah cocok dijadikan fondasi aplikasi admin/internal.
+- `docs/llm-mui.md` sekarang menjadi referensi UI utama yang wajib dipakai untuk seluruh implementasi desain pada project ini.
 - Detail final field, format print, dan approval matrix untuk modul bisnis lanjutan masih perlu dipastikan dari form atau dokumen resmi perusahaan.
 - File ini adalah dokumen konteks proyek dan harus diperbarui seiring perkembangan implementasi.
 

@@ -12,6 +12,8 @@ import IconButton from '@mui/material/IconButton';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import { useTheme } from '@mui/material/styles';
 
 import AddCircleOutlineOutlinedIcon from '@mui/icons-material/AddCircleOutlineOutlined';
 import calculateWorkingDays, { fetchNationalHolidays } from '@/utils/dateUtils';
@@ -78,6 +80,8 @@ function LeaveRequestFormDialog({
 	onLoadReplacementOptions,
 	onInvalidSubmit,
 }) {
+	const theme = useTheme();
+	const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
 	const {
 		control,
 		handleSubmit,
@@ -291,9 +295,31 @@ function LeaveRequestFormDialog({
 	};
 
 	return (
-		<Dialog open={open} onClose={loading ? undefined : onClose} fullWidth maxWidth="sm">
+		<Dialog
+			open={open}
+			onClose={loading ? undefined : onClose}
+			fullWidth
+			fullScreen={fullScreen}
+			maxWidth="sm"
+			PaperProps={{
+				sx: {
+					m: fullScreen ? 0 : 2,
+					width: fullScreen ? '100%' : undefined,
+					maxWidth: fullScreen ? '100%' : undefined,
+					height: fullScreen ? '100%' : undefined,
+					maxHeight: fullScreen ? '100%' : undefined,
+					borderRadius: fullScreen ? 0 : 3,
+					display: 'flex',
+				},
+			}}
+		>
 			<DialogTitle>{title}</DialogTitle>
-			<DialogContent>
+			<DialogContent
+				sx={{
+					px: fullScreen ? 2 : 3,
+					pb: fullScreen ? 2 : 3,
+				}}
+			>
 				<Grid
 					container
 					spacing={2}
@@ -464,7 +490,7 @@ function LeaveRequestFormDialog({
 					<Grid item xs={12}>
 						<Stack spacing={2}>
 							<Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1}>
-								<Typography variant="subtitle2" sx={{ color: '#123B66', fontWeight: 700 }}>
+								<Typography variant="subtitle2" sx={{ color: 'text.primary', fontWeight: 700 }}>
 									Pengganti Selama Cuti
 								</Typography>
 								<Button
@@ -589,7 +615,18 @@ function LeaveRequestFormDialog({
 					</Grid>
 				</Grid>
 			</DialogContent>
-			<DialogActions sx={{ px: 3, pb: 3 }}>
+			<DialogActions
+				sx={{
+					px: fullScreen ? 2 : 3,
+					pb: fullScreen ? 2 : 3,
+					pt: 1.5,
+					position: fullScreen ? 'sticky' : 'static',
+					bottom: 0,
+					bgcolor: 'background.paper',
+					borderTop: (currentTheme) =>
+						fullScreen ? `1px solid ${currentTheme.palette.employeeSurface.borderSoft}` : 'none',
+				}}
+			>
 				<Button onClick={onClose} disabled={loading} color="inherit">
 					Batal
 				</Button>
