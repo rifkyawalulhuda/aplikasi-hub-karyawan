@@ -114,6 +114,37 @@ function toDateOnly(value) {
 	return Number.isNaN(date.getTime()) ? null : date;
 }
 
+function getCellImportValue(cell) {
+	const { value, text } = cell;
+
+	if (typeof text === 'string' && text.trim()) {
+		return text;
+	}
+
+	if (value && typeof value === 'object') {
+		if (
+			Object.prototype.hasOwnProperty.call(value, 'formula') ||
+			Object.prototype.hasOwnProperty.call(value, 'sharedFormula')
+		) {
+			return typeof value.result !== 'undefined' && value.result !== null ? value.result : text || '';
+		}
+
+		if (typeof value.result !== 'undefined' && value.result !== null) {
+			return value.result;
+		}
+
+		if (Array.isArray(value.richText)) {
+			return value.richText.map((item) => item.text || '').join('');
+		}
+
+		if (typeof value.text === 'string' && value.text.trim()) {
+			return value.text;
+		}
+	}
+
+	return value;
+}
+
 function parseExcelDate(value) {
 	if (!value) {
 		return null;
@@ -377,8 +408,7 @@ function worksheetRowToPayload(row, headerMap) {
 	const payload = {};
 
 	headerMap.forEach((columnNumber, header) => {
-		const cellValue = row.getCell(columnNumber).value;
-		payload[header] = typeof cellValue === 'object' && cellValue?.text ? cellValue.text : cellValue;
+		payload[header] = getCellImportValue(row.getCell(columnNumber));
 	});
 
 	return payload;

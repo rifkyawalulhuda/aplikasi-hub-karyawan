@@ -146,6 +146,13 @@ function getCellImportValue(cell) {
 	}
 
 	if (value && typeof value === 'object') {
+		if (
+			Object.prototype.hasOwnProperty.call(value, 'formula') ||
+			Object.prototype.hasOwnProperty.call(value, 'sharedFormula')
+		) {
+			return typeof value.result !== 'undefined' && value.result !== null ? value.result : text || '';
+		}
+
 		if (typeof value.result !== 'undefined' && value.result !== null) {
 			return value.result;
 		}
