@@ -6,6 +6,9 @@ const router = Router();
 const EXPIRING_SOON_DAYS = 25;
 const STALE_APPROVAL_DAYS = 2;
 const MAX_NOTIFICATION_ITEMS = 50;
+const DEFAULT_HISTORY_PAGE_SIZE = 20;
+const MAX_HISTORY_PAGE_SIZE = 100;
+const NOTIFICATION_CATEGORIES = ['EMPLOYEE_LICENSE', 'UNIT_LICENSE', 'LEAVE_FLOW', 'LEAVE_REJECTED', 'EMAIL_FAILED'];
 
 function formatStageLabel(stageType = '') {
 	switch (stageType) {
@@ -97,6 +100,34 @@ function buildHref(targetPath, targetSearch = '') {
 	return `${targetPath}?search=${encodeURIComponent(targetSearch)}`;
 }
 
+function formatCategoryLabel(category = '') {
+	switch (category) {
+		case 'EMPLOYEE_LICENSE':
+			return 'Lisensi Karyawan';
+		case 'UNIT_LICENSE':
+			return 'Lisensi Unit';
+		case 'LEAVE_FLOW':
+			return 'Flow Cuti';
+		case 'LEAVE_REJECTED':
+			return 'Cuti Ditolak';
+		case 'EMAIL_FAILED':
+			return 'Email Gagal';
+		default:
+			return category || 'Notifikasi';
+	}
+}
+
+function formatSeverityLabel(severity = '') {
+	switch (severity) {
+		case 'error':
+			return 'Kritis';
+		case 'warning':
+			return 'Perlu Dipantau';
+		default:
+			return 'Informasi';
+	}
+}
+
 function getPriority(item) {
 	switch (item.category) {
 		case 'EMPLOYEE_LICENSE':
@@ -141,6 +172,55 @@ function compareNotifications(left, right) {
 	}
 
 	return rightTime - leftTime;
+}
+
+function compareHistoryNotifications(left, right) {
+	const unreadDelta = Number(left.isRead) - Number(right.isRead);
+
+	if (unreadDelta !== 0) {
+		return unreadDelta;
+	}
+
+	const activeDelta = Number(right.isActive) - Number(left.isActive);
+
+	if (activeDelta !== 0) {
+		return activeDelta;
+	}
+
+	return compareNotifications(left, right);
+}
+
+function decorateNotification(item) {
+	return {
+		...item,
+		categoryLabel: formatCategoryLabel(item.category),
+		severityLabel: formatSeverityLabel(item.severity),
+	};
+}
+
+function parsePositiveInt(value, fallback, maxValue = Infinity) {
+	const parsed = Number.parseInt(value, 10);
+
+	if (!Number.isFinite(parsed) || parsed <= 0) {
+		return fallback;
+	}
+
+	return Math.min(parsed, maxValue);
+}
+
+function normalizeReadStatus(value = 'all') {
+	const normalized = normalizeString(value).toLowerCase();
+	return ['all', 'unread', 'read'].includes(normalized) ? normalized : 'all';
+}
+
+function normalizeActiveStatus(value = 'all') {
+	const normalized = normalizeString(value).toLowerCase();
+	return ['all', 'active', 'archived'].includes(normalized) ? normalized : 'all';
+}
+
+function normalizeCategory(value = '') {
+	const normalized = normalizeString(value).toUpperCase();
+	return NOTIFICATION_CATEGORIES.includes(normalized) ? normalized : 'ALL';
 }
 
 function createEmployeeLicenseNotification(record) {
@@ -375,6 +455,77 @@ async function buildLiveNotifications() {
 	];
 }
 
+function toNotificationRecordPayload(item) {
+	return {
+		category: item.category,
+		severity: item.severity,
+		title: item.title,
+		description: item.description,
+		targetPath: item.targetPath || null,
+		targetSearch: item.targetSearch || null,
+		href: item.href || null,
+		dateLabel: item.dateLabel || null,
+		sortDate: new Date(item.sortDate),
+	};
+}
+
+async function syncNotificationRecords(liveItems = []) {
+	const uniqueItems = Array.from(new Map(liveItems.map((item) => [item.id, item])).values());
+	const liveIds = uniqueItems.map((item) => item.id);
+	const seenAt = new Date();
+
+	if (liveIds.length) {
+		await prisma.adminNotificationRecord.updateMany({
+			where: {
+				isActive: true,
+				notificationId: {
+					notIn: liveIds,
+				},
+			},
+			data: {
+				isActive: false,
+			},
+		});
+	} else {
+		await prisma.adminNotificationRecord.updateMany({
+			where: {
+				isActive: true,
+			},
+			data: {
+				isActive: false,
+			},
+		});
+	}
+
+	if (!uniqueItems.length) {
+		return [];
+	}
+
+	await prisma.$transaction(
+		uniqueItems.map((item) =>
+			prisma.adminNotificationRecord.upsert({
+				where: {
+					notificationId: item.id,
+				},
+				update: {
+					...toNotificationRecordPayload(item),
+					lastDetectedAt: seenAt,
+					isActive: true,
+				},
+				create: {
+					notificationId: item.id,
+					...toNotificationRecordPayload(item),
+					firstDetectedAt: seenAt,
+					lastDetectedAt: seenAt,
+					isActive: true,
+				},
+			}),
+		),
+	);
+
+	return uniqueItems;
+}
+
 async function attachReadState(employeeId, items) {
 	if (!items.length) {
 		return [];
@@ -394,11 +545,54 @@ async function attachReadState(employeeId, items) {
 	});
 	const readMap = new Map(reads.map((item) => [item.notificationId, item.readAt]));
 
-	return items.map((item) => ({
-		...item,
-		isRead: readMap.has(item.id),
-		readAt: readMap.get(item.id)?.toISOString() || null,
-	}));
+	return items.map((item) =>
+		decorateNotification({
+			...item,
+			isRead: readMap.has(item.id),
+			readAt: readMap.get(item.id)?.toISOString() || null,
+		}),
+	);
+}
+
+async function attachHistoryReadState(employeeId, records) {
+	if (!records.length) {
+		return [];
+	}
+
+	const notificationIds = records.map((record) => record.notificationId);
+	const reads = await prisma.adminNotificationReadState.findMany({
+		where: {
+			employeeId,
+			notificationId: {
+				in: notificationIds,
+			},
+		},
+		select: {
+			notificationId: true,
+			readAt: true,
+		},
+	});
+	const readMap = new Map(reads.map((item) => [item.notificationId, item.readAt]));
+
+	return records.map((record) =>
+		decorateNotification({
+			id: record.notificationId,
+			category: record.category,
+			severity: record.severity,
+			title: record.title,
+			description: record.description,
+			targetPath: record.targetPath,
+			targetSearch: record.targetSearch,
+			href: record.href || buildHref(record.targetPath || '/', record.targetSearch || ''),
+			dateLabel: record.dateLabel,
+			sortDate: record.sortDate.toISOString(),
+			firstDetectedAt: record.firstDetectedAt.toISOString(),
+			lastDetectedAt: record.lastDetectedAt.toISOString(),
+			isActive: record.isActive,
+			isRead: readMap.has(record.notificationId),
+			readAt: readMap.get(record.notificationId)?.toISOString() || null,
+		}),
+	);
 }
 
 async function markNotificationsRead(employeeId, notificationIds = []) {
@@ -418,17 +612,150 @@ async function markNotificationsRead(employeeId, notificationIds = []) {
 	});
 }
 
+async function resolveNotificationIdsForMarkAll(employeeId, notificationIds = []) {
+	const uniqueNotificationIds = [...new Set(notificationIds.map((value) => normalizeString(value)).filter(Boolean))];
+
+	if (uniqueNotificationIds.length) {
+		return uniqueNotificationIds;
+	}
+
+	await syncNotificationRecords(await buildLiveNotifications());
+
+	const [records, reads] = await Promise.all([
+		prisma.adminNotificationRecord.findMany({
+			select: {
+				notificationId: true,
+			},
+		}),
+		prisma.adminNotificationReadState.findMany({
+			where: {
+				employeeId,
+			},
+			select: {
+				notificationId: true,
+			},
+		}),
+	]);
+	const readSet = new Set(reads.map((item) => item.notificationId));
+
+	return records.map((item) => item.notificationId).filter((notificationId) => !readSet.has(notificationId));
+}
+
+async function buildHistoryResponse(employeeId, query) {
+	await syncNotificationRecords(await buildLiveNotifications());
+
+	const page = parsePositiveInt(query.page, 1);
+	const pageSize = parsePositiveInt(query.pageSize, DEFAULT_HISTORY_PAGE_SIZE, MAX_HISTORY_PAGE_SIZE);
+	const readStatus = normalizeReadStatus(query.readStatus);
+	const activeStatus = normalizeActiveStatus(query.activeStatus);
+	const category = normalizeCategory(query.category);
+	const keyword = normalizeString(query.keyword);
+
+	const where = {
+		...(category !== 'ALL'
+			? {
+					category,
+			  }
+			: {}),
+		...(activeStatus === 'active'
+			? {
+					isActive: true,
+			  }
+			: {}),
+		...(activeStatus === 'archived'
+			? {
+					isActive: false,
+			  }
+			: {}),
+		...(keyword
+			? {
+					OR: [
+						{ title: { contains: keyword, mode: 'insensitive' } },
+						{ description: { contains: keyword, mode: 'insensitive' } },
+						{ targetSearch: { contains: keyword, mode: 'insensitive' } },
+						{ category: { contains: keyword, mode: 'insensitive' } },
+					],
+			  }
+			: {}),
+	};
+
+	const [records, categoryRows] = await Promise.all([
+		prisma.adminNotificationRecord.findMany({
+			where,
+			orderBy: [{ lastDetectedAt: 'desc' }, { sortDate: 'desc' }, { id: 'desc' }],
+		}),
+		prisma.adminNotificationRecord.findMany({
+			distinct: ['category'],
+			select: {
+				category: true,
+			},
+			orderBy: {
+				category: 'asc',
+			},
+		}),
+	]);
+
+	const itemsWithReadState = await attachHistoryReadState(employeeId, records);
+	const readFilteredItems = itemsWithReadState.filter((item) => {
+		if (readStatus === 'unread') {
+			return !item.isRead;
+		}
+
+		if (readStatus === 'read') {
+			return item.isRead;
+		}
+
+		return true;
+	});
+	const sortedItems = readFilteredItems.sort(compareHistoryNotifications);
+	const totalCount = sortedItems.length;
+	const unreadCount = sortedItems.filter((item) => !item.isRead).length;
+	const activeCount = sortedItems.filter((item) => item.isActive).length;
+	const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+	const currentPage = Math.min(page, totalPages);
+	const offset = (currentPage - 1) * pageSize;
+
+	return {
+		totalCount,
+		unreadCount,
+		activeCount,
+		page: currentPage,
+		pageSize,
+		totalPages,
+		readStatus,
+		activeStatus,
+		category,
+		items: sortedItems.slice(offset, offset + pageSize),
+		categories: categoryRows.map((item) => ({
+			value: item.category,
+			label: formatCategoryLabel(item.category),
+		})),
+	};
+}
+
 router.get('/', async (req, res, next) => {
 	try {
 		const employeeId = resolveEmployeeId(req);
-		const items = await attachReadState(employeeId, await buildLiveNotifications());
+		const limit = parsePositiveInt(req.query.limit, MAX_NOTIFICATION_ITEMS, MAX_NOTIFICATION_ITEMS);
+		const syncedItems = await syncNotificationRecords(await buildLiveNotifications());
+		const items = await attachReadState(employeeId, syncedItems);
 		const sortedItems = items.sort(compareNotifications);
 
 		return res.json({
 			totalCount: sortedItems.length,
 			unreadCount: sortedItems.filter((item) => !item.isRead).length,
-			items: sortedItems.slice(0, MAX_NOTIFICATION_ITEMS),
+			items: sortedItems.slice(0, limit),
 		});
+	} catch (error) {
+		return next(error);
+	}
+});
+
+router.get('/history', async (req, res, next) => {
+	try {
+		const employeeId = resolveEmployeeId(req);
+		const response = await buildHistoryResponse(employeeId, req.query);
+		return res.json(response);
 	} catch (error) {
 		return next(error);
 	}
@@ -454,8 +781,9 @@ router.post('/read-all', async (req, res, next) => {
 	try {
 		const employeeId = resolveEmployeeId(req, req.body);
 		const notificationIds = Array.isArray(req.body?.notificationIds) ? req.body.notificationIds : [];
+		const resolvedNotificationIds = await resolveNotificationIdsForMarkAll(employeeId, notificationIds);
 
-		await markNotificationsRead(employeeId, notificationIds);
+		await markNotificationsRead(employeeId, resolvedNotificationIds);
 		return res.status(204).send();
 	} catch (error) {
 		return next(error);

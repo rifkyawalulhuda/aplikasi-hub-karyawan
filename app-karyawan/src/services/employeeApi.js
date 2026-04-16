@@ -25,4 +25,11 @@ async function employeeMeRequest(path, options = {}) {
 	});
 }
 
-export { employeeAuthRequest, employeeMeRequest };
+async function changeEmployeePassword(payload) {
+	return employeeMeRequest('/change-password', {
+		method: 'POST',
+		body: JSON.stringify(payload),
+	});
+}
+
+export { changeEmployeePassword, employeeAuthRequest, employeeMeRequest };

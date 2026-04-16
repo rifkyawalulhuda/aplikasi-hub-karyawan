@@ -7,6 +7,15 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import TextField from '@mui/material/TextField';
+import { alpha } from '@mui/material/styles';
+
+function getSurfaceTokens(theme) {
+	return (
+		theme.palette.employeeSurface || {
+			borderSoft: theme.palette.divider || 'rgba(18,59,102,0.08)',
+		}
+	);
+}
 
 function LeaveDecisionDialog({ open, loading, title, requireNote = false, onClose, onSubmit }) {
 	const {
@@ -27,7 +36,18 @@ function LeaveDecisionDialog({ open, loading, title, requireNote = false, onClos
 	}, [open, reset]);
 
 	return (
-		<Dialog open={open} onClose={loading ? undefined : onClose} fullWidth maxWidth="sm">
+		<Dialog
+			open={open}
+			onClose={loading ? undefined : onClose}
+			fullWidth
+			maxWidth="sm"
+			PaperProps={{
+				sx: {
+					borderRadius: 3,
+					border: (theme) => `1px solid ${getSurfaceTokens(theme).borderSoft}`,
+				},
+			}}
+		>
 			<DialogTitle>{title}</DialogTitle>
 			<DialogContent>
 				<Controller
@@ -41,7 +61,16 @@ function LeaveDecisionDialog({ open, loading, title, requireNote = false, onClos
 							fullWidth
 							multiline
 							minRows={4}
-							sx={{ mt: 1 }}
+							sx={{
+								mt: 1,
+								'& .MuiOutlinedInput-root': {
+									backgroundColor: (theme) =>
+										alpha(
+											theme.palette.background.paper,
+											theme.palette.mode === 'dark' ? 0.5 : 0.96,
+										),
+								},
+							}}
 							error={Boolean(errors.note)}
 							helperText={errors.note?.message || ' '}
 						/>

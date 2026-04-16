@@ -10,6 +10,7 @@ import EmployeeProtectedRoute from '@/components/auth/employeeProtectedRoute';
 import EmployeePublicOnlyRoute from '@/components/auth/employeePublicOnlyRoute';
 import EmployeeAuthLayout from '@/components/layouts/employeeAuthLayout';
 import EmployeeMobileLayout from '@/components/layouts/employeeMobileLayout';
+import EmployeePortalProviderLayout from '@/components/layouts/employeePortalProviderLayout';
 import MinimalLayout from '@/components/layouts/minimalLayout';
 import MainLayout from '@/components/layouts/mainLayout';
 
@@ -50,6 +51,7 @@ const WarningLetterDetailPage = withLazyLoadably(lazy(() => import('@/pages/empl
 const WarningLetterBulkPrintPage = withLazyLoadably(
 	lazy(() => import('@/pages/employeeData/warningLetters/bulkPrint')),
 );
+const AdminNotificationsPage = withLazyLoadably(lazy(() => import('@/pages/adminNotifications')));
 const LicenseCertificationsPage = withLazyLoadably(lazy(() => import('@/pages/employeeData/licenseCertifications')));
 const EmployeeDetailListPage = withLazyLoadably(lazy(() => import('@/pages/employeeData/employeeDetail')));
 const EmployeeDetailPage = withLazyLoadably(lazy(() => import('@/pages/employeeData/employeeDetail/detail')));
@@ -63,21 +65,23 @@ function Router() {
 		<BrowserRouter>
 			<ScrollToTopOnRouteChange>
 				<Routes>
-					<Route element={<EmployeePublicOnlyRoute />}>
-						<Route element={<EmployeeAuthLayout />}>
-							<Route path="/karyawan/login" element={<EmployeeLoginPage />} />
+					<Route element={<EmployeePortalProviderLayout />}>
+						<Route element={<EmployeePublicOnlyRoute />}>
+							<Route element={<EmployeeAuthLayout />}>
+								<Route path="/karyawan/login" element={<EmployeeLoginPage />} />
+							</Route>
 						</Route>
-					</Route>
-					<Route element={<EmployeeProtectedRoute />}>
-						<Route path="/karyawan/cuti/:id/print" element={<EmployeeLeavePrintPage />} />
-						<Route path="/karyawan" element={<EmployeeMobileLayout />}>
-							<Route index element={<EmployeeDashboardPage />} />
-							<Route path="cuti" element={<EmployeeLeaveCenterPage />} />
-							<Route path="cuti/approval/:approvalId" element={<EmployeeLeaveApprovalDetailPage />} />
-							<Route path="cuti/:id" element={<EmployeeLeaveRequestDetailPage />} />
-							<Route path="profil" element={<EmployeeProfilePage />} />
-							<Route path="bimbingan-pengarahan" element={<EmployeeGuidanceRecordsPage />} />
-							<Route path="surat-peringatan" element={<EmployeeWarningLettersPage />} />
+						<Route element={<EmployeeProtectedRoute />}>
+							<Route path="/karyawan/cuti/:id/print" element={<EmployeeLeavePrintPage />} />
+							<Route path="/karyawan" element={<EmployeeMobileLayout />}>
+								<Route index element={<EmployeeDashboardPage />} />
+								<Route path="cuti" element={<EmployeeLeaveCenterPage />} />
+								<Route path="cuti/approval/:approvalId" element={<EmployeeLeaveApprovalDetailPage />} />
+								<Route path="cuti/:id" element={<EmployeeLeaveRequestDetailPage />} />
+								<Route path="profil" element={<EmployeeProfilePage />} />
+								<Route path="bimbingan-pengarahan" element={<EmployeeGuidanceRecordsPage />} />
+								<Route path="surat-peringatan" element={<EmployeeWarningLettersPage />} />
+							</Route>
 						</Route>
 					</Route>
 					<Route element={<PublicOnlyRoute />}>
@@ -140,6 +144,7 @@ function Router() {
 							<Route path="data-karyawan/detail-karyawan" element={<EmployeeDetailListPage />} />
 							<Route path="data-karyawan/detail-karyawan/:id" element={<EmployeeDetailPage />} />
 							<Route path="data-karyawan/lisensi-sertifikasi" element={<LicenseCertificationsPage />} />
+							<Route path="notifikasi" element={<AdminNotificationsPage />} />
 							<Route path="data-karyawan/cuti-karyawan" element={<EmployeeLeavesPage />} />
 							<Route path="data-karyawan/cuti-karyawan/flow" element={<EmployeeLeaveFlowPage />} />
 							<Route

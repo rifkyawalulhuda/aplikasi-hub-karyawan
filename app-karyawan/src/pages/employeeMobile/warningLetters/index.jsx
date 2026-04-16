@@ -13,6 +13,7 @@ import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import InputAdornment from '@mui/material/InputAdornment';
+import { alpha } from '@mui/material/styles';
 
 import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
 import ExpandMoreRoundedIcon from '@mui/icons-material/ExpandMoreRounded';
@@ -56,9 +57,9 @@ function WarningLetterCard({ item }) {
 			sx={{
 				borderRadius: 4,
 				overflow: 'hidden',
-				border: '1px solid rgba(18,59,102,0.08)',
-				backgroundColor: '#FFFFFF',
-				boxShadow: '0 10px 24px rgba(18,59,102,0.06)',
+				border: (theme) => `1px solid ${theme.palette.employeeSurface.borderSoft}`,
+				backgroundColor: (theme) => theme.palette.employeeSurface.card,
+				boxShadow: (theme) => theme.palette.employeeSurface.shadowSoft,
 			}}
 		>
 			<Accordion
@@ -79,14 +80,14 @@ function WarningLetterCard({ item }) {
 							my: 0,
 						},
 						'& .MuiAccordionSummary-expandIconWrapper': {
-							color: '#5D738B',
+							color: 'text.secondary',
 						},
 					}}
 				>
 					<Stack spacing={1} sx={{ width: '100%' }}>
 						<Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1}>
 							<Box sx={{ minWidth: 0, flex: 1 }}>
-								<Typography variant="subtitle1" sx={{ color: '#123B66', fontWeight: 800 }}>
+								<Typography variant="subtitle1" sx={{ color: 'text.primary', fontWeight: 800 }}>
 									{item.warningLevel ? `Surat Peringatan ${item.warningLevel}` : 'Surat Teguran'}
 								</Typography>
 								<Typography variant="body2" color="text.secondary" sx={{ mt: 0.35 }}>
@@ -103,7 +104,7 @@ function WarningLetterCard({ item }) {
 						</Stack>
 						<Typography
 							variant="caption"
-							sx={{ color: '#7B8FA3', letterSpacing: '0.04em', textTransform: 'uppercase' }}
+							sx={{ color: 'text.secondary', letterSpacing: '0.04em', textTransform: 'uppercase' }}
 						>
 							Tap untuk lihat detail
 						</Typography>
@@ -112,7 +113,7 @@ function WarningLetterCard({ item }) {
 				<AccordionDetails sx={{ px: 2, pb: 2 }}>
 					<Stack spacing={1.5}>
 						<Box>
-							<Typography variant="caption" sx={{ color: '#5D738B', letterSpacing: '0.08em' }}>
+							<Typography variant="caption" sx={{ color: 'text.secondary', letterSpacing: '0.08em' }}>
 								Pelanggaran
 							</Typography>
 							<Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, lineHeight: 1.6 }}>
@@ -121,12 +122,12 @@ function WarningLetterCard({ item }) {
 						</Box>
 						{item.articleLabel || item.articleContent ? (
 							<Box>
-								<Typography variant="caption" sx={{ color: '#5D738B', letterSpacing: '0.08em' }}>
+								<Typography variant="caption" sx={{ color: 'text.secondary', letterSpacing: '0.08em' }}>
 									Pasal PKB
 								</Typography>
 								<Stack spacing={0.75} sx={{ mt: 0.5 }}>
 									{item.articleLabel ? (
-										<Typography variant="body2" sx={{ color: '#123B66', fontWeight: 700 }}>
+										<Typography variant="body2" sx={{ color: 'text.primary', fontWeight: 700 }}>
 											{item.articleLabel}
 										</Typography>
 									) : null}
@@ -142,10 +143,10 @@ function WarningLetterCard({ item }) {
 							sx={{
 								p: 1.5,
 								borderRadius: 3,
-								backgroundColor: 'rgba(18,59,102,0.04)',
+								backgroundColor: (theme) => theme.palette.employeeSurface.muted,
 							}}
 						>
-							<Typography variant="caption" sx={{ color: '#5D738B', letterSpacing: '0.08em' }}>
+							<Typography variant="caption" sx={{ color: 'text.secondary', letterSpacing: '0.08em' }}>
 								Superior
 							</Typography>
 							<Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
@@ -240,13 +241,14 @@ function EmployeeWarningLettersPage() {
 				sx={{
 					p: 2,
 					borderRadius: 4,
-					border: '1px solid rgba(18,59,102,0.08)',
-					background: 'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(244,249,255,0.98) 100%)',
+					border: (theme) => `1px solid ${theme.palette.employeeSurface.borderSoft}`,
+					background: (theme) => theme.palette.employeeSurface.cardGradient,
+					boxShadow: (theme) => theme.palette.employeeSurface.shadowSoft,
 				}}
 			>
 				<Stack spacing={1.5}>
 					<Box>
-						<Typography variant="subtitle1" sx={{ color: '#123B66', fontWeight: 800 }}>
+						<Typography variant="subtitle1" sx={{ color: 'text.primary', fontWeight: 800 }}>
 							Filter & Pencarian
 						</Typography>
 						<Typography variant="body2" color="text.secondary">
@@ -262,7 +264,7 @@ function EmployeeWarningLettersPage() {
 						InputProps={{
 							startAdornment: (
 								<InputAdornment position="start">
-									<SearchRoundedIcon sx={{ color: '#5D738B' }} />
+									<SearchRoundedIcon sx={{ color: 'text.secondary' }} />
 								</InputAdornment>
 							),
 							endAdornment: searchQuery ? (
@@ -284,7 +286,8 @@ function EmployeeWarningLettersPage() {
 						sx={{
 							'& .MuiOutlinedInput-root': {
 								borderRadius: 3,
-								backgroundColor: '#FFFFFF',
+								backgroundColor: (theme) =>
+									alpha(theme.palette.background.paper, theme.palette.mode === 'dark' ? 0.5 : 0.96),
 							},
 						}}
 					/>
@@ -324,7 +327,7 @@ function EmployeeWarningLettersPage() {
 						{searchQuery || levelFilter !== 'ALL' ? (
 							<Typography
 								variant="caption"
-								sx={{ color: '#7B8FA3', cursor: 'pointer' }}
+								sx={{ color: 'text.secondary', cursor: 'pointer' }}
 								onClick={() => {
 									setSearchQuery('');
 									setLevelFilter('ALL');
