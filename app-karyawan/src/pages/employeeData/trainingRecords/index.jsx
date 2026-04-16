@@ -12,7 +12,7 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
-import RefreshOutlinedIcon from '@mui/icons-material/RefreshOutlined';
+import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
 import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
 import UploadFileOutlinedIcon from '@mui/icons-material/UploadFileOutlined';
 
@@ -26,6 +26,7 @@ import apiRequest, { downloadFile, getApiBaseUrl } from '@/services/api';
 import TrainingRecordDetailDialog from './trainingRecordDetailDialog';
 import TrainingRecordFormDialog from './trainingRecordFormDialog';
 import TrainingRecordTable from './trainingRecordTable';
+import { formatTrainingDate } from './utils';
 
 async function fetchTrainingRecords() {
 	return apiRequest('/data-karyawan/pelatihan-karyawan');
@@ -128,6 +129,85 @@ function TrainingRecordsPage() {
 	const closeDetailDialog = () => {
 		setDetailOpen(false);
 		setDetailItem(null);
+	};
+
+	const handleExportExcel = async () => {
+		if (filteredRows.length === 0) {
+			enqueueSnackbar('Tidak ada data untuk diexport.', { variant: 'error' });
+			return;
+		}
+
+		const ExcelJS = await import('exceljs');
+		const Workbook = ExcelJS.Workbook || ExcelJS.default?.Workbook;
+		const workbook = new Workbook();
+		const worksheet = workbook.addWorksheet('Pelatihan Karyawan');
+
+		worksheet.columns = [
+			{ header: 'NO', key: 'no', width: 10 },
+			{ header: 'JENIS PELATIHAN', key: 'trainingType', width: 18 },
+			{ header: 'NAMA PESERTA', key: 'participantNames', width: 36 },
+			{ header: 'MATERI PELATIHAN', key: 'material', width: 28 },
+			{ header: 'LEMBAGA TRAINER', key: 'trainerInstitution', width: 24 },
+			{ header: 'NAMA TRAINER', key: 'trainerName', width: 24 },
+			{ header: 'DARI TANGGAL', key: 'startDate', width: 16 },
+			{ header: 'SAMPAI TANGGAL', key: 'endDate', width: 16 },
+			{ header: 'JUMLAH HARI', key: 'dayCount', width: 14 },
+			{ header: 'ALAMAT PELATIHAN', key: 'address', width: 34 },
+			{ header: 'KETERANGAN', key: 'notes', width: 34 },
+		];
+
+		worksheet.getRow(1).font = { bold: true };
+		worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
+
+		filteredRows.forEach((row, index) => {
+			worksheet.addRow({
+				no: index + 1,
+				trainingType: row.trainingType,
+				participantNames: row.participantNames?.join(' ; ') || row.participantSummary || '-',
+				material: row.material || '-',
+				trainerInstitution: row.trainerInstitution || '-',
+				trainerName: row.trainerName || '-',
+				startDate: formatTrainingDate(row.startDate),
+				endDate: formatTrainingDate(row.endDate),
+				dayCount: row.dayCount ?? '-',
+				address: row.address || '-',
+				notes: row.notes || '-',
+			});
+		});
+
+		worksheet.eachRow((worksheetRow, rowNumber) => {
+			const targetRow = worksheetRow;
+
+			targetRow.alignment = {
+				vertical: rowNumber === 1 ? 'middle' : 'top',
+				horizontal: rowNumber === 1 ? 'center' : 'left',
+				wrapText: true,
+			};
+
+			if (rowNumber === 1) {
+				targetRow.fill = {
+					type: 'pattern',
+					pattern: 'solid',
+					fgColor: { argb: 'DDE4EE' },
+				};
+			}
+		});
+
+		const buffer = await workbook.xlsx.writeBuffer();
+		const blob = new Blob([buffer], {
+			type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+		});
+		const url = window.URL.createObjectURL(blob);
+		const link = document.createElement('a');
+
+		link.href = url;
+		link.download = 'pelatihan-karyawan.xlsx';
+		document.body.appendChild(link);
+		link.click();
+		document.body.removeChild(link);
+		window.URL.revokeObjectURL(url);
+
+		enqueueSnackbar('File export Excel sedang disiapkan.', { variant: 'info' });
 	};
 
 	const handleSubmit = async (values) => {
@@ -279,19 +359,19 @@ function TrainingRecordsPage() {
 						/>
 						<Button
 							variant="outlined"
+							startIcon={<DownloadOutlinedIcon />}
+							onClick={handleExportExcel}
+							sx={{ minWidth: 150, whiteSpace: 'nowrap' }}
+						>
+							Export Excel
+						</Button>
+						<Button
+							variant="outlined"
 							startIcon={<UploadFileOutlinedIcon />}
 							onClick={() => setImportOpen(true)}
 							sx={{ minWidth: 170, whiteSpace: 'nowrap' }}
 						>
 							Import Excel
-						</Button>
-						<Button
-							variant="outlined"
-							startIcon={<RefreshOutlinedIcon />}
-							onClick={loadData}
-							sx={{ minWidth: 150, whiteSpace: 'nowrap' }}
-						>
-							Refresh
 						</Button>
 						<Button
 							variant="contained"
