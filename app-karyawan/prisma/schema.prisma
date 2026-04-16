@@ -93,6 +93,11 @@ enum EmployeeSelfServiceChangeType {
   CONTACT_EMAIL
 }
 
+enum TrainingType {
+  INTERNAL
+  EXTERNAL
+}
+
 model WorkLocation {
   id        Int        @id @default(autoincrement())
   name      String     @unique @db.VarChar(255)
@@ -277,6 +282,7 @@ model Employee {
   notificationReadStates      AdminNotificationReadState[]
   pushSubscriptions           EmployeePushSubscription[]
   selfServiceChangeLogs       EmployeeSelfServiceChangeLog[]
+  trainingParticipants        EmployeeTrainingParticipant[]
 
   @@index([departmentId])
   @@index([groupShiftId])
@@ -645,6 +651,42 @@ model EmployeeLicenseCertification {
   @@index([employeeId])
   @@index([masterDokKaryawanId])
   @@map("employee_license_certifications")
+}
+
+model EmployeeTraining {
+  id                  Int                         @id @default(autoincrement())
+  trainingType        TrainingType
+  material            String                      @db.Text
+  trainerInstitution  String                      @db.VarChar(255)
+  trainerName         String                      @db.VarChar(255)
+  startDate           DateTime                    @db.Date
+  endDate             DateTime                    @db.Date
+  dayCount            Int
+  address             String?                     @db.Text
+  notes               String?                     @db.Text
+  createdAt           DateTime                    @default(now())
+  updatedAt           DateTime                    @updatedAt
+  participants        EmployeeTrainingParticipant[]
+
+  @@index([trainingType])
+  @@index([startDate])
+  @@index([endDate])
+  @@map("employee_trainings")
+}
+
+model EmployeeTrainingParticipant {
+  id                 Int             @id @default(autoincrement())
+  employeeTrainingId Int
+  employeeId         Int?
+  participantName    String          @db.VarChar(255)
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  employeeTraining   EmployeeTraining @relation(fields: [employeeTrainingId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  employee           Employee?       @relation(fields: [employeeId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@index([employeeTrainingId])
+  @@index([employeeId])
+  @@map("employee_training_participants")
 }
 
 model UnitLicenseCertification {

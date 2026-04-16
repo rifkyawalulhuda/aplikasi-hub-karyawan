@@ -13,6 +13,7 @@ import employeeLeaveDatabaseRouter from './routes/employeeLeaveDatabase.js';
 import employeeLeavesRouter from './routes/employeeLeaves.js';
 import globalSearchRouter from './routes/globalSearch.js';
 import notificationsRouter from './routes/notifications.js';
+import employeeTrainingsRouter from './routes/employeeTrainings.js';
 import licenseCertificationsRouter from './routes/licenseCertifications.js';
 import unitLicenseCertificationsRouter from './routes/unitLicenseCertifications.js';
 import employeeMeRouter from './routes/employeeMe.js';
@@ -132,6 +133,7 @@ app.use('/api/data-karyawan/warning-letters', warningLettersRouter);
 app.use('/api/data-karyawan/employee-leaves', employeeLeavesRouter);
 app.use('/api/data-karyawan/employee-leave-database', employeeLeaveDatabaseRouter);
 app.use('/api/data-karyawan/employee-leave-balance-seeds', employeeLeaveBalanceSeedsRouter);
+app.use('/api/data-karyawan/pelatihan-karyawan', employeeTrainingsRouter);
 app.use('/api/data-karyawan/license-certifications', licenseCertificationsRouter);
 app.use('/api/data-unit/license-certifications', unitLicenseCertificationsRouter);
 
