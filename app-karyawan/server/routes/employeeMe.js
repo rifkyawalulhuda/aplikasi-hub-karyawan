@@ -82,6 +82,74 @@ function validateChangePasswordPayload(payload = {}) {
 	};
 }
 
+function validateEmailFormat(value = '') {
+	const normalizedEmail = normalizeString(value || '');
+
+	if (!normalizedEmail) {
+		return null;
+	}
+
+	const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+	if (!emailPattern.test(normalizedEmail)) {
+		throw Object.assign(new Error('Format email tidak valid.'), { statusCode: 400 });
+	}
+
+	return normalizedEmail;
+}
+
+function validateSelfServiceProfilePayload(payload = {}) {
+	const phoneNumber = normalizeString(payload.phoneNumber || '');
+	const email = validateEmailFormat(payload.email);
+
+	if (!phoneNumber) {
+		throw Object.assign(new Error('Kontak wajib diisi.'), { statusCode: 400 });
+	}
+
+	return {
+		phoneNumber,
+		email,
+	};
+}
+
+function buildSelfServiceChangeSummary({
+	changeType,
+	previousPhoneNumber = '',
+	nextPhoneNumber = '',
+	previousEmail = '',
+	nextEmail = '',
+}) {
+	if (changeType === 'PASSWORD') {
+		return 'Password akun diperbarui melalui Portal Karyawan.';
+	}
+
+	const segments = [];
+
+	if (previousPhoneNumber !== nextPhoneNumber) {
+		segments.push(`Kontak dari "${previousPhoneNumber || '-'}" menjadi "${nextPhoneNumber || '-'}"`);
+	}
+
+	if (previousEmail !== nextEmail) {
+		segments.push(`Email dari "${previousEmail || '-'}" menjadi "${nextEmail || '-'}"`);
+	}
+
+	if (!segments.length) {
+		return 'Data profil diperbarui melalui Portal Karyawan.';
+	}
+
+	return `${segments.join(' dan ')}.`;
+}
+
+async function createSelfServiceChangeLog(tx = prisma, { employeeId, changeType, summary }) {
+	return tx.employeeSelfServiceChangeLog.create({
+		data: {
+			employeeId,
+			changeType,
+			summary,
+		},
+	});
+}
+
 async function getLeaveTypeOrThrow(id, tx = prisma) {
 	const leaveType = await tx.masterCutiKaryawan.findUnique({
 		where: { id },
@@ -737,6 +805,64 @@ router.get('/dashboard', async (req, res, next) => {
 
 router.get('/profile', async (req, res) => res.json(buildEmployeePortalProfile(req.employee)));
 
+router.patch('/profile', async (req, res, next) => {
+	try {
+		const { phoneNumber, email } = validateSelfServiceProfilePayload(req.body);
+		const currentPhoneNumber = normalizeString(req.employee.phoneNumber || '');
+		const currentEmail = normalizeString(req.employee.email || '');
+		const nextEmail = email || null;
+		const nextEmailComparable = nextEmail || '';
+		const hasPhoneChanged = currentPhoneNumber !== phoneNumber;
+		const hasEmailChanged = currentEmail !== nextEmailComparable;
+
+		if (!hasPhoneChanged && !hasEmailChanged) {
+			return res.json({
+				message: 'Tidak ada perubahan kontak atau email.',
+				profile: buildEmployeePortalProfile(req.employee),
+			});
+		}
+
+		const changeType = hasPhoneChanged && hasEmailChanged ? 'CONTACT_EMAIL' : hasPhoneChanged ? 'CONTACT' : 'EMAIL';
+		const updatedEmployee = await prisma.$transaction(async (tx) => {
+			const employee = await tx.employee.update({
+				where: { id: req.employee.id },
+				data: {
+					phoneNumber,
+					email: nextEmail,
+				},
+				include: {
+					department: true,
+					groupShift: true,
+					workLocation: true,
+					jobRole: true,
+					jobLevel: true,
+				},
+			});
+
+			await createSelfServiceChangeLog(tx, {
+				employeeId: req.employee.id,
+				changeType,
+				summary: buildSelfServiceChangeSummary({
+					changeType,
+					previousPhoneNumber: currentPhoneNumber,
+					nextPhoneNumber: phoneNumber,
+					previousEmail: currentEmail,
+					nextEmail: nextEmailComparable,
+				}),
+			});
+
+			return employee;
+		});
+
+		return res.json({
+			message: 'Kontak dan email berhasil diperbarui.',
+			profile: buildEmployeePortalProfile(updatedEmployee),
+		});
+	} catch (error) {
+		return next(error);
+	}
+});
+
 router.post('/change-password', async (req, res, next) => {
 	try {
 		const { currentPassword, newPassword } = validateChangePasswordPayload(req.body);
@@ -745,11 +871,21 @@ router.post('/change-password', async (req, res, next) => {
 			return res.status(400).json({ message: 'Password Saat Ini tidak sesuai.' });
 		}
 
-		await prisma.employee.update({
-			where: { id: req.employee.id },
-			data: {
-				password: newPassword,
-			},
+		await prisma.$transaction(async (tx) => {
+			await tx.employee.update({
+				where: { id: req.employee.id },
+				data: {
+					password: newPassword,
+				},
+			});
+
+			await createSelfServiceChangeLog(tx, {
+				employeeId: req.employee.id,
+				changeType: 'PASSWORD',
+				summary: buildSelfServiceChangeSummary({
+					changeType: 'PASSWORD',
+				}),
+			});
 		});
 
 		return res.json({

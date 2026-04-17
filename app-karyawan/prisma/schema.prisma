@@ -86,6 +86,18 @@ enum LeaveDatabaseHistorySourceType {
   ADMIN_IMPORT
 }
 
+enum EmployeeSelfServiceChangeType {
+  PASSWORD
+  CONTACT
+  EMAIL
+  CONTACT_EMAIL
+}
+
+enum TrainingType {
+  INTERNAL
+  EXTERNAL
+}
+
 model WorkLocation {
   id        Int        @id @default(autoincrement())
   name      String     @unique @db.VarChar(255)
@@ -269,6 +281,8 @@ model Employee {
   groupShiftAssignments       GroupShiftForeman[]
   notificationReadStates      AdminNotificationReadState[]
   pushSubscriptions           EmployeePushSubscription[]
+  selfServiceChangeLogs       EmployeeSelfServiceChangeLog[]
+  trainingParticipants        EmployeeTrainingParticipant[]
 
   @@index([departmentId])
   @@index([groupShiftId])
@@ -525,6 +539,21 @@ model AdminNotificationRecord {
   @@map("admin_notification_records")
 }
 
+model EmployeeSelfServiceChangeLog {
+  id          Int                         @id @default(autoincrement())
+  employeeId  Int
+  changeType  EmployeeSelfServiceChangeType
+  summary     String                      @db.Text
+  createdAt   DateTime                    @default(now())
+  updatedAt   DateTime                    @updatedAt
+  employee    Employee                    @relation(fields: [employeeId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([employeeId])
+  @@index([changeType])
+  @@index([createdAt])
+  @@map("employee_self_service_change_logs")
+}
+
 model EmployeePushSubscription {
   id             Int       @id @default(autoincrement())
   employeeId     Int
@@ -622,6 +651,42 @@ model EmployeeLicenseCertification {
   @@index([employeeId])
   @@index([masterDokKaryawanId])
   @@map("employee_license_certifications")
+}
+
+model EmployeeTraining {
+  id                  Int                         @id @default(autoincrement())
+  trainingType        TrainingType
+  material            String                      @db.Text
+  trainerInstitution  String                      @db.VarChar(255)
+  trainerName         String                      @db.VarChar(255)
+  startDate           DateTime                    @db.Date
+  endDate             DateTime                    @db.Date
+  dayCount            Int
+  address             String?                     @db.Text
+  notes               String?                     @db.Text
+  createdAt           DateTime                    @default(now())
+  updatedAt           DateTime                    @updatedAt
+  participants        EmployeeTrainingParticipant[]
+
+  @@index([trainingType])
+  @@index([startDate])
+  @@index([endDate])
+  @@map("employee_trainings")
+}
+
+model EmployeeTrainingParticipant {
+  id                 Int             @id @default(autoincrement())
+  employeeTrainingId Int
+  employeeId         Int?
+  participantName    String          @db.VarChar(255)
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  employeeTraining   EmployeeTraining @relation(fields: [employeeTrainingId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  employee           Employee?       @relation(fields: [employeeId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@index([employeeTrainingId])
+  @@index([employeeId])
+  @@map("employee_training_participants")
 }
 
 model UnitLicenseCertification {

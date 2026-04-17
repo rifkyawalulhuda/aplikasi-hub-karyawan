@@ -2,17 +2,11 @@ import { useEffect, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 
 import Badge from '@mui/material/Badge';
-import Button from '@mui/material/Button';
 import { alpha } from '@mui/material/styles';
 
 import Box from '@mui/material/Box';
 import BottomNavigation from '@mui/material/BottomNavigation';
 import BottomNavigationAction from '@mui/material/BottomNavigationAction';
-import Dialog from '@mui/material/Dialog';
-import DialogActions from '@mui/material/DialogActions';
-import DialogContent from '@mui/material/DialogContent';
-import DialogContentText from '@mui/material/DialogContentText';
-import DialogTitle from '@mui/material/DialogTitle';
 import IconButton from '@mui/material/IconButton';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
@@ -25,7 +19,6 @@ import DarkModeRoundedIcon from '@mui/icons-material/DarkModeRounded';
 import FeedOutlinedIcon from '@mui/icons-material/FeedOutlined';
 import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
 import LightModeRoundedIcon from '@mui/icons-material/LightModeRounded';
-import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
 import ReportGmailerrorredOutlinedIcon from '@mui/icons-material/ReportGmailerrorredOutlined';
 import Drawer from '@mui/material/Drawer';
 import List from '@mui/material/List';
@@ -111,11 +104,10 @@ function getCurrentValue(pathname) {
 function EmployeeMobileLayout() {
 	const location = useLocation();
 	const navigate = useNavigate();
-	const { user: employee, logout } = useEmployeeAuth();
+	const { user: employee } = useEmployeeAuth();
 	const { isDarkMode, toggleColorMode } = useEmployeeTheme();
 	const [drawerOpen, setDrawerOpen] = useState(false);
 	const [pendingApprovalsCount, setPendingApprovalsCount] = useState(0);
-	const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
 
 	useEffect(() => {
 		if (employee?.id) {
@@ -198,19 +190,6 @@ function EmployeeMobileLayout() {
 								</IconButton>
 							</Tooltip>
 							<EmployeeNotificationButton />
-							<IconButton
-								aria-label="logout"
-								onClick={() => {
-									setLogoutConfirmOpen(true);
-								}}
-								sx={{
-									bgcolor: (theme) =>
-										alpha(theme.palette.text.primary, theme.palette.mode === 'dark' ? 0.1 : 0.06),
-									color: 'text.primary',
-								}}
-							>
-								<LogoutRoundedIcon />
-							</IconButton>
 						</Stack>
 					</Stack>
 				</Paper>
@@ -219,28 +198,6 @@ function EmployeeMobileLayout() {
 					<Outlet />
 				</Box>
 			</Box>
-			<Dialog open={logoutConfirmOpen} onClose={() => setLogoutConfirmOpen(false)} fullWidth maxWidth="xs">
-				<DialogTitle sx={{ pb: 1 }}>Konfirmasi Logout</DialogTitle>
-				<DialogContent sx={{ pt: '4px !important' }}>
-					<DialogContentText>Anda yakin ingin keluar dari aplikasi PWA Karyawan?</DialogContentText>
-				</DialogContent>
-				<DialogActions sx={{ px: 3, pb: 2 }}>
-					<Button onClick={() => setLogoutConfirmOpen(false)} color="inherit">
-						Batal
-					</Button>
-					<Button
-						variant="contained"
-						onClick={() => {
-							setLogoutConfirmOpen(false);
-							logout();
-							navigate('/karyawan/login', { replace: true });
-						}}
-					>
-						Ya, Logout
-					</Button>
-				</DialogActions>
-			</Dialog>
-
 			<Paper
 				elevation={10}
 				sx={{

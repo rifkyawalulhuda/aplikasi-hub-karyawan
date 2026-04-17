@@ -54,6 +54,7 @@ Folder ini dipilih sebagai basis utama pengembangan karena struktur template-nya
 - Login PWA mobile menampilkan tombol `Install App` dengan fallback instruksi manual jika `beforeinstallprompt` belum tersedia di browser.
 - Manifest PWA sekarang memakai ikon PNG standar `pwa/icon-192.png` dan `pwa/icon-512.png`; SVG tidak lagi dipakai sebagai ikon utama agar kompatibilitas install lebih stabil.
 - Standar global `table list` desktop sekarang mengikuti pola halaman `Bimbingan & Pengarahan`, kecuali halaman `Detail Karyawan`.
+- Frontend testing sekarang tersedia melalui `Vitest` dengan environment `jsdom`, global test helpers, dan setup `@testing-library/jest-dom`.
 
 ### Standar Global Table List Desktop
 
@@ -804,6 +805,7 @@ Yang sudah selesai:
 - Menambahkan layout mobile khusus karyawan dengan bottom navigation dan logout terpisah dari area admin.
 - Menambahkan halaman dashboard, profil, riwayat bimbingan, dan riwayat surat peringatan untuk karyawan login.
 - Menambahkan fitur `Ubah Password` pada halaman profil PWA Karyawan, lengkap dengan dialog form mobile-first dan endpoint self-service khusus employee login.
+- Menambahkan fitur self-service `Ubah Kontak & Email` pada halaman profil PWA Karyawan, lengkap dengan notifikasi admin ketika employee mengubah password, kontak, atau email melalui Portal Karyawan.
 - Refactor UI halaman Beranda PWA Karyawan menjadi lebih minimalis dan premium dengan hero card ringkas, quick status yang lebih fokus, menu cepat 2 kolom yang lebih rapi, ringkasan informasi karyawan yang dipadatkan termasuk kontak (`No Telepon` dan `Email`), serta aktivitas terbaru yang lebih ringan dipindai, tanpa mengubah header dan bottom navigation existing.
 - Menambahkan status proses cuti aktif pada section `Quick Status` di beranda PWA Karyawan:
   - jika employee login adalah requester dan masih punya pengajuan cuti dengan status aktif (`Submitted` / `Dalam Approval`), kartu akan menampilkan status proses tersebut dan membuka detail request saat ditekan
@@ -845,6 +847,7 @@ Yang sudah selesai:
 - Menambahkan endpoint live `/api/employee-me/notifications` khusus PWA.
 - Menambahkan fungsi klik/baca notifikasi khusus PWA melalui `/api/employee-me/notifications/read` dan `read-all` yang transparan menggunakan tabel read-state Admin berbasis `employeeId`.
 - Fitur notifikasi PWA sekarang menyaring status Cuti Menunggu Approval, Cuti Disetujui/Ditolak (14 hari terakhir), Bimbingan (14 hari), dan Peringatan (30 hari).
+- Tombol `Logout` untuk PWA Karyawan tidak lagi tampil di header mobile; aksi logout dipindahkan ke halaman `/karyawan/profil` sebagai tombol merah penuh di bagian paling bawah dengan dialog konfirmasi.
 - Panel notifikasi PWA sekarang memakai gaya `mini inbox` yang lebih minimalis:
   - header ringkas dengan badge jumlah notifikasi baru
   - action dipisah antara kontrol utama push dan aksi utilitas seperti `Refresh` / `Tandai semua`
@@ -896,6 +899,12 @@ Yang sudah selesai:
 - Database:
   - Docker Compose service PostgreSQL
   - Prisma migration awal
+- Testing frontend:
+  - `vitest`
+  - `jsdom`
+  - `@testing-library/react`
+  - `@testing-library/jest-dom`
+  - `@testing-library/user-event`
 
 ## Catatan Penting
 

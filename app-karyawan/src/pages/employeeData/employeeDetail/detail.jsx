@@ -30,11 +30,13 @@ import ErrorOutlineOutlinedIcon from '@mui/icons-material/ErrorOutlineOutlined';
 import GppMaybeOutlinedIcon from '@mui/icons-material/GppMaybeOutlined';
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined';
 import ReceiptLongOutlinedIcon from '@mui/icons-material/ReceiptLongOutlined';
+import SchoolOutlinedIcon from '@mui/icons-material/SchoolOutlined';
 import VerifiedOutlinedIcon from '@mui/icons-material/VerifiedOutlined';
 import WorkOutlineOutlinedIcon from '@mui/icons-material/WorkOutlineOutlined';
 
 import PageHeader from '@/components/pageHeader';
 import apiRequest from '@/services/api';
+import { formatEmployeeTrainingParticipantCount, formatEmployeeTrainingPeriod } from './utils';
 
 async function fetchEmployeeSummary(id) {
 	return apiRequest(`/master/employees/${id}/summary`);
@@ -179,6 +181,7 @@ function EmployeeDetailPage() {
 		licenseCertifications,
 		leaveBalances,
 		recentLeaveFlows,
+		recentTrainingRecords,
 	} = data;
 
 	return (
@@ -284,6 +287,7 @@ function EmployeeDetailPage() {
 									<StatBadge label="Bimbingan" value={summary.guidanceCount} />
 									<StatBadge label="Surat Peringatan" value={summary.warningLetterCount} />
 									<StatBadge label="Lisensi" value={summary.licenseCount} />
+									<StatBadge label="Pelatihan" value={summary.trainingCount} />
 									<StatBadge label="Pengajuan Cuti" value={summary.leaveFlowCount} />
 								</Stack>
 							</Grid>
@@ -538,6 +542,94 @@ function EmployeeDetailPage() {
 									onClick={() =>
 										navigate(
 											`/data-karyawan/lisensi-sertifikasi?search=${encodeURIComponent(
+												profile.fullName,
+											)}`,
+										)
+									}
+								>
+									Lihat semua →
+								</Button>
+							</Box>
+						</SectionCard>
+					</Grid>
+
+					{/* Pelatihan Karyawan */}
+					<Grid item xs={12} lg={6}>
+						<SectionCard title="Pelatihan Karyawan" icon={SchoolOutlinedIcon} color="warning.main">
+							<Box px={2.5} py={1.5}>
+								<Stack direction="row" gap={1.5} mb={1.5}>
+									<StatBadge label="Total" value={summary.trainingCount} color="warning.main" />
+								</Stack>
+							</Box>
+							{recentTrainingRecords.length === 0 ? (
+								<EmptySection />
+							) : (
+								<TableContainer>
+									<Table size="small">
+										<TableHead>
+											<TableRow sx={{ '& th': { fontWeight: 600, fontSize: 12 } }}>
+												<TableCell>Jenis</TableCell>
+												<TableCell>Materi Pelatihan</TableCell>
+												<TableCell>Trainer</TableCell>
+												<TableCell>Periode</TableCell>
+												<TableCell>Hari</TableCell>
+											</TableRow>
+										</TableHead>
+										<TableBody>
+											{recentTrainingRecords.map((record) => (
+												<TableRow key={record.id} hover>
+													<TableCell>
+														<Chip
+															size="small"
+															label={record.trainingType}
+															color={
+																record.trainingType === 'Internal'
+																	? 'primary'
+																	: 'warning'
+															}
+															variant="outlined"
+														/>
+													</TableCell>
+													<TableCell sx={{ minWidth: 220 }}>
+														<Stack spacing={0.25}>
+															<Typography variant="body2" fontWeight={600}>
+																{record.material || '-'}
+															</Typography>
+															<Typography variant="caption" color="text.secondary">
+																{formatEmployeeTrainingParticipantCount(
+																	record.participantCount,
+																)}
+															</Typography>
+														</Stack>
+													</TableCell>
+													<TableCell sx={{ minWidth: 220 }}>
+														<Stack spacing={0.25}>
+															<Typography variant="body2">
+																{record.trainerInstitution || '-'}
+															</Typography>
+															<Typography variant="caption" color="text.secondary">
+																{record.trainerName || '-'}
+															</Typography>
+														</Stack>
+													</TableCell>
+													<TableCell sx={{ fontSize: 12, minWidth: 180 }}>
+														{formatEmployeeTrainingPeriod(record.startDate, record.endDate)}
+													</TableCell>
+													<TableCell sx={{ fontSize: 12 }}>{record.dayCount}</TableCell>
+												</TableRow>
+											))}
+										</TableBody>
+									</Table>
+								</TableContainer>
+							)}
+							<Box px={2.5} py={1} textAlign="right">
+								<Button
+									size="small"
+									variant="text"
+									color="warning"
+									onClick={() =>
+										navigate(
+											`/data-karyawan/pelatihan-karyawan?search=${encodeURIComponent(
 												profile.fullName,
 											)}`,
 										)

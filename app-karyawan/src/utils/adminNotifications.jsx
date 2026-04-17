@@ -1,4 +1,5 @@
 import ErrorOutlineOutlinedIcon from '@mui/icons-material/ErrorOutlineOutlined';
+import ManageAccountsOutlinedIcon from '@mui/icons-material/ManageAccountsOutlined';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import MarkEmailUnreadOutlinedIcon from '@mui/icons-material/MarkEmailUnreadOutlined';
 import PlaylistAddCheckCircleOutlinedIcon from '@mui/icons-material/PlaylistAddCheckCircleOutlined';
@@ -17,6 +18,8 @@ export function getAdminNotificationCategoryLabel(category = '') {
 			return 'Cuti Ditolak';
 		case 'EMAIL_FAILED':
 			return 'Email Gagal';
+		case 'EMPLOYEE_PROFILE_CHANGE':
+			return 'Perubahan Profil Karyawan';
 		default:
 			return category || 'Notifikasi';
 	}
@@ -65,6 +68,12 @@ export function getAdminNotificationVisual(item = {}) {
 				icon: <MarkEmailUnreadOutlinedIcon fontSize="small" />,
 				color: '#C9584D',
 				tint: 'rgba(201, 88, 77, 0.10)',
+			};
+		case 'EMPLOYEE_PROFILE_CHANGE':
+			return {
+				icon: <ManageAccountsOutlinedIcon fontSize="small" />,
+				color: '#2F74BC',
+				tint: 'rgba(47, 116, 188, 0.12)',
 			};
 		case 'LEAVE_REJECTED':
 			return {
