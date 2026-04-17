@@ -429,6 +429,31 @@ function createEmployeeProfileChangeNotification(record) {
 	};
 }
 
+async function fetchRecentProfileChanges(profileChangeThreshold) {
+	try {
+		return await prisma.employeeSelfServiceChangeLog.findMany({
+			where: {
+				createdAt: {
+					gte: profileChangeThreshold,
+				},
+			},
+			include: {
+				employee: true,
+			},
+			orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+		});
+	} catch (error) {
+		if (error?.code === 'P2021') {
+			console.warn(
+				'employee_self_service_change_logs belum tersedia di database. Notifikasi perubahan profil dilewati sementara.',
+			);
+			return [];
+		}
+
+		throw error;
+	}
+}
+
 async function buildLiveNotifications() {
 	const staleThreshold = new Date(Date.now() - STALE_APPROVAL_DAYS * 24 * 60 * 60 * 1000);
 	const profileChangeThreshold = new Date(Date.now() - PROFILE_CHANGE_DAYS * 24 * 60 * 60 * 1000);
@@ -482,17 +507,7 @@ async function buildLiveNotifications() {
 				},
 				orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
 			}),
-			prisma.employeeSelfServiceChangeLog.findMany({
-				where: {
-					createdAt: {
-						gte: profileChangeThreshold,
-					},
-				},
-				include: {
-					employee: true,
-				},
-				orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-			}),
+			fetchRecentProfileChanges(profileChangeThreshold),
 		]);
 
 	return [
