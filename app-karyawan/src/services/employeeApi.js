@@ -32,4 +32,11 @@ async function changeEmployeePassword(payload) {
 	});
 }
 
-export { changeEmployeePassword, employeeAuthRequest, employeeMeRequest };
+async function updateEmployeeContactInfo(payload) {
+	return employeeMeRequest('/profile', {
+		method: 'PATCH',
+		body: JSON.stringify(payload),
+	});
+}
+
+export { changeEmployeePassword, employeeAuthRequest, employeeMeRequest, updateEmployeeContactInfo };

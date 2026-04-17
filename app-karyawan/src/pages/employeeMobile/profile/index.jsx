@@ -3,17 +3,25 @@ import { useNavigate } from 'react-router-dom';
 import { useSnackbar } from 'notistack';
 
 import Button from '@mui/material/Button';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogTitle from '@mui/material/DialogTitle';
 import Divider from '@mui/material/Divider';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
 import LockResetOutlinedIcon from '@mui/icons-material/LockResetOutlined';
+import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
+import ModeEditOutlineOutlinedIcon from '@mui/icons-material/ModeEditOutlineOutlined';
 
 import ChangePasswordDialog from '@/components/employeePortal/changePasswordDialog';
+import EditContactDialog from '@/components/employeePortal/editContactDialog';
 import FeedbackState from '@/components/employeePortal/feedbackState';
 import { useEmployeeAuth } from '@/contexts/employeeAuthContext';
-import { changeEmployeePassword, employeeMeRequest } from '@/services/employeeApi';
+import { changeEmployeePassword, employeeMeRequest, updateEmployeeContactInfo } from '@/services/employeeApi';
 import { formatLongDate, getEmployeePortalErrorMessage, handleEmployeeUnauthorized } from '@/utils/employeePortal';
 
 function FieldItem({ label, value }) {
@@ -39,6 +47,10 @@ function EmployeeProfilePage() {
 	const [changePasswordOpen, setChangePasswordOpen] = useState(false);
 	const [changePasswordLoading, setChangePasswordLoading] = useState(false);
 	const [changePasswordError, setChangePasswordError] = useState('');
+	const [editContactOpen, setEditContactOpen] = useState(false);
+	const [editContactLoading, setEditContactLoading] = useState(false);
+	const [editContactError, setEditContactError] = useState('');
+	const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
 
 	const loadProfile = async () => {
 		setLoading(true);
@@ -104,6 +116,49 @@ function EmployeeProfilePage() {
 			setChangePasswordError(getEmployeePortalErrorMessage(requestError));
 		} finally {
 			setChangePasswordLoading(false);
+		}
+	};
+
+	const handleOpenEditContact = () => {
+		setEditContactError('');
+		setEditContactOpen(true);
+	};
+
+	const handleCloseEditContact = () => {
+		if (editContactLoading) {
+			return;
+		}
+
+		setEditContactError('');
+		setEditContactOpen(false);
+	};
+
+	const handleSubmitEditContact = async (values) => {
+		setEditContactLoading(true);
+		setEditContactError('');
+
+		try {
+			const response = await updateEmployeeContactInfo(values);
+			setProfile(response.profile);
+			enqueueSnackbar(response.message || 'Kontak dan email berhasil diperbarui.', {
+				variant: 'success',
+			});
+			setEditContactOpen(false);
+		} catch (requestError) {
+			if (
+				handleEmployeeUnauthorized({
+					error: requestError,
+					logout,
+					navigate,
+					enqueueSnackbar,
+				})
+			) {
+				return;
+			}
+
+			setEditContactError(getEmployeePortalErrorMessage(requestError));
+		} finally {
+			setEditContactLoading(false);
 		}
 	};
 
@@ -195,6 +250,18 @@ function EmployeeProfilePage() {
 						<Divider />
 						<FieldItem label="Phone Number" value={profile?.phoneNumber} />
 						<FieldItem label="Email" value={profile?.email} />
+						<Button
+							variant="outlined"
+							startIcon={<ModeEditOutlineOutlinedIcon />}
+							onClick={handleOpenEditContact}
+							sx={{
+								mt: 0.5,
+								borderRadius: 3,
+								minHeight: 44,
+							}}
+						>
+							Ubah Kontak & Email
+						</Button>
 					</Stack>
 				</Paper>
 
@@ -232,6 +299,22 @@ function EmployeeProfilePage() {
 						</Button>
 					</Stack>
 				</Paper>
+
+				<Button
+					variant="contained"
+					fullWidth
+					color="error"
+					startIcon={<LogoutRoundedIcon />}
+					onClick={() => setLogoutConfirmOpen(true)}
+					sx={{
+						minHeight: 50,
+						borderRadius: 3,
+						mt: 0.5,
+						boxShadow: 'none',
+					}}
+				>
+					Logout
+				</Button>
 			</Stack>
 
 			<ChangePasswordDialog
@@ -241,6 +324,39 @@ function EmployeeProfilePage() {
 				onClose={handleCloseChangePassword}
 				onSubmit={handleSubmitChangePassword}
 			/>
+			<EditContactDialog
+				open={editContactOpen}
+				loading={editContactLoading}
+				errorMessage={editContactError}
+				initialValues={{
+					phoneNumber: profile?.phoneNumber || '',
+					email: profile?.email || '',
+				}}
+				onClose={handleCloseEditContact}
+				onSubmit={handleSubmitEditContact}
+			/>
+			<Dialog open={logoutConfirmOpen} onClose={() => setLogoutConfirmOpen(false)} fullWidth maxWidth="xs">
+				<DialogTitle sx={{ pb: 1 }}>Konfirmasi Logout</DialogTitle>
+				<DialogContent sx={{ pt: '4px !important' }}>
+					<DialogContentText>Anda yakin ingin keluar dari aplikasi PWA Karyawan?</DialogContentText>
+				</DialogContent>
+				<DialogActions sx={{ px: 3, pb: 2 }}>
+					<Button onClick={() => setLogoutConfirmOpen(false)} color="inherit">
+						Batal
+					</Button>
+					<Button
+						variant="contained"
+						color="error"
+						onClick={() => {
+							setLogoutConfirmOpen(false);
+							logout();
+							navigate('/karyawan/login', { replace: true });
+						}}
+					>
+						Ya, Logout
+					</Button>
+				</DialogActions>
+			</Dialog>
 		</>
 	);
 }

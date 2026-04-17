@@ -248,6 +248,53 @@ function mapEmployee(employee) {
 	};
 }
 
+function formatTrainingTypeLabel(value = '') {
+	const normalizedValue = normalizeString(value).toUpperCase();
+
+	if (normalizedValue === 'INTERNAL') {
+		return 'Internal';
+	}
+
+	if (normalizedValue === 'EXTERNAL') {
+		return 'External';
+	}
+
+	return normalizeString(value);
+}
+
+function buildTrainingParticipantSummary(participants = []) {
+	const participantNames = participants
+		.map((participant) => participant.employee?.fullName || participant.participantName || '')
+		.filter(Boolean);
+
+	if (participantNames.length === 0) {
+		return '-';
+	}
+
+	if (participantNames.length === 1) {
+		return participantNames[0];
+	}
+
+	return `${participantNames[0]} + ${participantNames.length - 1} lainnya`;
+}
+
+function mapTrainingRecord(record) {
+	return {
+		id: record.id,
+		trainingType: formatTrainingTypeLabel(record.trainingType),
+		material: record.material || '',
+		trainerInstitution: record.trainerInstitution || '',
+		trainerName: record.trainerName || '',
+		startDate: formatDateForClient(record.startDate),
+		endDate: formatDateForClient(record.endDate),
+		dayCount: record.dayCount,
+		participantCount: record.participants?.length || 0,
+		participantSummary: buildTrainingParticipantSummary(record.participants),
+		createdAt: record.createdAt ? record.createdAt.toISOString() : null,
+		updatedAt: record.updatedAt ? record.updatedAt.toISOString() : null,
+	};
+}
+
 async function ensureLookupExists(model, id, label) {
 	const item = await prisma[model].findUnique({ where: { id } });
 
@@ -865,7 +912,8 @@ router.get(
 		const soonThreshold = new Date(today);
 		soonThreshold.setDate(soonThreshold.getDate() + 25);
 
-		const [guidanceRecords, warningLetters, licenseCertifications, leaveDatabases, leaveFlows] = await Promise.all([
+		const [guidanceRecords, warningLetters, licenseCertifications, leaveDatabases, leaveFlows, trainingRecords] =
+			await Promise.all([
 			prisma.guidanceRecord.findMany({
 				where: { employeeId: id },
 				orderBy: { meetingDate: 'desc' },
@@ -890,6 +938,25 @@ router.get(
 				where: { employeeId: id },
 				include: { masterCutiKaryawan: true },
 				orderBy: { createdAt: 'desc' },
+				take: 5,
+			}),
+			prisma.employeeTraining.findMany({
+				where: {
+					participants: {
+						some: {
+							employeeId: id,
+						},
+					},
+				},
+				include: {
+					participants: {
+						include: {
+							employee: true,
+						},
+						orderBy: { id: 'asc' },
+					},
+				},
+				orderBy: [{ startDate: 'desc' }, { endDate: 'desc' }, { createdAt: 'desc' }],
 				take: 5,
 			}),
 		]);
@@ -919,6 +986,15 @@ router.get(
 				licenseSoonCount,
 				leaveBalanceCount: leaveDatabases.length,
 				leaveFlowCount: await prisma.employeeLeave.count({ where: { employeeId: id } }),
+				trainingCount: await prisma.employeeTraining.count({
+					where: {
+						participants: {
+							some: {
+								employeeId: id,
+							},
+						},
+					},
+				}),
 			},
 			recentGuidanceRecords: guidanceRecords.map((r) => ({
 				id: r.id,
@@ -966,6 +1042,7 @@ router.get(
 				periodEnd: lf.periodEnd ? lf.periodEnd.toISOString().slice(0, 10) : null,
 				leaveDays: lf.leaveDays,
 			})),
+			recentTrainingRecords: trainingRecords.map(mapTrainingRecord),
 		});
 	}),
 );
