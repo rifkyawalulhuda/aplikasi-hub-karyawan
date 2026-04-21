@@ -171,13 +171,92 @@ function mapEmployeeWarningLetter(record) {
 	};
 }
 
+function formatTrainingTypeLabel(value = '') {
+	const normalizedValue = normalizeString(value).toUpperCase();
+
+	if (normalizedValue === 'INTERNAL') {
+		return 'Internal';
+	}
+
+	if (normalizedValue === 'EXTERNAL') {
+		return 'External';
+	}
+
+	return normalizeString(value) || '-';
+}
+
+function formatEmployeeLabel(employee) {
+	if (!employee) {
+		return '';
+	}
+
+	return `${employee.fullName} (${employee.employeeNo})`;
+}
+
+function buildParticipantSummary(participantNames = []) {
+	if (!participantNames.length) {
+		return '-';
+	}
+
+	if (participantNames.length === 1) {
+		return participantNames[0];
+	}
+
+	return `${participantNames[0]} + ${participantNames.length - 1} lainnya`;
+}
+
+function mapEmployeeTrainingRecord(record, selfEmployee = null) {
+	const selfEmployeeId = selfEmployee?.id || null;
+	const selfEmployeeName = normalizeString(selfEmployee?.fullName || '').toLowerCase();
+	const selfEmployeeNo = normalizeString(selfEmployee?.employeeNo || '').toLowerCase();
+
+	const participants = (record.participants || []).map((item) => ({
+		id: item.id,
+		employeeId: item.employeeId || null,
+		employeeName: item.employee?.fullName || '',
+		employeeNo: item.employee?.employeeNo || '',
+		participantName: item.participantName || '',
+		displayLabel: item.employee ? formatEmployeeLabel(item.employee) : item.participantName || '',
+		isSelf: selfEmployeeId
+			? item.employeeId === selfEmployeeId ||
+				(Boolean(selfEmployeeName) &&
+					normalizeString(item.participantName || '').toLowerCase().includes(selfEmployeeName)) ||
+				(Boolean(selfEmployeeNo) &&
+					normalizeString(item.participantName || '').toLowerCase().includes(selfEmployeeNo))
+			: false,
+	}));
+	const participantNames = participants.map((item) => item.displayLabel).filter(Boolean);
+	const selfParticipant = participants.find((item) => item.isSelf) || null;
+
+	return {
+		id: record.id,
+		trainingType: record.trainingType,
+		trainingTypeLabel: formatTrainingTypeLabel(record.trainingType),
+		participants,
+		participantNames,
+		participantCount: participants.length,
+		participantSummary: buildParticipantSummary(participantNames),
+		selfParticipantName: selfParticipant?.displayLabel || '',
+		material: record.material || '',
+		trainerInstitution: record.trainerInstitution || '',
+		trainerName: record.trainerName || '',
+		startDate: formatDateForClient(record.startDate),
+		endDate: formatDateForClient(record.endDate),
+		dayCount: record.dayCount,
+		address: record.address || '',
+		notes: record.notes || '',
+	};
+}
+
 export {
 	buildEmployeePortalProfile,
 	diffService,
 	diffYears,
 	formatDateForClient,
+	formatTrainingTypeLabel,
 	mapEmployeeGuidanceRecord,
 	mapEmployeePortalSession,
+	mapEmployeeTrainingRecord,
 	mapEmployeeWarningLetter,
 	normalizeString,
 	toDateOnly,

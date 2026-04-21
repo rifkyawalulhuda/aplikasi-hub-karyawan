@@ -20,6 +20,7 @@ const EmployeeDashboardPage = withLazyLoadably(lazy(() => import('@/pages/employ
 const EmployeeProfilePage = withLazyLoadably(lazy(() => import('@/pages/employeeMobile/profile')));
 const EmployeeGuidanceRecordsPage = withLazyLoadably(lazy(() => import('@/pages/employeeMobile/guidanceRecords')));
 const EmployeeWarningLettersPage = withLazyLoadably(lazy(() => import('@/pages/employeeMobile/warningLetters')));
+const EmployeeTrainingRecordsPage = withLazyLoadably(lazy(() => import('@/pages/employeeMobile/trainingRecords')));
 const EmployeeLeaveCenterPage = withLazyLoadably(lazy(() => import('@/pages/employeeMobile/leaveCenter')));
 const EmployeeLeaveRequestDetailPage = withLazyLoadably(
 	lazy(() => import('@/pages/employeeMobile/leaveRequestDetail')),
@@ -81,6 +82,7 @@ function Router() {
 								<Route path="cuti/:id" element={<EmployeeLeaveRequestDetailPage />} />
 								<Route path="profil" element={<EmployeeProfilePage />} />
 								<Route path="bimbingan-pengarahan" element={<EmployeeGuidanceRecordsPage />} />
+								<Route path="pelatihan" element={<EmployeeTrainingRecordsPage />} />
 								<Route path="surat-peringatan" element={<EmployeeWarningLettersPage />} />
 							</Route>
 						</Route>

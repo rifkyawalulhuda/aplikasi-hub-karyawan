@@ -87,6 +87,7 @@ Folder ini dipilih sebagai basis utama pengembangan karena struktur template-nya
 - Login `Portal Mobile Karyawan` menggunakan `Employee No` sebagai NIK dan `password` dari tabel `employees`.
 - API self-service karyawan menggunakan endpoint khusus `/api/employee-me/*` dan seluruh data selalu difilter berdasarkan employee yang sedang login.
 - Fitur self-service `Ubah Password` untuk PWA Karyawan tersedia dari halaman `/karyawan/profil` dan diproses melalui endpoint `POST /api/employee-me/change-password`.
+- Endpoint `GET /api/employee-me/training-records` dan `GET /api/employee-me/training-records/:id` menampilkan riwayat pelatihan milik employee login saja, berdasarkan partisipasi employee pada data training.
 - Endpoint `GET /api/employee-me/dashboard` sekarang juga mengembalikan ringkasan `activeLeaveProcess` untuk kebutuhan kartu `Quick Status` di beranda PWA, dengan prioritas menampilkan approval cuti yang sedang menunggu tindakan approver login, atau pengajuan cuti aktif milik requester bila masih dalam proses.
 - Deploy publik saat ini memakai arsitektur full lokal + Cloudflare Tunnel:
   - frontend admin/PWA tetap berjalan di server lokal
@@ -450,6 +451,7 @@ Modul ini digunakan agar karyawan dapat login dari HP dan melihat data dirinya s
   - `/karyawan`
   - `/karyawan/profil`
   - `/karyawan/bimbingan-pengarahan`
+  - `/karyawan/pelatihan`
   - `/karyawan/surat-peringatan`
 - Scope v1 bersifat read-only untuk data milik karyawan yang sedang login.
 - Login menggunakan:
@@ -478,6 +480,7 @@ Modul ini digunakan agar karyawan dapat login dari HP dan melihat data dirinya s
   - dashboard ringkasan
   - profil karyawan
   - riwayat `Bimbingan & Pengarahan` milik sendiri
+  - riwayat `Pelatihan Karyawan` milik sendiri
   - riwayat `Surat Peringatan / Surat Teguran` milik sendiri
 - PWA sekarang memiliki:
   - manifest
@@ -795,15 +798,17 @@ Yang sudah selesai:
   - `/api/employee-me/dashboard`
   - `/api/employee-me/profile`
   - `/api/employee-me/guidance-records`
+  - `/api/employee-me/training-records`
   - `/api/employee-me/warning-letters`
 - Menambahkan route frontend mobile-first untuk:
   - `/karyawan/login`
   - `/karyawan`
   - `/karyawan/profil`
   - `/karyawan/bimbingan-pengarahan`
+  - `/karyawan/pelatihan`
   - `/karyawan/surat-peringatan`
 - Menambahkan layout mobile khusus karyawan dengan bottom navigation dan logout terpisah dari area admin.
-- Menambahkan halaman dashboard, profil, riwayat bimbingan, dan riwayat surat peringatan untuk karyawan login.
+- Menambahkan halaman dashboard, profil, riwayat bimbingan, riwayat pelatihan, dan riwayat surat peringatan untuk karyawan login.
 - Menambahkan fitur `Ubah Password` pada halaman profil PWA Karyawan, lengkap dengan dialog form mobile-first dan endpoint self-service khusus employee login.
 - Menambahkan fitur self-service `Ubah Kontak & Email` pada halaman profil PWA Karyawan, lengkap dengan notifikasi admin ketika employee mengubah password, kontak, atau email melalui Portal Karyawan.
 - Refactor UI halaman Beranda PWA Karyawan menjadi lebih minimalis dan premium dengan hero card ringkas, quick status yang lebih fokus, menu cepat 2 kolom yang lebih rapi, ringkasan informasi karyawan yang dipadatkan termasuk kontak (`No Telepon` dan `Email`), serta aktivitas terbaru yang lebih ringan dipindai, tanpa mengubah header dan bottom navigation existing.

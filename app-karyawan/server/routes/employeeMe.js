@@ -4,6 +4,7 @@ import prisma from '../lib/prisma.js';
 import {
 	buildEmployeePortalProfile,
 	mapEmployeeGuidanceRecord,
+	mapEmployeeTrainingRecord,
 	mapEmployeeWarningLetter,
 } from '../lib/employeePortal.js';
 import { getEmployeePortalBaseUrl, queueAndSendEmail } from '../lib/emailService.js';
@@ -41,6 +42,53 @@ const SPECIAL_REPLACEMENT_JOB_ROLE_GROUPS = {
 };
 
 router.use(requireEmployeeAuth);
+
+function buildEmployeeTrainingParticipantFilter(employee) {
+	return {
+		OR: [
+			{
+				employeeId: employee.id,
+			},
+			{
+				participantName: {
+					contains: employee.fullName,
+					mode: 'insensitive',
+				},
+			},
+			{
+				participantName: {
+					contains: employee.employeeNo,
+					mode: 'insensitive',
+				},
+			},
+		],
+	};
+}
+
+async function getEmployeeTrainingRecordOrThrow(employee, id, tx = prisma) {
+	const record = await tx.employeeTraining.findFirst({
+		where: {
+			id,
+			participants: {
+				some: buildEmployeeTrainingParticipantFilter(employee),
+			},
+		},
+		include: {
+			participants: {
+				include: {
+					employee: true,
+				},
+				orderBy: { id: 'asc' },
+			},
+		},
+	});
+
+	if (!record) {
+		throw Object.assign(new Error('Data pelatihan karyawan tidak ditemukan.'), { statusCode: 404 });
+	}
+
+	return record;
+}
 
 function buildLeaveRequestUrl(leaveRequestId) {
 	return `${getEmployeePortalBaseUrl()}/karyawan/cuti/${leaveRequestId}`;
@@ -931,6 +979,46 @@ router.get('/warning-letters', async (req, res, next) => {
 		});
 
 		return res.json(records.map(mapEmployeeWarningLetter));
+	} catch (error) {
+		return next(error);
+	}
+});
+
+router.get('/training-records', async (req, res, next) => {
+	try {
+		const records = await prisma.employeeTraining.findMany({
+			where: {
+				participants: {
+					some: buildEmployeeTrainingParticipantFilter(req.employee),
+				},
+			},
+			include: {
+				participants: {
+					include: {
+						employee: true,
+					},
+					orderBy: { id: 'asc' },
+				},
+			},
+			orderBy: [{ startDate: 'desc' }, { endDate: 'desc' }, { id: 'desc' }],
+		});
+
+		return res.json(records.map((record) => mapEmployeeTrainingRecord(record, req.employee)));
+	} catch (error) {
+		return next(error);
+	}
+});
+
+router.get('/training-records/:id', async (req, res, next) => {
+	try {
+		const id = Number(req.params.id);
+
+		if (Number.isNaN(id)) {
+			return res.status(400).json({ message: 'ID tidak valid.' });
+		}
+
+		const record = await getEmployeeTrainingRecordOrThrow(req.employee, id);
+		return res.json(mapEmployeeTrainingRecord(record, req.employee));
 	} catch (error) {
 		return next(error);
 	}
