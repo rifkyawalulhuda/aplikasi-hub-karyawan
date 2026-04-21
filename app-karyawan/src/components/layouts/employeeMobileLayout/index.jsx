@@ -20,6 +20,7 @@ import FeedOutlinedIcon from '@mui/icons-material/FeedOutlined';
 import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
 import LightModeRoundedIcon from '@mui/icons-material/LightModeRounded';
 import ReportGmailerrorredOutlinedIcon from '@mui/icons-material/ReportGmailerrorredOutlined';
+import SchoolOutlinedIcon from '@mui/icons-material/SchoolOutlined';
 import Drawer from '@mui/material/Drawer';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
@@ -78,6 +79,10 @@ function getPageTitle(pathname) {
 		return 'Bimbingan & Pengarahan';
 	}
 
+	if (pathname.startsWith('/karyawan/pelatihan')) {
+		return 'Riwayat Pelatihan';
+	}
+
 	if (pathname.startsWith('/karyawan/surat-peringatan')) {
 		return 'Surat Peringatan';
 	}
@@ -87,6 +92,10 @@ function getPageTitle(pathname) {
 
 function getCurrentValue(pathname) {
 	if (pathname.startsWith('/karyawan/bimbingan-pengarahan') || pathname.startsWith('/karyawan/surat-peringatan')) {
+		return 'group-catatan';
+	}
+
+	if (pathname.startsWith('/karyawan/pelatihan')) {
 		return 'group-catatan';
 	}
 
@@ -302,7 +311,7 @@ function EmployeeMobileLayout() {
 						}}
 					/>
 					<Typography variant="subtitle1" sx={{ fontWeight: 700, color: 'text.primary', mb: 1, px: 2 }}>
-						Catatan Karyawan
+						Riwayat Karyawan
 					</Typography>
 					<List>
 						<ListItem disablePadding>
@@ -324,6 +333,29 @@ function EmployeeMobileLayout() {
 										color: 'text.primary',
 									}}
 									secondary="Riwayat konseling dan pengarahan"
+									secondaryTypographyProps={{ variant: 'caption' }}
+								/>
+							</ListItemButton>
+						</ListItem>
+						<ListItem disablePadding>
+							<ListItemButton
+								onClick={() => {
+									setDrawerOpen(false);
+									navigate('/karyawan/pelatihan');
+								}}
+								sx={{ borderRadius: 2 }}
+							>
+								<ListItemIcon sx={{ color: 'success.main' }}>
+									<SchoolOutlinedIcon />
+								</ListItemIcon>
+								<ListItemText
+									primary="Pelatihan Karyawan"
+									primaryTypographyProps={{
+										variant: 'body2',
+										fontWeight: 600,
+										color: 'text.primary',
+									}}
+									secondary="Riwayat pelatihan yang diikuti"
 									secondaryTypographyProps={{ variant: 'caption' }}
 								/>
 							</ListItemButton>

@@ -24,6 +24,7 @@ import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined';
 import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined';
 import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded';
 import AssignmentTurnedInRoundedIcon from '@mui/icons-material/AssignmentTurnedInRounded';
+import SchoolOutlinedIcon from '@mui/icons-material/SchoolOutlined';
 
 import FeedbackState from '@/components/employeePortal/feedbackState';
 import InstallAppCard from '@/components/employeePortal/installAppCard';
@@ -55,6 +56,14 @@ const QUICK_MENU_ITEMS = [
 		description: 'Riwayat bimbingan dan pengarahan',
 		accent: '#356FA8',
 		tint: 'rgba(53, 111, 168, 0.12)',
+	},
+	{
+		title: 'Pelatihan',
+		icon: <SchoolOutlinedIcon />,
+		path: '/karyawan/pelatihan',
+		description: 'Daftar pelatihan yang diikuti',
+		accent: '#2E6F40',
+		tint: 'rgba(46, 111, 64, 0.12)',
 	},
 	{
 		title: 'Catatan',

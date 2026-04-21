@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { useSnackbar } from 'notistack';
 
 import Button from '@mui/material/Button';
+import Accordion from '@mui/material/Accordion';
+import AccordionDetails from '@mui/material/AccordionDetails';
+import AccordionSummary from '@mui/material/AccordionSummary';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
@@ -14,6 +17,7 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
 import LockResetOutlinedIcon from '@mui/icons-material/LockResetOutlined';
+import ExpandMoreRoundedIcon from '@mui/icons-material/ExpandMoreRounded';
 import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
 import ModeEditOutlineOutlinedIcon from '@mui/icons-material/ModeEditOutlineOutlined';
 
@@ -209,29 +213,52 @@ function EmployeeProfilePage() {
 
 				<Paper
 					sx={{
-						p: 2.5,
 						borderRadius: 4,
 						border: (theme) => `1px solid ${theme.palette.employeeSurface.borderSoft}`,
 						backgroundColor: (theme) => theme.palette.employeeSurface.card,
 						boxShadow: (theme) => theme.palette.employeeSurface.shadowSoft,
+						overflow: 'hidden',
 					}}
 				>
-					<Stack spacing={1.5}>
-						<Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 700 }}>
-							Data Kepegawaian
-						</Typography>
-						<Divider />
-						<FieldItem label="Employment Type" value={profile?.employmentTypeLabel} />
-						<FieldItem label="Site / Div" value={profile?.siteDiv} />
-						<FieldItem label="Department" value={profile?.departmentName} />
-						<FieldItem label="Work Location" value={profile?.workLocationName} />
-						<FieldItem label="Job Role" value={profile?.jobRoleName} />
-						<FieldItem label="Job Level" value={profile?.jobLevelName} />
-						<FieldItem label="Education Level" value={profile?.educationLevel} />
-						<FieldItem label="Grade" value={profile?.gradeLabel} />
-						<FieldItem label="Join Date" value={formatLongDate(profile?.joinDate)} />
-						<FieldItem label="Length Of Service" value={profile?.lengthOfService} />
-					</Stack>
+					<Accordion
+						disableGutters
+						elevation={0}
+						square
+						sx={{
+							'&:before': { display: 'none' },
+							backgroundColor: 'transparent',
+						}}
+					>
+						<AccordionSummary
+							expandIcon={<ExpandMoreRoundedIcon />}
+							sx={{
+								px: 2.5,
+								py: 1.75,
+								'& .MuiAccordionSummary-content': {
+									my: 0,
+								},
+							}}
+						>
+							<Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 700 }}>
+								Data Kepegawaian
+							</Typography>
+						</AccordionSummary>
+						<AccordionDetails sx={{ px: 2.5, pb: 2.5 }}>
+							<Stack spacing={1.5}>
+								<Divider />
+								<FieldItem label="Employment Type" value={profile?.employmentTypeLabel} />
+								<FieldItem label="Site / Div" value={profile?.siteDiv} />
+								<FieldItem label="Department" value={profile?.departmentName} />
+								<FieldItem label="Work Location" value={profile?.workLocationName} />
+								<FieldItem label="Job Role" value={profile?.jobRoleName} />
+								<FieldItem label="Job Level" value={profile?.jobLevelName} />
+								<FieldItem label="Education Level" value={profile?.educationLevel} />
+								<FieldItem label="Grade" value={profile?.gradeLabel} />
+								<FieldItem label="Join Date" value={formatLongDate(profile?.joinDate)} />
+								<FieldItem label="Length Of Service" value={profile?.lengthOfService} />
+							</Stack>
+						</AccordionDetails>
+					</Accordion>
 				</Paper>
 
 				<Paper
