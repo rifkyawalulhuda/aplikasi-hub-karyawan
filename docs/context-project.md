@@ -52,6 +52,7 @@ Folder ini dipilih sebagai basis utama pengembangan karena struktur template-nya
 - Hostname `*.vercel.app` untuk deployment project ini diperlakukan sebagai host khusus PWA, sehingga akses root/non-`/karyawan` akan diarahkan ke `/karyawan/login` dan area admin desktop tidak dipakai pada domain tersebut.
 - Preferensi `Tema Gelap` untuk PWA Karyawan disimpan di `localStorage` browser dengan mode `light/dark`, dan diakses lewat toggle cepat di header mobile serta switch bertanda `Tema Gelap` pada halaman Profil.
 - Login PWA mobile menampilkan tombol `Install App` dengan fallback instruksi manual jika `beforeinstallprompt` belum tersedia di browser.
+- Halaman login PWA Karyawan sekarang memakai hero header yang lebih minimalis, tanpa logo gambar terpisah, dengan tipografi `SANKYU` dan `Portal Karyawan` yang di-center agar tampil lebih modern dan ringkas.
 - Manifest PWA sekarang memakai ikon PNG standar `pwa/icon-192.png` dan `pwa/icon-512.png`; SVG tidak lagi dipakai sebagai ikon utama agar kompatibilitas install lebih stabil.
 - Standar global `table list` desktop sekarang mengikuti pola halaman `Bimbingan & Pengarahan`, kecuali halaman `Detail Karyawan`.
 - Frontend testing sekarang tersedia melalui `Vitest` dengan environment `jsdom`, global test helpers, dan setup `@testing-library/jest-dom`.
@@ -821,6 +822,7 @@ Yang sudah selesai:
 - Menambahkan dokumen print A4 khusus cuti approved dengan mapping field workflow cuti, checkbox jenis cuti, daftar pengganti repetitif, dan ringkasan approval bawah.
 - Menyesuaikan layout vertikal dokumen print cuti agar seluruh form tetap muat dalam satu halaman A4 tanpa memotong area approval bawah.
 - Menambahkan tombol `Install App` pada halaman login PWA Karyawan, beserta fallback informasi manual untuk browser yang belum memunculkan prompt install otomatis.
+- Menyederhanakan hero header halaman login PWA Karyawan dengan menghapus logo gambar terpisah dan memusatkan teks `SANKYU` + `Portal Karyawan` agar tampil lebih minimalis dan modern.
 - Menyesuaikan konfigurasi PWA agar manifest menggunakan ikon PNG standar (`pwa/icon-192.png` dan `pwa/icon-512.png`) untuk kompatibilitas install yang lebih stabil.
 - Mengubah favicon HTML agar menggunakan PNG standar dari `public/pwa`.
 - Menyesuaikan `vite.config.js` agar host development menerima domain Cloudflare public (`aplikasi-hub.my.id`, `www`, `pwa`, `api`) saat diakses lewat tunnel.
