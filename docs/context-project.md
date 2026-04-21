@@ -84,6 +84,11 @@ Folder ini dipilih sebagai basis utama pengembangan karena struktur template-nya
 - Primary key tiap tabel menggunakan `id` auto increment.
 - Kolom `NO` pada tabel UI hanya nomor urut tampilan, bukan kolom utama database.
 - Backend API awal menggunakan Express JS dalam project yang sama dengan frontend.
+- Workflow dev sekarang punya helper aman untuk Prisma generate dan stop backend saja:
+  - `npm run prisma:generate:safe`
+  - `npm run dev:server:stop`
+  - `npm run dev:server:status`
+- Panduan lengkap workflow dev disimpan di [`docs/dev-workflow.md`](D:/Github/aplikasi-hub-karyawan/docs/dev-workflow.md).
 - Ditambahkan auth flow khusus karyawan berbasis bearer token ringan dengan secret `EMPLOYEE_AUTH_SECRET`.
 - Login `Portal Mobile Karyawan` menggunakan `Employee No` sebagai NIK dan `password` dari tabel `employees`.
 - API self-service karyawan menggunakan endpoint khusus `/api/employee-me/*` dan seluruh data selalu difilter berdasarkan employee yang sedang login.

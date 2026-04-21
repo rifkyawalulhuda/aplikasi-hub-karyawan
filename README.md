@@ -4,6 +4,7 @@
 
 - Folder aktif untuk pengembangan aplikasi Hub Karyawan adalah `app-karyawan`.
 - Folder `complete-template` dipertahankan hanya sebagai referensi template/demo bawaan.
+- Workflow dev aman untuk Prisma dan backend dijelaskan di [`docs/dev-workflow.md`](D:/Github/aplikasi-hub-karyawan/docs/dev-workflow.md).
 
 <a href="https://github.com/Tono2007/slim-free-react-mui-template/stargazers">
   <img alt="Stars" src="https://img.shields.io/github/stars/Tono2007/slim-free-react-mui-template?style=social">
