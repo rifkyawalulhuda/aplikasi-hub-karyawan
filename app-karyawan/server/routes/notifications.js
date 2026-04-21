@@ -1,6 +1,7 @@
 import { Router } from 'express';
 
 import prisma from '../lib/prisma.js';
+import { buildEmailWorkflowFailureNotification } from '../lib/emailWorkflowFailureLog.js';
 
 const router = Router();
 const EXPIRING_SOON_DAYS = 25;
@@ -381,27 +382,6 @@ function createRejectedLeaveNotification(record) {
 	};
 }
 
-function createFailedEmailNotification(record) {
-	const failureDate = record.updatedAt || record.createdAt;
-	const leaveRequestNumber = record.employeeLeave?.requestNumber || 'workflow cuti';
-	const targetSearch = record.employeeLeave?.requestNumber || record.recipientEmail;
-
-	return {
-		id: `email-failed-${record.id}-${failureDate.toISOString()}`,
-		category: 'EMAIL_FAILED',
-		severity: 'error',
-		title: `Email workflow gagal: ${leaveRequestNumber}`,
-		description: `Pengiriman ke ${record.recipientEmail} gagal${
-			record.errorMessage ? `: ${record.errorMessage}` : '.'
-		}`,
-		targetPath: '/data-karyawan/cuti-karyawan/flow',
-		targetSearch,
-		dateLabel: `Gagal kirim: ${formatDateLabel(failureDate)}`,
-		sortDate: failureDate.toISOString(),
-		href: buildHref('/data-karyawan/cuti-karyawan/flow', targetSearch),
-	};
-}
-
 function createEmployeeProfileChangeNotification(record) {
 	const changedAt = record.updatedAt || record.createdAt;
 	const employeeName = record.employee?.fullName || 'Karyawan';
@@ -454,6 +434,43 @@ async function fetchRecentProfileChanges(profileChangeThreshold) {
 	}
 }
 
+async function fetchOpenEmailWorkflowFailures() {
+	try {
+		return await prisma.emailWorkflowFailureLog.findMany({
+			where: {
+				status: 'OPEN',
+			},
+			include: {
+				employeeLeave: {
+					include: {
+						employee: true,
+					},
+				},
+				employeeLeaveApproval: {
+					include: {
+						approverEmployee: true,
+						employeeLeave: {
+							include: {
+								employee: true,
+							},
+						},
+					},
+				},
+			},
+			orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }, { id: 'desc' }],
+		});
+	} catch (error) {
+		if (error?.code === 'P2021') {
+			console.warn(
+				'email_workflow_failure_logs belum tersedia di database. Notifikasi email workflow dilewati sementara.',
+			);
+			return [];
+		}
+
+		throw error;
+	}
+}
+
 async function buildLiveNotifications() {
 	const staleThreshold = new Date(Date.now() - STALE_APPROVAL_DAYS * 24 * 60 * 60 * 1000);
 	const profileChangeThreshold = new Date(Date.now() - PROFILE_CHANGE_DAYS * 24 * 60 * 60 * 1000);
@@ -498,15 +515,7 @@ async function buildLiveNotifications() {
 				},
 				orderBy: [{ rejectedAt: 'desc' }, { updatedAt: 'desc' }, { id: 'desc' }],
 			}),
-			prisma.emailOutbox.findMany({
-				where: {
-					status: 'FAILED',
-				},
-				include: {
-					employeeLeave: true,
-				},
-				orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
-			}),
+			fetchOpenEmailWorkflowFailures(),
 			fetchRecentProfileChanges(profileChangeThreshold),
 		]);
 
@@ -517,7 +526,7 @@ async function buildLiveNotifications() {
 			.filter((item) => item.employeeLeave.status === 'IN_APPROVAL')
 			.map(createLeaveFlowNotification),
 		...rejectedLeaveRequests.map(createRejectedLeaveNotification),
-		...failedEmails.map(createFailedEmailNotification),
+		...failedEmails.map(buildEmailWorkflowFailureNotification),
 		...profileChanges.map(createEmployeeProfileChangeNotification),
 	];
 }

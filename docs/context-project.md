@@ -117,6 +117,9 @@ Folder ini dipilih sebagai basis utama pengembangan karena struktur template-nya
 - Riwayat notifikasi admin sekarang memiliki snapshot record persisten pada tabel `admin_notification_records`, sehingga halaman record/inbox admin tetap bisa menampilkan histori notifikasi walau alert live sudah tidak aktif.
 - Badge lonceng sekarang menampilkan jumlah notifikasi `belum dibaca`, bukan jumlah total alert.
 - Endpoint admin `GET /api/notifications/history` tersedia untuk kebutuhan halaman record notifikasi dengan dukungan filter status baca, status aktif, kategori, keyword, dan pagination ringan.
+- Kegagalan email workflow cuti sekarang dicatat persisten pada tabel `email_workflow_failure_logs`, dengan error message yang disanitasi agar tidak menyimpan secret/token/password.
+- Log gagal email workflow cuti juga disinkronkan ke notifikasi admin live/history yang sudah ada, sehingga badge dan history tetap konsisten dengan status terbaru.
+- Endpoint admin `GET /api/admin/email-workflow-failures`, `GET /api/admin/email-workflow-failures/:id`, dan `POST /api/admin/email-workflow-failures/:id/resolve` tersedia untuk list, detail, dan resolve log gagal kirim email workflow cuti.
 - Request cuti `Approved` sekarang memiliki fitur `Print A4` baik dari admin maupun dari PWA karyawan.
 - Dokumen print cuti menggunakan halaman HTML/CSS A4 khusus yang dikalibrasi mengikuti file referensi `Form Permohonan Cuti dan Ijin.pdf`.
 - Kolom approval pada dokumen print menampilkan tanggal dan nama requester/approver sesuai grup approval yang sudah disepakati.

@@ -1,5 +1,10 @@
 import nodemailer from 'nodemailer';
 
+import {
+	recordEmailWorkflowFailure,
+	sanitizeEmailWorkflowErrorMessage,
+} from './emailWorkflowFailureLog.js';
+
 let cachedTransporter = null;
 
 function normalizeBaseUrl(value, fallbackValue) {
@@ -57,6 +62,14 @@ function getTransporter() {
 	return cachedTransporter;
 }
 
+async function persistEmailWorkflowFailure(prisma, payload) {
+	try {
+		await recordEmailWorkflowFailure(prisma, payload);
+	} catch (error) {
+		console.warn('Log kegagalan email workflow tidak dapat disimpan.', error);
+	}
+}
+
 async function queueAndSendEmail(prisma, payload) {
 	const outbox = await prisma.emailOutbox.create({
 		data: {
@@ -80,6 +93,16 @@ async function queueAndSendEmail(prisma, payload) {
 				errorMessage: 'Email penerima belum tersedia.',
 			},
 		});
+		await persistEmailWorkflowFailure(prisma, {
+			event: payload.event,
+			entityType: payload.entityType,
+			employeeLeaveId: payload.employeeLeaveId,
+			employeeLeaveApprovalId: payload.employeeLeaveApprovalId,
+			recipientEmail: payload.recipientEmail || '',
+			recipientName: payload.recipientName,
+			subject: payload.subject,
+			error: 'Email penerima belum tersedia.',
+		});
 
 		return {
 			ok: false,
@@ -98,6 +121,16 @@ async function queueAndSendEmail(prisma, payload) {
 				status: 'FAILED',
 				errorMessage: 'Konfigurasi SMTP belum lengkap.',
 			},
+		});
+		await persistEmailWorkflowFailure(prisma, {
+			event: payload.event,
+			entityType: payload.entityType,
+			employeeLeaveId: payload.employeeLeaveId,
+			employeeLeaveApprovalId: payload.employeeLeaveApprovalId,
+			recipientEmail: payload.recipientEmail || '',
+			recipientName: payload.recipientName,
+			subject: payload.subject,
+			error: 'Konfigurasi SMTP belum lengkap.',
 		});
 
 		return {
@@ -130,18 +163,30 @@ async function queueAndSendEmail(prisma, payload) {
 			id: outbox.id,
 		};
 	} catch (error) {
+		const safeErrorMessage = sanitizeEmailWorkflowErrorMessage(error);
+
 		await prisma.emailOutbox.update({
 			where: { id: outbox.id },
 			data: {
 				status: 'FAILED',
-				errorMessage: error.message || 'Gagal mengirim email.',
+				errorMessage: safeErrorMessage,
 			},
+		});
+		await persistEmailWorkflowFailure(prisma, {
+			event: payload.event,
+			entityType: payload.entityType,
+			employeeLeaveId: payload.employeeLeaveId,
+			employeeLeaveApprovalId: payload.employeeLeaveApprovalId,
+			recipientEmail: payload.recipientEmail || '',
+			recipientName: payload.recipientName,
+			subject: payload.subject,
+			error: safeErrorMessage,
 		});
 
 		return {
 			ok: false,
 			id: outbox.id,
-			error: error.message || 'Gagal mengirim email.',
+			error: safeErrorMessage,
 		};
 	}
 }

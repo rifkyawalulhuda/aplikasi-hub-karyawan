@@ -547,6 +547,8 @@ async function sendApprovedPush(record) {
 
 async function sendSubmittedEmail(record) {
 	await queueAndSendEmail(prisma, {
+		event: 'LEAVE_REQUEST_SUBMITTED_EMAIL',
+		entityType: 'LEAVE_REQUEST',
 		employeeLeaveId: record.id,
 		revisionNo: record.revisionNo,
 		recipientEmail: record.employee.email || '',
@@ -577,6 +579,8 @@ async function sendStageActivationEmails(record) {
 	await Promise.allSettled(
 		activeApprovals.map((approval) =>
 			queueAndSendEmail(prisma, {
+				event: 'LEAVE_APPROVAL_STAGE_EMAIL',
+				entityType: 'LEAVE_APPROVAL',
 				employeeLeaveId: record.id,
 				employeeLeaveApprovalId: approval.id,
 				revisionNo: record.revisionNo,
@@ -608,6 +612,8 @@ async function sendStageActivationEmails(record) {
 
 async function sendRejectedEmail(record) {
 	await queueAndSendEmail(prisma, {
+		event: 'LEAVE_REQUEST_REJECTED_EMAIL',
+		entityType: 'LEAVE_REQUEST',
 		employeeLeaveId: record.id,
 		revisionNo: record.revisionNo,
 		recipientEmail: record.employee.email || '',
@@ -632,6 +638,8 @@ async function sendRejectedEmail(record) {
 
 async function sendApprovedEmail(record) {
 	await queueAndSendEmail(prisma, {
+		event: 'LEAVE_REQUEST_APPROVED_EMAIL',
+		entityType: 'LEAVE_REQUEST',
 		employeeLeaveId: record.id,
 		revisionNo: record.revisionNo,
 		recipientEmail: record.employee.email || '',
