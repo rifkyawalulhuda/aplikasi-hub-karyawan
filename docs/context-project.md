@@ -58,7 +58,13 @@ Folder ini dipilih sebagai basis utama pengembangan karena struktur template-nya
   - `Skorsing`
   - `Surat Teguran`
 - Print A4 `Surat Peringatan 1/2/3` dan `Skorsing` sekarang memakai satu basis template bersama yang mengikuti form `SII-QSHE-085-01 Surat Peringatan-Skorsing`, dengan perbedaan checkbox dan narasi keputusan dipetakan dari kategori dokumen.
-- Rule eskalasi aktif 6 bulan tetap hanya berlaku untuk kategori `Surat Peringatan`; kategori `Skorsing` tidak memaksa level SP.
+- Rule eskalasi aktif untuk `Surat Peringatan` sekarang mengikuti rule final:
+  - jika tidak ada `Surat Peringatan` aktif, admin boleh memilih `SP1`, `SP2`, atau `SP3`
+  - jika masih ada `SP1` aktif, form default ke `SP2`, menonaktifkan `SP1`, dan tetap mengizinkan `SP3`
+  - jika masih ada `SP2` aktif, form hanya mengizinkan `SP3`
+  - jika masih ada `SP3` aktif, pembuatan `Surat Peringatan` baru diblokir sampai masa SP selesai
+  - rule ini hanya berlaku untuk kategori `Surat Peringatan`, bukan `Skorsing` atau `Surat Teguran`
+  - acuan masa aktif memakai 6 bulan sejak tanggal surat, kecuali jika nanti tersedia field tanggal akhir eksplisit sebagai source of truth
 - Manifest PWA sekarang memakai ikon PNG standar `pwa/icon-192.png` dan `pwa/icon-512.png`; SVG tidak lagi dipakai sebagai ikon utama agar kompatibilitas install lebih stabil.
 - Standar global `table list` desktop sekarang mengikuti pola halaman `Bimbingan & Pengarahan`, kecuali halaman `Detail Karyawan`.
 - Frontend testing sekarang tersedia melalui `Vitest` dengan environment `jsdom`, global test helpers, dan setup `@testing-library/jest-dom`.
@@ -573,12 +579,13 @@ Modul ini digunakan agar karyawan dapat login dari HP dan melihat data dirinya s
     - narasi keputusan `Kedua / Ketiga / Keempat` pada print template bersama dipetakan berdasarkan kategori dokumen
     - layout print A4 `Surat Teguran` mengikuti dokumen `Surat Teguran.pdf` dengan komposisi manual A4 berbasis struktur PDF
   - nama superior dan nama karyawan tampil pada area tanda tangan di hasil print
-  - form input/edit memiliki rule eskalasi otomatis berdasarkan surat peringatan aktif 6 bulan:
-    - jika masih ada `Surat Peringatan ke 1` yang aktif, form otomatis mengarahkan ke `Surat Peringatan ke 2` dan menonaktifkan pilihan level sebelumnya
-    - pada kondisi `Surat Peringatan ke 1` masih aktif, user tetap boleh langsung memilih `Surat Peringatan ke 3`
-    - jika masih ada `Surat Peringatan ke 2` yang aktif, form otomatis mengarahkan ke `Surat Peringatan ke 3`
-    - jika karyawan sebelumnya langsung mendapat `Surat Peringatan ke 2`, maka surat aktif berikutnya tetap diarahkan ke `Surat Peringatan ke 3`
-  - form input/edit menampilkan notifikasi peringatan jika karyawan yang dipilih masih memiliki surat peringatan aktif yang belum melewati 6 bulan
+    - form input/edit `Surat Peringatan` sekarang mengikuti rule final berdasarkan surat peringatan aktif:
+      - jika tidak ada `Surat Peringatan` aktif, form mengizinkan memilih `SP1`, `SP2`, atau `SP3`
+      - jika masih ada `SP1` aktif, form otomatis mengarahkan default ke `SP2`, menonaktifkan `SP1`, dan tetap mengizinkan `SP3`
+      - jika masih ada `SP2` aktif, form otomatis mengarahkan ke `SP3` dan menonaktifkan `SP1` serta `SP2`
+      - jika masih ada `SP3` aktif, pembuatan `Surat Peringatan` baru diblokir sampai masa SP3 selesai
+    - rule ini hanya berlaku untuk kategori `Surat Peringatan`, bukan `Skorsing`
+    - form input/edit menampilkan warning/error yang mengikuti state SP aktif karyawan terpilih
   - halaman daftar sudah mendukung seleksi data satu per satu dan `pilih semua` untuk `Print A4` terpilih
   - halaman daftar sudah memiliki fitur `Export Excel`
   - file export Excel mencakup seluruh isi form surat peringatan, termasuk:
@@ -816,6 +823,12 @@ Yang sudah selesai:
 - Menambahkan schema, migration, API CRUD, route, menu, halaman tabel, form input/edit, halaman detail, dan print A4 untuk modul `Data Surat Peringatan`.
 - Memperluas modul `Data Surat Peringatan` agar juga mendukung `Form Skorsing` pada schema Prisma, API Express, list/detail/filter/export, history PWA, dan bulk print tanpa memecah modul data.
 - Menyesuaikan template print `Surat Peringatan` agar mengikuti format `SII-QSHE-085-01 Surat Peringatan-Skorsing`, lalu menyatukannya dengan `Skorsing` dalam satu basis komponen print dengan mapping checkbox dan narasi terpusat.
+- Menyempurnakan rule eskalasi `Surat Peringatan` di backend dan frontend agar mengikuti rule final:
+  - tanpa SP aktif: boleh `SP1`, `SP2`, atau `SP3`
+  - dengan `SP1` aktif: hanya `SP2` atau `SP3`
+  - dengan `SP2` aktif: hanya `SP3`
+  - dengan `SP3` aktif: pembuatan SP baru diblokir
+  - rule ini tidak berlaku untuk `Skorsing` dan `Surat Teguran`
 - Menambahkan auth flow khusus `Portal Mobile Karyawan` berbasis `Employee No` + `Employee.password`.
 - Menambahkan middleware bearer token karyawan dan endpoint self-service:
   - `/api/employee-auth/login`

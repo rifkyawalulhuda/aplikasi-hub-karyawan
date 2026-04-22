@@ -7,6 +7,7 @@ import { Router } from 'express';
 import multer from 'multer';
 
 import prisma from '../lib/prisma.js';
+import { isWarningLetterActive } from '../lib/warningLetterEscalation.js';
 
 const router = Router();
 const upload = multer({
@@ -968,13 +969,7 @@ router.get(
 			(l) => l.expiryDate && new Date(l.expiryDate) >= today && new Date(l.expiryDate) <= soonThreshold,
 		).length;
 
-		const activeWarningLetters = warningLetters.filter((w) => {
-			if (w.category !== 'WARNING_LETTER') return false;
-			if (!w.letterDate) return false;
-			const sixMonthsAgo = new Date(today);
-			sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-			return new Date(w.letterDate) >= sixMonthsAgo;
-		});
+		const activeWarningLetters = warningLetters.filter((w) => isWarningLetterActive(w, today));
 
 		return res.json({
 			profile: mapEmployee(employee),

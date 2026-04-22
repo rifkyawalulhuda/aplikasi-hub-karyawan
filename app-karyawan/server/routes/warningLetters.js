@@ -1,13 +1,16 @@
 import { Router } from 'express';
 
 import prisma from '../lib/prisma.js';
+import {
+	WARNING_LEVEL_OPTIONS,
+	getWarningLetterEscalationStateForEmployee,
+	validateWarningLetterEscalation,
+} from '../lib/warningLetterEscalation.js';
 
 const router = Router();
-const WARNING_LEVELS = [1, 2, 3];
 const SUPERIOR_JOB_LEVEL = 'Dept. Manager';
 const SUPERIOR_JOB_LEVEL_ALIASES = ['Dept. Manager', 'Department Manager'];
 const NORMALIZED_SUPERIOR_JOB_LEVELS = SUPERIOR_JOB_LEVEL_ALIASES.map((value) => value.toLowerCase());
-const DEFAULT_WARNING_LEVEL = 1;
 const DISCIPLINE_LETTER_CATEGORIES = {
 	WARNING_LETTER: 'WARNING_LETTER',
 	REPRIMAND: 'REPRIMAND',
@@ -79,23 +82,6 @@ function formatDateForClient(value) {
 		2,
 		'0',
 	)}`;
-}
-
-function addSixMonths(value) {
-	const parsed = toDateOnly(value);
-
-	if (!parsed) {
-		return null;
-	}
-
-	const sourceDay = parsed.getUTCDate();
-	const target = new Date(Date.UTC(parsed.getUTCFullYear(), parsed.getUTCMonth() + 6, 1, 12));
-	const lastDayOfTargetMonth = new Date(
-		Date.UTC(target.getUTCFullYear(), target.getUTCMonth() + 1, 0, 12),
-	).getUTCDate();
-
-	target.setUTCDate(Math.min(sourceDay, lastDayOfTargetMonth));
-	return target;
 }
 
 function mapWarningLetter(record) {
@@ -176,40 +162,6 @@ async function getWarningLetterOrThrow(id) {
 	return record;
 }
 
-async function getActiveWarningRule({ employeeId, referenceDate, excludeId }) {
-	const warningLetters = await prisma.warningLetter.findMany({
-		where: {
-			employeeId,
-			category: DISCIPLINE_LETTER_CATEGORIES.WARNING_LETTER,
-			...(excludeId ? { id: { not: excludeId } } : {}),
-		},
-		orderBy: { letterDate: 'desc' },
-	});
-
-	const comparableReferenceDate = referenceDate?.getTime();
-	const activeLetters = warningLetters.filter((row) => {
-		const startDate = toDateOnly(row.letterDate)?.getTime();
-		const endDate = addSixMonths(row.letterDate)?.getTime();
-
-		if (!startDate || !endDate || !comparableReferenceDate) {
-			return false;
-		}
-
-		return comparableReferenceDate >= startDate && comparableReferenceDate <= endDate;
-	});
-
-	const highestActiveLevel = activeLetters.reduce(
-		(highestLevel, row) => Math.max(highestLevel, Number(row.warningLevel) || 0),
-		0,
-	);
-
-	return {
-		activeLetters,
-		highestActiveLevel,
-		recommendedLevel: highestActiveLevel <= 0 ? DEFAULT_WARNING_LEVEL : Math.min(highestActiveLevel + 1, 3),
-	};
-}
-
 async function validatePayload(payload, currentId) {
 	const category = normalizeCategory(payload.category);
 	const employeeId = Number(payload.employeeId);
@@ -244,7 +196,7 @@ async function validatePayload(payload, currentId) {
 		throw Object.assign(new Error('Superior wajib dipilih.'), { statusCode: 400 });
 	}
 
-	if (shouldApplyWarningLevelRule(category) && !WARNING_LEVELS.includes(warningLevel)) {
+	if (shouldApplyWarningLevelRule(category) && !WARNING_LEVEL_OPTIONS.includes(warningLevel)) {
 		throw Object.assign(new Error('Surat Peringatan ke harus dipilih.'), { statusCode: 400 });
 	}
 
@@ -258,9 +210,9 @@ async function validatePayload(payload, currentId) {
 		shouldRequireArticle(category) ? getMasterDokPkbOrThrow(masterDokPkbId) : Promise.resolve(null),
 	]);
 
-	const warningRule =
+	const warningEscalationState =
 		shouldApplyWarningLevelRule(category)
-			? await getActiveWarningRule({
+			? await getWarningLetterEscalationStateForEmployee(prisma, {
 					employeeId: employee.id,
 					referenceDate: letterDate,
 					excludeId: currentId,
@@ -271,17 +223,18 @@ async function validatePayload(payload, currentId) {
 		throw Object.assign(new Error(`Superior harus memiliki Job Level ${SUPERIOR_JOB_LEVEL}.`), { statusCode: 400 });
 	}
 
-	if (
-		shouldApplyWarningLevelRule(category) &&
-		warningRule &&
-		warningLevel < warningRule.recommendedLevel
-	) {
-		throw Object.assign(
-			new Error(
-				`Karyawan ini masih memiliki Surat Peringatan aktif. Level minimal yang dapat dipilih adalah Surat Peringatan ke ${warningRule.recommendedLevel}.`,
-			),
-			{ statusCode: 400 },
-		);
+	if (shouldApplyWarningLevelRule(category) && warningEscalationState) {
+		const validationResult = validateWarningLetterEscalation({
+			state: warningEscalationState,
+			selectedLevel: warningLevel,
+		});
+
+		if (!validationResult.ok) {
+			throw Object.assign(
+				new Error(validationResult.message),
+				{ statusCode: 400 },
+			);
+		}
 	}
 
 	return {
