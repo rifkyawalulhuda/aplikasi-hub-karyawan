@@ -179,14 +179,101 @@ export function getDisciplinePrintConfig(record = {}) {
 	};
 }
 
-export function getActiveWarningLetterSummary({ rows = [], employeeId, excludeId, referenceDate }) {
+export function getAllowedWarningLetterLevels(highestActiveLevel) {
+	if (highestActiveLevel >= 3) {
+		return [];
+	}
+
+	if (highestActiveLevel === 2) {
+		return [3];
+	}
+
+	if (highestActiveLevel === 1) {
+		return [2, 3];
+	}
+
+	return [...WARNING_LEVEL_OPTIONS];
+}
+
+export function getDefaultWarningLetterLevel(highestActiveLevel) {
+	if (highestActiveLevel >= 3) {
+		return null;
+	}
+
+	if (highestActiveLevel === 2) {
+		return 3;
+	}
+
+	if (highestActiveLevel === 1) {
+		return 2;
+	}
+
+	return DEFAULT_WARNING_LEVEL;
+}
+
+function buildWarningLetterEscalationFeedback(state) {
+	if (!state?.highestActiveLetter) {
+		return {
+			severity: 'info',
+			message: '',
+		};
+	}
+
+	const validUntil = getWarningEndDate(state.highestActiveLetter.letterDate);
+
+	if (state.highestActiveLevel === 1) {
+		return {
+			severity: 'warning',
+			message: `Karyawan masih memiliki Surat Peringatan ke 1 yang berlaku sampai ${validUntil}. Form otomatis diarahkan ke Surat Peringatan ke 2. Anda masih dapat memilih Surat Peringatan ke 3 jika diperlukan.`,
+		};
+	}
+
+	if (state.highestActiveLevel === 2) {
+		return {
+			severity: 'warning',
+			message: `Karyawan masih memiliki Surat Peringatan ke 2 yang berlaku sampai ${validUntil}. Form otomatis diarahkan ke Surat Peringatan ke 3.`,
+		};
+	}
+
+	return {
+		severity: 'error',
+		message: `Karyawan masih memiliki Surat Peringatan ke 3 yang berlaku sampai ${validUntil}. Tidak dapat membuat Surat Peringatan baru sampai masa SP tersebut selesai. Karyawan perlu ditindaklanjuti lebih lanjut sesuai ketentuan yang berlaku.`,
+	};
+}
+
+export function validateWarningLetterEscalation({ state, selectedLevel }) {
+	if (!state) {
+		return {
+			ok: true,
+			message: '',
+		};
+	}
+
+	if (state.isBlocked) {
+		return {
+			ok: false,
+			message: state.feedbackMessage,
+		};
+	}
+
+	return {
+		ok: state.allowedLevels.includes(Number(selectedLevel)),
+		message: state.feedbackMessage,
+	};
+}
+
+export function getActiveWarningLetterState({ rows = [], employeeId, excludeId, referenceDate }) {
 	if (!employeeId) {
 		return {
 			activeLetters: [],
 			highestActiveLevel: 0,
-			recommendedLevel: DEFAULT_WARNING_LEVEL,
+			highestActiveLetter: null,
+			allowedLevels: [...WARNING_LEVEL_OPTIONS],
+			defaultLevel: DEFAULT_WARNING_LEVEL,
 			disabledLevels: [],
-			nextLevelReason: '',
+			isBlocked: false,
+			feedbackSeverity: 'info',
+			feedbackMessage: '',
 		};
 	}
 
@@ -210,6 +297,19 @@ export function getActiveWarningLetterSummary({ rows = [], employeeId, excludeId
 			return comparableReferenceDate >= startDate && comparableReferenceDate <= endDate;
 		})
 		.sort((left, right) => {
+			const levelDelta = (Number(right.warningLevel) || 0) - (Number(left.warningLevel) || 0);
+
+			if (levelDelta !== 0) {
+				return levelDelta;
+			}
+
+			const leftEndDate = toComparableUtcDate(addSixMonths(left.letterDate)) ?? 0;
+			const rightEndDate = toComparableUtcDate(addSixMonths(right.letterDate)) ?? 0;
+
+			if (rightEndDate !== leftEndDate) {
+				return rightEndDate - leftEndDate;
+			}
+
 			const leftDate = toComparableUtcDate(left.letterDate) ?? 0;
 			const rightDate = toComparableUtcDate(right.letterDate) ?? 0;
 			return rightDate - leftDate;
@@ -219,23 +319,29 @@ export function getActiveWarningLetterSummary({ rows = [], employeeId, excludeId
 		(highestLevel, row) => Math.max(highestLevel, Number(row.warningLevel) || 0),
 		0,
 	);
-	const recommendedLevel = highestActiveLevel <= 0 ? DEFAULT_WARNING_LEVEL : Math.min(highestActiveLevel + 1, 3);
-	const disabledLevels = WARNING_LEVEL_OPTIONS.filter((option) => option < recommendedLevel);
-
-	let nextLevelReason = '';
-	if (highestActiveLevel > 0) {
-		const highestActiveLetter = activeLetters.find((row) => Number(row.warningLevel) === highestActiveLevel);
-		const validUntil = highestActiveLetter ? getWarningEndDate(highestActiveLetter.letterDate) : '';
-		nextLevelReason = `Karyawan ini masih memiliki Surat Peringatan ke ${highestActiveLevel}${
-			validUntil ? ` yang berlaku sampai ${validUntil}` : ''
-		}.`;
-	}
+	const highestActiveLetter = activeLetters[0] || null;
+	const allowedLevels = getAllowedWarningLetterLevels(highestActiveLevel);
+	const defaultLevel = getDefaultWarningLetterLevel(highestActiveLevel);
+	const disabledLevels = WARNING_LEVEL_OPTIONS.filter((option) => !allowedLevels.includes(option));
+	const isBlocked = allowedLevels.length === 0;
+	const feedback = buildWarningLetterEscalationFeedback({
+		highestActiveLevel,
+		highestActiveLetter,
+	});
 
 	return {
 		activeLetters,
 		highestActiveLevel,
-		recommendedLevel,
+		highestActiveLetter,
+		allowedLevels,
+		defaultLevel,
 		disabledLevels,
-		nextLevelReason,
+		isBlocked,
+		feedbackSeverity: feedback.severity,
+		feedbackMessage: feedback.message,
 	};
+}
+
+export function getActiveWarningLetterSummary(args) {
+	return getActiveWarningLetterState(args);
 }

@@ -22,11 +22,13 @@ import FormInput from '@/components/formInput';
 
 import {
 	DISCIPLINE_LETTER_CATEGORIES,
-	getActiveWarningLetterSummary,
+	getActiveWarningLetterState,
+	getDefaultWarningLetterLevel,
 	getDisciplineDocumentTitle,
 	getSuperiorOptions,
 	shouldRequireArticle,
 	shouldShowWarningLevel,
+	validateWarningLetterEscalation,
 	WARNING_LEVEL_OPTIONS,
 } from './utils';
 
@@ -138,10 +140,10 @@ function WarningLetterFormDialog({
 		setValue('articleContent', selectedArticle?.content || '');
 	}, [masterDokPkbOptions, requiresArticle, selectedArticleId, setValue]);
 
-	const warningRule = useMemo(
+	const warningEscalationState = useMemo(
 		() =>
 			isWarningLetter
-				? getActiveWarningLetterSummary({
+				? getActiveWarningLetterState({
 						rows: warningLetterRows,
 						employeeId: selectedEmployeeId,
 						excludeId: initialValue?.id,
@@ -149,9 +151,13 @@ function WarningLetterFormDialog({
 				  })
 				: {
 						highestActiveLevel: 0,
-						recommendedLevel: 1,
+						highestActiveLetter: null,
+						allowedLevels: WARNING_LEVEL_OPTIONS,
+						defaultLevel: getDefaultWarningLetterLevel(0),
 						disabledLevels: [],
-						nextLevelReason: '',
+						isBlocked: false,
+						feedbackSeverity: 'info',
+						feedbackMessage: '',
 				  },
 		[initialValue?.id, isWarningLetter, selectedEmployeeId, selectedLetterDate, warningLetterRows],
 	);
@@ -175,10 +181,16 @@ function WarningLetterFormDialog({
 
 		const currentLevel = Number(selectedWarningLevel) || 0;
 		const shouldAutoAdjust =
-			!currentLevel || warningRule.disabledLevels.includes(currentLevel) || (!isEditMode && selectionChanged);
+			!currentLevel ||
+			warningEscalationState.disabledLevels.includes(currentLevel) ||
+			(!isEditMode && selectionChanged);
 
-		if (shouldAutoAdjust && currentLevel !== warningRule.recommendedLevel) {
-			setValue('warningLevel', warningRule.recommendedLevel, {
+		if (
+			!warningEscalationState.isBlocked &&
+			shouldAutoAdjust &&
+			currentLevel !== warningEscalationState.defaultLevel
+		) {
+			setValue('warningLevel', warningEscalationState.defaultLevel, {
 				shouldDirty: true,
 				shouldValidate: true,
 			});
@@ -195,24 +207,23 @@ function WarningLetterFormDialog({
 		selectedLetterDate,
 		selectedWarningLevel,
 		setValue,
-		warningRule.disabledLevels,
-		warningRule.recommendedLevel,
+		warningEscalationState.defaultLevel,
+		warningEscalationState.disabledLevels,
+		warningEscalationState.isBlocked,
 	]);
 
-	let warningAlertMessage = '';
-	if (isWarningLetter && warningRule.highestActiveLevel > 0) {
-		const canEscalateHigherThanRecommended = warningRule.recommendedLevel < 3;
-		warningAlertMessage = `${warningRule.nextLevelReason} Form otomatis diarahkan ke Surat Peringatan ke ${warningRule.recommendedLevel}.`;
-
-		if (canEscalateHigherThanRecommended) {
-			warningAlertMessage += ' Anda masih dapat memilih Surat Peringatan ke 3 jika diperlukan.';
-		}
-	}
+	const warningAlertMessage = isWarningLetter ? warningEscalationState.feedbackMessage : '';
+	const warningAlertSeverity = warningEscalationState.feedbackSeverity || 'warning';
 
 	const titleLabel = `${isEditMode ? 'Edit' : 'Form'} ${getDisciplineDocumentTitle(
 		resolvedCategory,
 		initialValue?.warningLevel,
 	)}`;
+	const isWarningSubmitBlocked = isWarningLetter && warningEscalationState.isBlocked;
+	const canSubmitWarningLetterLevel = validateWarningLetterEscalation({
+		state: warningEscalationState,
+		selectedLevel: selectedWarningLevel,
+	}).ok;
 	let categoryFields = null;
 
 	if (isWarningLetter) {
@@ -236,7 +247,10 @@ function WarningLetterFormDialog({
 										value={String(option)}
 										control={<Radio />}
 										label={String(option)}
-										disabled={warningRule.disabledLevels.includes(option)}
+										disabled={
+											warningEscalationState.isBlocked ||
+											warningEscalationState.disabledLevels.includes(option)
+										}
 									/>
 								))}
 							</RadioGroup>
@@ -264,7 +278,7 @@ function WarningLetterFormDialog({
 			<DialogTitle>{titleLabel}</DialogTitle>
 			<DialogContent>
 				{warningAlertMessage ? (
-					<Alert severity="warning" sx={{ mb: 2, mt: 1 }}>
+					<Alert severity={warningAlertSeverity} sx={{ mb: 2, mt: 1 }}>
 						{warningAlertMessage}
 					</Alert>
 				) : null}
@@ -274,7 +288,13 @@ function WarningLetterFormDialog({
 					component="form"
 					id="warning-letter-form"
 					sx={{ pt: 1 }}
-					onSubmit={handleSubmit((values) => onSubmit({ ...values, category: resolvedCategory }))}
+					onSubmit={handleSubmit((values) => {
+						if (isWarningLetter && !canSubmitWarningLetterLevel) {
+							return;
+						}
+
+						onSubmit({ ...values, category: resolvedCategory });
+					})}
 				>
 					<Grid item xs={12} md={8}>
 						<Controller
@@ -440,7 +460,12 @@ function WarningLetterFormDialog({
 				<Button onClick={onClose} disabled={loading} color="inherit">
 					Batal
 				</Button>
-				<Button type="submit" form="warning-letter-form" variant="contained" disabled={loading}>
+				<Button
+					type="submit"
+					form="warning-letter-form"
+					variant="contained"
+					disabled={loading || isWarningSubmitBlocked}
+				>
 					{loading ? 'Menyimpan...' : 'Simpan'}
 				</Button>
 			</DialogActions>
