@@ -88,6 +88,9 @@ function CheckboxMark({ checked, label }) {
 
 function WarningLetterPrintDocument({ record }) {
 	const printConfig = getDisciplinePrintConfig(record);
+	const isSuspension = record.category === 'SUSPENSION';
+	const titleVisibleWord = isSuspension ? 'SKORSING' : 'PERINGATAN';
+	const titleStrikeWord = isSuspension ? 'PERINGATAN' : 'SKORSING';
 
 	return (
 		<Box
@@ -164,9 +167,27 @@ function WarningLetterPrintDocument({ record }) {
 						}}
 					>
 						<Typography
-							sx={{ fontFamily: FONT_FAMILY, fontSize: '12pt', fontWeight: 700, lineHeight: 1.08 }}
+							sx={{
+								fontFamily: FONT_FAMILY,
+								fontSize: '12pt',
+								fontWeight: 700,
+								lineHeight: 1.08,
+								whiteSpace: 'nowrap',
+							}}
 						>
-							{printConfig.formTitle}
+							<Box component="span">FORM SURAT </Box>
+							<Box component="span">{titleVisibleWord}</Box>
+							<Box component="span">/</Box>
+							<Box
+								component="span"
+								sx={{
+									textDecoration: 'line-through',
+									textDecorationThickness: '1.4px',
+									textDecorationSkipInk: 'none',
+								}}
+							>
+								{titleStrikeWord}
+							</Box>
 						</Typography>
 						<Typography
 							sx={{
