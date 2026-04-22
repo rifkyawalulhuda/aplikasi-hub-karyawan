@@ -421,9 +421,13 @@ router.get(
 					id: item.id,
 					group: 'Data Surat Peringatan',
 					title: item.letterNumber,
-					subtitle: `${item.employee.fullName} (${item.employee.employeeNo}) | ${formatDateForClient(
-						item.letterDate,
-					)}`,
+					subtitle: `${item.employee.fullName} (${item.employee.employeeNo}) | ${
+						item.category === 'WARNING_LETTER'
+							? `SP ${item.warningLevel || '-'}`
+							: item.category === 'SUSPENSION'
+							? 'Skorsing'
+							: 'Surat Teguran'
+					} | ${formatDateForClient(item.letterDate)}`,
 					href: buildSearchHref('/data-karyawan/data-surat-peringatan', query),
 				}),
 			),

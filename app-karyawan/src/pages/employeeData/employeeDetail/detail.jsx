@@ -58,6 +58,18 @@ function formatDate(raw) {
 	return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
+function getDisciplineTypeLabel(category, warningLevel) {
+	if (category === 'REPRIMAND') return 'Teguran';
+	if (category === 'SUSPENSION') return 'Skorsing';
+	return warningLevel ? `SP ${warningLevel}` : 'Peringatan';
+}
+
+function getDisciplineTypeColor(category) {
+	if (category === 'REPRIMAND') return 'warning';
+	if (category === 'SUSPENSION') return 'secondary';
+	return 'error';
+}
+
 function LicenseStatusChip({ status }) {
 	if (status === 'EXPIRED') return <Chip size="small" label="Expired" color="error" />;
 	if (status === 'SOON') return <Chip size="small" label="Akan Expired" color="warning" />;
@@ -425,7 +437,7 @@ function EmployeeDetailPage() {
 										<TableHead>
 											<TableRow sx={{ '& th': { fontWeight: 600, fontSize: 12 } }}>
 												<TableCell>Tipe</TableCell>
-												<TableCell>SP Ke</TableCell>
+												<TableCell>Level SP</TableCell>
 												<TableCell>No. Surat</TableCell>
 												<TableCell>Tanggal</TableCell>
 											</TableRow>
@@ -436,14 +448,8 @@ function EmployeeDetailPage() {
 													<TableCell>
 														<Chip
 															size="small"
-															label={
-																w.category === 'WARNING_LETTER'
-																	? 'Peringatan'
-																	: 'Teguran'
-															}
-															color={
-																w.category === 'WARNING_LETTER' ? 'error' : 'warning'
-															}
+															label={getDisciplineTypeLabel(w.category, w.warningLevel)}
+															color={getDisciplineTypeColor(w.category)}
 															variant="outlined"
 														/>
 													</TableCell>

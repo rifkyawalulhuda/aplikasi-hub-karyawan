@@ -11,6 +11,11 @@ const DEFAULT_WARNING_LEVEL = 1;
 const DISCIPLINE_LETTER_CATEGORIES = {
 	WARNING_LETTER: 'WARNING_LETTER',
 	REPRIMAND: 'REPRIMAND',
+	SUSPENSION: 'SUSPENSION',
+};
+const DISCIPLINE_LETTER_CATEGORY_ALIASES = {
+	SKORSING: DISCIPLINE_LETTER_CATEGORIES.SUSPENSION,
+	SUSPENSION: DISCIPLINE_LETTER_CATEGORIES.SUSPENSION,
 };
 
 function withAsync(handler) {
@@ -29,7 +34,19 @@ function normalizeMultilineString(value = '') {
 
 function normalizeCategory(value = '') {
 	const normalizedValue = normalizeString(value).toUpperCase();
-	return DISCIPLINE_LETTER_CATEGORIES[normalizedValue] || DISCIPLINE_LETTER_CATEGORIES.WARNING_LETTER;
+	return (
+		DISCIPLINE_LETTER_CATEGORIES[normalizedValue] ||
+		DISCIPLINE_LETTER_CATEGORY_ALIASES[normalizedValue] ||
+		DISCIPLINE_LETTER_CATEGORIES.WARNING_LETTER
+	);
+}
+
+function shouldApplyWarningLevelRule(category) {
+	return category === DISCIPLINE_LETTER_CATEGORIES.WARNING_LETTER;
+}
+
+function shouldRequireArticle(category) {
+	return category !== DISCIPLINE_LETTER_CATEGORIES.REPRIMAND;
 }
 
 function toDateOnly(value) {
@@ -163,6 +180,7 @@ async function getActiveWarningRule({ employeeId, referenceDate, excludeId }) {
 	const warningLetters = await prisma.warningLetter.findMany({
 		where: {
 			employeeId,
+			category: DISCIPLINE_LETTER_CATEGORIES.WARNING_LETTER,
 			...(excludeId ? { id: { not: excludeId } } : {}),
 		},
 		orderBy: { letterDate: 'desc' },
@@ -215,7 +233,7 @@ async function validatePayload(payload, currentId) {
 	}
 
 	if (!letterDate) {
-		throw Object.assign(new Error('Tanggal Surat Peringatan wajib diisi.'), { statusCode: 400 });
+		throw Object.assign(new Error('Tanggal Surat wajib diisi.'), { statusCode: 400 });
 	}
 
 	if (!violation) {
@@ -226,24 +244,22 @@ async function validatePayload(payload, currentId) {
 		throw Object.assign(new Error('Superior wajib dipilih.'), { statusCode: 400 });
 	}
 
-	if (category === DISCIPLINE_LETTER_CATEGORIES.WARNING_LETTER && !WARNING_LEVELS.includes(warningLevel)) {
+	if (shouldApplyWarningLevelRule(category) && !WARNING_LEVELS.includes(warningLevel)) {
 		throw Object.assign(new Error('Surat Peringatan ke harus dipilih.'), { statusCode: 400 });
 	}
 
-	if (category === DISCIPLINE_LETTER_CATEGORIES.WARNING_LETTER && !Number.isInteger(masterDokPkbId)) {
+	if (shouldRequireArticle(category) && !Number.isInteger(masterDokPkbId)) {
 		throw Object.assign(new Error('Pasal PKB wajib dipilih.'), { statusCode: 400 });
 	}
 
 	const [employee, superiorEmployee, masterDokPkb] = await Promise.all([
 		getEmployeeOrThrow(employeeId),
 		getEmployeeOrThrow(superiorEmployeeId),
-		category === DISCIPLINE_LETTER_CATEGORIES.WARNING_LETTER
-			? getMasterDokPkbOrThrow(masterDokPkbId)
-			: Promise.resolve(null),
+		shouldRequireArticle(category) ? getMasterDokPkbOrThrow(masterDokPkbId) : Promise.resolve(null),
 	]);
 
 	const warningRule =
-		category === DISCIPLINE_LETTER_CATEGORIES.WARNING_LETTER
+		shouldApplyWarningLevelRule(category)
 			? await getActiveWarningRule({
 					employeeId: employee.id,
 					referenceDate: letterDate,
@@ -256,7 +272,7 @@ async function validatePayload(payload, currentId) {
 	}
 
 	if (
-		category === DISCIPLINE_LETTER_CATEGORIES.WARNING_LETTER &&
+		shouldApplyWarningLevelRule(category) &&
 		warningRule &&
 		warningLevel < warningRule.recommendedLevel
 	) {
@@ -273,7 +289,7 @@ async function validatePayload(payload, currentId) {
 		employeeId: employee.id,
 		superiorEmployeeId: superiorEmployee.id,
 		masterDokPkbId: masterDokPkb?.id || null,
-		warningLevel: category === DISCIPLINE_LETTER_CATEGORIES.WARNING_LETTER ? warningLevel : null,
+		warningLevel: shouldApplyWarningLevelRule(category) ? warningLevel : null,
 		letterNumber,
 		letterDate,
 		departmentName: employee.department?.name || null,

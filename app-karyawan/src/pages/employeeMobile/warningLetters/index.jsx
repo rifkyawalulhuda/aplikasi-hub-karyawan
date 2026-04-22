@@ -21,12 +21,14 @@ import ClearRoundedIcon from '@mui/icons-material/ClearRounded';
 
 import FeedbackState from '@/components/employeePortal/feedbackState';
 import { useEmployeeAuth } from '@/contexts/employeeAuthContext';
+import { DISCIPLINE_LETTER_CATEGORIES, getDisciplineDocumentTitle } from '@/pages/employeeData/warningLetters/utils';
 import { employeeMeRequest } from '@/services/employeeApi';
 import { formatLongDate, getEmployeePortalErrorMessage, handleEmployeeUnauthorized } from '@/utils/employeePortal';
 
 const LEVEL_FILTERS = [
 	{ label: 'Semua', value: 'ALL' },
-	{ label: 'Surat Teguran', value: 'NONE' },
+	{ label: 'Skorsing', value: DISCIPLINE_LETTER_CATEGORIES.SUSPENSION },
+	{ label: 'Surat Teguran', value: DISCIPLINE_LETTER_CATEGORIES.REPRIMAND },
 	{ label: 'SP 1', value: '1' },
 	{ label: 'SP 2', value: '2' },
 	{ label: 'SP 3', value: '3' },
@@ -38,7 +40,7 @@ function normalizeSearchValue(value = '') {
 
 function buildSearchText(item) {
 	return [
-		item.warningLevel ? `Surat Peringatan ${item.warningLevel}` : 'Surat Teguran',
+		getDisciplineDocumentTitle(item.category, item.warningLevel),
 		formatLongDate(item.letterDate),
 		item.letterNumber,
 		item.jobLevelName,
@@ -88,7 +90,7 @@ function WarningLetterCard({ item }) {
 						<Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1}>
 							<Box sx={{ minWidth: 0, flex: 1 }}>
 								<Typography variant="subtitle1" sx={{ color: 'text.primary', fontWeight: 800 }}>
-									{item.warningLevel ? `Surat Peringatan ${item.warningLevel}` : 'Surat Teguran'}
+									{getDisciplineDocumentTitle(item.category, item.warningLevel)}
 								</Typography>
 								<Typography variant="body2" color="text.secondary" sx={{ mt: 0.35 }}>
 									{formatLongDate(item.letterDate)} | {item.letterNumber}
@@ -201,7 +203,10 @@ function EmployeeWarningLettersPage() {
 
 	const normalizedSearchQuery = normalizeSearchValue(searchQuery);
 	const filteredRows = rows.filter((item) => {
-		const currentLevel = item.warningLevel ? String(item.warningLevel) : 'NONE';
+		const currentLevel =
+			item.category === DISCIPLINE_LETTER_CATEGORIES.WARNING_LETTER
+				? String(item.warningLevel || '')
+				: item.category;
 		const matchesLevel = levelFilter === 'ALL' || currentLevel === levelFilter;
 		const matchesSearch =
 			!normalizedSearchQuery || normalizeSearchValue(buildSearchText(item)).includes(normalizedSearchQuery);
@@ -217,7 +222,7 @@ function EmployeeWarningLettersPage() {
 		return (
 			<FeedbackState
 				type="error"
-				title="Riwayat surat peringatan belum bisa dimuat."
+				title="Riwayat dokumen disipliner belum bisa dimuat."
 				description={error}
 				actionLabel="Coba Lagi"
 				onAction={loadData}
@@ -228,8 +233,8 @@ function EmployeeWarningLettersPage() {
 	if (!rows.length) {
 		return (
 			<FeedbackState
-				title="Belum ada surat peringatan."
-				description="Jika ada dokumen disipliner yang terkait dengan Anda, datanya akan tampil di halaman ini."
+				title="Belum ada dokumen disipliner."
+				description="Jika ada surat peringatan, skorsing, atau surat teguran yang terkait dengan Anda, datanya akan tampil di halaman ini."
 			/>
 		);
 	}

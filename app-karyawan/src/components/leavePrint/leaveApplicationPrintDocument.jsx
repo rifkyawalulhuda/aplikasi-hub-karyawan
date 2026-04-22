@@ -196,17 +196,17 @@ function LeaveApplicationPrintDocument({ data }) {
 					<Box sx={{ borderRight: '0.55mm solid #111', px: 0.7, py: 0.4 }}>
 						<Stack spacing={0.35}>
 							<Typography
-								sx={{ fontFamily: FONT_FAMILY, fontSize: '10pt', fontWeight: 700, color: '#0837d7' }}
+								sx={{ fontFamily: FONT_FAMILY, fontSize: '8pt', fontWeight: 700, color: '#0837d7' }}
 							>
 								PT SANKYU INDONESIA INTERNATIONAL
 							</Typography>
 							<Typography
-								sx={{ fontFamily: FONT_FAMILY, fontSize: '10pt', fontWeight: 700, color: '#0837d7' }}
+								sx={{ fontFamily: FONT_FAMILY, fontSize: '8pt', fontWeight: 700, color: '#0837d7' }}
 							>
 								QUALITY, SAFETY, HEALTH, AND ENVIRONMENTAL DIVISION
 							</Typography>
 							<Typography
-								sx={{ fontFamily: FONT_FAMILY, fontSize: '10pt', fontWeight: 700, color: '#0837d7' }}
+								sx={{ fontFamily: FONT_FAMILY, fontSize: '8pt', fontWeight: 700, color: '#0837d7' }}
 							>
 								SISTEM MANAJEMEN TERINTEGRASI
 							</Typography>

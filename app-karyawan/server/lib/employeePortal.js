@@ -137,6 +137,36 @@ function formatGuidanceCategoryLabel(value = '') {
 	return normalizeString(value).toUpperCase() === 'DIRECTION' ? 'Pengarahan' : 'Bimbingan';
 }
 
+function formatDisciplineCategoryLabel(value = '') {
+	const normalizedValue = normalizeString(value).toUpperCase();
+
+	if (normalizedValue === 'REPRIMAND') {
+		return 'Surat Teguran';
+	}
+
+	if (normalizedValue === 'SUSPENSION') {
+		return 'Skorsing';
+	}
+
+	return 'Surat Peringatan';
+}
+
+function formatDisciplineDocumentTitle(record) {
+	if (record?.category === 'REPRIMAND') {
+		return 'Surat Teguran';
+	}
+
+	if (record?.category === 'SUSPENSION') {
+		return 'Skorsing';
+	}
+
+	if (record?.warningLevel) {
+		return `Surat Peringatan ${record.warningLevel}`;
+	}
+
+	return 'Surat Peringatan';
+}
+
 function mapEmployeeGuidanceRecord(record) {
 	return {
 		id: record.id,
@@ -157,6 +187,8 @@ function mapEmployeeWarningLetter(record) {
 	return {
 		id: record.id,
 		category: record.category,
+		categoryLabel: formatDisciplineCategoryLabel(record.category),
+		documentTitle: formatDisciplineDocumentTitle(record),
 		warningLevel: record.warningLevel,
 		letterNumber: record.letterNumber,
 		letterDate: formatDateForClient(record.letterDate),
@@ -258,6 +290,8 @@ export {
 	mapEmployeePortalSession,
 	mapEmployeeTrainingRecord,
 	mapEmployeeWarningLetter,
+	formatDisciplineCategoryLabel,
+	formatDisciplineDocumentTitle,
 	normalizeString,
 	toDateOnly,
 };
