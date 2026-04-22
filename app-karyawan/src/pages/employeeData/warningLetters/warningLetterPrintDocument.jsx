@@ -2,6 +2,8 @@ import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
+import { getDisciplinePrintConfig } from './utils';
+
 const PAGE_WIDTH = '210mm';
 const PAGE_HEIGHT = '297mm';
 const FONT_FAMILY = '"Arial", "Helvetica", sans-serif';
@@ -19,11 +21,12 @@ const MONTH_LABELS = [
 	'November',
 	'Desember',
 ];
-const WARNING_LEVEL_LABELS = {
-	1: 'Pertama',
-	2: 'Kedua',
-	3: 'Ketiga',
-};
+const CHECKBOX_ITEMS = [
+	{ key: 'SP_1', label: 'SP 1' },
+	{ key: 'SP_2', label: 'SP 2' },
+	{ key: 'SP_3', label: 'SP 3' },
+	{ key: 'SUSPENSION', label: 'Skorsing' },
+];
 
 function formatLongWarningDate(value) {
 	if (!value) {
@@ -57,8 +60,34 @@ function DecisionRow({ label, children, contentSx }) {
 	);
 }
 
+function CheckboxMark({ checked, label }) {
+	return (
+		<Stack direction="row" alignItems="center" spacing={0.9}>
+			<Box
+				sx={{
+					width: '4.9mm',
+					height: '4.9mm',
+					border: '1.4px solid #222',
+					display: 'inline-flex',
+					alignItems: 'center',
+					justifyContent: 'center',
+					fontFamily: FONT_FAMILY,
+					fontSize: '10pt',
+					fontWeight: 700,
+					lineHeight: 1,
+				}}
+			>
+				{checked ? 'X' : ''}
+			</Box>
+			<Typography sx={{ fontFamily: FONT_FAMILY, fontSize: '10pt', lineHeight: 1.25, fontWeight: 700 }}>
+				{label}
+			</Typography>
+		</Stack>
+	);
+}
+
 function WarningLetterPrintDocument({ record }) {
-	const warningLevelLabel = WARNING_LEVEL_LABELS[record.warningLevel] || `${record.warningLevel}`;
+	const printConfig = getDisciplinePrintConfig(record);
 
 	return (
 		<Box
@@ -95,17 +124,17 @@ function WarningLetterPrintDocument({ record }) {
 				<Stack direction="row" justifyContent="space-between" alignItems="flex-start">
 					<Stack spacing={0.15}>
 						<Typography
-							sx={{ fontFamily: FONT_FAMILY, fontSize: '9.4pt', fontWeight: 700, color: '#0837d7' }}
+							sx={{ fontFamily: FONT_FAMILY, fontSize: '8pt', fontWeight: 700, color: '#0837d7' }}
 						>
 							PT SANKYU INDONESIA INTERNATIONAL
 						</Typography>
 						<Typography
-							sx={{ fontFamily: FONT_FAMILY, fontSize: '9.4pt', fontWeight: 700, color: '#0837d7' }}
+							sx={{ fontFamily: FONT_FAMILY, fontSize: '8pt', fontWeight: 700, color: '#0837d7' }}
 						>
 							QUALITY, SAFETY, HEALTH, AND ENVIRONMENTAL DIVISION
 						</Typography>
 						<Typography
-							sx={{ fontFamily: FONT_FAMILY, fontSize: '9.4pt', fontWeight: 700, color: '#0837d7' }}
+							sx={{ fontFamily: FONT_FAMILY, fontSize: '8pt', fontWeight: 700, color: '#0837d7' }}
 						>
 							SISTEM MANAJEMEN TERINTEGRASI
 						</Typography>
@@ -135,9 +164,9 @@ function WarningLetterPrintDocument({ record }) {
 						}}
 					>
 						<Typography
-							sx={{ fontFamily: FONT_FAMILY, fontSize: '14.2pt', fontWeight: 700, lineHeight: 1.08 }}
+							sx={{ fontFamily: FONT_FAMILY, fontSize: '12pt', fontWeight: 700, lineHeight: 1.08 }}
 						>
-							FORM SURAT PERINGATAN
+							{printConfig.formTitle}
 						</Typography>
 						<Typography
 							sx={{
@@ -153,8 +182,8 @@ function WarningLetterPrintDocument({ record }) {
 					</Box>
 					<Box sx={{ border: '1px solid #222' }}>
 						{[
-							['Tgl Efektif', '01 Agustus 2024'],
-							['Rev', '02'],
+							['Tgl Efektif', '22 April 2026'],
+							['Rev', '03'],
 							['Form No', 'SII-QSHE-085-01'],
 						].map(([label, value], index) => (
 							<Box
@@ -180,9 +209,9 @@ function WarningLetterPrintDocument({ record }) {
 					</Box>
 				</Box>
 
-				<Stack spacing={3.2} sx={{ mt: 3.2, flex: 1 }}>
+				<Stack spacing={2.6} sx={{ mt: 3.1, flex: 1 }}>
 					<Box>
-						<Typography sx={{ fontFamily: FONT_FAMILY, fontSize: '12pt', fontWeight: 700, mb: 0.4 }}>
+						<Typography sx={{ fontFamily: FONT_FAMILY, fontSize: '11pt', fontWeight: 700, mb: 0.4 }}>
 							Menimbang
 						</Typography>
 						<Box component="ol" sx={{ m: 0, pl: '24px' }}>
@@ -208,7 +237,7 @@ function WarningLetterPrintDocument({ record }) {
 					</Box>
 
 					<Box>
-						<Typography sx={{ fontFamily: FONT_FAMILY, fontSize: '12pt', fontWeight: 700, mb: 0.4 }}>
+						<Typography sx={{ fontFamily: FONT_FAMILY, fontSize: '11pt', fontWeight: 700, mb: 0.4 }}>
 							Mengingat
 						</Typography>
 						<Box component="ol" start={4} sx={{ m: 0, pl: '24px' }}>
@@ -221,21 +250,35 @@ function WarningLetterPrintDocument({ record }) {
 										textAlign: 'justify',
 									}}
 								>
-									{`Perjanjian Kerja Bersama (PKB) ${record.articleLabel}`}
+									Perjanjian Kerja Bersama (PKB)
 								</Typography>
-								<Typography
-									sx={{
-										fontFamily: FONT_FAMILY,
-										fontSize: '10pt',
-										lineHeight: 1.4,
-										fontWeight: 700,
-										fontStyle: 'italic',
-										ml: 0.2,
-										textAlign: 'justify',
-									}}
-								>
-									{`"${record.articleContent}"`}
-								</Typography>
+								{record.articleLabel ? (
+									<Typography
+										sx={{
+											fontFamily: FONT_FAMILY,
+											fontSize: '10pt',
+											lineHeight: 1.35,
+											textAlign: 'justify',
+										}}
+									>
+										{record.articleLabel}
+									</Typography>
+								) : null}
+								{record.articleContent ? (
+									<Typography
+										sx={{
+											fontFamily: FONT_FAMILY,
+											fontSize: '10pt',
+											lineHeight: 1.4,
+											fontWeight: 700,
+											fontStyle: 'italic',
+											ml: 0.2,
+											textAlign: 'justify',
+										}}
+									>
+										{record.articleContent}
+									</Typography>
+								) : null}
 							</Box>
 							<Box component="li" sx={{ pl: 1 }}>
 								<Typography
@@ -260,17 +303,17 @@ function WarningLetterPrintDocument({ record }) {
 								fontWeight: 700,
 								letterSpacing: '4pt',
 								textAlign: 'center',
-								mb: 1.5,
+								mb: 1.4,
 							}}
 						>
 							MEMUTUSKAN
 						</Typography>
 
-						<Stack spacing={0.9}>
+						<Stack spacing={0.85}>
 							<DecisionRow label="Menetapkan" />
 							<DecisionRow
 								label="Pertama"
-								contentSx={{ display: 'flex', flexDirection: 'column', gap: 0.1 }}
+								contentSx={{ display: 'flex', flexDirection: 'column', gap: 0.35 }}
 							>
 								<Typography
 									sx={{
@@ -280,13 +323,41 @@ function WarningLetterPrintDocument({ record }) {
 										textAlign: 'justify',
 									}}
 								>
-									{`Perusahaan memberikan Surat Peringatan ${warningLevelLabel} (${record.warningLevel}), kepada;`}
+									Perusahaan memberikan
 								</Typography>
 								<Box
 									sx={{
 										display: 'grid',
+										gridTemplateColumns: 'repeat(4, max-content) 1fr',
+										columnGap: 4,
+										rowGap: 1,
+										alignItems: 'center',
+										mt: 0.15,
+										mb: 0.25,
+									}}
+								>
+									{CHECKBOX_ITEMS.map((item) => (
+										<CheckboxMark
+											key={item.key}
+											label={item.label}
+											checked={printConfig.checkedType === item.key}
+										/>
+									))}
+									<Typography
+										sx={{
+											fontFamily: FONT_FAMILY,
+											fontSize: '10pt',
+											lineHeight: 1.25,
+											justifySelf: 'start',
+										}}
+									>
+										kepada;
+									</Typography>
+								</Box>
+								<Box
+									sx={{
+										display: 'grid',
 										gridTemplateColumns: '78px 8px 1fr',
-										mt: 0.25,
 										columnGap: 2,
 									}}
 								>
@@ -302,7 +373,7 @@ function WarningLetterPrintDocument({ record }) {
 								</Box>
 								<Box sx={{ display: 'grid', gridTemplateColumns: '78px 8px 1fr', columnGap: 2 }}>
 									<Typography sx={{ fontFamily: FONT_FAMILY, fontSize: '10pt', lineHeight: 1.35 }}>
-										Nik
+										NIK
 									</Typography>
 									<Typography sx={{ fontFamily: FONT_FAMILY, fontSize: '10pt', lineHeight: 1.35 }}>
 										:
@@ -312,37 +383,25 @@ function WarningLetterPrintDocument({ record }) {
 									</Typography>
 								</Box>
 							</DecisionRow>
-							<DecisionRow label="Kedua">
-								<Typography
-									sx={{
-										fontFamily: FONT_FAMILY,
-										fontSize: '10pt',
-										lineHeight: 1.45,
-										textAlign: 'justify',
-									}}
-								>
-									Keputusan ini berlaku sejak surat ini dikeluarkan sampai dengan 6 bulan kedepan.
-								</Typography>
-							</DecisionRow>
-							<DecisionRow label="Ketiga">
-								<Typography
-									sx={{
-										fontFamily: FONT_FAMILY,
-										fontSize: '10pt',
-										lineHeight: 1.45,
-										textAlign: 'justify',
-									}}
-								>
-									Apabila dikemudian hari yang bersangkutan melanggar kembali peraturan / PKB, maka
-									Perusahaan akan mengeluarkan sanksi berikutnya sesuai dengan peraturan / PKB yang
-									berlaku.
-								</Typography>
-							</DecisionRow>
+							{printConfig.decisionRows.map((item) => (
+								<DecisionRow key={item.label} label={item.label}>
+									<Typography
+										sx={{
+											fontFamily: FONT_FAMILY,
+											fontSize: '10pt',
+											lineHeight: 1.45,
+											textAlign: 'justify',
+										}}
+									>
+										{item.content}
+									</Typography>
+								</DecisionRow>
+							))}
 						</Stack>
 					</Box>
 
-					<Box sx={{ mt: 1 }}>
-						<Stack spacing={0.3}>
+					<Box sx={{ mt: 0.4 }}>
+						<Stack spacing={0.25}>
 							<Box sx={{ display: 'grid', gridTemplateColumns: '118px 8px 1fr', columnGap: 1 }}>
 								<Typography sx={{ fontFamily: FONT_FAMILY, fontSize: '10pt', lineHeight: 1.35 }}>
 									Tanggal
@@ -374,7 +433,7 @@ function WarningLetterPrintDocument({ record }) {
 					</Box>
 				</Stack>
 
-				<Box sx={{ mt: '14mm', display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: '34mm' }}>
+				<Box sx={{ mt: '12mm', display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: '34mm' }}>
 					<Stack alignItems="flex-start">
 						<Box sx={{ width: '58mm', borderTop: '2px dotted #111', mb: 0.8 }} />
 						<Typography sx={{ fontFamily: FONT_FAMILY, fontSize: '10pt', lineHeight: 1.2 }}>
@@ -391,10 +450,13 @@ function WarningLetterPrintDocument({ record }) {
 						<Typography sx={{ fontFamily: FONT_FAMILY, fontSize: '10pt', lineHeight: 1.2 }}>
 							{record.employeeName}
 						</Typography>
+						<Typography sx={{ fontFamily: FONT_FAMILY, fontSize: '9.5pt', lineHeight: 1.2 }}>
+							Karyawan
+						</Typography>
 					</Stack>
 				</Box>
 
-				<Box sx={{ mt: '12mm' }}>
+				<Box sx={{ mt: '11mm' }}>
 					<Typography sx={{ fontFamily: FONT_FAMILY, fontSize: '10pt', lineHeight: 1.45 }}>
 						Surat Keputusan ini disampaikan kepada:
 					</Typography>

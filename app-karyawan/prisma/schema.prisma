@@ -44,6 +44,7 @@ enum GuidanceRecordCategory {
 enum DisciplineLetterCategory {
   WARNING_LETTER
   REPRIMAND
+  SUSPENSION
 }
 
 enum LeaveRequestStatus {

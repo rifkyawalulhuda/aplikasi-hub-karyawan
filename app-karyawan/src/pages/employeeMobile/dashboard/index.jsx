@@ -29,6 +29,7 @@ import SchoolOutlinedIcon from '@mui/icons-material/SchoolOutlined';
 import FeedbackState from '@/components/employeePortal/feedbackState';
 import InstallAppCard from '@/components/employeePortal/installAppCard';
 import { useEmployeeAuth } from '@/contexts/employeeAuthContext';
+import { getDisciplineDocumentTitle } from '@/pages/employeeData/warningLetters/utils';
 import { employeeMeRequest } from '@/services/employeeApi';
 import { formatLongDate, getEmployeePortalErrorMessage, handleEmployeeUnauthorized } from '@/utils/employeePortal';
 
@@ -397,7 +398,7 @@ function EmployeeDashboardPage() {
 		})),
 		...(data?.recentWarningLetters || []).slice(0, 2).map((item) => ({
 			id: `warning-${item.id}`,
-			title: item.warningLevel ? `Surat Peringatan ${item.warningLevel}` : 'Surat Teguran',
+			title: getDisciplineDocumentTitle(item.category, item.warningLevel),
 			subtitle: formatLongDate(item.letterDate),
 			description: item.violation,
 			meta: item.letterNumber || '',

@@ -6,10 +6,41 @@ const DEFAULT_WARNING_LEVEL = 1;
 export const DISCIPLINE_LETTER_CATEGORIES = {
 	WARNING_LETTER: 'WARNING_LETTER',
 	REPRIMAND: 'REPRIMAND',
+	SUSPENSION: 'SUSPENSION',
 };
 export const DISCIPLINE_LETTER_CATEGORY_LABELS = {
 	[DISCIPLINE_LETTER_CATEGORIES.WARNING_LETTER]: 'Surat Peringatan',
 	[DISCIPLINE_LETTER_CATEGORIES.REPRIMAND]: 'Surat Teguran',
+	[DISCIPLINE_LETTER_CATEGORIES.SUSPENSION]: 'Skorsing',
+};
+const DISCIPLINE_PRINT_DECISION_ROWS = {
+	[DISCIPLINE_LETTER_CATEGORIES.WARNING_LETTER]: [
+		{
+			label: 'Kedua',
+			content: 'Keputusan ini berlaku sejak surat ini dikeluarkan sampai dengan 6 bulan kedepan.',
+		},
+		{
+			label: 'Ketiga',
+			content:
+				'Apabila dikemudian hari yang bersangkutan melanggar kembali peraturan / PKB, maka Perusahaan akan mengeluarkan sangsi berikutnya sesuai dengan peraturan / PKB yang berlaku.',
+		},
+	],
+	[DISCIPLINE_LETTER_CATEGORIES.SUSPENSION]: [
+		{
+			label: 'Kedua',
+			content:
+				'Keputusan ini berlaku sejak surat ini dikeluarkan sampai dengan diterbitkannya keputusan final mengenai status hubungan kerja Saudara.',
+		},
+		{
+			label: 'Ketiga',
+			content:
+				'Instruksi Khusus, karyawan dilarang masuk ke area kantor tetapi harus tetap siap sedia jika dipanggil sewaktu-waktu.',
+		},
+		{
+			label: 'Keempat',
+			content: 'Hak Karyawan, karyawan tetap menerima gaji/upah penuh selama masa skorsing.',
+		},
+	],
 };
 
 export function formatWarningDate(value) {
@@ -108,6 +139,44 @@ function toComparableUtcDate(value) {
 
 export function getDisciplineCategoryLabel(category) {
 	return DISCIPLINE_LETTER_CATEGORY_LABELS[category] || DISCIPLINE_LETTER_CATEGORY_LABELS.WARNING_LETTER;
+}
+
+export function shouldShowWarningLevel(category) {
+	return category === DISCIPLINE_LETTER_CATEGORIES.WARNING_LETTER;
+}
+
+export function shouldRequireArticle(category) {
+	return category !== DISCIPLINE_LETTER_CATEGORIES.REPRIMAND;
+}
+
+export function getDisciplineDocumentTitle(category, warningLevel) {
+	if (category === DISCIPLINE_LETTER_CATEGORIES.REPRIMAND) {
+		return 'Surat Teguran';
+	}
+
+	if (category === DISCIPLINE_LETTER_CATEGORIES.SUSPENSION) {
+		return 'Skorsing';
+	}
+
+	if (warningLevel) {
+		return `Surat Peringatan ${warningLevel}`;
+	}
+
+	return 'Surat Peringatan';
+}
+
+export function getDisciplinePrintConfig(record = {}) {
+	const category = record.category || DISCIPLINE_LETTER_CATEGORIES.WARNING_LETTER;
+	const warningLevel = Number(record.warningLevel) || 0;
+
+	return {
+		formTitle: 'FORM SURAT PERINGATAN/SKORSING',
+		checkedType:
+			category === DISCIPLINE_LETTER_CATEGORIES.SUSPENSION
+				? 'SUSPENSION'
+				: `SP_${Math.min(Math.max(warningLevel, 1), 3)}`,
+		decisionRows: DISCIPLINE_PRINT_DECISION_ROWS[category] || DISCIPLINE_PRINT_DECISION_ROWS.WARNING_LETTER,
+	};
 }
 
 export function getActiveWarningLetterSummary({ rows = [], employeeId, excludeId, referenceDate }) {

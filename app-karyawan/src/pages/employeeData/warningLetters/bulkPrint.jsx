@@ -81,7 +81,9 @@ function WarningLetterBulkPrintPage() {
 
 	let content = (
 		<Stack alignItems="center" spacing={1} py={10}>
-			<Typography variant="h6">Tidak ada data surat peringatan atau surat teguran untuk dicetak.</Typography>
+			<Typography variant="h6">
+				Tidak ada data surat peringatan, skorsing, atau surat teguran untuk dicetak.
+			</Typography>
 			<Typography variant="body2" color="text.secondary">
 				Pilih data dari halaman daftar terlebih dahulu.
 			</Typography>

@@ -53,6 +53,12 @@ Folder ini dipilih sebagai basis utama pengembangan karena struktur template-nya
 - Preferensi `Tema Gelap` untuk PWA Karyawan disimpan di `localStorage` browser dengan mode `light/dark`, dan diakses lewat toggle cepat di header mobile serta switch bertanda `Tema Gelap` pada halaman Profil.
 - Login PWA mobile menampilkan tombol `Install App` dengan fallback instruksi manual jika `beforeinstallprompt` belum tersedia di browser.
 - Halaman login PWA Karyawan sekarang memakai hero header yang lebih minimalis, tanpa logo gambar terpisah, dengan tipografi `SANKYU` dan `Portal Karyawan` yang di-center agar tampil lebih modern dan ringkas.
+- Modul `Data Surat Peringatan` sekarang mendukung 3 kategori dokumen disipliner dalam satu modul yang sama:
+  - `Surat Peringatan`
+  - `Skorsing`
+  - `Surat Teguran`
+- Print A4 `Surat Peringatan 1/2/3` dan `Skorsing` sekarang memakai satu basis template bersama yang mengikuti form `SII-QSHE-085-01 Surat Peringatan-Skorsing`, dengan perbedaan checkbox dan narasi keputusan dipetakan dari kategori dokumen.
+- Rule eskalasi aktif 6 bulan tetap hanya berlaku untuk kategori `Surat Peringatan`; kategori `Skorsing` tidak memaksa level SP.
 - Manifest PWA sekarang memakai ikon PNG standar `pwa/icon-192.png` dan `pwa/icon-512.png`; SVG tidak lagi dipakai sebagai ikon utama agar kompatibilitas install lebih stabil.
 - Standar global `table list` desktop sekarang mengikuti pola halaman `Bimbingan & Pengarahan`, kecuali halaman `Detail Karyawan`.
 - Frontend testing sekarang tersedia melalui `Vitest` dengan environment `jsdom`, global test helpers, dan setup `@testing-library/jest-dom`.
@@ -490,7 +496,7 @@ Modul ini digunakan agar karyawan dapat login dari HP dan melihat data dirinya s
   - profil karyawan
   - riwayat `Bimbingan & Pengarahan` milik sendiri
   - riwayat `Pelatihan Karyawan` milik sendiri
-  - riwayat `Surat Peringatan / Surat Teguran` milik sendiri
+  - riwayat `Surat Peringatan / Skorsing / Surat Teguran` milik sendiri
 - PWA sekarang memiliki:
   - manifest
   - service worker
@@ -531,15 +537,17 @@ Modul ini digunakan agar karyawan dapat login dari HP dan melihat data dirinya s
 - Perlu fungsi print dengan format yang sama dengan form surat peringatan.
 - Implementasi awal yang sudah dibuat:
   - halaman `Data Surat Peringatan` di bawah menu `Data Karyawan`
-  - halaman ini sekarang menampung 2 kategori dokumen disipliner:
-    - `Surat Peringatan`
-    - `Surat Teguran`
-  - tombol input dibuat menjadi dropdown `Tambah Input Form` dengan pilihan:
-    - `Form Surat Peringatan`
-    - `Surat Teguran`
-  - struktur input:
-    - `Nama` dari `Master Karyawan`
-    - `NIK` autofill dari `Employee No`
+    - halaman ini sekarang menampung 3 kategori dokumen disipliner:
+      - `Surat Peringatan`
+      - `Skorsing`
+      - `Surat Teguran`
+    - tombol input dibuat menjadi dropdown `Tambah Input Form` dengan pilihan:
+      - `Form Surat Peringatan`
+      - `Form Skorsing`
+      - `Surat Teguran`
+    - struktur input:
+      - `Nama` dari `Master Karyawan`
+      - `NIK` autofill dari `Employee No`
     - `Surat Peringatan ke` dengan pilihan `1`, `2`, `3`
     - `Nomor Surat` dengan batas maksimal 25 karakter
     - `Tanggal Surat Peringatan`
@@ -557,8 +565,13 @@ Modul ini digunakan agar karyawan dapat login dari HP dan melihat data dirinya s
     - `Pelanggaran`
     - `Superior` hanya menampilkan karyawan dengan `Job Level = Dept. Manager` dan tetap kompatibel dengan data lama `Department Manager`
   - halaman detail dengan tombol `Print A4`
-  - layout print A4 mengikuti `sample Warning Letter.pdf` dengan pendekatan overlay data di atas template visual PDF
-  - layout print A4 `Surat Teguran` mengikuti dokumen `Surat Teguran.pdf` dengan komposisi manual A4 berbasis struktur PDF
+    - struktur input `Skorsing` memakai basis field `Surat Peringatan` tanpa level SP, tetap menggunakan `Pasal PKB` dan `Isi Pasal`
+    - layout print A4 `Surat Peringatan` dan `Skorsing` sekarang memakai template bersama `SII-QSHE-085-01 Surat Peringatan-Skorsing`
+    - checkbox pada print template bersama dibedakan otomatis:
+      - `Surat Peringatan` menandai salah satu `SP 1 / SP 2 / SP 3`
+      - `Skorsing` menandai `Skorsing`
+    - narasi keputusan `Kedua / Ketiga / Keempat` pada print template bersama dipetakan berdasarkan kategori dokumen
+    - layout print A4 `Surat Teguran` mengikuti dokumen `Surat Teguran.pdf` dengan komposisi manual A4 berbasis struktur PDF
   - nama superior dan nama karyawan tampil pada area tanda tangan di hasil print
   - form input/edit memiliki rule eskalasi otomatis berdasarkan surat peringatan aktif 6 bulan:
     - jika masih ada `Surat Peringatan ke 1` yang aktif, form otomatis mengarahkan ke `Surat Peringatan ke 2` dan menonaktifkan pilihan level sebelumnya
@@ -801,6 +814,8 @@ Yang sudah selesai:
 - Menambahkan halaman detail dan print `Formulir Catatan Bimbingan Karyawan` dengan pendekatan overlay data di atas template PDF resmi.
 - Menambahkan kategori `Bimbingan` dan `Pengarahan` pada modul `Bimbingan & Pengarahan`, beserta form input dan template print A4 untuk `Formulir Catatan Pengarahan Karyawan`.
 - Menambahkan schema, migration, API CRUD, route, menu, halaman tabel, form input/edit, halaman detail, dan print A4 untuk modul `Data Surat Peringatan`.
+- Memperluas modul `Data Surat Peringatan` agar juga mendukung `Form Skorsing` pada schema Prisma, API Express, list/detail/filter/export, history PWA, dan bulk print tanpa memecah modul data.
+- Menyesuaikan template print `Surat Peringatan` agar mengikuti format `SII-QSHE-085-01 Surat Peringatan-Skorsing`, lalu menyatukannya dengan `Skorsing` dalam satu basis komponen print dengan mapping checkbox dan narasi terpusat.
 - Menambahkan auth flow khusus `Portal Mobile Karyawan` berbasis `Employee No` + `Employee.password`.
 - Menambahkan middleware bearer token karyawan dan endpoint self-service:
   - `/api/employee-auth/login`

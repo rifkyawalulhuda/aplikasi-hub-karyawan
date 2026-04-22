@@ -3,6 +3,7 @@ import { Router } from 'express';
 import prisma from '../lib/prisma.js';
 import {
 	buildEmployeePortalProfile,
+	formatDisciplineDocumentTitle,
 	mapEmployeeGuidanceRecord,
 	mapEmployeeTrainingRecord,
 	mapEmployeeWarningLetter,
@@ -1997,14 +1998,18 @@ function createGuidanceNotification(record) {
 
 function createWarningLetterNotification(record) {
 	const { letterDate } = record;
+	const documentTitle = formatDisciplineDocumentTitle(record);
 	const isWarning = record.category === 'WARNING_LETTER';
+	const description = isWarning
+		? `Anda menerima Surat Peringatan ke-${record.warningLevel}.`
+		: `Anda menerima ${documentTitle}.`;
 
 	return {
 		id: `emp-warning-${record.id}-${letterDate.toISOString()}`,
 		category: 'WARNING_LETTER',
 		severity: 'error',
-		title: `Surat ${isWarning ? 'Peringatan' : 'Teguran'} Baru`,
-		description: `Anda menerima Surat ${isWarning ? `Peringatan ke-${record.warningLevel}` : 'Teguran'}.`,
+		title: `${documentTitle} Baru`,
+		description,
 		targetPath: `/karyawan/surat-peringatan`,
 		targetSearch: '',
 		dateLabel: `Tanggal: ${formatLongDateForNotice(letterDate)}`,

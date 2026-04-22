@@ -20,9 +20,9 @@ function WarningLetterTable({ rows, selectedRowIds, onSelectionChange, onView, o
 	if (rows.length === 0) {
 		return (
 			<Stack py={8} alignItems="center" spacing={1}>
-				<Typography variant="h6">Belum ada data surat peringatan atau surat teguran</Typography>
+				<Typography variant="h6">Belum ada data surat peringatan, skorsing, atau surat teguran</Typography>
 				<Typography variant="body2" color="text.secondary">
-					Tambahkan form surat peringatan atau surat teguran pertama dari halaman ini.
+					Tambahkan form surat peringatan, skorsing, atau surat teguran pertama dari halaman ini.
 				</Typography>
 			</Stack>
 		);
@@ -41,7 +41,7 @@ function WarningLetterTable({ rows, selectedRowIds, onSelectionChange, onView, o
 			{ field: 'employeeNo', headerName: 'NIK', minWidth: 140 },
 			{
 				field: 'warningLevel',
-				headerName: 'SURAT PERINGATAN KE',
+				headerName: 'LEVEL SP',
 				minWidth: 180,
 				renderCell: (params) =>
 					params.row.category === DISCIPLINE_LETTER_CATEGORIES.WARNING_LETTER ? params.value : '-',
@@ -49,7 +49,7 @@ function WarningLetterTable({ rows, selectedRowIds, onSelectionChange, onView, o
 			{ field: 'letterNumber', headerName: 'NOMOR SURAT', minWidth: 170 },
 			{
 				field: 'letterDate',
-				headerName: 'TANGGAL SURAT PERINGATAN',
+				headerName: 'TANGGAL SURAT',
 				minWidth: 190,
 				valueFormatter: (params) => formatWarningDate(params.value),
 			},

@@ -23,8 +23,10 @@ import FormInput from '@/components/formInput';
 import {
 	DISCIPLINE_LETTER_CATEGORIES,
 	getActiveWarningLetterSummary,
-	getDisciplineCategoryLabel,
+	getDisciplineDocumentTitle,
 	getSuperiorOptions,
+	shouldRequireArticle,
+	shouldShowWarningLevel,
 	WARNING_LEVEL_OPTIONS,
 } from './utils';
 
@@ -60,7 +62,8 @@ function WarningLetterFormDialog({
 }) {
 	const resolvedCategory = initialValue?.category || createCategory || DISCIPLINE_LETTER_CATEGORIES.WARNING_LETTER;
 	const isEditMode = Boolean(initialValue);
-	const isWarningLetter = resolvedCategory === DISCIPLINE_LETTER_CATEGORIES.WARNING_LETTER;
+	const isWarningLetter = shouldShowWarningLevel(resolvedCategory);
+	const requiresArticle = shouldRequireArticle(resolvedCategory);
 	const superiorOptions = getSuperiorOptions(employeeOptions);
 	const {
 		control,
@@ -125,7 +128,7 @@ function WarningLetterFormDialog({
 	}, [employeeOptions, selectedEmployeeId, setValue]);
 
 	useEffect(() => {
-		if (!isWarningLetter) {
+		if (!requiresArticle) {
 			setValue('masterDokPkbId', '');
 			setValue('articleContent', '');
 			return;
@@ -133,7 +136,7 @@ function WarningLetterFormDialog({
 
 		const selectedArticle = masterDokPkbOptions.find((item) => item.id === Number(selectedArticleId));
 		setValue('articleContent', selectedArticle?.content || '');
-	}, [isWarningLetter, masterDokPkbOptions, selectedArticleId, setValue]);
+	}, [masterDokPkbOptions, requiresArticle, selectedArticleId, setValue]);
 
 	const warningRule = useMemo(
 		() =>
@@ -206,7 +209,55 @@ function WarningLetterFormDialog({
 		}
 	}
 
-	const titleLabel = `${isEditMode ? 'Edit' : 'Form'} ${getDisciplineCategoryLabel(resolvedCategory)}`;
+	const titleLabel = `${isEditMode ? 'Edit' : 'Form'} ${getDisciplineDocumentTitle(
+		resolvedCategory,
+		initialValue?.warningLevel,
+	)}`;
+	let categoryFields = null;
+
+	if (isWarningLetter) {
+		categoryFields = (
+			<Grid item xs={12}>
+				<Controller
+					name="warningLevel"
+					control={control}
+					rules={{ required: 'Surat Peringatan ke wajib dipilih.' }}
+					render={({ field }) => (
+						<FormControl error={Boolean(errors.warningLevel)}>
+							<FormLabel>Surat Peringatan ke</FormLabel>
+							<RadioGroup
+								row
+								value={String(field.value)}
+								onChange={(event) => field.onChange(Number(event.target.value))}
+							>
+								{WARNING_LEVEL_OPTIONS.map((option) => (
+									<FormControlLabel
+										key={option}
+										value={String(option)}
+										control={<Radio />}
+										label={String(option)}
+										disabled={warningRule.disabledLevels.includes(option)}
+									/>
+								))}
+							</RadioGroup>
+							<FormHelperText>{errors.warningLevel?.message}</FormHelperText>
+						</FormControl>
+					)}
+				/>
+			</Grid>
+		);
+	} else if (!requiresArticle) {
+		categoryFields = (
+			<>
+				<Grid item xs={12} md={6}>
+					<TextField label="Departement" value={departmentName || ''} fullWidth disabled />
+				</Grid>
+				<Grid item xs={12} md={6}>
+					<TextField label="Jabatan" value={jobLevelName || ''} fullWidth disabled />
+				</Grid>
+			</>
+		);
+	}
 
 	return (
 		<Dialog open={open} onClose={loading ? undefined : onClose} fullWidth maxWidth="lg">
@@ -256,45 +307,7 @@ function WarningLetterFormDialog({
 						<TextField label="NIK" value={employeeNo || ''} fullWidth disabled />
 					</Grid>
 
-					{isWarningLetter ? (
-						<Grid item xs={12}>
-							<Controller
-								name="warningLevel"
-								control={control}
-								rules={{ required: 'Surat Peringatan ke wajib dipilih.' }}
-								render={({ field }) => (
-									<FormControl error={Boolean(errors.warningLevel)}>
-										<FormLabel>Surat Peringatan ke</FormLabel>
-										<RadioGroup
-											row
-											value={String(field.value)}
-											onChange={(event) => field.onChange(Number(event.target.value))}
-										>
-											{WARNING_LEVEL_OPTIONS.map((option) => (
-												<FormControlLabel
-													key={option}
-													value={String(option)}
-													control={<Radio />}
-													label={String(option)}
-													disabled={warningRule.disabledLevels.includes(option)}
-												/>
-											))}
-										</RadioGroup>
-										<FormHelperText>{errors.warningLevel?.message}</FormHelperText>
-									</FormControl>
-								)}
-							/>
-						</Grid>
-					) : (
-						<>
-							<Grid item xs={12} md={6}>
-								<TextField label="Departement" value={departmentName || ''} fullWidth disabled />
-							</Grid>
-							<Grid item xs={12} md={6}>
-								<TextField label="Jabatan" value={jobLevelName || ''} fullWidth disabled />
-							</Grid>
-						</>
-					)}
+					{categoryFields}
 
 					<Grid item xs={12} md={6}>
 						<FormInput
@@ -319,16 +332,12 @@ function WarningLetterFormDialog({
 					<Grid item xs={12} md={6}>
 						<FormInput
 							name="letterDate"
-							label={isWarningLetter ? 'Tanggal Surat Peringatan' : 'Tanggal'}
+							label="Tanggal Surat"
 							type="date"
 							control={control}
 							errors={errors}
 							dirtyFields={dirtyFields}
-							rules={{
-								required: isWarningLetter
-									? 'Tanggal Surat Peringatan wajib diisi.'
-									: 'Tanggal wajib diisi.',
-							}}
+							rules={{ required: 'Tanggal Surat wajib diisi.' }}
 							fullWidth
 							InputLabelProps={{ shrink: true }}
 						/>
@@ -347,7 +356,7 @@ function WarningLetterFormDialog({
 						/>
 					</Grid>
 
-					{isWarningLetter ? (
+					{requiresArticle ? (
 						<>
 							<Grid item xs={12} md={5}>
 								<Controller

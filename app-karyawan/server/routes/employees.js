@@ -969,6 +969,7 @@ router.get(
 		).length;
 
 		const activeWarningLetters = warningLetters.filter((w) => {
+			if (w.category !== 'WARNING_LETTER') return false;
 			if (!w.letterDate) return false;
 			const sixMonthsAgo = new Date(today);
 			sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);

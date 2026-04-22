@@ -107,8 +107,11 @@ function WarningLettersPage() {
 		const matchesDateTo = dateTo ? row.letterDate <= dateTo : true;
 		let matchesWarningLevel = true;
 
-		if (warningLevelFilter === DISCIPLINE_LETTER_CATEGORIES.REPRIMAND) {
-			matchesWarningLevel = row.category === DISCIPLINE_LETTER_CATEGORIES.REPRIMAND;
+		if (
+			warningLevelFilter === DISCIPLINE_LETTER_CATEGORIES.REPRIMAND ||
+			warningLevelFilter === DISCIPLINE_LETTER_CATEGORIES.SUSPENSION
+		) {
+			matchesWarningLevel = row.category === warningLevelFilter;
 		} else if (warningLevelFilter !== 'ALL') {
 			matchesWarningLevel =
 				row.category === DISCIPLINE_LETTER_CATEGORIES.WARNING_LETTER &&
@@ -229,7 +232,7 @@ function WarningLettersPage() {
 			});
 			setRows((currentRows) => currentRows.filter((item) => item.id !== selectedItem.id));
 			closeDeleteDialog();
-			enqueueSnackbar('Data Surat Peringatan berhasil dihapus.', { variant: 'error' });
+			enqueueSnackbar('Data dokumen disipliner berhasil dihapus.', { variant: 'error' });
 		} catch (error) {
 			enqueueSnackbar(error.message, { variant: 'error' });
 		} finally {
@@ -269,9 +272,9 @@ function WarningLettersPage() {
 			{ header: 'NIK', key: 'employeeNo', width: 18 },
 			{ header: 'DEPARTEMENT', key: 'departmentName', width: 24 },
 			{ header: 'JABATAN', key: 'jobLevelName', width: 24 },
-			{ header: 'SURAT PERINGATAN KE', key: 'warningLevel', width: 22 },
+			{ header: 'LEVEL SP', key: 'warningLevel', width: 22 },
 			{ header: 'NOMOR SURAT', key: 'letterNumber', width: 26 },
-			{ header: 'TANGGAL SURAT PERINGATAN', key: 'letterDate', width: 18 },
+			{ header: 'TANGGAL SURAT', key: 'letterDate', width: 18 },
 			{ header: 'SAMPAI TANGGAL', key: 'warningEndDate', width: 18 },
 			{ header: 'PELANGGARAN', key: 'violation', width: 42 },
 			{ header: 'PASAL PKB', key: 'articleLabel', width: 20 },
@@ -351,7 +354,7 @@ function WarningLettersPage() {
 			<Card sx={{ minHeight: '60vh', p: 3 }}>
 				<CardHeader
 					title="Data Surat Peringatan"
-					subtitle="Kelola data surat peringatan dan surat teguran karyawan."
+					subtitle="Kelola data surat peringatan, skorsing, dan surat teguran karyawan."
 					size="small"
 					sx={{
 						flexDirection: 'column',
@@ -410,6 +413,7 @@ function WarningLettersPage() {
 								onChange={(event) => setWarningLevelFilter(event.target.value)}
 							>
 								<MenuItem value="ALL">Semua</MenuItem>
+								<MenuItem value={DISCIPLINE_LETTER_CATEGORIES.SUSPENSION}>Skorsing</MenuItem>
 								<MenuItem value={DISCIPLINE_LETTER_CATEGORIES.REPRIMAND}>Surat Teguran</MenuItem>
 								<MenuItem value="1">Surat Peringatan 1</MenuItem>
 								<MenuItem value="2">Surat Peringatan 2</MenuItem>
@@ -464,6 +468,11 @@ function WarningLettersPage() {
 										}
 									>
 										Form Surat Peringatan
+									</MenuItem>
+									<MenuItem
+										onClick={() => handleOpenCreateForm(DISCIPLINE_LETTER_CATEGORIES.SUSPENSION)}
+									>
+										Form Skorsing
 									</MenuItem>
 									<MenuItem
 										onClick={() => handleOpenCreateForm(DISCIPLINE_LETTER_CATEGORIES.REPRIMAND)}
