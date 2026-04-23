@@ -21,6 +21,7 @@ import CommentOutlinedIcon from '@mui/icons-material/CommentOutlined';
 
 // Components
 import NotificationsButton from './notificationButton';
+import ThemeModeToggle from './themeModeToggle';
 import { useAuth } from '@/contexts/authContext';
 
 function getInitials(name = '') {
@@ -74,7 +75,8 @@ function LoggedUser() {
 			>
 				<UserMenu handleClose={handleClose} user={user} onLogout={handleLogout} />
 			</Menu>
-			<Stack height="100%" direction="row" flex={1} justifyContent="flex-end" alignItems="center" spacing={0}>
+			<Stack height="100%" direction="row" flex={1} justifyContent="flex-end" alignItems="center" spacing={1}>
+				<ThemeModeToggle />
 				<NotificationsButton />
 				<IconButton size="small">
 					<Badge color="tertiary" overlap="rectangular" variant="dot">

@@ -14,82 +14,6 @@ const DEFAULT_GRID_HEIGHT = 540;
 const DEFAULT_PAGE_SIZE = 15;
 const DEFAULT_PAGE_SIZE_OPTIONS = [15, 30, 50, 100];
 
-const PAPER_SX = {
-	borderRadius: 3,
-	overflow: 'hidden',
-	borderColor: 'rgba(15, 23, 42, 0.12)',
-	boxShadow: '0 12px 30px rgba(15, 23, 42, 0.06)',
-	backgroundColor: '#FFFFFF',
-};
-
-const GRID_WRAPPER_SX = {
-	width: '100%',
-	'& .MuiDataGrid-root': {
-		border: 'none',
-	},
-	'& .MuiDataGrid-columnHeaders': {
-		backgroundColor: '#F4F7FB',
-		borderBottom: '1px solid rgba(15, 23, 42, 0.12)',
-		borderTop: '1px solid rgba(15, 23, 42, 0.02)',
-	},
-	'& .MuiDataGrid-columnHeaderTitle': {
-		fontWeight: 800,
-		fontSize: '0.78rem',
-		letterSpacing: '0.02em',
-		color: '#20324A',
-	},
-	'& .MuiDataGrid-cell': {
-		borderBottom: '1px solid rgba(15, 23, 42, 0.08)',
-		alignItems: 'center',
-		py: 1.15,
-	},
-	'& .MuiDataGrid-row:hover': {
-		backgroundColor: 'rgba(25, 118, 210, 0.03)',
-	},
-	'& .MuiDataGrid-row.Mui-selected': {
-		backgroundColor: 'rgba(25, 118, 210, 0.06)',
-	},
-	'& .MuiDataGrid-row.Mui-selected:hover': {
-		backgroundColor: 'rgba(25, 118, 210, 0.08)',
-	},
-	'& .MuiDataGrid-cell:focus, & .MuiDataGrid-columnHeader:focus': {
-		outline: 'none',
-	},
-	'& .MuiDataGrid-columnSeparator': {
-		color: 'rgba(15, 23, 42, 0.12)',
-	},
-	'& .MuiDataGrid-footerContainer': {
-		borderTop: '1px solid rgba(15, 23, 42, 0.08)',
-		backgroundColor: '#FBFCFE',
-	},
-};
-
-const GRID_SX = {
-	'& .MuiDataGrid-columnHeaderCheckbox .MuiCheckbox-root': {
-		color: '#1976d2',
-	},
-	'& .MuiDataGrid-columnHeader': {
-		position: 'relative',
-	},
-	'& .MuiDataGrid-columnHeader::after': {
-		content: '""',
-		position: 'absolute',
-		top: 10,
-		right: 0,
-		width: 3,
-		height: 'calc(100% - 20px)',
-		borderRadius: 999,
-		backgroundColor: 'transparent',
-		transition: 'background-color 0.2s ease',
-	},
-	'& .MuiDataGrid-columnHeader:hover::after': {
-		backgroundColor: 'rgba(25, 118, 210, 0.2)',
-	},
-	'& .MuiDataGrid-row': {
-		cursor: 'context-menu',
-	},
-};
-
 function getInitialColumnWidths(columns = []) {
 	return columns.reduce((accumulator, column) => {
 		const configuredWidth = column.width ?? column.minWidth;
@@ -113,12 +37,89 @@ function getDefaultRowId(row) {
 	return row.id;
 }
 
+function getGridSurfaceStyles(theme) {
+	const isDarkMode = theme.palette.mode === 'dark';
+	const rowHoverColor = isDarkMode ? 'rgba(58, 147, 242, 0.12)' : 'rgba(25, 118, 210, 0.03)';
+	const rowSelectedColor = isDarkMode ? 'rgba(58, 147, 242, 0.18)' : 'rgba(25, 118, 210, 0.06)';
+	const rowSelectedHoverColor = isDarkMode ? 'rgba(58, 147, 242, 0.24)' : 'rgba(25, 118, 210, 0.08)';
+	const headerBackground = isDarkMode ? theme.palette.action.selected : theme.palette.grey[100] || '#F4F7FB';
+	const headerHoverAccent = isDarkMode ? 'rgba(58, 147, 242, 0.28)' : 'rgba(25, 118, 210, 0.2)';
+	const footerBackground = isDarkMode ? theme.palette.action.selected : theme.palette.background.paper;
+
+	return {
+		'& .MuiDataGrid-root': {
+			border: 'none',
+			color: theme.palette.text.primary,
+			backgroundColor: theme.palette.background.paper,
+		},
+		'& .MuiDataGrid-columnHeaders': {
+			backgroundColor: headerBackground,
+			borderBottom: `1px solid ${theme.palette.divider}`,
+			borderTop: `1px solid ${theme.palette.action.hover}`,
+		},
+		'& .MuiDataGrid-columnHeaderTitle': {
+			fontWeight: 800,
+			fontSize: '0.78rem',
+			letterSpacing: '0.02em',
+			color: theme.palette.text.primary,
+		},
+		'& .MuiDataGrid-cell': {
+			borderBottom: `1px solid ${theme.palette.divider}`,
+			alignItems: 'center',
+			py: 1.15,
+			color: theme.palette.text.primary,
+		},
+		'& .MuiDataGrid-row:hover': {
+			backgroundColor: rowHoverColor,
+		},
+		'& .MuiDataGrid-row.Mui-selected': {
+			backgroundColor: rowSelectedColor,
+		},
+		'& .MuiDataGrid-row.Mui-selected:hover': {
+			backgroundColor: rowSelectedHoverColor,
+		},
+		'& .MuiDataGrid-cell:focus, & .MuiDataGrid-columnHeader:focus': {
+			outline: 'none',
+		},
+		'& .MuiDataGrid-columnSeparator': {
+			color: theme.palette.divider,
+		},
+		'& .MuiDataGrid-footerContainer': {
+			borderTop: `1px solid ${theme.palette.divider}`,
+			backgroundColor: footerBackground,
+		},
+		'& .MuiDataGrid-columnHeaderCheckbox .MuiCheckbox-root': {
+			color: theme.palette.primary.main,
+		},
+		'& .MuiDataGrid-columnHeader': {
+			position: 'relative',
+		},
+		'& .MuiDataGrid-columnHeader::after': {
+			content: '""',
+			position: 'absolute',
+			top: 10,
+			right: 0,
+			width: 3,
+			height: 'calc(100% - 20px)',
+			borderRadius: 999,
+			backgroundColor: 'transparent',
+			transition: 'background-color 0.2s ease',
+		},
+		'& .MuiDataGrid-columnHeader:hover::after': {
+			backgroundColor: headerHoverAccent,
+		},
+		'& .MuiDataGrid-row': {
+			cursor: 'context-menu',
+		},
+	};
+}
+
 export function createRowNumberColumn(overrides = {}) {
 	const defaultRenderCell = (params) => {
 		const rowIndex = params.api.getRowIndexRelativeToVisibleRows(params.id);
 
 		return (
-			<Typography variant="body2" sx={{ fontWeight: 700, color: '#123B66' }}>
+			<Typography variant="body2" sx={{ fontWeight: 700, color: 'text.primary' }}>
 				{rowIndex != null ? rowIndex + 1 : params.value}
 			</Typography>
 		);
@@ -331,13 +332,27 @@ function EnhancedTable(props) {
 	};
 
 	return (
-		<Paper variant="outlined" sx={{ ...PAPER_SX, ...paperSx }}>
+		<Paper
+			variant="outlined"
+			sx={(theme) => ({
+				borderRadius: 3,
+				overflow: 'hidden',
+				borderColor: theme.palette.divider,
+				boxShadow:
+					theme.palette.mode === 'dark'
+						? '0 16px 36px rgba(0, 0, 0, 0.26)'
+						: '0 12px 30px rgba(15, 23, 42, 0.06)',
+				backgroundColor: theme.palette.background.paper,
+				...paperSx,
+			})}
+		>
 			<Box
-				sx={{
+				sx={(theme) => ({
 					height,
-					...GRID_WRAPPER_SX,
+					width: '100%',
+					...getGridSurfaceStyles(theme),
 					...gridWrapperSx,
-				}}
+				})}
 				onMouseDownCapture={handleColumnHeaderMouseDown}
 				onContextMenu={handleGridContextMenu}
 			>
@@ -359,10 +374,10 @@ function EnhancedTable(props) {
 					hideFooterSelectedRowCount={hideFooterSelectedRowCount}
 					showCellVerticalBorder
 					showColumnVerticalBorder
-					sx={{
-						...GRID_SX,
+					sx={(theme) => ({
+						...getGridSurfaceStyles(theme),
 						...gridSx,
-					}}
+					})}
 				/>
 				<Menu
 					open={contextMenu !== null}

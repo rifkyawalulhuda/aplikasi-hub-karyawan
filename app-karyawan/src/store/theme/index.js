@@ -1,6 +1,9 @@
 /* eslint-disable no-param-reassign */
 import { createSlice } from '@reduxjs/toolkit';
 
+export const ADMIN_THEME_STORAGE_KEY = 'hub-karyawan-admin-theme-config';
+const LEGACY_THEME_STORAGE_KEY = 'SLIM_MUI_THEME_DATA';
+
 const initialState = {
 	themeConfig: {
 		mode: 'light',
@@ -11,12 +14,27 @@ const initialState = {
 	},
 };
 
-const THEME_CONFIG_KEY = 'SLIM_MUI_THEME_DATA';
-
 const getInitialState = () => {
-	const localStorageData = localStorage.getItem(THEME_CONFIG_KEY);
+	if (typeof window === 'undefined') {
+		return initialState;
+	}
+
+	const localStorageData =
+		window.localStorage.getItem(ADMIN_THEME_STORAGE_KEY) || window.localStorage.getItem(LEGACY_THEME_STORAGE_KEY);
+
 	if (localStorageData) {
-		return { themeConfig: JSON.parse(localStorageData) };
+		try {
+			const parsedThemeConfig = JSON.parse(localStorageData);
+			return {
+				themeConfig: {
+					...initialState.themeConfig,
+					...parsedThemeConfig,
+					mode: parsedThemeConfig?.mode === 'dark' ? 'dark' : 'light',
+				},
+			};
+		} catch {
+			return initialState;
+		}
 	}
 	return initialState;
 };

@@ -46,6 +46,8 @@ Folder ini dipilih sebagai basis utama pengembangan karena struktur template-nya
 - Area `Portal Mobile Karyawan` dibangun di project yang sama dengan prefix route `/karyawan`.
 - Area `Portal Mobile Karyawan` ditujukan mobile-first dan diaktifkan sebagai PWA installable.
 - Area `Portal Mobile Karyawan` sekarang memiliki theme provider tersendiri yang terpisah dari theme admin desktop, sehingga preferensi dark mode hanya berlaku di route `/karyawan` dan turunannya.
+- Area admin desktop juga sekarang punya theme mode light/dark berbasis Material UI theme system, dengan toggle cepat di header admin dan preferensi yang disimpan di `localStorage` pada key `hub-karyawan-admin-theme-config`.
+- Halaman admin seperti `Record Notifikasi Admin` dan tabel shared desktop sekarang mengikuti tema admin aktif, termasuk dark mode, tanpa mempengaruhi area `/karyawan`.
 - Area admin desktop dan area mobile karyawan menggunakan auth context dan route guard yang terpisah agar session tidak saling bentrok.
 - PWA mobile sekarang memiliki domain khusus `pwa.aplikasi-hub.my.id` yang dilayani melalui Cloudflare Tunnel, bukan Cloudflare Pages.
 - Mobile PWA juga disiapkan agar bisa dideploy ke Vercel pada domain khusus seperti `pwa-karyawan.vercel.app` tanpa memecah project frontend menjadi aplikasi baru.
@@ -899,6 +901,7 @@ Yang sudah selesai:
 - Menyelesaikan perbaikan _bug_ destructuring auth pada fungsionalitas _hooks_ React di notifikasi PWA Karyawan.
 - Menambahkan dark mode khusus `Portal Mobile Karyawan` dengan nested Material UI theme provider, nested snackbar provider, dan persistensi `localStorage`, tanpa mengubah theme admin desktop.
 - Menyesuaikan surface dark mode pada halaman dashboard, profil, cuti, bimbingan, surat peringatan, login PWA, dialog, drawer, snackbar, bottom navigation, header mobile, dan panel notifikasi PWA agar tetap elegan, lembut, dan konsisten dengan aksen biru corporate-modern.
+- Menyesuaikan halaman `Login Page Admin` agar mengikuti tema aktif melalui `MinimalLayout` dan komponen login utama, sehingga background, card, form field, dan hero panel ikut berubah saat light/dark mode berganti tanpa reload.
 - Menambahkan halaman **Detail Karyawan** di bawah menu Data Karyawan, yang menampilkan:
   - Halaman daftar karyawan (`/data-karyawan/detail-karyawan`) dengan tabel searchable + filter departemen + pagination 15/30/50/100
   - Halaman detail per karyawan (`/data-karyawan/detail-karyawan/:id`) menampilkan hero card profil lengkap dan ringkasan data dari semua modul:
