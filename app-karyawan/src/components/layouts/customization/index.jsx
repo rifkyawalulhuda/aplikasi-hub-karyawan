@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 import { setConfigKey, setDefaultConfig } from '@/store/theme';
 import { selectThemeConfig } from '@/store/theme/selectors';
@@ -106,14 +106,9 @@ function CustomizationLayout() {
 	);
 }
 
-const THEME_CONFIG_KEY = 'SLIM_MUI_THEME_DATA';
 function DrawerContent() {
 	const dispatch = useDispatch();
 	const themeConfig = useSelector(selectThemeConfig);
-
-	useEffect(() => {
-		localStorage.setItem(THEME_CONFIG_KEY, JSON.stringify(themeConfig));
-	}, [themeConfig]);
 
 	const handlerClick = (key, value) => {
 		dispatch(setConfigKey({ key, value }));
