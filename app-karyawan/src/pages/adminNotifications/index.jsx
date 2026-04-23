@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { alpha } from '@mui/material/styles';
+import { alpha, useTheme } from '@mui/material/styles';
 import { useSnackbar } from 'notistack';
 
 import Alert from '@mui/material/Alert';
@@ -54,22 +54,49 @@ const ACTIVE_STATUS_OPTIONS = [
 	{ value: 'archived', label: 'Riwayat / Arsip' },
 ];
 
+function getPageSurfaceStyles(theme) {
+	const isDarkMode = theme.palette.mode === 'dark';
+	const surfaceSoft = isDarkMode ? alpha(theme.palette.common.white, 0.04) : alpha(theme.palette.primary.main, 0.02);
+	const surfaceMuted = isDarkMode ? alpha(theme.palette.common.white, 0.03) : alpha(theme.palette.primary.main, 0.03);
+	const surfaceBorderStrong = isDarkMode
+		? alpha(theme.palette.common.white, 0.12)
+		: alpha(theme.palette.primary.main, 0.12);
+	const surfaceBorderSoft = isDarkMode
+		? alpha(theme.palette.common.white, 0.08)
+		: alpha(theme.palette.primary.main, 0.08);
+
+	return {
+		surface: theme.palette.background.paper,
+		surfaceSoft,
+		surfaceMuted,
+		surfaceBorderStrong,
+		surfaceBorderSoft,
+		textPrimary: theme.palette.text.primary,
+		textSecondary: theme.palette.text.secondary,
+		titleColor: theme.palette.text.primary,
+		emptyIcon: theme.palette.text.disabled,
+	};
+}
+
 function SummaryCard({ label, value, helper }) {
+	const theme = useTheme();
+	const colors = getPageSurfaceStyles(theme);
+
 	return (
 		<Paper
 			elevation={0}
 			sx={{
 				p: 2,
 				borderRadius: 3.5,
-				border: '1px solid rgba(18,59,102,0.08)',
-				backgroundColor: '#FFFFFF',
+				border: `1px solid ${colors.surfaceBorderSoft}`,
+				backgroundColor: colors.surface,
 			}}
 		>
 			<Stack spacing={0.5}>
-				<Typography variant="caption" sx={{ color: '#748AA2', letterSpacing: '0.08em' }}>
+				<Typography variant="caption" sx={{ color: colors.textSecondary, letterSpacing: '0.08em' }}>
 					{label}
 				</Typography>
-				<Typography variant="h5" sx={{ color: '#123B66', fontWeight: 700 }}>
+				<Typography variant="h5" sx={{ color: colors.titleColor, fontWeight: 700 }}>
 					{value}
 				</Typography>
 				<Typography variant="body2" color="text.secondary">
@@ -81,6 +108,8 @@ function SummaryCard({ label, value, helper }) {
 }
 
 function NotificationHistoryItem({ item, onMarkRead, onOpen }) {
+	const theme = useTheme();
+	const colors = getPageSurfaceStyles(theme);
 	const visual = getAdminNotificationVisual(item);
 
 	return (
@@ -89,9 +118,12 @@ function NotificationHistoryItem({ item, onMarkRead, onOpen }) {
 			sx={{
 				p: 2,
 				borderRadius: 4,
-				border: `1px solid ${item.isRead ? 'rgba(18,59,102,0.08)' : 'rgba(47,116,188,0.18)'}`,
-				backgroundColor: item.isRead ? '#FFFFFF' : alpha('#F5F9FF', 0.95),
-				boxShadow: '0 10px 30px rgba(18, 59, 102, 0.06)',
+				border: `1px solid ${item.isRead ? colors.surfaceBorderSoft : colors.surfaceBorderStrong}`,
+				backgroundColor: item.isRead ? colors.surface : colors.surfaceMuted,
+				boxShadow:
+					theme.palette.mode === 'dark'
+						? '0 12px 32px rgba(0, 0, 0, 0.24)'
+						: '0 10px 30px rgba(18, 59, 102, 0.06)',
 			}}
 		>
 			<Stack spacing={1.5}>
@@ -221,6 +253,8 @@ function AdminNotificationsPage() {
 	const navigate = useNavigate();
 	const { enqueueSnackbar } = useSnackbar();
 	const { user } = useAuth();
+	const theme = useTheme();
+	const colors = getPageSurfaceStyles(theme);
 	const [response, setResponse] = useState({
 		items: [],
 		totalCount: 0,
@@ -368,13 +402,13 @@ function AdminNotificationsPage() {
 				py: 9,
 				px: 3,
 				borderRadius: 4,
-				border: '1px dashed rgba(18,59,102,0.18)',
-				backgroundColor: 'rgba(247,250,253,0.7)',
+				border: `1px dashed ${colors.surfaceBorderStrong}`,
+				backgroundColor: colors.surfaceMuted,
 			}}
 		>
 			<Stack spacing={1} alignItems="center">
-				<NotificationsNoneRoundedIcon sx={{ fontSize: 28, color: '#9BB0C6' }} />
-				<Typography variant="subtitle1" sx={{ color: '#123B66', fontWeight: 700 }}>
+				<NotificationsNoneRoundedIcon sx={{ fontSize: 28, color: colors.emptyIcon }} />
+				<Typography variant="subtitle1" sx={{ color: colors.titleColor, fontWeight: 700 }}>
 					Belum ada record notifikasi
 				</Typography>
 				<Typography variant="body2" color="text.secondary" textAlign="center">
@@ -446,7 +480,14 @@ function AdminNotificationsPage() {
 					/>
 				</Stack>
 
-				<Card sx={{ minHeight: '68vh', p: 3 }}>
+				<Card
+					sx={{
+						minHeight: '68vh',
+						p: 3,
+						bgcolor: colors.surface,
+						border: `1px solid ${colors.surfaceBorderSoft}`,
+					}}
+				>
 					<Stack spacing={2.25}>
 						<Stack
 							direction={{ xs: 'column', lg: 'row' }}
@@ -455,7 +496,7 @@ function AdminNotificationsPage() {
 							alignItems={{ xs: 'stretch', lg: 'center' }}
 						>
 							<Box>
-								<Typography variant="h5" sx={{ color: '#123B66', fontWeight: 800 }}>
+								<Typography variant="h5" sx={{ color: colors.titleColor, fontWeight: 800 }}>
 									Inbox Notifikasi
 								</Typography>
 								<Typography variant="body2" color="text.secondary">
@@ -489,8 +530,8 @@ function AdminNotificationsPage() {
 							sx={{
 								p: 1,
 								borderRadius: 3.5,
-								border: '1px solid rgba(18,59,102,0.08)',
-								backgroundColor: 'rgba(247,250,253,0.88)',
+								border: `1px solid ${colors.surfaceBorderSoft}`,
+								backgroundColor: colors.surfaceSoft,
 							}}
 						>
 							<Stack spacing={1.25}>
