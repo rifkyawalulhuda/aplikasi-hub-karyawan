@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { ThemeProvider as MuiThemeProvider, StyledEngineProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { enUS } from '@mui/material/locale';
@@ -6,6 +7,7 @@ import themePalette from './palette';
 import themeTypography from './typography';
 import componentStyleOverrides from './compStyleOverride';
 
+import { ADMIN_THEME_STORAGE_KEY } from '@/store/theme';
 import { selectThemeConfig } from '@/store/theme/selectors';
 import { useSelector } from '@/store';
 
@@ -41,11 +43,26 @@ const getTheme = () => {
 	return theme;
 };
 
+function ThemeConfigPersistence() {
+	const themeConfig = useSelector(selectThemeConfig);
+
+	useEffect(() => {
+		if (typeof window === 'undefined') {
+			return;
+		}
+
+		window.localStorage.setItem(ADMIN_THEME_STORAGE_KEY, JSON.stringify(themeConfig));
+	}, [themeConfig]);
+
+	return null;
+}
+
 function MUITheme({ children }) {
 	return (
 		<StyledEngineProvider injectFirst>
 			<MuiThemeProvider theme={getTheme()}>
-				<CssBaseline />
+				<ThemeConfigPersistence />
+				<CssBaseline enableColorScheme />
 				{children}
 			</MuiThemeProvider>
 		</StyledEngineProvider>
