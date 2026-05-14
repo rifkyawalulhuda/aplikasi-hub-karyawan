@@ -381,7 +381,65 @@ pm2 status
 curl https://api.aplikasi-hub.my.id/api/health
 ```
 
-## 17. Mode Development Lokal
+## 17. Jika Ada Perubahan dari GitHub
+
+Kalau ada update baru di repository GitHub, lakukan langkah ini di server:
+
+```bash
+cd /home/rifky/Public/aplikasi-hub-karyawan/app-karyawan
+git pull
+```
+
+Lalu cek apakah ada perubahan dependency:
+
+```bash
+npm install
+```
+
+Kalau ada perubahan Prisma schema atau migration:
+
+```bash
+npx prisma generate
+npx prisma migrate deploy
+```
+
+Kalau ada perubahan frontend:
+
+```bash
+npm run build
+pm2 restart hub-karyawan-web
+```
+
+Kalau ada perubahan backend:
+
+```bash
+pm2 restart hub-karyawan-api
+```
+
+Kalau ada perubahan `.env`, sesuaikan manual dulu sebelum restart.
+
+Urutan aman yang biasanya paling praktis:
+
+```bash
+cd /home/rifky/Public/aplikasi-hub-karyawan/app-karyawan
+git pull
+npm install
+npx prisma generate
+npx prisma migrate deploy
+npm run build
+pm2 restart hub-karyawan-api
+pm2 restart hub-karyawan-web
+```
+
+Lalu verifikasi:
+
+```bash
+curl http://127.0.0.1:4000/api/health
+curl https://api.aplikasi-hub.my.id/api/health
+pm2 status
+```
+
+## 18. Mode Development Lokal
 
 Untuk development biasa, jalankan dari root project:
 
@@ -403,7 +461,7 @@ Catatan:
 - Mode production di dokumen ini memakai `npm run build` dan `npm run preview`.
 - Jika ingin development lokal tanpa Cloudflare Tunnel, `VITE_API_BASE_URL` bisa dikembalikan sementara ke `/api`.
 
-## 18. Troubleshooting Singkat
+## 19. Troubleshooting Singkat
 
 ### API Health Error
 
