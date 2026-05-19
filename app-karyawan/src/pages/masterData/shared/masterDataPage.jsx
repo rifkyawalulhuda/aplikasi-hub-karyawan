@@ -22,7 +22,7 @@ import MasterDataFormDialog from '@/components/masterData/masterDataFormDialog';
 import MasterDataImportDialog from '@/components/masterData/masterDataImportDialog';
 import MasterDataTable from '@/components/masterData/masterDataTable';
 import useUrlSearchKeyword from '@/hooks/useUrlSearchKeyword';
-import apiRequest, { getApiBaseUrl } from '@/services/api';
+import apiRequest, { downloadFile, getApiBaseUrl } from '@/services/api';
 
 async function fetchMasterData(resource) {
 	return apiRequest(`/master/${resource}`);
@@ -131,14 +131,10 @@ function MasterDataPage({ config }) {
 			setImportOpen(false);
 
 			if (response.errorReportUrl) {
-				const downloadUrl = `${getApiBaseUrl()}${response.errorReportUrl}`;
-				const link = document.createElement('a');
-				link.href = downloadUrl;
-				link.target = '_blank';
-				link.rel = 'noreferrer';
-				document.body.appendChild(link);
-				link.click();
-				document.body.removeChild(link);
+				await downloadFile(
+					`${getApiBaseUrl()}${response.errorReportUrl}`,
+					`${config.resource}-import-errors.xlsx`,
+				);
 
 				enqueueSnackbar(
 					`${response.message} Berhasil: ${response.importedCount}, gagal: ${response.failedCount}. File error diunduh otomatis.`,

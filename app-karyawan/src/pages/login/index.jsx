@@ -99,7 +99,18 @@ function LoginPage() {
 				}),
 			});
 
-			login(response.user);
+			if (!response.accessToken) {
+				throw new Error(
+					'Login berhasil, tetapi token admin belum diterima. Restart backend lalu coba login lagi.',
+				);
+			}
+
+			login({
+				...response.user,
+				accessToken: response.accessToken,
+				expiresAt: response.expiresAt,
+				tokenType: response.tokenType,
+			});
 			enqueueSnackbar(`Selamat datang, ${response.user.name}.`, { variant: 'success' });
 			navigate(redirectTo, { replace: true });
 		} catch (error) {

@@ -1,10 +1,7 @@
 import { Router } from 'express';
 
 import prisma from '../lib/prisma.js';
-import {
-	mapEmailWorkflowFailureLog,
-	resolveEmailWorkflowFailureLog,
-} from '../lib/emailWorkflowFailureLog.js';
+import { mapEmailWorkflowFailureLog, resolveEmailWorkflowFailureLog } from '../lib/emailWorkflowFailureLog.js';
 
 const router = Router();
 const DEFAULT_PAGE_SIZE = 20;
@@ -35,14 +32,11 @@ function normalizeStatus(value = 'all') {
 	return ['all', 'open', 'resolved'].includes(normalized) ? normalized : 'all';
 }
 
-function resolveEmployeeId(req, payload = {}) {
-	const fromBody = Number(payload.employeeId);
-	const fromQuery = Number(req.query.employeeId);
-	const fromHeader = Number(req.headers['x-admin-employee-id']);
-	const candidate = [fromBody, fromQuery, fromHeader].find((value) => Number.isInteger(value));
+function resolveEmployeeId(req) {
+	const candidate = Number(req.admin?.employeeId);
 
 	if (!Number.isInteger(candidate)) {
-		throw Object.assign(new Error('employeeId admin wajib dikirim.'), { statusCode: 400 });
+		throw Object.assign(new Error('Sesi admin tidak valid.'), { statusCode: 401 });
 	}
 
 	return candidate;
@@ -218,7 +212,7 @@ router.post(
 			return res.status(400).json({ message: 'ID tidak valid.' });
 		}
 
-		const resolvedByEmployeeId = resolveEmployeeId(req, req.body);
+		const resolvedByEmployeeId = resolveEmployeeId(req);
 		const resolvedNote = normalizeString(req.body?.note || '');
 		await resolveEmailWorkflowFailureLog(prisma, id, {
 			resolvedByEmployeeId,

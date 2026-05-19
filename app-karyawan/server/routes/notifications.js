@@ -44,14 +44,11 @@ function normalizeString(value = '') {
 	return String(value).trim();
 }
 
-function resolveEmployeeId(req, payload = {}) {
-	const fromBody = Number(payload.employeeId);
-	const fromQuery = Number(req.query.employeeId);
-	const fromHeader = Number(req.headers['x-admin-employee-id']);
-	const candidate = [fromBody, fromQuery, fromHeader].find((value) => Number.isInteger(value));
+function resolveEmployeeId(req) {
+	const candidate = Number(req.admin?.employeeId);
 
 	if (!Number.isInteger(candidate)) {
-		throw Object.assign(new Error('employeeId admin wajib dikirim.'), { statusCode: 400 });
+		throw Object.assign(new Error('Sesi admin tidak valid.'), { statusCode: 401 });
 	}
 
 	return candidate;
@@ -839,7 +836,7 @@ router.get('/history', async (req, res, next) => {
 
 router.post('/read', async (req, res, next) => {
 	try {
-		const employeeId = resolveEmployeeId(req, req.body);
+		const employeeId = resolveEmployeeId(req);
 		const notificationId = normalizeString(req.body?.notificationId);
 
 		if (!notificationId) {
@@ -855,7 +852,7 @@ router.post('/read', async (req, res, next) => {
 
 router.post('/read-all', async (req, res, next) => {
 	try {
-		const employeeId = resolveEmployeeId(req, req.body);
+		const employeeId = resolveEmployeeId(req);
 		const notificationIds = Array.isArray(req.body?.notificationIds) ? req.body.notificationIds : [];
 		const resolvedNotificationIds = await resolveNotificationIdsForMarkAll(employeeId, notificationIds);
 

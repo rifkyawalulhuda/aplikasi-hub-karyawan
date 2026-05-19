@@ -1,5 +1,7 @@
 import { Router } from 'express';
 
+import { createAdminAccessToken } from '../lib/adminSession.js';
+import { hashPassword, needsPasswordHash, verifyPassword } from '../lib/password.js';
 import prisma from '../lib/prisma.js';
 
 const router = Router();
@@ -33,7 +35,6 @@ router.post('/login', async (req, res, next) => {
 
 		const admin = await prisma.masterAdmin.findFirst({
 			where: {
-				password,
 				employee: {
 					employeeNo: {
 						equals: nik,
@@ -46,12 +47,26 @@ router.post('/login', async (req, res, next) => {
 			},
 		});
 
-		if (!admin) {
+		if (!admin || !(await verifyPassword(password, admin.password))) {
 			return res.status(401).json({ message: 'NIK atau password tidak valid.' });
 		}
 
+		if (needsPasswordHash(admin.password)) {
+			await prisma.masterAdmin.update({
+				where: { id: admin.id },
+				data: {
+					password: await hashPassword(password),
+				},
+			});
+		}
+
+		const { token, expiresAt } = createAdminAccessToken(admin);
+
 		return res.json({
 			message: 'Login berhasil.',
+			tokenType: 'Bearer',
+			accessToken: token,
+			expiresAt,
 			user: mapSession(admin),
 		});
 	} catch (error) {

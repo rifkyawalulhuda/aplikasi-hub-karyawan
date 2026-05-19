@@ -1,4 +1,5 @@
 const DEFAULT_API_BASE_URL = '/api';
+const ADMIN_AUTH_STORAGE_KEY = 'hub-karyawan-auth';
 
 export function getApiBaseUrl() {
 	return import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE_URL;
@@ -35,8 +36,54 @@ function getDownloadFileName(contentDisposition, fallbackFileName = 'download.xl
 	return fallbackFileName;
 }
 
+function readStoredAdminAccessToken() {
+	if (typeof window === 'undefined') {
+		return null;
+	}
+
+	try {
+		const storedValue = window.localStorage.getItem(ADMIN_AUTH_STORAGE_KEY);
+		const session = storedValue ? JSON.parse(storedValue) : null;
+
+		return session?.accessToken || null;
+	} catch {
+		return null;
+	}
+}
+
+function shouldAttachAdminAuth(path) {
+	const normalizedPath = String(path || '');
+
+	return (
+		!normalizedPath.includes('/auth/login') &&
+		!normalizedPath.includes('/employee-auth') &&
+		!normalizedPath.includes('/employee-me')
+	);
+}
+
+function buildHeaders(path, options = {}) {
+	const isFormData = options.body instanceof FormData;
+	const headers = isFormData
+		? {
+				...(options.headers || {}),
+		  }
+		: {
+				'Content-Type': 'application/json',
+				...(options.headers || {}),
+		  };
+	const adminAccessToken = shouldAttachAdminAuth(path) ? readStoredAdminAccessToken() : null;
+
+	if (adminAccessToken && !headers.Authorization) {
+		headers.Authorization = `Bearer ${adminAccessToken}`;
+	}
+
+	return headers;
+}
+
 export async function downloadFile(url, fallbackFileName = 'download.xlsx') {
-	const response = await fetch(url);
+	const response = await fetch(url, {
+		headers: buildHeaders(url),
+	});
 	const contentType = response.headers.get('content-type') || '';
 
 	if (!response.ok) {
@@ -62,15 +109,9 @@ export async function downloadFile(url, fallbackFileName = 'download.xlsx') {
 }
 
 async function apiRequest(path, options = {}) {
-	const isFormData = options.body instanceof FormData;
 	const response = await fetch(`${getApiBaseUrl()}${path}`, {
 		...options,
-		headers: isFormData
-			? options.headers || {}
-			: {
-					'Content-Type': 'application/json',
-					...(options.headers || {}),
-			  },
+		headers: buildHeaders(path, options),
 	});
 
 	if (response.status === 204) {

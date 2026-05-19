@@ -153,7 +153,7 @@ function NotificationsButton() {
 			}
 
 			try {
-				const response = await fetchAdminNotifications(user, { limit: PANEL_LIMIT });
+				const response = await fetchAdminNotifications({ limit: PANEL_LIMIT });
 				setItems(response.items || []);
 				setTotalCount(Number(response.totalCount || 0));
 				setUnreadCount(Number(response.unreadCount || 0));
@@ -214,7 +214,7 @@ function NotificationsButton() {
 		async (item) => {
 			if (!item.isRead) {
 				try {
-					await markAdminNotificationAsRead(user, item.id);
+					await markAdminNotificationAsRead(item.id);
 					patchItemAsRead(item.id);
 				} catch (error) {
 					setErrorMessage(error.message || 'Status baca notifikasi gagal diperbarui.');
@@ -233,7 +233,7 @@ function NotificationsButton() {
 		}
 
 		try {
-			await markAllAdminNotificationsAsRead(user);
+			await markAllAdminNotificationsAsRead();
 			setItems((currentItems) =>
 				currentItems.map((item) => ({
 					...item,

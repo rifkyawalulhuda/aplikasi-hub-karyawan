@@ -103,7 +103,9 @@ Folder ini dipilih sebagai basis utama pengembangan karena struktur template-nya
   - `npm run dev:server:stop`
   - `npm run dev:server:status`
 - Panduan lengkap workflow dev disimpan di [`docs/dev-workflow.md`](D:/Github/aplikasi-hub-karyawan/docs/dev-workflow.md).
-- Ditambahkan auth flow khusus karyawan berbasis bearer token ringan dengan secret `EMPLOYEE_AUTH_SECRET`.
+- Ditambahkan auth flow khusus admin dan karyawan berbasis bearer token ringan. Admin memakai `ADMIN_AUTH_SECRET`, karyawan memakai `EMPLOYEE_AUTH_SECRET`, dan keduanya wajib diisi pada production.
+- Password admin dan karyawan tidak dikirim balik ke frontend, password baru disimpan sebagai hash `scrypt`, dan login lama berbasis plaintext dimigrasikan otomatis saat kredensial valid dipakai login.
+- Untuk database existing, jalankan `npm run security:hash-passwords` dari `app-karyawan` agar seluruh password plaintext lama langsung dikonversi menjadi hash.
 - Login `Portal Mobile Karyawan` menggunakan `Employee No` sebagai NIK dan `password` dari tabel `employees`.
 - API self-service karyawan menggunakan endpoint khusus `/api/employee-me/*` dan seluruh data selalu difilter berdasarkan employee yang sedang login.
 - Fitur self-service `Ubah Password` untuk PWA Karyawan tersedia dari halaman `/karyawan/profil` dan diproses melalui endpoint `POST /api/employee-me/change-password`.
@@ -227,15 +229,14 @@ Catatan implementasi:
 - `Employee No` disimpan sebagai unique field.
 - `Site / Div` default awal adalah `CLC`.
 - `Age` dan `Length Of Service` dihitung otomatis dari tanggal pada layer aplikasi/API.
-- Kolom `Password` saat ini masih disimpan sebagai string biasa untuk mengikuti struktur master data awal; hashing/authentication belum diimplementasikan pada fase ini.
-- Kolom `Password` saat ini masih disimpan sebagai string biasa untuk mengikuti struktur master data awal.
+- Kolom `Password` tidak boleh dikirim balik ke frontend, tidak ditampilkan pada tabel/export, dan disimpan sebagai hash `scrypt` untuk data baru maupun reset password.
 - Login aplikasi sekarang menggunakan data `Master Admin` dengan rule:
   - input `NIK` divalidasi ke `Master Admin -> Employee -> employeeNo`
-  - input `password` divalidasi ke `Master Admin -> password`
+  - input `password` diverifikasi terhadap hash `Master Admin -> password`
   - user yang belum terdaftar di `Master Admin` tidak bisa mengakses aplikasi
 - Proteksi akses halaman frontend sekarang mewajibkan login terlebih dahulu.
-- Session login frontend saat ini disimpan di `localStorage` browser.
-- Hashing password dan session backend persisten belum diimplementasikan pada fase ini.
+- Session admin frontend menyimpan access token di `localStorage`, lalu setiap request admin mengirim header `Authorization: Bearer`.
+- Seluruh route admin-only di backend diproteksi middleware `requireAdminAuth`; route employee self-service tetap memakai middleware bearer token karyawan.
 - Nilai `Employment Type` untuk user-facing UI dan template Excel menggunakan format label `Permanent` dan `Contract`, sedangkan penyimpanan internal database tetap memakai enum teknis.
 - Nilai `Grade` untuk user-facing UI dan template Excel menggunakan format label seperti `Rank 1`, `Rank 2`, dan seterusnya, sedangkan penyimpanan internal database tetap memakai enum teknis.
 - Sudah tersedia template Excel bulk import untuk `Master Karyawan`.
@@ -810,6 +811,7 @@ Yang sudah selesai:
 - Menambahkan schema, migration, API CRUD, route, menu, dan halaman `Lisensi & Sertifikasi` dengan relasi ke `Master Karyawan` dan `Master Dok Karyawan`.
 - Menambahkan schema, migration, API CRUD, route, menu, dan halaman `Lisensi & Sertifikasi Unit` dengan relasi ke `Master Unit` dan `Master Vendor`.
 - Menambahkan fitur login aplikasi menggunakan kredensial `Master Admin` (`NIK` + `Password`).
+- Menambahkan token auth backend untuk admin, middleware proteksi route admin, hashing password `scrypt`, dan script `npm run security:hash-passwords` untuk mengonversi password plaintext lama.
 - Menambahkan halaman login, proteksi route frontend, dan logout dari header aplikasi.
 - Menyesuaikan desain halaman login menjadi gaya corporate-modern dengan tema dominan biru dan palet warna yang lebih minimal.
 - Menyempurnakan tone biru halaman login ke warna yang lebih kalem dan elegan dengan basis warna `RGB(58, 147, 242)`.

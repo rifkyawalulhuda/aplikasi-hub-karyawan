@@ -3,6 +3,7 @@ import { Router } from 'express';
 import prisma from '../lib/prisma.js';
 import { mapEmployeePortalSession, normalizeString } from '../lib/employeePortal.js';
 import { createEmployeeAccessToken } from '../lib/employeeSession.js';
+import { hashPassword, needsPasswordHash, verifyPassword } from '../lib/password.js';
 
 const router = Router();
 
@@ -21,7 +22,6 @@ router.post('/login', async (req, res, next) => {
 
 		const employee = await prisma.employee.findFirst({
 			where: {
-				password,
 				employeeNo: {
 					equals: nik,
 					mode: 'insensitive',
@@ -33,8 +33,17 @@ router.post('/login', async (req, res, next) => {
 			},
 		});
 
-		if (!employee) {
+		if (!employee || !(await verifyPassword(password, employee.password))) {
 			return res.status(401).json({ message: 'NIK atau password tidak valid.' });
+		}
+
+		if (needsPasswordHash(employee.password)) {
+			await prisma.employee.update({
+				where: { id: employee.id },
+				data: {
+					password: await hashPassword(password),
+				},
+			});
 		}
 
 		const { token, expiresAt } = createEmployeeAccessToken(employee);

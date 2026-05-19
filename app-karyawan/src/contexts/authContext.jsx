@@ -23,6 +23,10 @@ function readStoredUser() {
 	}
 }
 
+function readStoredAdminSession() {
+	return readStoredUser();
+}
+
 function AuthProvider({ children }) {
 	const [user, setUser] = useState(() => readStoredUser());
 
@@ -43,7 +47,7 @@ function AuthProvider({ children }) {
 	const value = useMemo(
 		() => ({
 			user,
-			isAuthenticated: Boolean(user),
+			isAuthenticated: Boolean(user?.accessToken),
 			login: (nextUser) => {
 				window.localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(nextUser));
 				setUser(nextUser);
@@ -69,4 +73,4 @@ function useAuth() {
 	return context;
 }
 
-export { AuthProvider, useAuth };
+export { AuthProvider, readStoredAdminSession, useAuth };

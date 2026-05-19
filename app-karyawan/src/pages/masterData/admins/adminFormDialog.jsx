@@ -22,7 +22,7 @@ function toDefaultValues(initialValue) {
 	return {
 		employeeId: initialValue?.employeeId || '',
 		employeeNo: initialValue?.employeeNo || '',
-		password: initialValue?.password || '',
+		password: '',
 		role: initialValue?.role || 'user',
 	};
 }
@@ -101,12 +101,12 @@ function AdminFormDialog({ open, loading, initialValue, employeeOptions, onClose
 					<Grid item xs={12} md={6}>
 						<FormInput
 							name="password"
-							label="Password"
+							label={isEditMode ? 'Password Baru' : 'Password'}
 							type="password"
 							control={control}
 							errors={errors}
 							dirtyFields={dirtyFields}
-							rules={{ required: 'Password wajib diisi.' }}
+							rules={isEditMode ? {} : { required: 'Password wajib diisi.' }}
 							fullWidth
 						/>
 					</Grid>
