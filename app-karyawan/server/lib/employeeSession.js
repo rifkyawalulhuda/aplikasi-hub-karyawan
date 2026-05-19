@@ -4,7 +4,15 @@ const DEFAULT_SECRET = 'dev-employee-auth-secret';
 const TOKEN_TTL_SECONDS = 60 * 60 * 12;
 
 function getEmployeeAuthSecret() {
-	return process.env.EMPLOYEE_AUTH_SECRET || DEFAULT_SECRET;
+	if (process.env.EMPLOYEE_AUTH_SECRET) {
+		return process.env.EMPLOYEE_AUTH_SECRET;
+	}
+
+	if (process.env.NODE_ENV === 'production') {
+		throw new Error('EMPLOYEE_AUTH_SECRET wajib diisi pada environment production.');
+	}
+
+	return DEFAULT_SECRET;
 }
 
 function toBase64Url(value) {

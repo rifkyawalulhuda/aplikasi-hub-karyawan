@@ -65,7 +65,7 @@ function AdminsPage() {
 			return true;
 		}
 
-		const searchableValues = [row.id, row.employeeName, row.employeeNo, row.password, row.role];
+		const searchableValues = [row.id, row.employeeName, row.employeeNo, row.role];
 
 		return searchableValues.some((value) =>
 			String(value || '')
@@ -170,7 +170,7 @@ function AdminsPage() {
 							label="Cari Data"
 							value={searchKeyword}
 							onChange={(event) => setSearchKeyword(event.target.value)}
-							placeholder="Nama, NIK, password, role..."
+							placeholder="Nama, NIK, role..."
 							sx={{ minWidth: { xs: '100%', md: 320 } }}
 							InputProps={{
 								startAdornment: (

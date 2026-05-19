@@ -22,6 +22,7 @@
 		"prisma:generate:safe": "node scripts/dev-workflow.mjs prisma-generate",
 		"prisma:migrate": "prisma migrate dev",
 		"prisma:seed:login": "node prisma/seed-login.mjs",
+		"security:hash-passwords": "node scripts/hash-existing-passwords.mjs",
 		"prisma:studio": "prisma studio",
 		"db:up": "docker compose up -d",
 		"db:down": "docker compose down",

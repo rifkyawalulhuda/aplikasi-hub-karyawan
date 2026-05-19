@@ -1,32 +1,17 @@
 import apiRequest from './api';
 
-function getAdminNotificationHeaders(user) {
-	if (!user?.employeeId) {
-		return {};
-	}
-
-	return {
-		'X-Admin-Employee-Id': String(user.employeeId),
-	};
-}
-
-export async function fetchAdminNotifications(user, options = {}) {
-	const searchParams = new URLSearchParams({
-		employeeId: String(user?.employeeId || ''),
-	});
+export async function fetchAdminNotifications(options = {}) {
+	const searchParams = new URLSearchParams();
 
 	if (options.limit) {
 		searchParams.set('limit', String(options.limit));
 	}
 
-	return apiRequest(`/notifications?${searchParams.toString()}`, {
-		headers: getAdminNotificationHeaders(user),
-	});
+	return apiRequest(`/notifications?${searchParams.toString()}`);
 }
 
-export async function fetchAdminNotificationHistory(user, params = {}) {
+export async function fetchAdminNotificationHistory(params = {}) {
 	const searchParams = new URLSearchParams({
-		employeeId: String(user?.employeeId || ''),
 		page: String(params.page || 1),
 		pageSize: String(params.pageSize || 20),
 		readStatus: params.readStatus || 'all',
@@ -38,33 +23,27 @@ export async function fetchAdminNotificationHistory(user, params = {}) {
 		searchParams.set('keyword', params.keyword.trim());
 	}
 
-	return apiRequest(`/notifications/history?${searchParams.toString()}`, {
-		headers: getAdminNotificationHeaders(user),
-	});
+	return apiRequest(`/notifications/history?${searchParams.toString()}`);
 }
 
-export async function markAdminNotificationAsRead(user, notificationId) {
+export async function markAdminNotificationAsRead(notificationId) {
 	return apiRequest('/notifications/read', {
 		method: 'POST',
 		body: JSON.stringify({
-			employeeId: user?.employeeId,
 			notificationId,
 		}),
-		headers: getAdminNotificationHeaders(user),
 	});
 }
 
-export async function markAllAdminNotificationsAsRead(user, notificationIds = []) {
+export async function markAllAdminNotificationsAsRead(notificationIds = []) {
 	return apiRequest('/notifications/read-all', {
 		method: 'POST',
 		body: JSON.stringify({
-			employeeId: user?.employeeId,
 			notificationIds,
 		}),
-		headers: getAdminNotificationHeaders(user),
 	});
 }
 
-export function getAdminNotificationHeadersForUser(user) {
-	return getAdminNotificationHeaders(user);
+export function getAdminNotificationHeadersForUser() {
+	return {};
 }

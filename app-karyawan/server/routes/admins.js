@@ -1,5 +1,6 @@
 import { Router } from 'express';
 
+import { hashPassword } from '../lib/password.js';
 import prisma from '../lib/prisma.js';
 
 const router = Router();
@@ -21,7 +22,6 @@ function mapAdmin(record) {
 		employeeId: record.employeeId,
 		employeeName: record.employee.fullName,
 		employeeNo: record.employee.employeeNo,
-		password: record.password,
 		role: record.role,
 	};
 }
@@ -47,7 +47,7 @@ async function validatePayload(body, currentId = null) {
 		throw Object.assign(new Error('Nama wajib dipilih.'), { statusCode: 400 });
 	}
 
-	if (!password) {
+	if (!password && !currentId) {
 		throw Object.assign(new Error('Password wajib diisi.'), { statusCode: 400 });
 	}
 
@@ -70,7 +70,7 @@ async function validatePayload(body, currentId = null) {
 
 	return {
 		employeeId,
-		password,
+		...(password ? { password: await hashPassword(password) } : {}),
 		role,
 	};
 }

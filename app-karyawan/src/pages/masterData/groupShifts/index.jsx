@@ -18,7 +18,7 @@ import UploadFileOutlinedIcon from '@mui/icons-material/UploadFileOutlined';
 import CardHeader from '@/components/cardHeader';
 import DeleteConfirmDialog from '@/components/masterData/deleteConfirmDialog';
 import PageHeader from '@/components/pageHeader';
-import apiRequest, { getApiBaseUrl } from '@/services/api';
+import apiRequest, { downloadFile, getApiBaseUrl } from '@/services/api';
 
 import GroupShiftFormDialog from './groupShiftFormDialog';
 import GroupShiftImportDialog from './groupShiftImportDialog';
@@ -180,14 +180,10 @@ function GroupShiftsPage() {
 			setImportOpen(false);
 
 			if (response.errorReportUrl) {
-				const downloadUrl = `${getApiBaseUrl()}${response.errorReportUrl}`;
-				const link = document.createElement('a');
-				link.href = downloadUrl;
-				link.target = '_blank';
-				link.rel = 'noreferrer';
-				document.body.appendChild(link);
-				link.click();
-				document.body.removeChild(link);
+				await downloadFile(
+					`${getApiBaseUrl()}${response.errorReportUrl}`,
+					'master-group-shifts-import-errors.xlsx',
+				);
 
 				enqueueSnackbar(
 					`${response.message} Berhasil: ${response.importedCount}, gagal: ${response.failedCount}. File error diunduh otomatis.`,

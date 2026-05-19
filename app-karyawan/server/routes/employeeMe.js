@@ -33,6 +33,7 @@ import {
 	sendEmployeePushNotification,
 } from '../lib/pushNotificationService.js';
 import requireEmployeeAuth from '../middleware/requireEmployeeAuth.js';
+import { hashPassword, verifyPassword } from '../lib/password.js';
 
 const router = Router();
 const EXCLUDED_FALLBACK_JOB_ROLES = ['Dy. Dept. Manager', 'Dept. Manager', 'Site/Div. Manager'];
@@ -662,7 +663,12 @@ async function sendApprovedEmail(record) {
 	});
 }
 
-function buildEmployeeActiveLeaveProcess({ approverApproval = null, approverCount = 0, requesterRecord = null, requesterCount = 0 }) {
+function buildEmployeeActiveLeaveProcess({
+	approverApproval = null,
+	approverCount = 0,
+	requesterRecord = null,
+	requesterCount = 0,
+}) {
 	if (approverApproval) {
 		const approval = mapApprovalRow(approverApproval, approverApproval.approverEmployeeId);
 		const request = mapLeaveRequestSummary(approverApproval.employeeLeave);
@@ -713,7 +719,9 @@ function buildEmployeeActiveLeaveProcess({ approverApproval = null, approverCoun
 			targetKind: 'REQUEST',
 			isActionRequired: false,
 			totalActiveCount: requesterCount,
-			description: `${request.leaveType} sedang di tahap ${request.activeStageLabel || 'proses approval'}.${approvalSuffix}`,
+			description: `${request.leaveType} sedang di tahap ${
+				request.activeStageLabel || 'proses approval'
+			}.${approvalSuffix}`,
 		};
 	}
 
@@ -731,103 +739,103 @@ router.get('/dashboard', async (req, res, next) => {
 			requesterActiveLeaves,
 			approverPendingApprovals,
 		] = await Promise.all([
-				prisma.guidanceRecord.count({
-					where: { employeeId: req.employee.id },
-				}),
-				prisma.warningLetter.count({
-					where: { employeeId: req.employee.id },
-				}),
-				prisma.employeeLeave.count({
-					where: { employeeId: req.employee.id },
-				}),
-				prisma.guidanceRecord.findMany({
-					where: { employeeId: req.employee.id },
-					orderBy: [{ meetingDate: 'desc' }, { id: 'desc' }],
-					take: 3,
-				}),
-				prisma.warningLetter.findMany({
-					where: { employeeId: req.employee.id },
-					include: {
-						employee: {
-							include: {
-								department: true,
-								jobRole: true,
-								jobLevel: true,
-							},
-						},
-						superiorEmployee: {
-							include: {
-								jobLevel: true,
-							},
+			prisma.guidanceRecord.count({
+				where: { employeeId: req.employee.id },
+			}),
+			prisma.warningLetter.count({
+				where: { employeeId: req.employee.id },
+			}),
+			prisma.employeeLeave.count({
+				where: { employeeId: req.employee.id },
+			}),
+			prisma.guidanceRecord.findMany({
+				where: { employeeId: req.employee.id },
+				orderBy: [{ meetingDate: 'desc' }, { id: 'desc' }],
+				take: 3,
+			}),
+			prisma.warningLetter.findMany({
+				where: { employeeId: req.employee.id },
+				include: {
+					employee: {
+						include: {
+							department: true,
+							jobRole: true,
+							jobLevel: true,
 						},
 					},
-					orderBy: [{ letterDate: 'desc' }, { id: 'desc' }],
-					take: 3,
-				}),
-				prisma.employeeLeave.findMany({
-					where: {
-						employeeId: req.employee.id,
-						status: { in: ['SUBMITTED', 'IN_APPROVAL'] },
-					},
-					include: {
-						employee: {
-							include: {
-								department: true,
-								jobLevel: true,
-							},
+					superiorEmployee: {
+						include: {
+							jobLevel: true,
 						},
-						masterCutiKaryawan: true,
-						approvals: {
-							include: {
-								approverEmployee: {
-									include: {
-										jobLevel: true,
-									},
+					},
+				},
+				orderBy: [{ letterDate: 'desc' }, { id: 'desc' }],
+				take: 3,
+			}),
+			prisma.employeeLeave.findMany({
+				where: {
+					employeeId: req.employee.id,
+					status: { in: ['SUBMITTED', 'IN_APPROVAL'] },
+				},
+				include: {
+					employee: {
+						include: {
+							department: true,
+							jobLevel: true,
+						},
+					},
+					masterCutiKaryawan: true,
+					approvals: {
+						include: {
+							approverEmployee: {
+								include: {
+									jobLevel: true,
 								},
 							},
-							orderBy: [{ revisionNo: 'desc' }, { stageOrder: 'asc' }, { id: 'asc' }],
+						},
+						orderBy: [{ revisionNo: 'desc' }, { stageOrder: 'asc' }, { id: 'asc' }],
+					},
+				},
+				orderBy: [{ submittedAt: 'desc' }, { updatedAt: 'desc' }, { id: 'desc' }],
+				take: 5,
+			}),
+			prisma.employeeLeaveApproval.findMany({
+				where: {
+					approverEmployeeId: req.employee.id,
+					status: 'PENDING',
+				},
+				include: {
+					approverEmployee: {
+						include: {
+							jobLevel: true,
 						},
 					},
-					orderBy: [{ submittedAt: 'desc' }, { updatedAt: 'desc' }, { id: 'desc' }],
-					take: 5,
-				}),
-				prisma.employeeLeaveApproval.findMany({
-					where: {
-						approverEmployeeId: req.employee.id,
-						status: 'PENDING',
-					},
-					include: {
-						approverEmployee: {
-							include: {
-								jobLevel: true,
-							},
-						},
-						employeeLeave: {
-							include: {
-								employee: {
-									include: {
-										department: true,
-										jobLevel: true,
-									},
+					employeeLeave: {
+						include: {
+							employee: {
+								include: {
+									department: true,
+									jobLevel: true,
 								},
-								masterCutiKaryawan: true,
-								approvals: {
-									include: {
-										approverEmployee: {
-											include: {
-												jobLevel: true,
-											},
+							},
+							masterCutiKaryawan: true,
+							approvals: {
+								include: {
+									approverEmployee: {
+										include: {
+											jobLevel: true,
 										},
 									},
-									orderBy: [{ revisionNo: 'desc' }, { stageOrder: 'asc' }, { id: 'asc' }],
 								},
+								orderBy: [{ revisionNo: 'desc' }, { stageOrder: 'asc' }, { id: 'asc' }],
 							},
 						},
 					},
-					orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
-					take: 10,
-				}),
-			]);
+				},
+				orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+				take: 10,
+			}),
+		]);
 
 		const actionablePendingApprovals = approverPendingApprovals.filter(
 			(item) =>
@@ -924,7 +932,7 @@ router.post('/change-password', async (req, res, next) => {
 	try {
 		const { currentPassword, newPassword } = validateChangePasswordPayload(req.body);
 
-		if (normalizeString(req.employee.password || '') !== currentPassword) {
+		if (!(await verifyPassword(currentPassword, req.employee.password))) {
 			return res.status(400).json({ message: 'Password Saat Ini tidak sesuai.' });
 		}
 
@@ -932,7 +940,7 @@ router.post('/change-password', async (req, res, next) => {
 			await tx.employee.update({
 				where: { id: req.employee.id },
 				data: {
-					password: newPassword,
+					password: await hashPassword(newPassword),
 				},
 			});
 

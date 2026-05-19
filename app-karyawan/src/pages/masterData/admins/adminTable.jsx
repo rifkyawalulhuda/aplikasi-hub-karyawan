@@ -25,7 +25,6 @@ function AdminTable({ rows, onEdit, onDelete }) {
 			createRowNumberColumn(),
 			{ field: 'employeeName', headerName: 'NAMA', minWidth: 220, flex: 1 },
 			{ field: 'employeeNo', headerName: 'NIK', minWidth: 140 },
-			{ field: 'password', headerName: 'PASSWORD', minWidth: 170 },
 			{
 				field: 'role',
 				headerName: 'ROLE',

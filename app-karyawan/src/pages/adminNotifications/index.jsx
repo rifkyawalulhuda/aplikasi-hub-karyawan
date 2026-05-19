@@ -296,7 +296,7 @@ function AdminNotificationsPage() {
 			}
 
 			try {
-				const historyResponse = await fetchAdminNotificationHistory(user, {
+				const historyResponse = await fetchAdminNotificationHistory({
 					page: nextPage,
 					pageSize: response.pageSize,
 					readStatus,
@@ -353,7 +353,7 @@ function AdminNotificationsPage() {
 			}
 
 			try {
-				await markAdminNotificationAsRead(user, item.id);
+				await markAdminNotificationAsRead(item.id);
 				if (readStatus === 'unread') {
 					loadData({ nextPage: page });
 				} else {
@@ -382,7 +382,7 @@ function AdminNotificationsPage() {
 
 	const handleMarkAll = useCallback(async () => {
 		try {
-			await markAllAdminNotificationsAsRead(user);
+			await markAllAdminNotificationsAsRead();
 			enqueueSnackbar('Semua notifikasi berhasil ditandai dibaca.', { variant: 'success' });
 			loadData({ nextPage: page });
 		} catch (error) {

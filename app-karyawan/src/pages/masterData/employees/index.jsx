@@ -19,7 +19,7 @@ import UploadFileOutlinedIcon from '@mui/icons-material/UploadFileOutlined';
 import CardHeader from '@/components/cardHeader';
 import DeleteConfirmDialog from '@/components/masterData/deleteConfirmDialog';
 import PageHeader from '@/components/pageHeader';
-import apiRequest, { getApiBaseUrl } from '@/services/api';
+import apiRequest, { downloadFile, getApiBaseUrl } from '@/services/api';
 import { formatEmploymentTypeLabel, formatGradeLabel } from '@/constants/employeeMaster';
 
 import EmployeeFormDialog from './employeeFormDialog';
@@ -233,14 +233,10 @@ function EmployeesPage() {
 			setImportOpen(false);
 
 			if (response.errorReportUrl) {
-				const downloadUrl = `${getApiBaseUrl()}${response.errorReportUrl}`;
-				const link = document.createElement('a');
-				link.href = downloadUrl;
-				link.target = '_blank';
-				link.rel = 'noreferrer';
-				document.body.appendChild(link);
-				link.click();
-				document.body.removeChild(link);
+				await downloadFile(
+					`${getApiBaseUrl()}${response.errorReportUrl}`,
+					'master-karyawan-import-errors.xlsx',
+				);
 
 				enqueueSnackbar(
 					`${response.message} Berhasil: ${response.importedCount}, gagal: ${response.failedCount}. File error diunduh otomatis.`,
@@ -275,7 +271,6 @@ function EmployeesPage() {
 		worksheet.columns = [
 			{ header: 'NO', key: 'id', width: 10 },
 			{ header: 'Employee No', key: 'employeeNo', width: 18 },
-			{ header: 'Password', key: 'password', width: 18 },
 			{ header: 'Fullname', key: 'fullName', width: 28 },
 			{ header: 'Employment Type', key: 'employmentType', width: 18 },
 			{ header: 'Site / Div', key: 'siteDiv', width: 14 },
@@ -302,7 +297,6 @@ function EmployeesPage() {
 			worksheet.addRow({
 				id: row.id,
 				employeeNo: row.employeeNo,
-				password: row.password,
 				fullName: row.fullName,
 				employmentType: formatEmploymentTypeLabel(row.employmentType),
 				siteDiv: row.siteDiv,

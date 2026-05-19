@@ -115,6 +115,7 @@ Untuk Docker development, gunakan `DATABASE_URL` seperti ini:
 DATABASE_URL="postgresql://postgres:postgres@localhost:5434/hub_karyawan?schema=public"
 PORT=4000
 VITE_API_BASE_URL="/api"
+ADMIN_AUTH_SECRET="dev-admin-auth-secret"
 EMPLOYEE_AUTH_SECRET="dev-employee-auth-secret"
 APP_BASE_URL="https://aplikasi-hub.my.id"
 EMPLOYEE_PWA_BASE_URL="https://pwa-karyawan.vercel.app"
@@ -139,6 +140,12 @@ Jika perlu login awal:
 npm run prisma:seed:login
 ```
 
+Jika database lama masih berisi password plaintext, jalankan migrasi hash satu kali:
+
+```bash
+npm run security:hash-passwords
+```
+
 Jalankan frontend dan backend:
 
 ```bash
@@ -161,27 +168,28 @@ URL lokal:
 
 Semua script dijalankan dari `app-karyawan`.
 
-| Script | Fungsi |
-| --- | --- |
-| `npm run dev` | Menjalankan Vite frontend |
-| `npm run dev:host` | Menjalankan Vite dengan host `0.0.0.0` |
-| `npm run dev:server` | Menjalankan Express API via nodemon |
-| `npm run dev:full` | Menjalankan frontend + backend |
-| `npm run dev:full:host` | Menjalankan frontend host + backend |
-| `npm run dev:server:status` | Cek status backend dev |
-| `npm run dev:server:stop` | Stop backend dev saja |
+| Script                         | Fungsi                                                         |
+| ------------------------------ | -------------------------------------------------------------- |
+| `npm run dev`                  | Menjalankan Vite frontend                                      |
+| `npm run dev:host`             | Menjalankan Vite dengan host `0.0.0.0`                         |
+| `npm run dev:server`           | Menjalankan Express API via nodemon                            |
+| `npm run dev:full`             | Menjalankan frontend + backend                                 |
+| `npm run dev:full:host`        | Menjalankan frontend host + backend                            |
+| `npm run dev:server:status`    | Cek status backend dev                                         |
+| `npm run dev:server:stop`      | Stop backend dev saja                                          |
 | `npm run prisma:generate:safe` | Stop backend relevan, generate Prisma, lalu restart jika perlu |
-| `npm run prisma:migrate` | Menjalankan `prisma migrate dev` |
-| `npm run prisma:studio` | Membuka Prisma Studio |
-| `npm run prisma:seed:login` | Membuat data login awal |
-| `npm run build` | Build frontend production |
-| `npm run preview` | Preview build Vite |
-| `npm run server` | Menjalankan backend Express sekali jalan |
-| `npm run test` | Menjalankan Vitest watch |
-| `npm run test:run` | Menjalankan Vitest satu kali |
-| `npm run lint` | Menjalankan ESLint |
-| `npm run db:up` | Start PostgreSQL Docker |
-| `npm run db:down` | Stop PostgreSQL Docker |
+| `npm run prisma:migrate`       | Menjalankan `prisma migrate dev`                               |
+| `npm run prisma:studio`        | Membuka Prisma Studio                                          |
+| `npm run prisma:seed:login`    | Membuat data login awal                                        |
+| `npm run security:hash-passwords` | Meng-hash password plaintext lama di database               |
+| `npm run build`                | Build frontend production                                      |
+| `npm run preview`              | Preview build Vite                                             |
+| `npm run server`               | Menjalankan backend Express sekali jalan                       |
+| `npm run test`                 | Menjalankan Vitest watch                                       |
+| `npm run test:run`             | Menjalankan Vitest satu kali                                   |
+| `npm run lint`                 | Menjalankan ESLint                                             |
+| `npm run db:up`                | Start PostgreSQL Docker                                        |
+| `npm run db:down`              | Stop PostgreSQL Docker                                         |
 
 ## Workflow Development
 

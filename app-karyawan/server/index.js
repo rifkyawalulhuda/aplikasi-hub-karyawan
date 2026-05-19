@@ -23,6 +23,7 @@ import groupShiftsRouter from './routes/groupShifts.js';
 import employeesRouter from './routes/employees.js';
 import masterDataRouter from './routes/masterData.js';
 import warningLettersRouter from './routes/warningLetters.js';
+import requireAdminAuth from './middleware/requireAdminAuth.js';
 
 const app = express();
 const port = Number(process.env.PORT || 4000);
@@ -120,24 +121,24 @@ app.get('/api/health', async (req, res) => {
 });
 
 app.use('/api/auth', authRouter);
-app.use('/api/global-search', globalSearchRouter);
-app.use('/api/notifications', notificationsRouter);
-app.use('/api/admin/email-workflow-failures', emailWorkflowFailuresRouter);
 app.use('/api/employee-auth', employeeAuthRouter);
 app.use('/api/employee-me', employeeMeRouter);
-app.use('/api/master/employees', employeesRouter);
-app.use('/api/master/admins', adminsRouter);
-app.use('/api/master/group-shifts', groupShiftsRouter);
-app.use('/api/master/employee-documents', employeeDocumentsRouter);
-app.use('/api/master', masterDataRouter);
-app.use('/api/data-karyawan/guidance-records', guidanceRecordsRouter);
-app.use('/api/data-karyawan/warning-letters', warningLettersRouter);
-app.use('/api/data-karyawan/employee-leaves', employeeLeavesRouter);
-app.use('/api/data-karyawan/employee-leave-database', employeeLeaveDatabaseRouter);
-app.use('/api/data-karyawan/employee-leave-balance-seeds', employeeLeaveBalanceSeedsRouter);
-app.use('/api/data-karyawan/pelatihan-karyawan', employeeTrainingsRouter);
-app.use('/api/data-karyawan/license-certifications', licenseCertificationsRouter);
-app.use('/api/data-unit/license-certifications', unitLicenseCertificationsRouter);
+app.use('/api/global-search', requireAdminAuth, globalSearchRouter);
+app.use('/api/notifications', requireAdminAuth, notificationsRouter);
+app.use('/api/admin/email-workflow-failures', requireAdminAuth, emailWorkflowFailuresRouter);
+app.use('/api/master/employees', requireAdminAuth, employeesRouter);
+app.use('/api/master/admins', requireAdminAuth, adminsRouter);
+app.use('/api/master/group-shifts', requireAdminAuth, groupShiftsRouter);
+app.use('/api/master/employee-documents', requireAdminAuth, employeeDocumentsRouter);
+app.use('/api/master', requireAdminAuth, masterDataRouter);
+app.use('/api/data-karyawan/guidance-records', requireAdminAuth, guidanceRecordsRouter);
+app.use('/api/data-karyawan/warning-letters', requireAdminAuth, warningLettersRouter);
+app.use('/api/data-karyawan/employee-leaves', requireAdminAuth, employeeLeavesRouter);
+app.use('/api/data-karyawan/employee-leave-database', requireAdminAuth, employeeLeaveDatabaseRouter);
+app.use('/api/data-karyawan/employee-leave-balance-seeds', requireAdminAuth, employeeLeaveBalanceSeedsRouter);
+app.use('/api/data-karyawan/pelatihan-karyawan', requireAdminAuth, employeeTrainingsRouter);
+app.use('/api/data-karyawan/license-certifications', requireAdminAuth, licenseCertificationsRouter);
+app.use('/api/data-unit/license-certifications', requireAdminAuth, unitLicenseCertificationsRouter);
 
 app.use((error, req, res, next) => {
 	if (res.headersSent) {

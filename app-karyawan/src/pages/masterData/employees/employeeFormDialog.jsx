@@ -24,7 +24,7 @@ import {
 function toDefaultValues(initialValue) {
 	return {
 		employeeNo: initialValue?.employeeNo || '',
-		password: initialValue?.password || '',
+		password: '',
 		fullName: initialValue?.fullName || '',
 		employmentType: formatEmploymentTypeLabel(initialValue?.employmentType || DEFAULT_EMPLOYMENT_TYPE),
 		siteDiv: initialValue?.siteDiv || 'CLC',
@@ -85,11 +85,11 @@ function EmployeeFormDialog({ open, loading, initialValue, options, onClose, onS
 					<Grid item xs={12} md={6}>
 						<FormInput
 							name="password"
-							label="Password"
+							label={isEditMode ? 'Password Baru' : 'Password'}
 							control={control}
 							errors={errors}
 							dirtyFields={dirtyFields}
-							rules={{ required: 'Password wajib diisi.' }}
+							rules={isEditMode ? {} : { required: 'Password wajib diisi.' }}
 							fullWidth
 						/>
 					</Grid>

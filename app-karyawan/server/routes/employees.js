@@ -7,6 +7,7 @@ import { Router } from 'express';
 import multer from 'multer';
 
 import prisma from '../lib/prisma.js';
+import { hashPassword } from '../lib/password.js';
 import { isWarningLetterActive } from '../lib/warningLetterEscalation.js';
 
 const router = Router();
@@ -223,7 +224,6 @@ function mapEmployee(employee) {
 	return {
 		id: employee.id,
 		employeeNo: employee.employeeNo,
-		password: employee.password,
 		fullName: employee.fullName,
 		employmentType: formatEmploymentTypeLabel(employee.employmentType),
 		siteDiv: employee.siteDiv,
@@ -373,7 +373,9 @@ async function validatePayload(payload, currentEmployeeId = null) {
 	const grade = normalizeGradeValue(payload.grade);
 
 	if (!employeeNo) throw Object.assign(new Error('Employee No wajib diisi.'), { statusCode: 400 });
-	if (!password) throw Object.assign(new Error('Password wajib diisi.'), { statusCode: 400 });
+	if (!password && !currentEmployeeId) {
+		throw Object.assign(new Error('Password wajib diisi.'), { statusCode: 400 });
+	}
 	if (!fullName) throw Object.assign(new Error('Fullname wajib diisi.'), { statusCode: 400 });
 	if (!EMPLOYMENT_TYPES.includes(employmentType)) {
 		throw Object.assign(new Error('Employment Type tidak valid.'), { statusCode: 400 });
@@ -420,7 +422,7 @@ async function validatePayload(payload, currentEmployeeId = null) {
 
 	return {
 		employeeNo,
-		password,
+		...(password ? { password: await hashPassword(password) } : {}),
 		fullName,
 		employmentType,
 		siteDiv,
@@ -502,7 +504,7 @@ async function createErrorReport(rows) {
 	rows.forEach((row) => {
 		worksheet.addRow([
 			row.raw['Employee No'] || '',
-			row.raw.Password || '',
+			row.raw.Password ? '***' : '',
 			row.raw.Fullname || '',
 			row.raw['Employment Type'] || '',
 			row.raw['Site / Div'] || '',
@@ -915,52 +917,52 @@ router.get(
 
 		const [guidanceRecords, warningLetters, licenseCertifications, leaveDatabases, leaveFlows, trainingRecords] =
 			await Promise.all([
-			prisma.guidanceRecord.findMany({
-				where: { employeeId: id },
-				orderBy: { meetingDate: 'desc' },
-				take: 5,
-			}),
-			prisma.warningLetter.findMany({
-				where: { employeeId: id },
-				orderBy: { letterDate: 'desc' },
-				take: 5,
-			}),
-			prisma.employeeLicenseCertification.findMany({
-				where: { employeeId: id },
-				include: { masterDokKaryawan: true },
-				orderBy: { expiryDate: 'asc' },
-			}),
-			prisma.employeeLeaveDatabase.findMany({
-				where: { employeeId: id },
-				include: { masterCutiKaryawan: true },
-				orderBy: { year: 'desc' },
-			}),
-			prisma.employeeLeave.findMany({
-				where: { employeeId: id },
-				include: { masterCutiKaryawan: true },
-				orderBy: { createdAt: 'desc' },
-				take: 5,
-			}),
-			prisma.employeeTraining.findMany({
-				where: {
-					participants: {
-						some: {
-							employeeId: id,
+				prisma.guidanceRecord.findMany({
+					where: { employeeId: id },
+					orderBy: { meetingDate: 'desc' },
+					take: 5,
+				}),
+				prisma.warningLetter.findMany({
+					where: { employeeId: id },
+					orderBy: { letterDate: 'desc' },
+					take: 5,
+				}),
+				prisma.employeeLicenseCertification.findMany({
+					where: { employeeId: id },
+					include: { masterDokKaryawan: true },
+					orderBy: { expiryDate: 'asc' },
+				}),
+				prisma.employeeLeaveDatabase.findMany({
+					where: { employeeId: id },
+					include: { masterCutiKaryawan: true },
+					orderBy: { year: 'desc' },
+				}),
+				prisma.employeeLeave.findMany({
+					where: { employeeId: id },
+					include: { masterCutiKaryawan: true },
+					orderBy: { createdAt: 'desc' },
+					take: 5,
+				}),
+				prisma.employeeTraining.findMany({
+					where: {
+						participants: {
+							some: {
+								employeeId: id,
+							},
 						},
 					},
-				},
-				include: {
-					participants: {
-						include: {
-							employee: true,
+					include: {
+						participants: {
+							include: {
+								employee: true,
+							},
+							orderBy: { id: 'asc' },
 						},
-						orderBy: { id: 'asc' },
 					},
-				},
-				orderBy: [{ startDate: 'desc' }, { endDate: 'desc' }, { createdAt: 'desc' }],
-				take: 5,
-			}),
-		]);
+					orderBy: [{ startDate: 'desc' }, { endDate: 'desc' }, { createdAt: 'desc' }],
+					take: 5,
+				}),
+			]);
 
 		const licenseExpiredCount = licenseCertifications.filter(
 			(l) => l.expiryDate && new Date(l.expiryDate) < today,

@@ -22,7 +22,7 @@ import DeleteConfirmDialog from '@/components/masterData/deleteConfirmDialog';
 import useUrlSearchKeyword from '@/hooks/useUrlSearchKeyword';
 import MasterDataImportDialog from '@/components/masterData/masterDataImportDialog';
 import PageHeader from '@/components/pageHeader';
-import apiRequest, { getApiBaseUrl } from '@/services/api';
+import apiRequest, { downloadFile, getApiBaseUrl } from '@/services/api';
 
 import EmployeeLeaveDetailDialog from './employeeLeaveDetailDialog';
 import EmployeeLeaveFormDialog from './employeeLeaveFormDialog';
@@ -157,14 +157,7 @@ function EmployeeLeavesPage() {
 			setImportOpen(false);
 
 			if (response.errorReportUrl) {
-				const downloadUrl = `${getApiBaseUrl()}${response.errorReportUrl}`;
-				const link = document.createElement('a');
-				link.href = downloadUrl;
-				link.target = '_blank';
-				link.rel = 'noreferrer';
-				document.body.appendChild(link);
-				link.click();
-				document.body.removeChild(link);
+				await downloadFile(`${getApiBaseUrl()}${response.errorReportUrl}`, 'cuti-karyawan-import-errors.xlsx');
 
 				enqueueSnackbar(
 					`${response.message} Berhasil: ${response.importedCount}, gagal: ${response.failedCount}. File error diunduh otomatis.`,
@@ -187,14 +180,10 @@ function EmployeeLeavesPage() {
 
 	const handleExportExcel = async () => {
 		try {
-			const downloadUrl = `${getApiBaseUrl()}/data-karyawan/employee-leave-database/export`;
-			const link = document.createElement('a');
-			link.href = downloadUrl;
-			link.target = '_blank';
-			link.rel = 'noreferrer';
-			document.body.appendChild(link);
-			link.click();
-			document.body.removeChild(link);
+			await downloadFile(
+				`${getApiBaseUrl()}/data-karyawan/employee-leave-database/export`,
+				'data-cuti-karyawan.xlsx',
+			);
 
 			enqueueSnackbar('Menyiapkan file export Excel...', { variant: 'info' });
 		} catch (error) {
