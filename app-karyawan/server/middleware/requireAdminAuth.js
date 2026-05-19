@@ -22,6 +22,15 @@ async function requireAdminAuth(req, res, next) {
 			return res.status(401).json({ message: 'Akun admin tidak ditemukan.' });
 		}
 
+		const expectedTokenVersion = admin.tokenVersion ?? 0;
+		const tokenVersion = typeof payload.tokenVersion === 'number' ? payload.tokenVersion : 0;
+
+		if (tokenVersion !== expectedTokenVersion) {
+			return res
+				.status(401)
+				.json({ message: 'Sesi sudah tidak berlaku. Silakan login kembali.' });
+		}
+
 		req.admin = {
 			id: admin.id,
 			role: admin.role,

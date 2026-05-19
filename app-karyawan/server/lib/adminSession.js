@@ -40,6 +40,7 @@ function createAdminAccessToken(admin) {
 			sub: String(admin.id),
 			employeeId: admin.employeeId,
 			role: admin.role,
+			tokenVersion: typeof admin.tokenVersion === 'number' ? admin.tokenVersion : 0,
 			type: 'admin-access',
 			iat: issuedAt,
 			exp: issuedAt + TOKEN_TTL_SECONDS,
@@ -69,6 +70,18 @@ function verifyAdminAccessToken(token) {
 	const expectedBuffer = Buffer.from(expectedSignature);
 
 	if (signatureBuffer.length !== expectedBuffer.length || !crypto.timingSafeEqual(signatureBuffer, expectedBuffer)) {
+		throw Object.assign(new Error('Token tidak valid.'), { statusCode: 401 });
+	}
+
+	let header;
+
+	try {
+		header = JSON.parse(fromBase64Url(encodedHeader));
+	} catch {
+		throw Object.assign(new Error('Token tidak valid.'), { statusCode: 401 });
+	}
+
+	if (header?.alg !== 'HS256' || header?.typ !== 'JWT') {
 		throw Object.assign(new Error('Token tidak valid.'), { statusCode: 401 });
 	}
 
