@@ -122,9 +122,13 @@ router.put(
 		}
 
 		const data = await validatePayload(req.body, id);
+		const updateData = {
+			...data,
+			...(data.password ? { tokenVersion: { increment: 1 } } : {}),
+		};
 		const record = await prisma.masterAdmin.update({
 			where: { id },
-			data,
+			data: updateData,
 			include: {
 				employee: true,
 			},
