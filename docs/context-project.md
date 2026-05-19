@@ -151,6 +151,40 @@ Folder ini dipilih sebagai basis utama pengembangan karena struktur template-nya
   - stage `Foreman Group Shift` dan `Foreman` tidak boleh muncul dobel untuk approver yang sama
 - Frontend Vite development host sekarang di-whitelist untuk domain Cloudflare public agar tunnel dapat mengakses frontend lokal tanpa blok host.
 - Server backend dev sekarang memiliki guard `EADDRINUSE` agar proses lama di port `4000` tidak memunculkan crash berulang saat restart dev.
+- `VITE_API_BASE_URL` di `.env` dev lokal di-set ke `/api` (proxy Vite ke `http://localhost:4000`), sedangkan `.env.production` tetap diarahkan ke `https://api.aplikasi-hub.my.id/api`. Mencegah dev lokal salah memanggil backend publik saat domain Cloudflare/DB production tidak sinkron dengan akun lokal.
+
+### Hardening Auth & Session Admin
+
+- Verifier `Bearer` admin sekarang juga memvalidasi field `alg` dan `typ` pada header token (wajib `HS256` + `JWT`). Algorithm-confusion / `alg=none` ditolak di awal sebelum verifikasi signature.
+- Setiap akun `MasterAdmin` punya kolom `tokenVersion` (`Int @default(0)`) yang ikut disertakan dalam payload token saat login.
+- Middleware `requireAdminAuth` menolak token kalau `payload.tokenVersion !== admin.tokenVersion` di DB. Ini berlaku sebagai mekanisme revocation ringan tanpa menambah lookup baru.
+- Endpoint `PUT /api/master/admins/:id` otomatis melakukan `tokenVersion: { increment: 1 }` setiap kali payload mengubah field `password`. Akibatnya, semua sesi admin yang aktif sebelum reset password langsung invalid.
+- Untuk paksa logout massal seluruh admin (misal saat insiden keamanan), cukup jalankan: `prisma.masterAdmin.updateMany({ data: { tokenVersion: { increment: 1 } } })`.
+- Auto-rehash legacy plaintext password tetap dibiarkan tidak menaikkan `tokenVersion`, karena hanya bersifat normalisasi storage dan tidak mengubah kredensial efektif.
+
+### Sanitasi Password pada Import Bulk Karyawan
+
+- File error report Excel hasil import bulk `Master Karyawan` sekarang me-mask kolom `Password` menjadi `***`. Cell yang aslinya kosong tetap kosong agar admin masih bisa membedakan baris yang memang belum mengisi password.
+- Tujuan: mencegah residual exposure plaintext password karyawan pada file `.xlsx` yang berakhir di disk server (`ERROR_REPORT_DIR`) dan sering di-download admin.
+
+### Skema dan Migration Terbaru
+
+- Migration `20260519144643_add_master_admin_token_version` menambahkan kolom `tokenVersion INTEGER NOT NULL DEFAULT 0` pada tabel `master_admins`. Sifatnya additive dan aman dijalankan di production lewat `npx prisma migrate deploy`.
+- Untuk deploy production, gunakan `prisma migrate deploy` (bukan `migrate dev`). Sebelum deploy disarankan tetap menjalankan backup DB lewat script di bawah.
+
+### Skrip Backup Database
+
+- Folder `app-karyawan/scripts/` berisi skrip backup versi `docker exec` (cocok untuk dev lokal yang Postgres-nya jalan via container `app-karyawan-postgres`):
+  - `scripts/backup-db.bat` (Windows / CMD)
+  - `scripts/backup-db.sh` (Linux / Bash)
+- Folder `app-karyawan/scripts-exec/` berisi skrip backup versi standalone (cocok untuk server production yang `pg_dump`-nya ter-install langsung di host):
+  - `scripts-exec/backup-db.bat`
+  - `scripts-exec/backup-db.sh`
+- Output backup: `app-karyawan/backups/hub_karyawan_YYYYMMDD_HHMMSS.sql.gz` (folder `backups/` sudah ditambahkan ke `.gitignore`).
+- Default retention 30 hari, dapat di-override lewat env var `RETENTION_DAYS`.
+- Konfigurasi koneksi (host/port/user/password/container) bisa di-override lewat env var (`PG_HOST`, `PG_PORT`, `PG_USER`, `PG_DATABASE`, `PGPASSWORD`, `PG_CONTAINER`).
+- Untuk production Linux disarankan memakai `~/.pgpass` (chmod 600) dibanding `PGPASSWORD` env var agar password tidak terlihat via `ps -ef`.
+- Auto-schedule disarankan via `cron` (Linux) atau `Task Scheduler` (Windows) jam 2 pagi.
 
 ## Struktur Navigasi yang Sudah Disepakati
 

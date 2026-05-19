@@ -25,3 +25,6 @@ dist-ssr
 *.sw?
 
 .vercel
+
+# Database backups (output dari scripts/backup-db.*)
+backups/
