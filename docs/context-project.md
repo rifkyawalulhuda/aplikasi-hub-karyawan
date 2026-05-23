@@ -141,6 +141,17 @@ Folder ini dipilih sebagai basis utama pengembangan karena struktur template-nya
 - Kegagalan email workflow cuti sekarang dicatat persisten pada tabel `email_workflow_failure_logs`, dengan error message yang disanitasi agar tidak menyimpan secret/token/password.
 - Log gagal email workflow cuti juga disinkronkan ke notifikasi admin live/history yang sudah ada, sehingga badge dan history tetap konsisten dengan status terbaru.
 - Endpoint admin `GET /api/admin/email-workflow-failures`, `GET /api/admin/email-workflow-failures/:id`, dan `POST /api/admin/email-workflow-failures/:id/resolve` tersedia untuk list, detail, dan resolve log gagal kirim email workflow cuti.
+- Notifikasi workflow cuti sekarang juga dikirim melalui **WhatsApp** via Fonnte API, selain email dan push notification.
+- WhatsApp notification dikirim pada event:
+  - `Cuti submitted` → ke requester (konfirmasi pengajuan berhasil)
+  - `Stage activation` → ke approver (notifikasi ada cuti yang perlu di-approve)
+  - `Cuti rejected` → ke requester (notifikasi ditolak + alasan)
+  - `Cuti approved` → ke requester (notifikasi disetujui + sisa cuti)
+- Service WhatsApp diimplementasikan pada `server/lib/whatsappService.js` menggunakan REST API Fonnte (`https://api.fonnte.com/send`).
+- Nomor telepon karyawan dari database (format `08xx`) otomatis dinormalisasi ke format internasional `62xx` sebelum dikirim ke Fonnte.
+- Konfigurasi WhatsApp membutuhkan env var `FONNTE_TOKEN` yang diambil dari dashboard Fonnte.
+- Jika `FONNTE_TOKEN` kosong atau tidak dikonfigurasi, seluruh notifikasi WhatsApp dilewati tanpa error (fire-and-forget).
+- Kegagalan kirim WhatsApp tidak menggagalkan proses workflow cuti — hanya dicatat sebagai warning di console log.
 - Request cuti `Approved` sekarang memiliki fitur `Print A4` baik dari admin maupun dari PWA karyawan.
 - Dokumen print cuti menggunakan halaman HTML/CSS A4 khusus yang dikalibrasi mengikuti file referensi `Form Permohonan Cuti dan Ijin.pdf`.
 - Kolom approval pada dokumen print menampilkan tanggal dan nama requester/approver sesuai grup approval yang sudah disepakati.
@@ -964,6 +975,12 @@ Yang sudah selesai:
   - Halaman **Detail Cuti** (requester): Menghapus kartu detail redundan, memindahkan tombol Kembali dan Nomor Pengajuan ke header, serta memindahkan tombol **Print A4**, **Resubmit**, dan **Cancel** ke dalam kartu Flow Approval.
   - Halaman **Detail Approval** (approver): Kartu detail utama otomatis disembunyikan jika status bukan lagi "Menunggu Tindakan" agar user fokus ke Timeline Approval.
   - Halaman **Daftar Cuti**: Informasi "Stage aktif" dan "Approver aktif" pada kartu pengajuan disembunyikan jika status pengajuan bukan lagi "Dalam Approval" (PENDING_APPROVAL) untuk tampilan yang lebih ringkas.
+- Menambahkan notifikasi WhatsApp via Fonnte API pada workflow cuti:
+  - Service baru `server/lib/whatsappService.js` untuk integrasi REST API Fonnte.
+  - Notifikasi WhatsApp dikirim pada event: submitted (ke requester), stage activation (ke approver), rejected (ke requester), approved (ke requester).
+  - Nomor telepon karyawan dari database (format `08xx`) otomatis dinormalisasi ke format internasional `62xx`.
+  - Konfigurasi memakai env var `FONNTE_TOKEN`; jika kosong, notifikasi WA dilewati tanpa error.
+  - Bersifat fire-and-forget — kegagalan kirim WA tidak menggagalkan proses workflow cuti.
 
 ## Struktur Teknis Awal yang Sudah Dibangun
 
