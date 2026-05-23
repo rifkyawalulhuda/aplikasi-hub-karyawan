@@ -74,7 +74,7 @@ async function main() {
 
 	const adminEmployee = await upsertEmployee(
 		{
-			employeeNo: 'EMP-ADMIN-001',
+			employeeNo: 'CLC001',
 			password: 'admin123',
 			fullName: 'Admin Dummy',
 			email: 'admin.dummy@local.test',
@@ -84,7 +84,7 @@ async function main() {
 
 	await upsertEmployee(
 		{
-			employeeNo: 'EMP-USER-001',
+			employeeNo: 'CLC002',
 			password: 'user123',
 			fullName: 'User Dummy',
 			email: 'user.dummy@local.test',
@@ -106,8 +106,8 @@ async function main() {
 	});
 
 	console.log('Seed login berhasil dibuat.');
-	console.log('Admin login: NIK EMP-ADMIN-001 | Password admin123');
-	console.log('Employee login: NIK EMP-USER-001 | Password user123');
+	console.log('Admin login: NIK CLC001 | Password admin123');
+	console.log('Employee login: NIK CLC002 | Password user123');
 }
 
 main()
