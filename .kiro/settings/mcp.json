@@ -1,0 +1,40 @@
+{
+  "mcpServers": {
+    "mui": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "@mui/mcp@latest"
+      ],
+      "env": {},
+      "disabled": false,
+      "autoApprove": []
+    },
+    "agentmemory": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@agentmemory/mcp"
+      ],
+      "env": {
+        "AGENTMEMORY_URL": "http://localhost:3111"
+      },
+      "disabled": false,
+      "autoApprove": []
+    },
+    "codegraph": {
+      "command": "codegraph",
+      "args": [
+        "serve",
+        "--mcp"
+      ],
+      "env": {},
+      "disabled": false,
+      "autoApprove": [
+        "codegraph_context"
+      ]
+    }
+  }
+}

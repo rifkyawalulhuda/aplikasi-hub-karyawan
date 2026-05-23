@@ -9,6 +9,7 @@ import {
 	mapEmployeeWarningLetter,
 } from '../lib/employeePortal.js';
 import { getEmployeePortalBaseUrl, queueAndSendEmail } from '../lib/emailService.js';
+import { sendLeaveWhatsAppNotification } from '../lib/whatsappService.js';
 import {
 	createLeaveRequestRevision,
 	getActiveApprovals,
@@ -663,6 +664,117 @@ async function sendApprovedEmail(record) {
 	});
 }
 
+// --- WhatsApp Notifications via Fonnte ---
+
+function formatDateId(date) {
+	if (!date) return '-';
+	return new Date(date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+async function sendSubmittedWhatsApp(record) {
+	const phone = record.employee.phoneNumber;
+	const name = record.employee.fullName;
+	const portalUrl = `${getEmployeePortalBaseUrl()}/karyawan/cuti/${record.id}`;
+
+	const message = [
+		`✅ *Pengajuan Cuti Terkirim*`,
+		'',
+		`Halo ${name},`,
+		`Pengajuan cuti Anda telah berhasil dikirim.`,
+		'',
+		`📋 No. Request: ${record.requestNumber}`,
+		`📝 Jenis Cuti: ${record.masterCutiKaryawan.leaveType}`,
+		`📅 Periode: ${formatDateId(record.periodStart)} - ${formatDateId(record.periodEnd)}`,
+		`⏱️ Jumlah: ${record.leaveDays} hari`,
+		'',
+		`Silakan tunggu proses approval dari atasan.`,
+		'',
+		`🔗 Detail: ${portalUrl}`,
+	].join('\n');
+
+	await sendLeaveWhatsAppNotification({ phoneNumber: phone, employeeName: name, message });
+}
+
+async function sendStageActivationWhatsApp(record) {
+	const activeApprovals = getActiveApprovals(record);
+	const portalUrl = getEmployeePortalBaseUrl();
+
+	await Promise.allSettled(
+		activeApprovals.map((approval) => {
+			const phone = approval.approverEmployee.phoneNumber;
+			const name = approval.approverEmployee.fullName;
+
+			const message = [
+				`📨 *Approval Cuti Menunggu Tindakan Anda*`,
+				'',
+				`Halo ${name},`,
+				`Ada pengajuan cuti yang membutuhkan persetujuan Anda.`,
+				'',
+				`📋 No. Request: ${record.requestNumber}`,
+				`👤 Karyawan: ${record.employee.fullName} (${record.employee.employeeNo})`,
+				`📝 Jenis Cuti: ${record.masterCutiKaryawan.leaveType}`,
+				`📅 Periode: ${formatDateId(record.periodStart)} - ${formatDateId(record.periodEnd)}`,
+				`⏱️ Jumlah: ${record.leaveDays} hari`,
+				'',
+				`Silakan buka Portal Karyawan untuk approve/reject.`,
+				'',
+				`🔗 ${portalUrl}/karyawan/cuti/approval/${approval.id}`,
+			].join('\n');
+
+			return sendLeaveWhatsAppNotification({ phoneNumber: phone, employeeName: name, message });
+		}),
+	);
+}
+
+async function sendRejectedWhatsApp(record) {
+	const phone = record.employee.phoneNumber;
+	const name = record.employee.fullName;
+	const portalUrl = `${getEmployeePortalBaseUrl()}/karyawan/cuti/${record.id}`;
+
+	const message = [
+		`❌ *Pengajuan Cuti Ditolak*`,
+		'',
+		`Halo ${name},`,
+		`Pengajuan cuti Anda telah ditolak.`,
+		'',
+		`📋 No. Request: ${record.requestNumber}`,
+		`📝 Jenis Cuti: ${record.masterCutiKaryawan.leaveType}`,
+		`📅 Periode: ${formatDateId(record.periodStart)} - ${formatDateId(record.periodEnd)}`,
+		`💬 Alasan: ${record.rejectionNote || '-'}`,
+		'',
+		`Anda dapat melakukan resubmit atau cancel melalui portal.`,
+		'',
+		`🔗 Detail: ${portalUrl}`,
+	].join('\n');
+
+	await sendLeaveWhatsAppNotification({ phoneNumber: phone, employeeName: name, message });
+}
+
+async function sendApprovedWhatsApp(record) {
+	const phone = record.employee.phoneNumber;
+	const name = record.employee.fullName;
+	const portalUrl = `${getEmployeePortalBaseUrl()}/karyawan/cuti/${record.id}`;
+
+	const message = [
+		`🎉 *Pengajuan Cuti Disetujui*`,
+		'',
+		`Halo ${name},`,
+		`Pengajuan cuti Anda telah disetujui sepenuhnya.`,
+		'',
+		`📋 No. Request: ${record.requestNumber}`,
+		`📝 Jenis Cuti: ${record.masterCutiKaryawan.leaveType}`,
+		`📅 Periode: ${formatDateId(record.periodStart)} - ${formatDateId(record.periodEnd)}`,
+		`⏱️ Jumlah: ${record.leaveDays} hari`,
+		`📊 Sisa Cuti: ${record.remainingLeave}`,
+		'',
+		`Selamat menikmati cuti Anda! 🙏`,
+		'',
+		`🔗 Detail: ${portalUrl}`,
+	].join('\n');
+
+	await sendLeaveWhatsAppNotification({ phoneNumber: phone, employeeName: name, message });
+}
+
 function buildEmployeeActiveLeaveProcess({
 	approverApproval = null,
 	approverCount = 0,
@@ -1261,6 +1373,8 @@ router.post('/leave-requests', async (req, res, next) => {
 			sendStageActivationEmails(record),
 			sendSubmittedPush(record),
 			sendStageActivationPush(record),
+			sendSubmittedWhatsApp(record),
+			sendStageActivationWhatsApp(record),
 		]);
 
 		return res.status(201).json(mapLeaveRequestDetail(record, req.employee.id));
@@ -1403,6 +1517,8 @@ router.post('/leave-requests/:id/resubmit', async (req, res, next) => {
 			sendStageActivationEmails(record),
 			sendSubmittedPush(record),
 			sendStageActivationPush(record),
+			sendSubmittedWhatsApp(record),
+			sendStageActivationWhatsApp(record),
 		]);
 
 		return res.json(mapLeaveRequestDetail(record, req.employee.id));
@@ -1729,9 +1845,17 @@ router.post('/leave-approvals/:id/approve', async (req, res, next) => {
 		const record = await getLeaveRequestOrThrow(prisma, result);
 
 		if (record.status === 'APPROVED') {
-			await Promise.allSettled([sendApprovedEmail(record), sendApprovedPush(record)]);
+			await Promise.allSettled([
+				sendApprovedEmail(record),
+				sendApprovedPush(record),
+				sendApprovedWhatsApp(record),
+			]);
 		} else {
-			await Promise.allSettled([sendStageActivationEmails(record), sendStageActivationPush(record)]);
+			await Promise.allSettled([
+				sendStageActivationEmails(record),
+				sendStageActivationPush(record),
+				sendStageActivationWhatsApp(record),
+			]);
 		}
 
 		const approval = await prisma.employeeLeaveApproval.findUnique({
@@ -1871,7 +1995,7 @@ router.post('/leave-approvals/:id/reject', async (req, res, next) => {
 		});
 
 		const record = await getLeaveRequestOrThrow(prisma, result);
-		await Promise.allSettled([sendRejectedEmail(record), sendRejectedPush(record)]);
+		await Promise.allSettled([sendRejectedEmail(record), sendRejectedPush(record), sendRejectedWhatsApp(record)]);
 
 		const approval = await prisma.employeeLeaveApproval.findUnique({
 			where: { id },
