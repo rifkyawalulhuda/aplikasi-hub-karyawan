@@ -2,8 +2,11 @@ import { Router } from 'express';
 
 import prisma from '../lib/prisma.js';
 import { getLeaveRequestOrThrow, mapLeaveRequestDetail, mapLeaveRequestSummary } from '../lib/leaveWorkflow.js';
+import requireSiteIsolation from '../middleware/requireSiteIsolation.js';
 
 const router = Router();
+
+router.use(requireSiteIsolation({ modelType: 'per-site' }));
 
 function withAsync(handler) {
 	return (req, res, next) => {
@@ -13,10 +16,21 @@ function withAsync(handler) {
 
 router.get(
 	'/flow',
-	withAsync(async (_req, res) => {
+	withAsync(async (req, res) => {
+		const employeeSiteFilter = req.isSuperAdmin ? {} : { employee: { siteId: req.admin.siteId } };
+
 		const rows = await prisma.employeeLeave.findMany({
+			where: {
+				...employeeSiteFilter,
+			},
 			include: {
-				employee: true,
+				employee: {
+					include: {
+						site: true,
+						department: true,
+						jobLevel: true,
+					},
+				},
 				masterCutiKaryawan: true,
 				replacementAssignments: {
 					include: {
@@ -46,6 +60,13 @@ router.get(
 		}
 
 		const record = await getLeaveRequestOrThrow(prisma, id);
+
+		if (!req.isSuperAdmin && record.employee.siteId !== req.admin.siteId) {
+			return res.status(403).json({
+				message: 'Akses ditolak. Data tidak termasuk dalam site Anda.',
+			});
+		}
+
 		return res.json(mapLeaveRequestDetail(record));
 	}),
 );

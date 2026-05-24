@@ -108,6 +108,20 @@ export async function downloadFile(url, fallbackFileName = 'download.xlsx') {
 	window.URL.revokeObjectURL(objectUrl);
 }
 
+/**
+ * Appends a siteId query parameter to a URL path.
+ * If siteId is null/undefined, returns the path unchanged.
+ * Handles paths that already contain query parameters.
+ */
+export function appendSiteIdParam(path, siteId) {
+	if (siteId == null) {
+		return path;
+	}
+
+	const separator = path.includes('?') ? '&' : '?';
+	return `${path}${separator}siteId=${siteId}`;
+}
+
 async function apiRequest(path, options = {}) {
 	const response = await fetch(`${getApiBaseUrl()}${path}`, {
 		...options,

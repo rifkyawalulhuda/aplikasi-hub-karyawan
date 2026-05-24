@@ -20,10 +20,13 @@ import unitLicenseCertificationsRouter from './routes/unitLicenseCertifications.
 import employeeMeRouter from './routes/employeeMe.js';
 import guidanceRecordsRouter from './routes/guidanceRecords.js';
 import groupShiftsRouter from './routes/groupShifts.js';
+import vendorsRouter from './routes/vendors.js';
 import employeesRouter from './routes/employees.js';
 import masterDataRouter from './routes/masterData.js';
 import warningLettersRouter from './routes/warningLetters.js';
 import requireAdminAuth from './middleware/requireAdminAuth.js';
+import requireSuperAdmin from './middleware/requireSuperAdmin.js';
+import sitesRouter from './routes/sites.js';
 
 const app = express();
 const port = Number(process.env.PORT || 4000);
@@ -129,7 +132,9 @@ app.use('/api/admin/email-workflow-failures', requireAdminAuth, emailWorkflowFai
 app.use('/api/master/employees', requireAdminAuth, employeesRouter);
 app.use('/api/master/admins', requireAdminAuth, adminsRouter);
 app.use('/api/master/group-shifts', requireAdminAuth, groupShiftsRouter);
+app.use('/api/master/master-vendors', requireAdminAuth, vendorsRouter);
 app.use('/api/master/employee-documents', requireAdminAuth, employeeDocumentsRouter);
+app.use('/api/master/sites', requireAdminAuth, requireSuperAdmin, sitesRouter);
 app.use('/api/master', requireAdminAuth, masterDataRouter);
 app.use('/api/data-karyawan/guidance-records', requireAdminAuth, guidanceRecordsRouter);
 app.use('/api/data-karyawan/warning-letters', requireAdminAuth, warningLettersRouter);

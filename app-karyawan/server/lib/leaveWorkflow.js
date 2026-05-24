@@ -148,13 +148,14 @@ async function getRequesterForWorkflow(tx, employeeId) {
 
 async function findDepartmentApprovers(
 	tx,
-	{ departmentId, jobLevelName, requesterId, excludeGroupedForemen = false, excludeEmployeeIds = [] },
+	{ departmentId, jobLevelName, requesterId, siteId, excludeGroupedForemen = false, excludeEmployeeIds = [] },
 ) {
 	const uniqueExcludedEmployeeIds = [...new Set(excludeEmployeeIds)].filter((value) => Number.isInteger(value));
 
 	return tx.employee.findMany({
 		where: {
 			departmentId,
+			siteId,
 			id: {
 				notIn: [...uniqueExcludedEmployeeIds, requesterId],
 			},
@@ -184,10 +185,11 @@ async function resolveApprovalStages(tx, requester) {
 	const stages = [];
 	const requesterRank = getApprovalRank(requester.jobLevel?.name);
 	const hasRequesterGroupShift = Boolean(requester.groupShiftId);
+	const siteId = requester.siteId;
 	const groupShiftForemanApprovers = hasRequesterGroupShift
 		? requester.groupShift?.foremen
 				.map((assignment) => assignment.employee)
-				.filter((employee) => employee.id !== requester.id) || []
+				.filter((employee) => employee.id !== requester.id && employee.siteId === siteId) || []
 		: [];
 	const seenApproverIds = new Set();
 	let stageOrder = 1;
@@ -219,6 +221,7 @@ async function resolveApprovalStages(tx, requester) {
 			departmentId: requester.departmentId,
 			jobLevelName: stageConfig.jobLevelName,
 			requesterId: requester.id,
+			siteId,
 			excludeGroupedForemen: stageConfig.stageType === 'FOREMAN' && !hasRequesterGroupShift,
 			excludeEmployeeIds: Array.from(seenApproverIds),
 		});
@@ -237,10 +240,7 @@ async function resolveApprovalStages(tx, requester) {
 	}
 
 	if (stages.length === 0) {
-		throw Object.assign(
-			new Error('Route approval cuti tidak ditemukan. Pastikan approver tersedia pada department terkait.'),
-			{ statusCode: 400 },
-		);
+		throw Object.assign(new Error('Tidak ada approver yang tersedia untuk site karyawan.'), { statusCode: 400 });
 	}
 
 	return stages;
@@ -466,7 +466,7 @@ function mapLeaveRequestSummary(record) {
 		employeeId: record.employeeId,
 		employeeName: record.employee.fullName,
 		employeeNo: record.employee.employeeNo,
-		employeeSiteDiv: record.employee.siteDiv || '',
+		employeeSiteDiv: record.employee.site?.name || '',
 		employeeDepartmentName: record.employee.department?.name || '',
 		employeeJobLevelName: record.employee.jobLevel?.name || '',
 		leaveYear: record.leaveYear,
@@ -545,6 +545,7 @@ async function getLeaveRequestOrThrow(tx, id) {
 				include: {
 					jobLevel: true,
 					department: true,
+					site: true,
 				},
 			},
 			masterCutiKaryawan: true,

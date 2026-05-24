@@ -31,15 +31,16 @@ async function fetchEmployees() {
 }
 
 async function fetchLookupOptions() {
-	const [departments, groupShifts, workLocations, jobRoles, jobLevels] = await Promise.all([
+	const [departments, groupShifts, workLocations, jobRoles, jobLevels, sites] = await Promise.all([
 		apiRequest('/master/departments'),
 		apiRequest('/master/group-shifts'),
 		apiRequest('/master/work-locations'),
 		apiRequest('/master/job-roles'),
 		apiRequest('/master/job-levels'),
+		apiRequest('/master/sites').catch(() => []),
 	]);
 
-	return { departments, groupShifts, workLocations, jobRoles, jobLevels };
+	return { departments, groupShifts, workLocations, jobRoles, jobLevels, sites };
 }
 
 function formatEmployeeDate(value) {
@@ -67,6 +68,7 @@ function EmployeesPage() {
 		workLocations: [],
 		jobRoles: [],
 		jobLevels: [],
+		sites: [],
 	});
 	const [loading, setLoading] = useState(true);
 	const [submitting, setSubmitting] = useState(false);
@@ -105,7 +107,7 @@ function EmployeesPage() {
 			row.employeeNo,
 			row.fullName,
 			row.employmentType,
-			row.siteDiv,
+			row.siteName,
 			row.departmentName,
 			row.groupShiftName,
 			row.lengthOfService,
@@ -273,7 +275,7 @@ function EmployeesPage() {
 			{ header: 'Employee No', key: 'employeeNo', width: 18 },
 			{ header: 'Fullname', key: 'fullName', width: 28 },
 			{ header: 'Employment Type', key: 'employmentType', width: 18 },
-			{ header: 'Site / Div', key: 'siteDiv', width: 14 },
+			{ header: 'Site', key: 'siteName', width: 14 },
 			{ header: 'Department', key: 'departmentName', width: 20 },
 			{ header: 'Group Shift', key: 'groupShiftName', width: 20 },
 			{ header: 'Length Of Service', key: 'lengthOfService', width: 20 },
@@ -299,7 +301,7 @@ function EmployeesPage() {
 				employeeNo: row.employeeNo,
 				fullName: row.fullName,
 				employmentType: formatEmploymentTypeLabel(row.employmentType),
-				siteDiv: row.siteDiv,
+				siteName: row.siteName || '',
 				departmentName: row.departmentName,
 				groupShiftName: row.groupShiftName || '',
 				lengthOfService: row.lengthOfService,
