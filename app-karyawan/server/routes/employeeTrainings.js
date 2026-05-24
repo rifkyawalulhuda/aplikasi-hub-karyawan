@@ -7,8 +7,10 @@ import { Router } from 'express';
 import multer from 'multer';
 
 import prisma from '../lib/prisma.js';
+import requireSiteIsolation from '../middleware/requireSiteIsolation.js';
 
 const router = Router();
+router.use(requireSiteIsolation({ modelType: 'per-site' }));
 const upload = multer({
 	storage: multer.memoryStorage(),
 	limits: {
@@ -419,18 +421,24 @@ async function saveTrainingRecord(db, id, payload) {
 			return getTrainingRecordOrThrow(tx, id);
 		}
 
+		const createData = {
+			trainingType: payload.trainingType,
+			material: payload.material,
+			trainerInstitution: payload.trainerInstitution,
+			trainerName: payload.trainerName,
+			startDate: payload.startDate,
+			endDate: payload.endDate,
+			dayCount: payload.dayCount,
+			address: payload.address,
+			notes: payload.notes,
+		};
+
+		if (payload.siteId) {
+			createData.siteId = payload.siteId;
+		}
+
 		const created = await tx.employeeTraining.create({
-			data: {
-				trainingType: payload.trainingType,
-				material: payload.material,
-				trainerInstitution: payload.trainerInstitution,
-				trainerName: payload.trainerName,
-				startDate: payload.startDate,
-				endDate: payload.endDate,
-				dayCount: payload.dayCount,
-				address: payload.address,
-				notes: payload.notes,
-			},
+			data: createData,
 		});
 
 		await saveParticipants(tx, created.id, payload.participantEmployeeIds, payload.participantNames);
@@ -692,6 +700,24 @@ router.post(
 			return res.status(400).json({ message: 'File Excel wajib dipilih.' });
 		}
 
+		let siteId;
+
+		if (req.isSuperAdmin) {
+			siteId = req.body.siteId ? Number(req.body.siteId) : null;
+
+			if (!siteId) {
+				return res.status(400).json({ message: 'siteId wajib diisi.' });
+			}
+
+			const site = await prisma.masterSite.findUnique({ where: { id: siteId } });
+
+			if (!site) {
+				return res.status(400).json({ message: 'Site tidak valid.' });
+			}
+		} else {
+			siteId = req.admin.siteId;
+		}
+
 		const workbook = new ExcelJS.Workbook();
 		await workbook.xlsx.load(req.file.buffer);
 		const worksheet = workbook.getWorksheet('Data Import') || workbook.worksheets[0];
@@ -726,7 +752,7 @@ router.post(
 
 			try {
 				const payload = validatePayload(await buildImportPayload(raw));
-				const record = await saveTrainingRecord(prisma, null, payload);
+				const record = await saveTrainingRecord(prisma, null, { ...payload, siteId });
 				importedRows.push(mapTrainingRecord(record));
 			} catch (error) {
 				errorRows.push({
@@ -780,8 +806,9 @@ router.get(
 
 router.get(
 	'/',
-	withAsync(async (_req, res) => {
+	withAsync(async (req, res) => {
 		const records = await prisma.employeeTraining.findMany({
+			where: { ...req.siteFilter },
 			include: {
 				participants: {
 					orderBy: { id: 'asc' },
@@ -804,6 +831,13 @@ router.get(
 		}
 
 		const record = await getTrainingRecordOrThrow(prisma, id);
+
+		if (!req.isSuperAdmin && record.siteId !== req.admin.siteId) {
+			return res.status(403).json({
+				message: 'Akses ditolak. Data tidak termasuk dalam site Anda.',
+			});
+		}
+
 		return res.json(mapTrainingRecord(record));
 	}),
 );
@@ -811,8 +845,26 @@ router.get(
 router.post(
 	'/',
 	withAsync(async (req, res) => {
+		let siteId;
+
+		if (req.isSuperAdmin) {
+			siteId = req.body.siteId;
+
+			if (!siteId) {
+				return res.status(400).json({ message: 'siteId wajib diisi.' });
+			}
+
+			const site = await prisma.masterSite.findUnique({ where: { id: siteId } });
+
+			if (!site) {
+				return res.status(400).json({ message: 'Site tidak valid.' });
+			}
+		} else {
+			siteId = req.admin.siteId;
+		}
+
 		const payload = validatePayload(req.body);
-		const record = await saveTrainingRecord(prisma, null, payload);
+		const record = await saveTrainingRecord(prisma, null, { ...payload, siteId });
 
 		return res.status(201).json(mapTrainingRecord(record));
 	}),
@@ -827,8 +879,16 @@ router.put(
 			return res.status(400).json({ message: 'ID tidak valid.' });
 		}
 
-		await getTrainingRecordOrThrow(prisma, id);
-		const payload = validatePayload(req.body);
+		const existing = await getTrainingRecordOrThrow(prisma, id);
+
+		if (!req.isSuperAdmin && existing.siteId !== req.admin.siteId) {
+			return res.status(403).json({
+				message: 'Akses ditolak. Data tidak termasuk dalam site Anda.',
+			});
+		}
+
+		const { siteId: _ignored, ...body } = req.body;
+		const payload = validatePayload(body);
 		const record = await saveTrainingRecord(prisma, id, payload);
 
 		return res.json(mapTrainingRecord(record));
@@ -844,7 +904,14 @@ router.delete(
 			return res.status(400).json({ message: 'ID tidak valid.' });
 		}
 
-		await getTrainingRecordOrThrow(prisma, id);
+		const existing = await getTrainingRecordOrThrow(prisma, id);
+
+		if (!req.isSuperAdmin && existing.siteId !== req.admin.siteId) {
+			return res.status(403).json({
+				message: 'Akses ditolak. Data tidak termasuk dalam site Anda.',
+			});
+		}
+
 		await prisma.employeeTraining.delete({
 			where: { id },
 		});

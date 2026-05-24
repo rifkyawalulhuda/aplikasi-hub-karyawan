@@ -10,6 +10,7 @@ import Grid from '@mui/material/Grid';
 import MenuItem from '@mui/material/MenuItem';
 
 import FormInput from '@/components/formInput';
+import { useAuth } from '@/contexts/authContext';
 import {
 	DEFAULT_EMPLOYMENT_TYPE,
 	DEFAULT_GRADE,
@@ -27,7 +28,7 @@ function toDefaultValues(initialValue) {
 		password: '',
 		fullName: initialValue?.fullName || '',
 		employmentType: formatEmploymentTypeLabel(initialValue?.employmentType || DEFAULT_EMPLOYMENT_TYPE),
-		siteDiv: initialValue?.siteDiv || 'CLC',
+		siteId: initialValue?.siteId || '',
 		departmentId: initialValue?.departmentId || '',
 		groupShiftId: initialValue?.groupShiftId || '',
 		birthDate: initialValue?.birthDate || '',
@@ -45,6 +46,8 @@ function toDefaultValues(initialValue) {
 
 function EmployeeFormDialog({ open, loading, initialValue, options, onClose, onSubmit }) {
 	const isEditMode = Boolean(initialValue);
+	const { user } = useAuth();
+	const isSuperAdmin = user?.role === 'super_admin';
 	const {
 		control,
 		handleSubmit,
@@ -122,17 +125,26 @@ function EmployeeFormDialog({ open, loading, initialValue, options, onClose, onS
 							))}
 						</FormInput>
 					</Grid>
-					<Grid item xs={12} md={6}>
-						<FormInput
-							name="siteDiv"
-							label="Site / Div"
-							control={control}
-							errors={errors}
-							dirtyFields={dirtyFields}
-							rules={{ required: 'Site / Div wajib diisi.' }}
-							fullWidth
-						/>
-					</Grid>
+					{isSuperAdmin && (
+						<Grid item xs={12} md={6}>
+							<FormInput
+								name="siteId"
+								label="Site"
+								control={control}
+								errors={errors}
+								dirtyFields={dirtyFields}
+								rules={{ required: 'Site wajib dipilih.' }}
+								fullWidth
+								select
+							>
+								{(options.sites || []).map((option) => (
+									<MenuItem key={option.id} value={option.id}>
+										{option.name}
+									</MenuItem>
+								))}
+							</FormInput>
+						</Grid>
+					)}
 					<Grid item xs={12} md={6}>
 						<FormInput
 							name="departmentId"

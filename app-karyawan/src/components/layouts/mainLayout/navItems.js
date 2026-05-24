@@ -3,6 +3,7 @@ import { v4 as uuid } from 'uuid';
 import ApartmentOutlinedIcon from '@mui/icons-material/ApartmentOutlined';
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
 import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined';
+import DomainOutlinedIcon from '@mui/icons-material/DomainOutlined';
 import FeedOutlinedIcon from '@mui/icons-material/FeedOutlined';
 import LayersOutlinedIcon from '@mui/icons-material/LayersOutlined';
 import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined';
@@ -45,6 +46,14 @@ const NAV_LINKS_CONFIG = [
 						title: 'Master Admin',
 						Icon: BadgeOutlinedIcon,
 						href: '/data-master/master-data-karyawan/admins',
+					},
+					{
+						id: uuid(),
+						type: 'item',
+						title: 'Master Site',
+						Icon: DomainOutlinedIcon,
+						href: '/data-master/master-data-karyawan/sites',
+						roles: ['super_admin'],
 					},
 					{
 						id: uuid(),

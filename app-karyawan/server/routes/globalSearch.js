@@ -1,6 +1,7 @@
 import { Router } from 'express';
 
 import prisma from '../lib/prisma.js';
+import requireSiteIsolation from '../middleware/requireSiteIsolation.js';
 
 const router = Router();
 const RESULT_LIMIT = 4;
@@ -48,8 +49,15 @@ function mapGlobalSearchItem({ id, group, title, subtitle = '', href }) {
 	};
 }
 
+function getWarningLetterCategoryLabel(item) {
+	if (item.category === 'WARNING_LETTER') return `SP ${item.warningLevel || '-'}`;
+	if (item.category === 'SUSPENSION') return 'Skorsing';
+	return 'Surat Teguran';
+}
+
 router.get(
 	'/',
+	requireSiteIsolation({ modelType: 'per-site' }),
 	withAsync(async (req, res) => {
 		const query = normalizeString(req.query.q || '');
 
@@ -57,10 +65,27 @@ router.get(
 			return res.json({ query, items: [] });
 		}
 
+		// For site-scoped admin with no siteId, return empty results
+		if (!req.isSuperAdmin && !req.admin.siteId) {
+			return res.json({ query, items: [] });
+		}
+
 		const containsQuery = {
 			contains: query,
 			mode: 'insensitive',
 		};
+
+		// Site filter for employee-related queries
+		const employeeSiteFilter = req.isSuperAdmin ? {} : { siteId: req.admin.siteId };
+
+		// Site filter for models that have their own siteId (MasterGroupShift, MasterUnit, MasterVendor)
+		const perSiteSiteFilter = req.isSuperAdmin ? {} : { siteId: req.admin.siteId };
+
+		// Site filter for models related to employee (guidance, warnings, leaves, certifications)
+		const employeeRelatedSiteFilter = req.isSuperAdmin ? {} : { employee: { siteId: req.admin.siteId } };
+
+		// Admin search: filter by site for site-scoped admins (admins are employee-related)
+		const adminSiteFilter = req.isSuperAdmin ? {} : { employee: { siteId: req.admin.siteId } };
 
 		const [
 			admins,
@@ -82,8 +107,10 @@ router.get(
 			licenseCertifications,
 			unitLicenseCertifications,
 		] = await Promise.all([
+			// Employee-related: admins (filtered by employee's site)
 			prisma.masterAdmin.findMany({
 				where: {
+					...adminSiteFilter,
 					OR: [
 						{ role: containsQuery },
 						{ employee: { is: { fullName: containsQuery } } },
@@ -91,17 +118,18 @@ router.get(
 					],
 				},
 				include: {
-					employee: true,
+					employee: { include: { site: true } },
 				},
 				orderBy: { id: 'desc' },
 				take: RESULT_LIMIT,
 			}),
+			// Employee-related: employees (filtered by siteId)
 			prisma.employee.findMany({
 				where: {
+					...employeeSiteFilter,
 					OR: [
 						{ fullName: containsQuery },
 						{ employeeNo: containsQuery },
-						{ siteDiv: containsQuery },
 						{ phoneNumber: containsQuery },
 						{ email: containsQuery },
 						{ department: { is: { name: containsQuery } } },
@@ -115,10 +143,12 @@ router.get(
 					jobRole: true,
 					jobLevel: true,
 					workLocation: true,
+					site: true,
 				},
 				orderBy: { id: 'desc' },
 				take: RESULT_LIMIT,
 			}),
+			// Shared master data: no site filtering
 			prisma.workLocation.findMany({
 				where: { name: containsQuery },
 				orderBy: { id: 'desc' },
@@ -139,11 +169,13 @@ router.get(
 				orderBy: { id: 'desc' },
 				take: RESULT_LIMIT,
 			}),
+			// Per-site data: MasterGroupShift (filtered by siteId)
 			prisma.masterGroupShift.findMany({
-				where: { groupShiftName: containsQuery },
+				where: { ...perSiteSiteFilter, groupShiftName: containsQuery },
 				orderBy: { id: 'desc' },
 				take: RESULT_LIMIT,
 			}),
+			// Shared master data: no site filtering
 			prisma.masterDokPkb.findMany({
 				where: {
 					OR: [{ article: containsQuery }, { content: containsQuery }],
@@ -163,8 +195,10 @@ router.get(
 				orderBy: { id: 'desc' },
 				take: RESULT_LIMIT,
 			}),
+			// Per-site data: MasterUnit (filtered by siteId)
 			prisma.masterUnit.findMany({
 				where: {
+					...perSiteSiteFilter,
 					OR: [
 						{ unitName: containsQuery },
 						{ unitType: containsQuery },
@@ -176,8 +210,10 @@ router.get(
 				orderBy: { id: 'desc' },
 				take: RESULT_LIMIT,
 			}),
+			// Per-site data: MasterVendor (filtered by siteId)
 			prisma.masterVendor.findMany({
 				where: {
+					...perSiteSiteFilter,
 					OR: [
 						{ vendorName: containsQuery },
 						{ vendorType: containsQuery },
@@ -191,8 +227,10 @@ router.get(
 				orderBy: { id: 'desc' },
 				take: RESULT_LIMIT,
 			}),
+			// Employee-related: guidance records (filtered by employee's site)
 			prisma.guidanceRecord.findMany({
 				where: {
+					...employeeRelatedSiteFilter,
 					OR: [
 						{ employee: { is: { fullName: containsQuery } } },
 						{ employee: { is: { employeeNo: containsQuery } } },
@@ -203,13 +241,15 @@ router.get(
 					],
 				},
 				include: {
-					employee: true,
+					employee: { include: { site: true } },
 				},
 				orderBy: { id: 'desc' },
 				take: RESULT_LIMIT,
 			}),
+			// Employee-related: warning letters (filtered by employee's site)
 			prisma.warningLetter.findMany({
 				where: {
+					...employeeRelatedSiteFilter,
 					OR: [
 						{ letterNumber: containsQuery },
 						{ employee: { is: { fullName: containsQuery } } },
@@ -221,14 +261,16 @@ router.get(
 					],
 				},
 				include: {
-					employee: true,
+					employee: { include: { site: true } },
 					superiorEmployee: true,
 				},
 				orderBy: { id: 'desc' },
 				take: RESULT_LIMIT,
 			}),
+			// Employee-related: leave database (filtered by employee's site)
 			prisma.employeeLeaveDatabase.findMany({
 				where: {
+					...employeeRelatedSiteFilter,
 					OR: [
 						{ employee: { is: { fullName: containsQuery } } },
 						{ employee: { is: { employeeNo: containsQuery } } },
@@ -237,14 +279,16 @@ router.get(
 					],
 				},
 				include: {
-					employee: true,
+					employee: { include: { site: true } },
 					masterCutiKaryawan: true,
 				},
 				orderBy: { id: 'desc' },
 				take: RESULT_LIMIT,
 			}),
+			// Employee-related: leave flow (filtered by employee's site)
 			prisma.employeeLeave.findMany({
 				where: {
+					...employeeRelatedSiteFilter,
 					OR: [
 						{ requestNumber: containsQuery },
 						{ employee: { is: { fullName: containsQuery } } },
@@ -256,14 +300,16 @@ router.get(
 					],
 				},
 				include: {
-					employee: true,
+					employee: { include: { site: true } },
 					masterCutiKaryawan: true,
 				},
 				orderBy: { id: 'desc' },
 				take: RESULT_LIMIT,
 			}),
+			// Employee-related: license certifications (filtered by employee's site)
 			prisma.employeeLicenseCertification.findMany({
 				where: {
+					...employeeRelatedSiteFilter,
 					OR: [
 						{ employee: { is: { fullName: containsQuery } } },
 						{ employee: { is: { employeeNo: containsQuery } } },
@@ -275,14 +321,16 @@ router.get(
 					],
 				},
 				include: {
-					employee: true,
+					employee: { include: { site: true } },
 					masterDokKaryawan: true,
 				},
 				orderBy: { id: 'desc' },
 				take: RESULT_LIMIT,
 			}),
+			// Per-site data: unit license certifications (filtered via masterUnit's site)
 			prisma.unitLicenseCertification.findMany({
 				where: {
+					...(req.isSuperAdmin ? {} : { masterUnit: { siteId: req.admin.siteId } }),
 					OR: [
 						{ masterUnit: { is: { unitName: containsQuery } } },
 						{ masterUnit: { is: { unitSerialNumber: containsQuery } } },
@@ -294,7 +342,7 @@ router.get(
 					],
 				},
 				include: {
-					masterUnit: true,
+					masterUnit: { include: { site: true } },
 					vendor: true,
 				},
 				orderBy: { id: 'desc' },
@@ -308,7 +356,9 @@ router.get(
 					id: item.id,
 					group: 'Master Admin',
 					title: item.employee.fullName,
-					subtitle: `${item.employee.employeeNo} | Role: ${item.role}`,
+					subtitle: req.isSuperAdmin
+						? `${item.employee.site?.name || '-'} | ${item.employee.employeeNo} | Role: ${item.role}`
+						: `${item.employee.employeeNo} | Role: ${item.role}`,
 					href: buildSearchHref('/data-master/master-data-karyawan/admins', query),
 				}),
 			),
@@ -317,7 +367,11 @@ router.get(
 					id: item.id,
 					group: 'Master Karyawan',
 					title: item.fullName,
-					subtitle: `${item.employeeNo} | ${item.department?.name || '-'} | ${item.jobRole?.name || '-'}`,
+					subtitle: req.isSuperAdmin
+						? `${item.site?.name || '-'} | ${item.employeeNo} | ${item.department?.name || '-'} | ${
+								item.jobRole?.name || '-'
+						  }`
+						: `${item.employeeNo} | ${item.department?.name || '-'} | ${item.jobRole?.name || '-'}`,
 					href: buildSearchHref('/data-master/master-data-karyawan/employees', query),
 				}),
 			),
@@ -410,9 +464,11 @@ router.get(
 					id: item.id,
 					group: 'Bimbingan & Pengarahan',
 					title: item.employee.fullName,
-					subtitle: `${item.employee.employeeNo} | ${formatDateForClient(item.meetingDate)} | ${
-						item.location
-					}`,
+					subtitle: req.isSuperAdmin
+						? `${item.employee.site?.name || '-'} | ${item.employee.employeeNo} | ${formatDateForClient(
+								item.meetingDate,
+						  )} | ${item.location}`
+						: `${item.employee.employeeNo} | ${formatDateForClient(item.meetingDate)} | ${item.location}`,
 					href: buildSearchHref('/data-karyawan/bimbingan-pengarahan', query),
 				}),
 			),
@@ -421,13 +477,13 @@ router.get(
 					id: item.id,
 					group: 'Data Surat Peringatan',
 					title: item.letterNumber,
-					subtitle: `${item.employee.fullName} (${item.employee.employeeNo}) | ${
-						item.category === 'WARNING_LETTER'
-							? `SP ${item.warningLevel || '-'}`
-							: item.category === 'SUSPENSION'
-							? 'Skorsing'
-							: 'Surat Teguran'
-					} | ${formatDateForClient(item.letterDate)}`,
+					subtitle: req.isSuperAdmin
+						? `${item.employee.site?.name || '-'} | ${item.employee.fullName} (${
+								item.employee.employeeNo
+						  }) | ${getWarningLetterCategoryLabel(item)} | ${formatDateForClient(item.letterDate)}`
+						: `${item.employee.fullName} (${item.employee.employeeNo}) | ${getWarningLetterCategoryLabel(
+								item,
+						  )} | ${formatDateForClient(item.letterDate)}`,
 					href: buildSearchHref('/data-karyawan/data-surat-peringatan', query),
 				}),
 			),
@@ -436,7 +492,11 @@ router.get(
 					id: item.id,
 					group: 'Data Cuti Karyawan',
 					title: `${item.employee.fullName} (${item.employee.employeeNo})`,
-					subtitle: `${item.masterCutiKaryawan.leaveType} | Tahun ${item.year} | Sisa ${item.remainingLeave}`,
+					subtitle: req.isSuperAdmin
+						? `${item.employee.site?.name || '-'} | ${item.masterCutiKaryawan.leaveType} | Tahun ${
+								item.year
+						  } | Sisa ${item.remainingLeave}`
+						: `${item.masterCutiKaryawan.leaveType} | Tahun ${item.year} | Sisa ${item.remainingLeave}`,
 					href: buildSearchHref('/data-karyawan/cuti-karyawan', query),
 				}),
 			),
@@ -445,7 +505,11 @@ router.get(
 					id: item.id,
 					group: 'Flow Proses Cuti',
 					title: item.requestNumber,
-					subtitle: `${item.employee.fullName} (${item.employee.employeeNo}) | ${item.masterCutiKaryawan.leaveType} | ${item.status}`,
+					subtitle: req.isSuperAdmin
+						? `${item.employee.site?.name || '-'} | ${item.employee.fullName} (${
+								item.employee.employeeNo
+						  }) | ${item.masterCutiKaryawan.leaveType} | ${item.status}`
+						: `${item.employee.fullName} (${item.employee.employeeNo}) | ${item.masterCutiKaryawan.leaveType} | ${item.status}`,
 					href: buildSearchHref('/data-karyawan/cuti-karyawan/flow', query),
 				}),
 			),
@@ -454,7 +518,11 @@ router.get(
 					id: item.id,
 					group: 'Lisensi & Sertifikasi',
 					title: item.employee.fullName,
-					subtitle: `${item.employee.employeeNo} | ${item.masterDokKaryawan.documentName} | ${item.documentNumber}`,
+					subtitle: req.isSuperAdmin
+						? `${item.employee.site?.name || '-'} | ${item.employee.employeeNo} | ${
+								item.masterDokKaryawan.documentName
+						  } | ${item.documentNumber}`
+						: `${item.employee.employeeNo} | ${item.masterDokKaryawan.documentName} | ${item.documentNumber}`,
 					href: buildSearchHref('/data-karyawan/lisensi-sertifikasi', query),
 				}),
 			),

@@ -2,9 +2,10 @@ import { Router } from 'express';
 
 import { hashPassword } from '../lib/password.js';
 import prisma from '../lib/prisma.js';
+import requireSuperAdmin from '../middleware/requireSuperAdmin.js';
 
 const router = Router();
-const ALLOWED_ROLES = ['admin', 'user'];
+const ALLOWED_ROLES = ['super_admin', 'admin', 'user'];
 
 function withAsync(handler) {
 	return (req, res, next) => {
@@ -23,6 +24,8 @@ function mapAdmin(record) {
 		employeeName: record.employee.fullName,
 		employeeNo: record.employee.employeeNo,
 		role: record.role,
+		siteId: record.siteId ?? null,
+		siteName: record.site?.name ?? null,
 	};
 }
 
@@ -42,6 +45,7 @@ async function validatePayload(body, currentId = null) {
 	const employeeId = Number(body.employeeId);
 	const password = normalizeString(body.password);
 	const role = normalizeString(body.role).toLowerCase();
+	const siteId = body.siteId != null ? Number(body.siteId) : null;
 
 	if (!Number.isInteger(employeeId)) {
 		throw Object.assign(new Error('Nama wajib dipilih.'), { statusCode: 400 });
@@ -52,7 +56,20 @@ async function validatePayload(body, currentId = null) {
 	}
 
 	if (!ALLOWED_ROLES.includes(role)) {
-		throw Object.assign(new Error('Role harus dipilih.'), { statusCode: 400 });
+		throw Object.assign(new Error('Role tidak valid. Hanya super_admin, admin, atau user yang diperbolehkan.'), { statusCode: 400 });
+	}
+
+	// For admin or user roles, siteId is required
+	if ((role === 'admin' || role === 'user') && !siteId) {
+		throw Object.assign(new Error('Site wajib dipilih untuk role yang dipilih.'), { statusCode: 400 });
+	}
+
+	// Validate siteId references a valid MasterSite
+	if (role === 'admin' || role === 'user') {
+		const site = await prisma.masterSite.findUnique({ where: { id: siteId } });
+		if (!site) {
+			throw Object.assign(new Error('Site tidak valid.'), { statusCode: 400 });
+		}
 	}
 
 	await getEmployeeOrThrow(employeeId);
@@ -72,15 +89,19 @@ async function validatePayload(body, currentId = null) {
 		employeeId,
 		...(password ? { password: await hashPassword(password) } : {}),
 		role,
+		// For super_admin, siteId is always null; for admin/user, use the provided siteId
+		siteId: role === 'super_admin' ? null : siteId,
 	};
 }
 
 router.get(
 	'/',
+	requireSuperAdmin,
 	withAsync(async (req, res) => {
 		const records = await prisma.masterAdmin.findMany({
 			include: {
 				employee: true,
+				site: true,
 			},
 			orderBy: { id: 'asc' },
 		});
@@ -91,12 +112,14 @@ router.get(
 
 router.post(
 	'/',
+	requireSuperAdmin,
 	withAsync(async (req, res) => {
 		const data = await validatePayload(req.body);
 		const record = await prisma.masterAdmin.create({
 			data,
 			include: {
 				employee: true,
+				site: true,
 			},
 		});
 
@@ -106,6 +129,7 @@ router.post(
 
 router.put(
 	'/:id',
+	requireSuperAdmin,
 	withAsync(async (req, res) => {
 		const id = Number(req.params.id);
 
@@ -122,15 +146,27 @@ router.put(
 		}
 
 		const data = await validatePayload(req.body, id);
+
+		// Prevent super_admin from demoting themselves
+		if (existing.id === req.admin.id && existing.role === 'super_admin' && data.role !== 'super_admin') {
+			return res.status(400).json({ message: 'Super Admin tidak dapat menurunkan role diri sendiri.' });
+		}
+
+		// Determine if tokenVersion should be incremented:
+		// - password change OR siteId change
+		const siteChanged = existing.siteId !== data.siteId;
+		const shouldIncrementToken = !!data.password || siteChanged;
+
 		const updateData = {
 			...data,
-			...(data.password ? { tokenVersion: { increment: 1 } } : {}),
+			...(shouldIncrementToken ? { tokenVersion: { increment: 1 } } : {}),
 		};
 		const record = await prisma.masterAdmin.update({
 			where: { id },
 			data: updateData,
 			include: {
 				employee: true,
+				site: true,
 			},
 		});
 
@@ -140,6 +176,7 @@ router.put(
 
 router.delete(
 	'/:id',
+	requireSuperAdmin,
 	withAsync(async (req, res) => {
 		const id = Number(req.params.id);
 

@@ -7,8 +7,10 @@ import { Router } from 'express';
 import multer from 'multer';
 
 import prisma from '../lib/prisma.js';
+import requireSiteIsolation from '../middleware/requireSiteIsolation.js';
 
 const router = Router();
+router.use(requireSiteIsolation({ modelType: 'per-site' }));
 const upload = multer({
 	storage: multer.memoryStorage(),
 	limits: {
@@ -264,7 +266,7 @@ async function syncGroupShiftEmployees(db, groupShiftId, employeeIds = []) {
 	});
 }
 
-async function saveGroupShift(db, payload = {}, currentId = null) {
+async function saveGroupShift(db, payload = {}, currentId = null, siteId = null) {
 	const data = await validatePayload(db, payload, currentId);
 	let groupShiftId = currentId;
 
@@ -282,15 +284,21 @@ async function saveGroupShift(db, payload = {}, currentId = null) {
 			},
 		});
 	} else {
-		const createdRecord = await db.masterGroupShift.create({
-			data: {
-				groupShiftName: data.groupShiftName,
-				foremen: {
-					create: data.foremanIds.map((employeeId) => ({
-						employeeId,
-					})),
-				},
+		const createData = {
+			groupShiftName: data.groupShiftName,
+			foremen: {
+				create: data.foremanIds.map((employeeId) => ({
+					employeeId,
+				})),
 			},
+		};
+
+		if (siteId != null) {
+			createData.siteId = siteId;
+		}
+
+		const createdRecord = await db.masterGroupShift.create({
+			data: createData,
 			select: {
 				id: true,
 			},
@@ -397,8 +405,9 @@ async function createErrorReport(rows) {
 
 router.get(
 	'/import-template',
-	withAsync(async (_req, res) => {
+	withAsync(async (req, res) => {
 		const employees = await prisma.employee.findMany({
+			where: { ...req.siteFilter },
 			include: {
 				jobLevel: true,
 			},
@@ -508,6 +517,20 @@ router.post(
 			return res.status(400).json({ message: 'File Excel wajib dipilih.' });
 		}
 
+		let importSiteId;
+		if (req.isSuperAdmin) {
+			importSiteId = req.body.siteId ? Number(req.body.siteId) : null;
+			if (!importSiteId) {
+				return res.status(400).json({ message: 'siteId wajib diisi.' });
+			}
+			const site = await prisma.masterSite.findUnique({ where: { id: importSiteId } });
+			if (!site) {
+				return res.status(400).json({ message: 'Site tidak valid.' });
+			}
+		} else {
+			importSiteId = req.admin.siteId;
+		}
+
 		const workbook = new ExcelJS.Workbook();
 		await workbook.xlsx.load(req.file.buffer);
 		const worksheet = workbook.getWorksheet('Data Import') || workbook.worksheets[0];
@@ -530,6 +553,7 @@ router.post(
 
 		const [employees, existingGroupShifts] = await Promise.all([
 			prisma.employee.findMany({
+				where: { ...req.siteFilter },
 				include: {
 					jobLevel: true,
 					groupShift: true,
@@ -537,6 +561,7 @@ router.post(
 				orderBy: [{ fullName: 'asc' }, { id: 'asc' }],
 			}),
 			prisma.masterGroupShift.findMany({
+				where: { ...req.siteFilter },
 				select: {
 					id: true,
 					groupShiftName: true,
@@ -624,6 +649,7 @@ router.post(
 							employeeIds: assignedEmployees.map((employee) => employee.id),
 						},
 						existingMatches[0]?.id || null,
+						existingMatches[0]?.id ? undefined : importSiteId,
 					),
 				);
 
@@ -680,8 +706,9 @@ router.get(
 
 router.get(
 	'/',
-	withAsync(async (_req, res) => {
+	withAsync(async (req, res) => {
 		const records = await prisma.masterGroupShift.findMany({
+			where: { ...req.siteFilter },
 			include: GROUP_SHIFT_INCLUDE,
 			orderBy: {
 				id: 'asc',
@@ -702,6 +729,13 @@ router.get(
 		}
 
 		const record = await getGroupShiftOrThrow(prisma, id);
+
+		if (!req.isSuperAdmin && record.siteId !== req.admin.siteId) {
+			return res.status(403).json({
+				message: 'Akses ditolak. Data tidak termasuk dalam site Anda.',
+			});
+		}
+
 		return res.json(mapGroupShift(record));
 	}),
 );
@@ -709,7 +743,23 @@ router.get(
 router.post(
 	'/',
 	withAsync(async (req, res) => {
-		const record = await prisma.$transaction((tx) => saveGroupShift(tx, req.body));
+		let siteId;
+
+		if (req.isSuperAdmin) {
+			siteId = req.body.siteId;
+			if (!siteId) {
+				return res.status(400).json({ message: 'siteId wajib diisi.' });
+			}
+			const site = await prisma.masterSite.findUnique({ where: { id: Number(siteId) } });
+			if (!site) {
+				return res.status(400).json({ message: 'Site tidak valid.' });
+			}
+			siteId = site.id;
+		} else {
+			siteId = req.admin.siteId;
+		}
+
+		const record = await prisma.$transaction((tx) => saveGroupShift(tx, req.body, null, siteId));
 		return res.status(201).json(mapGroupShift(record));
 	}),
 );
@@ -723,8 +773,15 @@ router.put(
 			return res.status(400).json({ message: 'ID tidak valid.' });
 		}
 
-		await getGroupShiftOrThrow(prisma, id);
-		const record = await prisma.$transaction((tx) => saveGroupShift(tx, req.body, id));
+		const existing = await getGroupShiftOrThrow(prisma, id);
+
+		if (!req.isSuperAdmin && existing.siteId !== req.admin.siteId) {
+			return res.status(403).json({
+				message: 'Akses ditolak. Data tidak termasuk dalam site Anda.',
+			});
+		}
+
+		const record = await prisma.$transaction((tx) => saveGroupShift(tx, req.body, id, existing.siteId));
 
 		return res.json(mapGroupShift(record));
 	}),
@@ -739,7 +796,13 @@ router.delete(
 			return res.status(400).json({ message: 'ID tidak valid.' });
 		}
 
-		await getGroupShiftOrThrow(prisma, id);
+		const existing = await getGroupShiftOrThrow(prisma, id);
+
+		if (!req.isSuperAdmin && existing.siteId !== req.admin.siteId) {
+			return res.status(403).json({
+				message: 'Akses ditolak. Data tidak termasuk dalam site Anda.',
+			});
+		}
 
 		await prisma.$transaction(async (tx) => {
 			await tx.employee.updateMany({

@@ -21,6 +21,7 @@ import CommentOutlinedIcon from '@mui/icons-material/CommentOutlined';
 
 // Components
 import NotificationsButton from './notificationButton';
+import SiteLabel from './SiteLabel';
 import ThemeModeToggle from './themeModeToggle';
 import { useAuth } from '@/contexts/authContext';
 
@@ -76,6 +77,7 @@ function LoggedUser() {
 				<UserMenu handleClose={handleClose} user={user} onLogout={handleLogout} />
 			</Menu>
 			<Stack height="100%" direction="row" flex={1} justifyContent="flex-end" alignItems="center" spacing={1}>
+				<SiteLabel />
 				<ThemeModeToggle />
 				<NotificationsButton />
 				<IconButton size="small">

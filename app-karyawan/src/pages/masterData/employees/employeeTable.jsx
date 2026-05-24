@@ -8,8 +8,11 @@ import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 
 import EnhancedTable, { createRowNumberColumn } from '@/components/dataTable';
 import { formatEmploymentTypeLabel, formatGradeLabel } from '@/constants/employeeMaster';
+import { useAuth } from '@/contexts/authContext';
 
 function EmployeeTable({ rows, onEdit, onDelete }) {
+	const { user } = useAuth();
+	const isSuperAdmin = user?.role === 'super_admin';
 	if (rows.length === 0) {
 		return (
 			<Stack py={8} alignItems="center" spacing={1}>
@@ -32,7 +35,16 @@ function EmployeeTable({ rows, onEdit, onDelete }) {
 				minWidth: 170,
 				renderCell: (params) => formatEmploymentTypeLabel(params.value),
 			},
-			{ field: 'siteDiv', headerName: 'SITE / DIV', minWidth: 130 },
+			...(isSuperAdmin
+				? [
+						{
+							field: 'siteName',
+							headerName: 'SITE',
+							minWidth: 130,
+							renderCell: (params) => params.value || '-',
+						},
+				  ]
+				: []),
 			{ field: 'departmentName', headerName: 'DEPARTMENT', minWidth: 180 },
 			{
 				field: 'groupShiftName',
@@ -64,7 +76,7 @@ function EmployeeTable({ rows, onEdit, onDelete }) {
 				renderCell: (params) => params.value || '-',
 			},
 		],
-		[],
+		[isSuperAdmin],
 	);
 
 	return (
