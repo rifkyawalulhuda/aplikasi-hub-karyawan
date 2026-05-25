@@ -135,11 +135,13 @@ model JobRole {
 }
 
 model JobLevel {
-  id        Int        @id @default(autoincrement())
-  name      String     @unique @db.VarChar(255)
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  employees Employee[]
+  id                  Int                  @id @default(autoincrement())
+  name                String               @unique @db.VarChar(255)
+  approvalRank        Int?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  employees           Employee[]
+  siteApprovalConfigs SiteApprovalConfig[]
 
   @@map("job_levels")
 }
@@ -150,12 +152,13 @@ model MasterSite {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  employees   Employee[]
-  admins      MasterAdmin[]
-  groupShifts MasterGroupShift[]
-  units       MasterUnit[]
-  vendors     MasterVendor[]
-  trainings   EmployeeTraining[]
+  employees           Employee[]
+  admins              MasterAdmin[]
+  groupShifts         MasterGroupShift[]
+  units               MasterUnit[]
+  vendors             MasterVendor[]
+  trainings           EmployeeTraining[]
+  siteApprovalConfigs SiteApprovalConfig[]
 
   @@map("master_sites")
 }
@@ -222,6 +225,7 @@ model MasterDokKaryawan {
 model MasterCutiKaryawan {
   id              Int                     @id @default(autoincrement())
   leaveType       String                  @db.VarChar(255)
+  leaveCode       String?                 @db.VarChar(10)
   createdAt       DateTime                @default(now())
   updatedAt       DateTime                @updatedAt
   records         EmployeeLeave[]
@@ -778,4 +782,21 @@ model UnitLicenseCertification {
   @@index([masterUnitId])
   @@index([vendorId])
   @@map("unit_license_certifications")
+}
+
+model SiteApprovalConfig {
+  id              Int        @id @default(autoincrement())
+  siteId          Int
+  jobLevelId      Int
+  approvalRank    Int?
+  maxApprovalRank Int
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  site            MasterSite @relation(fields: [siteId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  jobLevel        JobLevel   @relation(fields: [jobLevelId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([siteId, jobLevelId])
+  @@index([siteId])
+  @@index([jobLevelId])
+  @@map("site_approval_configs")
 }

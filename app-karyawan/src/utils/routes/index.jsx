@@ -62,6 +62,7 @@ const EmployeeLeavesPage = withLazyLoadably(lazy(() => import('@/pages/employeeD
 const EmployeeLeaveFlowPage = withLazyLoadably(lazy(() => import('@/pages/employeeData/leaveFlow')));
 const EmployeeLeavePrintAdminPage = withLazyLoadably(lazy(() => import('@/pages/employeeData/leaveFlow/print')));
 const UnitLicenseCertificationsPage = withLazyLoadably(lazy(() => import('@/pages/unitData/licenseCertifications')));
+const SiteApprovalConfigPage = withLazyLoadably(lazy(() => import('@/pages/masterData/siteApprovalConfig')));
 
 function Router() {
 	return (
@@ -122,6 +123,10 @@ function Router() {
 							<Route path="data-master/master-data-karyawan/job-roles" element={<JobRolesPage />} />
 							<Route path="data-master/master-data-karyawan/job-levels" element={<JobLevelsPage />} />
 							<Route path="data-master/master-data-karyawan/group-shifts" element={<GroupShiftsPage />} />
+							<Route
+								path="data-master/master-data-karyawan/site-approval-config"
+								element={<SiteApprovalConfigPage />}
+							/>
 							<Route path="data-master/master-data-unit/master-unit" element={<MasterUnitsPage />} />
 							<Route path="data-master/master-data-unit/master-vendor" element={<MasterVendorsPage />} />
 							<Route

@@ -13,6 +13,7 @@ function buildRequestError({ status, data, responseText }) {
 		.trim();
 	const error = new Error(data?.message || fallbackMessage || 'Request failed.');
 	error.status = status;
+	error.data = data || null;
 	return error;
 }
 

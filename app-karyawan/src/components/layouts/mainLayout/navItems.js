@@ -97,6 +97,14 @@ const NAV_LINKS_CONFIG = [
 						Icon: BadgeOutlinedIcon,
 						href: '/data-master/master-data-karyawan/group-shifts',
 					},
+					{
+						id: uuid(),
+						type: 'item',
+						title: 'Site Approval Config',
+						Icon: SettingsApplicationsOutlinedIcon,
+						href: '/data-master/master-data-karyawan/site-approval-config',
+						roles: ['super_admin'],
+					},
 				],
 			},
 			{
