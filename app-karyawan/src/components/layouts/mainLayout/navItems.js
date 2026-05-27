@@ -220,25 +220,10 @@ const NAV_LINKS_CONFIG = [
 			},
 			{
 				id: uuid(),
-				type: 'group',
+				type: 'item',
 				title: 'Cuti Karyawan',
 				Icon: DescriptionOutlinedIcon,
-				menuChildren: [
-					{
-						id: uuid(),
-						type: 'item',
-						title: 'Data Cuti Karyawan',
-						Icon: DescriptionOutlinedIcon,
-						href: '/data-karyawan/cuti-karyawan',
-					},
-					{
-						id: uuid(),
-						type: 'item',
-						title: 'Flow Proses Cuti',
-						Icon: DescriptionOutlinedIcon,
-						href: '/data-karyawan/cuti-karyawan/flow',
-					},
-				],
+				href: '/data-karyawan/cuti-karyawan',
 			},
 		],
 	},
