@@ -5,7 +5,6 @@ import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined';
 import FeedOutlinedIcon from '@mui/icons-material/FeedOutlined';
 import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined';
 import PeopleAltOutlinedIcon from '@mui/icons-material/PeopleAltOutlined';
-import ReceiptLongOutlinedIcon from '@mui/icons-material/ReceiptLongOutlined';
 import ReportGmailerrorredOutlinedIcon from '@mui/icons-material/ReportGmailerrorredOutlined';
 import SettingsApplicationsOutlinedIcon from '@mui/icons-material/SettingsApplicationsOutlined';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
@@ -86,39 +85,10 @@ const NAV_LINKS_CONFIG = [
 			},
 			{
 				id: uuid(),
-				type: 'group',
+				type: 'item',
 				title: 'Master Data Dokumen',
 				Icon: DescriptionOutlinedIcon,
-				menuChildren: [
-					{
-						id: uuid(),
-						type: 'item',
-						title: 'Master Dok PKB',
-						Icon: ReceiptLongOutlinedIcon,
-						href: '/data-master/master-data-dokumen/master-dok-pkb',
-					},
-					{
-						id: uuid(),
-						type: 'item',
-						title: 'Master Dok Karyawan',
-						Icon: DescriptionOutlinedIcon,
-						href: '/data-master/master-data-dokumen/master-dok-karyawan',
-					},
-					{
-						id: uuid(),
-						type: 'item',
-						title: 'Master Cuti Karyawan',
-						Icon: DescriptionOutlinedIcon,
-						href: '/data-master/master-data-dokumen/master-cuti-karyawan',
-					},
-					{
-						id: uuid(),
-						type: 'item',
-						title: 'Master Hari Libur',
-						Icon: DescriptionOutlinedIcon,
-						href: '/data-master/master-data-dokumen/master-hari-libur',
-					},
-				],
+				href: '/data-master/master-data-dokumen/master-dok-pkb',
 			},
 		],
 	},
