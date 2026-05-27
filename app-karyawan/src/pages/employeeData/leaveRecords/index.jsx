@@ -40,7 +40,7 @@ async function fetchLeaveTypeOptions() {
 	return apiRequest('/master/master-cuti-karyawan');
 }
 
-function EmployeeLeavesPage() {
+function EmployeeLeavesPage({ hideHeader = false }) {
 	const { enqueueSnackbar } = useSnackbar();
 	const [rows, setRows] = useState([]);
 	const [employeeOptions, setEmployeeOptions] = useState([]);
@@ -264,14 +264,16 @@ function EmployeeLeavesPage() {
 
 	return (
 		<>
-			<PageHeader title="Data Cuti Karyawan">
-				<Breadcrumbs aria-label="breadcrumb" sx={{ textTransform: 'uppercase' }}>
-					<Link underline="hover" href="#!">
-						Data Karyawan
-					</Link>
-					<Typography color="text.tertiary">Data Cuti Karyawan</Typography>
-				</Breadcrumbs>
-			</PageHeader>
+			{!hideHeader && (
+				<PageHeader title="Data Cuti Karyawan">
+					<Breadcrumbs aria-label="breadcrumb" sx={{ textTransform: 'uppercase' }}>
+						<Link underline="hover" href="#!">
+							Data Karyawan
+						</Link>
+						<Typography color="text.tertiary">Data Cuti Karyawan</Typography>
+					</Breadcrumbs>
+				</PageHeader>
+			)}
 			<Card sx={{ minHeight: '60vh', p: 3 }}>
 				<CardHeader
 					title="Data Cuti Karyawan"
