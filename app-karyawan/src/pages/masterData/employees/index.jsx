@@ -69,7 +69,7 @@ function formatEmployeeDate(value) {
 	return raw;
 }
 
-function EmployeesPage() {
+function EmployeesPage({ hideHeader }) {
 	const { enqueueSnackbar } = useSnackbar();
 	const [rows, setRows] = useState([]);
 	const [options, setOptions] = useState({
@@ -357,15 +357,17 @@ function EmployeesPage() {
 
 	return (
 		<>
-			<PageHeader title="Master Karyawan">
-				<Breadcrumbs aria-label="breadcrumb" sx={{ textTransform: 'uppercase' }}>
-					<Link underline="hover" href="#!">
-						Data Master
-					</Link>
-					<Typography color="text.tertiary">Master Data Karyawan</Typography>
-					<Typography color="text.tertiary">Master Karyawan</Typography>
-				</Breadcrumbs>
-			</PageHeader>
+			{!hideHeader && (
+				<PageHeader title="Master Karyawan">
+					<Breadcrumbs aria-label="breadcrumb" sx={{ textTransform: 'uppercase' }}>
+						<Link underline="hover" href="#!">
+							Data Master
+						</Link>
+						<Typography color="text.tertiary">Master Data Karyawan</Typography>
+						<Typography color="text.tertiary">Master Karyawan</Typography>
+					</Breadcrumbs>
+				</PageHeader>
+			)}
 			<Card sx={{ minHeight: '60vh', p: 3 }}>
 				<CardHeader
 					title="Master Karyawan"

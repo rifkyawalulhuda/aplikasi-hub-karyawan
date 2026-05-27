@@ -1,11 +1,8 @@
 import { v4 as uuid } from 'uuid';
 
-import ApartmentOutlinedIcon from '@mui/icons-material/ApartmentOutlined';
 import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
 import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined';
-import DomainOutlinedIcon from '@mui/icons-material/DomainOutlined';
 import FeedOutlinedIcon from '@mui/icons-material/FeedOutlined';
-import LayersOutlinedIcon from '@mui/icons-material/LayersOutlined';
 import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined';
 import PeopleAltOutlinedIcon from '@mui/icons-material/PeopleAltOutlined';
 import ReceiptLongOutlinedIcon from '@mui/icons-material/ReceiptLongOutlined';
@@ -45,76 +42,25 @@ const NAV_LINKS_CONFIG = [
 		menuChildren: [
 			{
 				id: uuid(),
-				type: 'group',
+				type: 'item',
 				title: 'Master Data Karyawan',
 				Icon: BadgeOutlinedIcon,
-				menuChildren: [
-					{
-						id: uuid(),
-						type: 'item',
-						title: 'Master Admin',
-						Icon: BadgeOutlinedIcon,
-						href: '/data-master/master-data-karyawan/admins',
-					},
-					{
-						id: uuid(),
-						type: 'item',
-						title: 'Master Site',
-						Icon: DomainOutlinedIcon,
-						href: '/data-master/master-data-karyawan/sites',
-						roles: ['super_admin'],
-					},
-					{
-						id: uuid(),
-						type: 'item',
-						title: 'Master Karyawan',
-						Icon: PeopleAltOutlinedIcon,
-						href: '/data-master/master-data-karyawan/employees',
-					},
-					{
-						id: uuid(),
-						type: 'item',
-						title: 'Master Work Location',
-						Icon: BusinessOutlinedIcon,
-						href: '/data-master/master-data-karyawan/work-locations',
-					},
-					{
-						id: uuid(),
-						type: 'item',
-						title: 'Master Department',
-						Icon: ApartmentOutlinedIcon,
-						href: '/data-master/master-data-karyawan/departments',
-					},
-					{
-						id: uuid(),
-						type: 'item',
-						title: 'Master Job Role',
-						Icon: BadgeOutlinedIcon,
-						href: '/data-master/master-data-karyawan/job-roles',
-					},
-					{
-						id: uuid(),
-						type: 'item',
-						title: 'Master Job Level',
-						Icon: LayersOutlinedIcon,
-						href: '/data-master/master-data-karyawan/job-levels',
-					},
-					{
-						id: uuid(),
-						type: 'item',
-						title: 'Master Group Shift',
-						Icon: BadgeOutlinedIcon,
-						href: '/data-master/master-data-karyawan/group-shifts',
-					},
-					{
-						id: uuid(),
-						type: 'item',
-						title: 'Site Approval Config',
-						Icon: SettingsApplicationsOutlinedIcon,
-						href: '/data-master/master-data-karyawan/site-approval-config',
-						roles: ['super_admin'],
-					},
-				],
+				href: '/data-master/master-data-karyawan/employees',
+			},
+			{
+				id: uuid(),
+				type: 'item',
+				title: 'Master Admin',
+				Icon: BadgeOutlinedIcon,
+				href: '/data-master/master-data-karyawan/admins',
+			},
+			{
+				id: uuid(),
+				type: 'item',
+				title: 'Site Approval Config',
+				Icon: SettingsApplicationsOutlinedIcon,
+				href: '/data-master/master-data-karyawan/site-approval-config',
+				roles: ['super_admin'],
 			},
 			{
 				id: uuid(),
