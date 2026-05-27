@@ -29,16 +29,9 @@ const EmployeeLeavePrintPage = withLazyLoadably(lazy(() => import('@/pages/emplo
 const EmployeeLeaveApprovalDetailPage = withLazyLoadably(
 	lazy(() => import('@/pages/employeeMobile/leaveApprovalDetail')),
 );
-const WorkLocationsPage = withLazyLoadably(lazy(() => import('@/pages/masterData/workLocations')));
-const DepartmentsPage = withLazyLoadably(lazy(() => import('@/pages/masterData/departments')));
-const JobRolesPage = withLazyLoadably(lazy(() => import('@/pages/masterData/jobRoles')));
-const JobLevelsPage = withLazyLoadably(lazy(() => import('@/pages/masterData/jobLevels')));
-const GroupShiftsPage = withLazyLoadably(lazy(() => import('@/pages/masterData/groupShifts')));
 const MasterUnitsPage = withLazyLoadably(lazy(() => import('@/pages/masterData/masterUnits')));
 const MasterVendorsPage = withLazyLoadably(lazy(() => import('@/pages/masterData/masterVendors')));
 const AdminsPage = withLazyLoadably(lazy(() => import('@/pages/masterData/admins')));
-const SitesPage = withLazyLoadably(lazy(() => import('@/pages/masterData/sites')));
-const EmployeesPage = withLazyLoadably(lazy(() => import('@/pages/masterData/employees')));
 const MasterDokPkbPage = withLazyLoadably(lazy(() => import('@/pages/masterData/masterDokPkb')));
 const MasterDokKaryawanPage = withLazyLoadably(lazy(() => import('@/pages/masterData/masterDokKaryawan')));
 const MasterCutiKaryawanPage = withLazyLoadably(lazy(() => import('@/pages/masterData/masterCutiKaryawan')));
@@ -62,6 +55,9 @@ const LeaveCombinedPage = withLazyLoadably(lazy(() => import('@/pages/employeeDa
 const EmployeeLeavePrintAdminPage = withLazyLoadably(lazy(() => import('@/pages/employeeData/leaveFlow/print')));
 const UnitLicenseCertificationsPage = withLazyLoadably(lazy(() => import('@/pages/unitData/licenseCertifications')));
 const SiteApprovalConfigPage = withLazyLoadably(lazy(() => import('@/pages/masterData/siteApprovalConfig')));
+const MasterDataKaryawanCombinedPage = withLazyLoadably(
+	lazy(() => import('@/pages/masterData/masterDataKaryawanCombined')),
+);
 const DashboardPage = withLazyLoadably(lazy(() => import('@/pages/dashboard')));
 
 function Router() {
@@ -110,17 +106,35 @@ function Router() {
 						<Route path="/" element={<MainLayout />}>
 							<Route index element={<Navigate to="/dashboard" replace />} />
 							<Route path="dashboard" element={<DashboardPage />} />
-							<Route path="data-master/master-data-karyawan/employees" element={<EmployeesPage />} />
+							<Route
+								path="data-master/master-data-karyawan/employees"
+								element={<MasterDataKaryawanCombinedPage />}
+							/>
 							<Route path="data-master/master-data-karyawan/admins" element={<AdminsPage />} />
-							<Route path="data-master/master-data-karyawan/sites" element={<SitesPage />} />
+							<Route
+								path="data-master/master-data-karyawan/sites"
+								element={<MasterDataKaryawanCombinedPage />}
+							/>
 							<Route
 								path="data-master/master-data-karyawan/work-locations"
-								element={<WorkLocationsPage />}
+								element={<MasterDataKaryawanCombinedPage />}
 							/>
-							<Route path="data-master/master-data-karyawan/departments" element={<DepartmentsPage />} />
-							<Route path="data-master/master-data-karyawan/job-roles" element={<JobRolesPage />} />
-							<Route path="data-master/master-data-karyawan/job-levels" element={<JobLevelsPage />} />
-							<Route path="data-master/master-data-karyawan/group-shifts" element={<GroupShiftsPage />} />
+							<Route
+								path="data-master/master-data-karyawan/departments"
+								element={<MasterDataKaryawanCombinedPage />}
+							/>
+							<Route
+								path="data-master/master-data-karyawan/job-roles"
+								element={<MasterDataKaryawanCombinedPage />}
+							/>
+							<Route
+								path="data-master/master-data-karyawan/job-levels"
+								element={<MasterDataKaryawanCombinedPage />}
+							/>
+							<Route
+								path="data-master/master-data-karyawan/group-shifts"
+								element={<MasterDataKaryawanCombinedPage />}
+							/>
 							<Route
 								path="data-master/master-data-karyawan/site-approval-config"
 								element={<SiteApprovalConfigPage />}

@@ -45,7 +45,7 @@ function sortEmployeeOptions(items = []) {
 	});
 }
 
-function GroupShiftsPage() {
+function GroupShiftsPage({ hideHeader }) {
 	const { enqueueSnackbar } = useSnackbar();
 	const [rows, setRows] = useState([]);
 	const [employeeOptions, setEmployeeOptions] = useState([]);
@@ -206,15 +206,17 @@ function GroupShiftsPage() {
 
 	return (
 		<>
-			<PageHeader title="Master Group Shift">
-				<Breadcrumbs aria-label="breadcrumb" sx={{ textTransform: 'uppercase' }}>
-					<Link underline="hover" href="#!">
-						Data Master
-					</Link>
-					<Typography color="text.tertiary">Master Data Karyawan</Typography>
-					<Typography color="text.tertiary">Master Group Shift</Typography>
-				</Breadcrumbs>
-			</PageHeader>
+			{!hideHeader && (
+				<PageHeader title="Master Group Shift">
+					<Breadcrumbs aria-label="breadcrumb" sx={{ textTransform: 'uppercase' }}>
+						<Link underline="hover" href="#!">
+							Data Master
+						</Link>
+						<Typography color="text.tertiary">Master Data Karyawan</Typography>
+						<Typography color="text.tertiary">Master Group Shift</Typography>
+					</Breadcrumbs>
+				</PageHeader>
+			)}
 			<Card sx={{ minHeight: '60vh', p: 3 }}>
 				<CardHeader
 					title="Master Group Shift"
