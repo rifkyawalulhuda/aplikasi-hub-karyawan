@@ -31,6 +31,7 @@ import requireAdminAuth from './middleware/requireAdminAuth.js';
 import requireSuperAdmin from './middleware/requireSuperAdmin.js';
 import siteApprovalConfigsRouter from './routes/siteApprovalConfigs.js';
 import sitesRouter from './routes/sites.js';
+import dashboardRouter from './routes/dashboard.js';
 
 const app = express();
 const port = Number(process.env.PORT || 4000);
@@ -180,6 +181,7 @@ app.use('/api/auth', authRateLimiter, authRouter);
 app.use('/api/employee-auth', authRateLimiter, employeeAuthRouter);
 app.use('/api/employee-me', employeeMeRouter);
 app.use('/api/global-search', requireAdminAuth, globalSearchRouter);
+app.use('/api/dashboard', requireAdminAuth, dashboardRouter);
 app.use('/api/notifications', requireAdminAuth, notificationsRouter);
 app.use('/api/admin/email-workflow-failures', requireAdminAuth, emailWorkflowFailuresRouter);
 app.use('/api/master/employees', requireAdminAuth, employeesRouter);

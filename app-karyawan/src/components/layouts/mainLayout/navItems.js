@@ -14,6 +14,8 @@ import SettingsApplicationsOutlinedIcon from '@mui/icons-material/SettingsApplic
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import CastForEducationOutlinedIcon from '@mui/icons-material/CastForEducationOutlined';
 
+import DashboardOutlinedIcon from '@mui/icons-material/DashboardOutlined';
+
 /**
  * @example
  * {
@@ -27,6 +29,13 @@ import CastForEducationOutlinedIcon from '@mui/icons-material/CastForEducationOu
  */
 
 const NAV_LINKS_CONFIG = [
+	{
+		id: uuid(),
+		type: 'item',
+		title: 'Dashboard',
+		Icon: DashboardOutlinedIcon,
+		href: '/dashboard',
+	},
 	{
 		id: uuid(),
 		type: 'group',
