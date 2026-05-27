@@ -32,10 +32,9 @@ const EmployeeLeaveApprovalDetailPage = withLazyLoadably(
 const MasterUnitsPage = withLazyLoadably(lazy(() => import('@/pages/masterData/masterUnits')));
 const MasterVendorsPage = withLazyLoadably(lazy(() => import('@/pages/masterData/masterVendors')));
 const AdminsPage = withLazyLoadably(lazy(() => import('@/pages/masterData/admins')));
-const MasterDokPkbPage = withLazyLoadably(lazy(() => import('@/pages/masterData/masterDokPkb')));
-const MasterDokKaryawanPage = withLazyLoadably(lazy(() => import('@/pages/masterData/masterDokKaryawan')));
-const MasterCutiKaryawanPage = withLazyLoadably(lazy(() => import('@/pages/masterData/masterCutiKaryawan')));
-const MasterHariLiburPage = withLazyLoadably(lazy(() => import('@/pages/masterData/masterHoliday')));
+const MasterDataDokumenCombinedPage = withLazyLoadably(
+	lazy(() => import('@/pages/masterData/masterDataDokumenCombined')),
+);
 const GuidanceRecordsPage = withLazyLoadably(lazy(() => import('@/pages/employeeData/guidanceRecords')));
 const GuidanceRecordDetailPage = withLazyLoadably(lazy(() => import('@/pages/employeeData/guidanceRecords/detail')));
 const GuidanceRecordBulkPrintPage = withLazyLoadably(
@@ -143,19 +142,19 @@ function Router() {
 							<Route path="data-master/master-data-unit/master-vendor" element={<MasterVendorsPage />} />
 							<Route
 								path="data-master/master-data-dokumen/master-dok-pkb"
-								element={<MasterDokPkbPage />}
+								element={<MasterDataDokumenCombinedPage />}
 							/>
 							<Route
 								path="data-master/master-data-dokumen/master-dok-karyawan"
-								element={<MasterDokKaryawanPage />}
+								element={<MasterDataDokumenCombinedPage />}
 							/>
 							<Route
 								path="data-master/master-data-dokumen/master-cuti-karyawan"
-								element={<MasterCutiKaryawanPage />}
+								element={<MasterDataDokumenCombinedPage />}
 							/>
 							<Route
 								path="data-master/master-data-dokumen/master-hari-libur"
-								element={<MasterHariLiburPage />}
+								element={<MasterDataDokumenCombinedPage />}
 							/>
 							<Route path="data-karyawan/bimbingan-pengarahan" element={<GuidanceRecordsPage />} />
 							<Route

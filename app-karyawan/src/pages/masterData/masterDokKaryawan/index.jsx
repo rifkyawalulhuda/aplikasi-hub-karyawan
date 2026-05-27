@@ -26,7 +26,7 @@ async function fetchDocuments() {
 	return apiRequest('/master/employee-documents');
 }
 
-function MasterDokKaryawanPage() {
+function MasterDokKaryawanPage({ hideHeader }) {
 	const { enqueueSnackbar } = useSnackbar();
 	const [rows, setRows] = useState([]);
 	const [loading, setLoading] = useState(true);
@@ -137,15 +137,17 @@ function MasterDokKaryawanPage() {
 
 	return (
 		<>
-			<PageHeader title="Master Dok Karyawan">
-				<Breadcrumbs aria-label="breadcrumb" sx={{ textTransform: 'uppercase' }}>
-					<Link underline="hover" href="#!">
-						Data Master
-					</Link>
-					<Typography color="text.tertiary">Master Data Dokumen</Typography>
-					<Typography color="text.tertiary">Master Dok Karyawan</Typography>
-				</Breadcrumbs>
-			</PageHeader>
+			{!hideHeader && (
+				<PageHeader title="Master Dok Karyawan">
+					<Breadcrumbs aria-label="breadcrumb" sx={{ textTransform: 'uppercase' }}>
+						<Link underline="hover" href="#!">
+							Data Master
+						</Link>
+						<Typography color="text.tertiary">Master Data Dokumen</Typography>
+						<Typography color="text.tertiary">Master Dok Karyawan</Typography>
+					</Breadcrumbs>
+				</PageHeader>
+			)}
 			<Card sx={{ minHeight: '60vh', p: 3 }}>
 				<CardHeader
 					title="Master Dok Karyawan"
