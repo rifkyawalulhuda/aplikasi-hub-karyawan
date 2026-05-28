@@ -218,33 +218,29 @@ Folder ini dipilih sebagai basis utama pengembangan karena struktur template-nya
 
 ## Struktur Navigasi yang Sudah Disepakati
 
+- Tab navigasi utama: `Dashboard`
+  - Halaman dashboard admin dengan grafik dan ringkasan data karyawan
+  - Data difilter berdasarkan site yang dipilih di header (Super Admin bisa pilih "Semua Site")
 - Tab utama: `Data Master`
-- Dropdown: `Master Data Karyawan`
-- Submenu awal:
-  - `Master Admin`
-  - `Master Work Location`
-  - `Master Department`
-  - `Master Job Role`
-  - `Master Job Level`
-  - `Master Group Shift`
-  - `Site Approval Config` (Super Admin only)
-- Dropdown tambahan: `Master Data Dokumen`
-- Submenu dokumen:
-  - `Master Dok PKB`
-  - `Master Dok Karyawan`
-  - `Master Cuti Karyawan`
-- Dropdown tambahan: `Master Data Unit`
-- Submenu unit:
-  - `Master Unit`
-  - `Master Vendor`
-- Tab utama tambahan: `Data Karyawan`
-- Menu utama: `Bimbingan & Pengarahan`
-- Menu tambahan: `Data Surat Peringatan`
-- Menu tambahan: `Detail Karyawan`
-- Menu tambahan: `Lisensi & Sertifikasi`
-- Menu tambahan: `Cuti Karyawan`
-- Tab utama tambahan: `Data Unit`
-- Menu utama: `Lisensi & Sertifikasi Unit`
+  - Menu item: `Master Data Karyawan` → halaman tabbed gabungan:
+    - Tab: Master Karyawan | Master Site | Master Department | Master Job Role | Master Job Level | Master Work Location | Master Group Shift
+  - Menu item: `Master Admin` (terpisah, bukan tab)
+  - Menu item: `Site Approval Config` (Super Admin only, terpisah)
+  - Menu item: `Master Data Unit` (dropdown):
+    - `Master Unit`
+    - `Master Vendor`
+  - Menu item: `Master Data Dokumen` → halaman tabbed gabungan:
+    - Tab: Master Dok PKB | Master Dok Karyawan | Master Cuti Karyawan | Master Hari Libur
+- Tab utama: `Data Karyawan`
+  - Menu item: `Detail Karyawan`
+  - Menu item: `Bimbingan & Pengarahan`
+  - Menu item: `Data Surat Peringatan`
+  - Menu item: `Lisensi & Sertifikasi`
+  - Menu item: `Pelatihan Karyawan`
+  - Menu item: `Cuti Karyawan` → halaman tabbed gabungan:
+    - Tab: Data Cuti Karyawan | Flow Proses Cuti
+- Tab utama: `Data Unit`
+  - Menu item: `Lisensi & Sertifikasi Unit`
 
 ## Scope Modul yang Sudah Dibahas
 
@@ -1041,6 +1037,31 @@ Yang sudah selesai:
   - Halaman Master Cuti Karyawan sekarang menampilkan kolom `Leave Code` di tabel dan dropdown di form.
   - Template print cuti sekarang prioritaskan `leaveCode` dari database untuk menentukan checkbox yang dicentang, fallback ke name-matching jika kosong.
   - Backend `mapLeaveRequestSummary` mengembalikan `leaveCode` di response API.
+- Menambahkan halaman **Dashboard** admin:
+  - Navigasi menu "Dashboard" di posisi pertama (sebelah kiri Data Master).
+  - Summary cards: Total Karyawan, Jumlah Site, Cuti Aktif, Lisensi Akan Expired.
+  - Grafik: Distribusi per Department (bar), per Job Level (donut), Tipe Karyawan (donut), Tren Cuti per Bulan (area), per Site (bar).
+  - Tabel ringkas: Lisensi Akan Expired (5 teratas), Pengajuan Cuti Terbaru (5 terbaru).
+  - Data difilter berdasarkan site yang dipilih di header (Super Admin bisa filter per site atau "Semua Site").
+  - Backend endpoint `GET /api/dashboard?siteId=` mendukung query parameter opsional.
+- Menambahkan validasi duplikasi peserta pada form **Tambah Pelatihan Karyawan**:
+  - Karyawan yang sudah dipilih di satu dropdown peserta otomatis disembunyikan dari dropdown peserta lainnya.
+  - Menggunakan `useWatch` dari react-hook-form untuk memantau semua `participantEmployeeIds` dan memfilter opsi secara real-time.
+- Menggabungkan halaman **Data Cuti Karyawan** dan **Flow Proses Cuti** menjadi satu halaman tabbed:
+  - Halaman gabungan `src/pages/employeeData/leaveCombined/index.jsx`.
+  - Tab: "Data Cuti Karyawan" | "Flow Proses Cuti".
+  - URL-based tab switching (kedua URL lama tetap berfungsi).
+  - Menu sidebar "Cuti Karyawan" sekarang jadi satu item (bukan dropdown 2 sub-item).
+- Menggabungkan halaman **Master Data Karyawan** menjadi satu halaman tabbed:
+  - Halaman gabungan `src/pages/masterData/masterDataKaryawanCombined/index.jsx`.
+  - Tab (scrollable): Master Karyawan | Master Site | Master Department | Master Job Role | Master Job Level | Master Work Location | Master Group Shift.
+  - URL-based tab switching, state preserved antar tab.
+  - Menu sidebar "Master Data Karyawan" sekarang jadi satu item. "Master Admin" dan "Site Approval Config" tetap terpisah.
+- Menggabungkan halaman **Master Data Dokumen** menjadi satu halaman tabbed:
+  - Halaman gabungan `src/pages/masterData/masterDataDokumenCombined/index.jsx`.
+  - Tab: Master Dok PKB | Master Dok Karyawan | Master Cuti Karyawan | Master Hari Libur.
+  - URL-based tab switching, state preserved antar tab.
+  - Menu sidebar "Master Data Dokumen" sekarang jadi satu item.
 
 ## Struktur Teknis Awal yang Sudah Dibangun
 
