@@ -4,6 +4,7 @@ import WidthPageTransition from '@hocs/widthPageTransition';
 
 import { useSelector } from '@/store';
 import { selectThemeConfig } from '@/store/theme/selectors';
+import { useAuth } from '@/contexts/authContext';
 // MUI
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
@@ -68,13 +69,45 @@ function MainLayout({ container = 'lg', pb = true }) {
 	);
 }
 
+/**
+ * Recursively filters nav items based on the user's role.
+ * Items with a `roles` array are only shown if the user's role is included.
+ * Groups filter their children recursively and are hidden if no children remain.
+ */
+function filterNavItemsByRole(items, role) {
+	return items
+		.filter((item) => {
+			if (item.roles && !item.roles.includes(role)) {
+				return false;
+			}
+			return true;
+		})
+		.map((item) => {
+			if (item.menuChildren) {
+				const filteredChildren = filterNavItemsByRole(item.menuChildren, role);
+				return { ...item, menuChildren: filteredChildren };
+			}
+			return item;
+		})
+		.filter((item) => {
+			if (item.type === 'group' && item.menuChildren && item.menuChildren.length === 0) {
+				return false;
+			}
+			return true;
+		});
+}
+
 function Header() {
 	const { stickyHeader } = useSelector(selectThemeConfig);
+	const { user } = useAuth();
+	const role = user?.role;
+
+	const filteredNavItems = filterNavItemsByRole(navItems, role);
 
 	return (
 		<>
 			<MainHeader />
-			<Navbar navItems={navItems} position={stickyHeader ? 'sticky' : 'static'} />
+			<Navbar navItems={filteredNavItems} position={stickyHeader ? 'sticky' : 'static'} />
 		</>
 	);
 }

@@ -40,6 +40,7 @@ function createAdminAccessToken(admin) {
 			sub: String(admin.id),
 			employeeId: admin.employeeId,
 			role: admin.role,
+			siteId: admin.siteId ?? null,
 			tokenVersion: typeof admin.tokenVersion === 'number' ? admin.tokenVersion : 0,
 			type: 'admin-access',
 			iat: issuedAt,
@@ -99,6 +100,10 @@ function verifyAdminAccessToken(token) {
 
 	if (!payload.exp || Number(payload.exp) <= Math.floor(Date.now() / 1000)) {
 		throw Object.assign(new Error('Sesi login sudah berakhir. Silakan login kembali.'), { statusCode: 401 });
+	}
+
+	if ((payload.role === 'admin' || payload.role === 'user') && payload.siteId == null) {
+		throw Object.assign(new Error('Konteks site tidak valid.'), { statusCode: 401 });
 	}
 
 	return payload;

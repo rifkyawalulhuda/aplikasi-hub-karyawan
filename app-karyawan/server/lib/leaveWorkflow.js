@@ -1,14 +1,16 @@
+/* eslint-disable import/extensions, prefer-destructuring, no-continue, no-await-in-loop, no-restricted-syntax */
 import prisma from './prisma.js';
 import { getLeaveDatabaseBalance } from './leaveDatabase.js';
 
-const APPROVAL_STAGE_SEQUENCE = [
-	{ stageType: 'FOREMAN', jobLevelName: 'Foreman' },
-	{ stageType: 'GENERAL_FOREMAN', jobLevelName: 'General Foreman' },
-	{ stageType: 'SECTION_CHIEF', jobLevelName: 'Section Chief' },
-	{ stageType: 'DY_DEPT_MANAGER', jobLevelName: 'Dy. Dept. Manager' },
-	{ stageType: 'DEPT_MANAGER', jobLevelName: 'Dept. Manager' },
-	{ stageType: 'SITE_DIV_MANAGER', jobLevelName: 'Site/Div. Manager' },
-];
+const LeaveStageType = Object.freeze({
+	FOREMAN_GROUP_SHIFT: 'FOREMAN_GROUP_SHIFT',
+	FOREMAN: 'FOREMAN',
+	GENERAL_FOREMAN: 'GENERAL_FOREMAN',
+	SECTION_CHIEF: 'SECTION_CHIEF',
+	DY_DEPT_MANAGER: 'DY_DEPT_MANAGER',
+	DEPT_MANAGER: 'DEPT_MANAGER',
+	SITE_DIV_MANAGER: 'SITE_DIV_MANAGER',
+});
 
 function normalizeString(value = '') {
 	return String(value).trim().replace(/\s+/g, ' ');
@@ -16,6 +18,29 @@ function normalizeString(value = '') {
 
 function normalizeJobLevelName(value = '') {
 	return normalizeString(value).toLowerCase();
+}
+
+const JOB_LEVEL_TO_STAGE_TYPE_MAP = new Map([
+	['foreman', LeaveStageType.FOREMAN],
+	['general foreman', LeaveStageType.GENERAL_FOREMAN],
+	['section chief', LeaveStageType.SECTION_CHIEF],
+	['dy. dept. manager', LeaveStageType.DY_DEPT_MANAGER],
+	['dept. manager', LeaveStageType.DEPT_MANAGER],
+	['site/div. manager', LeaveStageType.SITE_DIV_MANAGER],
+]);
+
+function mapJobLevelToStageType(jobLevelName = '') {
+	const normalized = normalizeJobLevelName(jobLevelName);
+
+	if (JOB_LEVEL_TO_STAGE_TYPE_MAP.has(normalized)) {
+		return JOB_LEVEL_TO_STAGE_TYPE_MAP.get(normalized);
+	}
+
+	// Fallback: uppercase + replace spaces and special chars with underscores
+	return normalized
+		.toUpperCase()
+		.replace(/[^A-Z0-9]+/g, '_')
+		.replace(/^_|_$/g, '');
 }
 
 function formatDateForClient(value) {
@@ -48,12 +73,6 @@ function toDateOnly(value) {
 
 	const parsed = new Date(value);
 	return Number.isNaN(parsed.getTime()) ? null : parsed;
-}
-
-function getApprovalRank(jobLevelName = '') {
-	return APPROVAL_STAGE_SEQUENCE.findIndex(
-		(item) => normalizeJobLevelName(item.jobLevelName) === normalizeJobLevelName(jobLevelName),
-	);
 }
 
 function getStageLabel(stageType = '') {
@@ -148,23 +167,21 @@ async function getRequesterForWorkflow(tx, employeeId) {
 
 async function findDepartmentApprovers(
 	tx,
-	{ departmentId, jobLevelName, requesterId, excludeGroupedForemen = false, excludeEmployeeIds = [] },
+	{ departmentId, jobLevelIds, requesterId, siteId, excludeGroupedForemen = false, excludeEmployeeIds = [] },
 ) {
 	const uniqueExcludedEmployeeIds = [...new Set(excludeEmployeeIds)].filter((value) => Number.isInteger(value));
 
 	return tx.employee.findMany({
 		where: {
 			departmentId,
+			siteId,
 			id: {
 				notIn: [...uniqueExcludedEmployeeIds, requesterId],
 			},
-			jobLevel: {
-				name: {
-					equals: jobLevelName,
-					mode: 'insensitive',
-				},
+			jobLevelId: {
+				in: jobLevelIds,
 			},
-			...(excludeGroupedForemen && normalizeJobLevelName(jobLevelName) === 'foreman'
+			...(excludeGroupedForemen
 				? {
 						groupShiftAssignments: {
 							none: {},
@@ -182,17 +199,41 @@ async function findDepartmentApprovers(
 
 async function resolveApprovalStages(tx, requester) {
 	const stages = [];
-	const requesterRank = getApprovalRank(requester.jobLevel?.name);
+	const siteId = requester.siteId;
 	const hasRequesterGroupShift = Boolean(requester.groupShiftId);
+
+	// 1. Query SiteApprovalConfig for the requester's siteId + jobLevelId
+	const requesterConfig = await tx.siteApprovalConfig.findUnique({
+		where: {
+			siteId_jobLevelId: {
+				siteId,
+				jobLevelId: requester.jobLevelId,
+			},
+		},
+	});
+
+	// 2. If no config found, throw HTTP 400
+	if (!requesterConfig) {
+		throw Object.assign(
+			new Error('Konfigurasi approval belum diatur untuk site dan job level Anda. Hubungi administrator.'),
+			{ statusCode: 400 },
+		);
+	}
+
+	// 3. requesterRank = config.approvalRank ?? 0
+	const requesterRank = requesterConfig.approvalRank ?? 0;
+	const { maxApprovalRank } = requesterConfig;
+
 	const groupShiftForemanApprovers = hasRequesterGroupShift
 		? requester.groupShift?.foremen
 				.map((assignment) => assignment.employee)
-				.filter((employee) => employee.id !== requester.id) || []
+				.filter((employee) => employee.id !== requester.id && employee.siteId === siteId) || []
 		: [];
 	const seenApproverIds = new Set();
 	let stageOrder = 1;
 
-	if (requesterRank < 0 && groupShiftForemanApprovers.length > 0) {
+	// 4. Retain Foreman Group Shift logic when requester's approvalRank is null and has a group shift
+	if (requesterConfig.approvalRank === null && groupShiftForemanApprovers.length > 0) {
 		const approvers = groupShiftForemanApprovers.filter((employee) => !seenApproverIds.has(employee.id));
 
 		if (approvers.length > 0) {
@@ -206,20 +247,44 @@ async function resolveApprovalStages(tx, requester) {
 		}
 	}
 
-	const startIndex = requesterRank >= 0 ? requesterRank + 1 : 0;
-	for (let index = startIndex; index < APPROVAL_STAGE_SEQUENCE.length; index += 1) {
-		const stageConfig = APPROVAL_STAGE_SEQUENCE[index];
-		const shouldSkipDepartmentForemanStage = stageConfig.stageType === 'FOREMAN' && hasRequesterGroupShift;
+	// 5. Query all SiteApprovalConfig records for requester's site where approvalRank > requesterRank AND approvalRank <= maxApprovalRank
+	const approverConfigs = await tx.siteApprovalConfig.findMany({
+		where: {
+			siteId,
+			approvalRank: {
+				not: null,
+				gt: requesterRank,
+				lte: maxApprovalRank,
+			},
+		},
+		include: {
+			jobLevel: true,
+		},
+		orderBy: {
+			approvalRank: 'asc',
+		},
+	});
 
-		if (shouldSkipDepartmentForemanStage) {
-			continue;
+	// 6. Group by distinct approvalRank values, ordered ascending
+	const rankGroups = new Map();
+	for (const config of approverConfigs) {
+		const rank = config.approvalRank;
+		if (!rankGroups.has(rank)) {
+			rankGroups.set(rank, []);
 		}
+		rankGroups.get(rank).push(config);
+	}
+
+	// 7. For each rank level, find employees in same site + department with matching job level IDs
+	for (const [, configs] of rankGroups) {
+		const jobLevelIds = configs.map((c) => c.jobLevelId);
+		const firstJobLevelName = configs[0].jobLevel.name;
 
 		const approvers = await findDepartmentApprovers(tx, {
 			departmentId: requester.departmentId,
-			jobLevelName: stageConfig.jobLevelName,
+			jobLevelIds,
 			requesterId: requester.id,
-			excludeGroupedForemen: stageConfig.stageType === 'FOREMAN' && !hasRequesterGroupShift,
+			siteId,
 			excludeEmployeeIds: Array.from(seenApproverIds),
 		});
 
@@ -228,19 +293,21 @@ async function resolveApprovalStages(tx, requester) {
 		}
 
 		approvers.forEach((employee) => seenApproverIds.add(employee.id));
+
+		// 8. Assign stageType using mapJobLevelToStageType
+		const stageType = mapJobLevelToStageType(firstJobLevelName);
+
 		stages.push({
 			stageOrder,
-			stageType: stageConfig.stageType,
+			stageType,
 			approvers,
 		});
 		stageOrder += 1;
 	}
 
+	// 9. If no approvers found after all stages, throw HTTP 400
 	if (stages.length === 0) {
-		throw Object.assign(
-			new Error('Route approval cuti tidak ditemukan. Pastikan approver tersedia pada department terkait.'),
-			{ statusCode: 400 },
-		);
+		throw Object.assign(new Error('Tidak ada approver yang tersedia untuk site karyawan.'), { statusCode: 400 });
 	}
 
 	return stages;
@@ -298,7 +365,13 @@ async function validateOverlappingLeave(tx, { employeeId, periodStart, periodEnd
 
 async function listOverlappingLeaveEmployeeIds(
 	tx,
-	{ employeeIds = [], periodStart, periodEnd, ignoreLeaveId = null, statuses = ['SUBMITTED', 'IN_APPROVAL', 'APPROVED'] },
+	{
+		employeeIds = [],
+		periodStart,
+		periodEnd,
+		ignoreLeaveId = null,
+		statuses = ['SUBMITTED', 'IN_APPROVAL', 'APPROVED'],
+	},
 ) {
 	const uniqueEmployeeIds = [...new Set(employeeIds)].filter((value) => Number.isInteger(value));
 
@@ -466,7 +539,7 @@ function mapLeaveRequestSummary(record) {
 		employeeId: record.employeeId,
 		employeeName: record.employee.fullName,
 		employeeNo: record.employee.employeeNo,
-		employeeSiteDiv: record.employee.siteDiv || '',
+		employeeSiteDiv: record.employee.site?.name || '',
 		employeeDepartmentName: record.employee.department?.name || '',
 		employeeJobLevelName: record.employee.jobLevel?.name || '',
 		leaveYear: record.leaveYear,
@@ -474,6 +547,7 @@ function mapLeaveRequestSummary(record) {
 		submissionDate: formatDateForClient(record.submittedAt || record.createdAt),
 		masterCutiKaryawanId: record.masterCutiKaryawanId,
 		leaveType: record.masterCutiKaryawan.leaveType,
+		leaveCode: record.masterCutiKaryawan.leaveCode || '',
 		leaveDays: record.leaveDays,
 		periodStart: formatDateForClient(record.periodStart),
 		periodEnd: formatDateForClient(record.periodEnd),
@@ -545,6 +619,7 @@ async function getLeaveRequestOrThrow(tx, id) {
 				include: {
 					jobLevel: true,
 					department: true,
+					site: true,
 				},
 			},
 			masterCutiKaryawan: true,
@@ -712,12 +787,11 @@ async function listApprovalsForEmployee(employeeId, options = {}) {
 }
 
 export {
-	APPROVAL_STAGE_SEQUENCE,
+	LeaveStageType,
 	buildRequestNumber,
 	createLeaveRequestRevision,
 	formatDateForClient,
 	getActiveApprovals,
-	getApprovalRank,
 	getBalanceBefore,
 	getBalanceSeed,
 	getLeaveRequestOrThrow,
@@ -726,6 +800,7 @@ export {
 	getRequesterForWorkflow,
 	listApprovalsForEmployee,
 	mapApprovalRow,
+	mapJobLevelToStageType,
 	mapLeaveRequestDetail,
 	mapLeaveRequestSummary,
 	normalizeJobLevelName,

@@ -9,8 +9,10 @@ import multer from 'multer';
 import prisma from '../lib/prisma.js';
 import { hashPassword } from '../lib/password.js';
 import { isWarningLetterActive } from '../lib/warningLetterEscalation.js';
+import requireSiteIsolation from '../middleware/requireSiteIsolation.js';
 
 const router = Router();
+router.use(requireSiteIsolation({ modelType: 'per-site' }));
 const upload = multer({
 	storage: multer.memoryStorage(),
 	limits: {
@@ -220,13 +222,14 @@ function formatDateForClient(value) {
 	)}`;
 }
 
-function mapEmployee(employee) {
+function mapEmployee(employee, { includeSite = false } = {}) {
 	return {
 		id: employee.id,
 		employeeNo: employee.employeeNo,
 		fullName: employee.fullName,
 		employmentType: formatEmploymentTypeLabel(employee.employmentType),
-		siteDiv: employee.siteDiv,
+		siteId: employee.siteId,
+		...(includeSite && employee.site ? { siteName: employee.site.name } : {}),
 		departmentId: employee.departmentId,
 		departmentName: employee.department.name,
 		groupShiftId: employee.groupShiftId,
@@ -356,7 +359,6 @@ async function validatePayload(payload, currentEmployeeId = null) {
 	const employeeNo = normalizeString(payload.employeeNo);
 	const password = normalizeString(payload.password);
 	const fullName = normalizeString(payload.fullName);
-	const siteDiv = normalizeString(payload.siteDiv || 'CLC');
 	const phoneNumber = normalizeString(payload.phoneNumber);
 	const email = normalizeString(payload.email || '');
 	const departmentId = Number(payload.departmentId);
@@ -380,7 +382,6 @@ async function validatePayload(payload, currentEmployeeId = null) {
 	if (!EMPLOYMENT_TYPES.includes(employmentType)) {
 		throw Object.assign(new Error('Employment Type tidak valid.'), { statusCode: 400 });
 	}
-	if (!siteDiv) throw Object.assign(new Error('Site / Div wajib diisi.'), { statusCode: 400 });
 	if (!Number.isInteger(departmentId)) {
 		throw Object.assign(new Error('Department wajib dipilih.'), { statusCode: 400 });
 	}
@@ -425,7 +426,7 @@ async function validatePayload(payload, currentEmployeeId = null) {
 		...(password ? { password: await hashPassword(password) } : {}),
 		fullName,
 		employmentType,
-		siteDiv,
+		...(payload.siteId ? { siteId: Number(payload.siteId) } : {}),
 		departmentId,
 		groupShiftId,
 		birthDate,
@@ -441,19 +442,6 @@ async function validatePayload(payload, currentEmployeeId = null) {
 	};
 }
 
-async function getEmployeeOrThrow(id) {
-	const employee = await prisma.employee.findUnique({
-		where: { id },
-		include: { department: true, groupShift: true, workLocation: true, jobRole: true, jobLevel: true },
-	});
-
-	if (!employee) {
-		throw Object.assign(new Error('Master Karyawan tidak ditemukan.'), { statusCode: 404 });
-	}
-
-	return employee;
-}
-
 function worksheetRowToPayload(row, headerMap) {
 	const payload = {};
 
@@ -465,6 +453,7 @@ function worksheetRowToPayload(row, headerMap) {
 }
 
 async function buildImportPayload(rawPayload) {
+	const site = await getLookupByName('masterSite', 'Site / Div', rawPayload['Site / Div']);
 	const department = await getLookupByName('department', 'Department', rawPayload.Department);
 	const groupShift = normalizeString(rawPayload['Group Shift'] || '')
 		? await getLookupByField('masterGroupShift', 'groupShiftName', 'Group Shift', rawPayload['Group Shift'])
@@ -478,7 +467,7 @@ async function buildImportPayload(rawPayload) {
 		password: normalizeString(rawPayload.Password),
 		fullName: normalizeString(rawPayload.Fullname),
 		employmentType: normalizeString(rawPayload['Employment Type']),
-		siteDiv: normalizeString(rawPayload['Site / Div'] || 'CLC') || 'CLC',
+		siteId: site.id,
 		departmentId: department.id,
 		groupShiftId: groupShift?.id ?? null,
 		birthDate: parseExcelDate(rawPayload['Birth Date']),
@@ -542,13 +531,14 @@ async function createErrorReport(rows) {
 
 router.get(
 	'/import-template',
-	withAsync(async (_req, res) => {
-		const [departments, groupShifts, workLocations, jobRoles, jobLevels] = await Promise.all([
+	withAsync(async (req, res) => {
+		const [departments, groupShifts, workLocations, jobRoles, jobLevels, sites] = await Promise.all([
 			prisma.department.findMany({
 				select: { name: true },
 				orderBy: { name: 'asc' },
 			}),
 			prisma.masterGroupShift.findMany({
+				where: { ...req.siteFilter },
 				select: { groupShiftName: true },
 				orderBy: { groupShiftName: 'asc' },
 			}),
@@ -561,6 +551,10 @@ router.get(
 				orderBy: { name: 'asc' },
 			}),
 			prisma.jobLevel.findMany({
+				select: { name: true },
+				orderBy: { name: 'asc' },
+			}),
+			prisma.masterSite.findMany({
 				select: { name: true },
 				orderBy: { name: 'asc' },
 			}),
@@ -599,7 +593,7 @@ router.get(
 			'Isi password awal karyawan',
 			'Nama lengkap karyawan',
 			'Pilih Permanent atau Contract',
-			'Default CLC jika tidak ada nilai lain',
+			'Harus sesuai Master Site',
 			'Harus sesuai Master Department',
 			'Harus sesuai Master Group Shift',
 			'Otomatis dari Join Date',
@@ -655,6 +649,7 @@ router.get(
 			},
 			{ header: 'Job Role', key: 'jobRole', values: jobRoles.map((item) => item.name), column: 'H' },
 			{ header: 'Job Level', key: 'jobLevel', values: jobLevels.map((item) => item.name), column: 'I' },
+			{ header: 'Site', key: 'site', values: sites.map((item) => item.name), column: 'J' },
 		];
 
 		referenceColumns.forEach(({ header, values, column }) => {
@@ -666,7 +661,6 @@ router.get(
 		});
 
 		for (let rowNumber = 3; rowNumber <= TEMPLATE_MAX_ROWS + 2; rowNumber += 1) {
-			dataSheet.getCell(`E${rowNumber}`).value = 'CLC';
 			dataSheet.getCell(`H${rowNumber}`).value = {
 				formula: `IF(Q${rowNumber}="","",DATEDIF(Q${rowNumber},TODAY(),"Y")&" tahun "&DATEDIF(Q${rowNumber},TODAY(),"YM")&" bulan")`,
 			};
@@ -690,6 +684,12 @@ router.get(
 					'Referensi!$A$2:$A$3',
 					'Employment Type tidak valid',
 					'Pilih Employment Type dari dropdown yang tersedia.',
+				],
+				[
+					'E',
+					`Referensi!$J$2:$J$${Math.max(sites.length + 1, 2)}`,
+					'Site tidak valid',
+					'Pilih Site dari dropdown yang tersedia.',
 				],
 				[
 					'F',
@@ -815,7 +815,8 @@ router.post(
 			});
 		}
 
-		const importedRows = [];
+		// Phase 1: Validate all rows first (no database writes)
+		const validatedRows = [];
 		const errorRows = [];
 		const seenEmployeeNos = new Set();
 
@@ -836,14 +837,14 @@ router.post(
 					throw new Error('Employee No duplikat pada file import.');
 				}
 
+				// Non-super_admin can only import employees to their own site
+				if (!req.isSuperAdmin && payload.siteId !== req.admin.siteId) {
+					throw new Error('Anda hanya dapat mengimport karyawan ke site Anda sendiri.');
+				}
+
 				seenEmployeeNos.add(employeeKey);
 				const validatedPayload = await validatePayload(payload);
-				const employee = await prisma.employee.create({
-					data: validatedPayload,
-					include: { department: true, groupShift: true, workLocation: true, jobRole: true, jobLevel: true },
-				});
-
-				importedRows.push(mapEmployee(employee));
+				validatedRows.push(validatedPayload);
 			} catch (error) {
 				errorRows.push({
 					rowNumber,
@@ -853,20 +854,46 @@ router.post(
 			}
 		}
 
+		if (validatedRows.length === 0 && errorRows.length === 0) {
+			return res.status(400).json({
+				message: 'Tidak ada data yang terbaca dari file import. Isi data mulai dari baris 3.',
+			});
+		}
+
+		// Phase 2: If any errors, block entire import and return error report
 		if (errorRows.length > 0) {
 			const fileName = await createErrorReport(errorRows);
 
-			return res.json({
-				message:
-					importedRows.length > 0
-						? 'Import selesai sebagian. Beberapa baris gagal diproses.'
-						: 'Import gagal. Periksa file hasil error.',
-				importedCount: importedRows.length,
+			return res.status(400).json({
+				message: 'Import gagal. Semua data ditolak karena terdapat baris yang tidak valid. Perbaiki error lalu upload ulang.',
+				importedCount: 0,
 				failedCount: errorRows.length,
-				rows: importedRows,
+				totalRows: validatedRows.length + errorRows.length,
+				rows: [],
+				errors: errorRows.map((row) => ({
+					rowNumber: row.rowNumber,
+					employeeNo: row.raw['Employee No'] || '',
+					fullName: row.raw.Fullname || '',
+					error: row.error,
+				})),
 				errorReportUrl: `/master/employees/import-errors/${fileName}`,
 			});
 		}
+
+		// Phase 3: All rows valid — insert all within a single transaction
+		const importedRows = await prisma.$transaction(async (tx) => {
+			const results = [];
+
+			for (const data of validatedRows) {
+				const employee = await tx.employee.create({
+					data,
+					include: { department: true, groupShift: true, workLocation: true, jobRole: true, jobLevel: true },
+				});
+				results.push(mapEmployee(employee));
+			}
+
+			return results;
+		});
 
 		return res.json({
 			message: 'Import Master Karyawan berhasil.',
@@ -904,11 +931,15 @@ router.get(
 
 		const employee = await prisma.employee.findUnique({
 			where: { id },
-			include: { department: true, groupShift: true, workLocation: true, jobRole: true, jobLevel: true },
+			include: { department: true, groupShift: true, workLocation: true, jobRole: true, jobLevel: true, site: true },
 		});
 
 		if (!employee) {
 			return res.status(404).json({ message: 'Karyawan tidak ditemukan.' });
+		}
+
+		if (!req.isSuperAdmin && employee.siteId !== req.admin.siteId) {
+			return res.status(403).json({ message: 'Akses ditolak. Data tidak termasuk dalam site Anda.' });
 		}
 
 		const today = new Date();
@@ -974,7 +1005,7 @@ router.get(
 		const activeWarningLetters = warningLetters.filter((w) => isWarningLetterActive(w, today));
 
 		return res.json({
-			profile: mapEmployee(employee),
+			profile: mapEmployee(employee, { includeSite: req.isSuperAdmin }),
 			summary: {
 				guidanceCount: await prisma.guidanceRecord.count({ where: { employeeId: id } }),
 				warningLetterCount: await prisma.warningLetter.count({ where: { employeeId: id } }),
@@ -1049,24 +1080,42 @@ router.get(
 	'/',
 	withAsync(async (req, res) => {
 		const employees = await prisma.employee.findMany({
-			include: { department: true, groupShift: true, workLocation: true, jobRole: true, jobLevel: true },
+			where: { ...req.siteFilter },
+			include: {
+				department: true,
+				groupShift: true,
+				workLocation: true,
+				jobRole: true,
+				jobLevel: true,
+				...(req.isSuperAdmin ? { site: true } : {}),
+			},
 			orderBy: { id: 'asc' },
 		});
 
-		return res.json(employees.map(mapEmployee));
+		return res.json(employees.map((e) => mapEmployee(e, { includeSite: req.isSuperAdmin })));
 	}),
 );
 
 router.post(
 	'/',
 	withAsync(async (req, res) => {
+		let siteId;
+		if (req.isSuperAdmin) {
+			siteId = req.body.siteId;
+			if (!siteId) return res.status(400).json({ message: 'siteId wajib diisi.' });
+			const site = await prisma.masterSite.findUnique({ where: { id: siteId } });
+			if (!site) return res.status(400).json({ message: 'Site tidak valid.' });
+		} else {
+			siteId = req.admin.siteId;
+		}
+
 		const data = await validatePayload(req.body);
 		const employee = await prisma.employee.create({
-			data,
-			include: { department: true, groupShift: true, workLocation: true, jobRole: true, jobLevel: true },
+			data: { ...data, siteId },
+			include: { department: true, groupShift: true, workLocation: true, jobRole: true, jobLevel: true, site: true },
 		});
 
-		return res.status(201).json(mapEmployee(employee));
+		return res.status(201).json(mapEmployee(employee, { includeSite: req.isSuperAdmin }));
 	}),
 );
 
@@ -1078,15 +1127,25 @@ router.put(
 			return res.status(400).json({ message: 'ID tidak valid.' });
 		}
 
-		await getEmployeeOrThrow(id);
+		const existing = await prisma.employee.findUnique({ where: { id } });
+		if (!existing) {
+			return res.status(404).json({ message: 'Data tidak ditemukan.' });
+		}
+
+		if (!req.isSuperAdmin && existing.siteId !== req.admin.siteId) {
+			return res.status(403).json({ message: 'Akses ditolak. Data tidak termasuk dalam site Anda.' });
+		}
+
 		const data = await validatePayload(req.body, id);
+		// Strip siteId from update payload for site-scoped admins
+		const { siteId: _ignored, ...updateData } = data;
 		const employee = await prisma.employee.update({
 			where: { id },
-			data,
-			include: { department: true, groupShift: true, workLocation: true, jobRole: true, jobLevel: true },
+			data: updateData,
+			include: { department: true, groupShift: true, workLocation: true, jobRole: true, jobLevel: true, site: true },
 		});
 
-		return res.json(mapEmployee(employee));
+		return res.json(mapEmployee(employee, { includeSite: req.isSuperAdmin }));
 	}),
 );
 
@@ -1098,7 +1157,15 @@ router.delete(
 			return res.status(400).json({ message: 'ID tidak valid.' });
 		}
 
-		await getEmployeeOrThrow(id);
+		const existing = await prisma.employee.findUnique({ where: { id } });
+		if (!existing) {
+			return res.status(404).json({ message: 'Data tidak ditemukan.' });
+		}
+
+		if (!req.isSuperAdmin && existing.siteId !== req.admin.siteId) {
+			return res.status(403).json({ message: 'Akses ditolak. Data tidak termasuk dalam site Anda.' });
+		}
+
 		await prisma.employee.delete({ where: { id } });
 		return res.status(204).send();
 	}),

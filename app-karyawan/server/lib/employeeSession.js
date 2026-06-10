@@ -16,23 +16,18 @@ function getEmployeeAuthSecret() {
 }
 
 function toBase64Url(value) {
-	return Buffer.from(value).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+	return Buffer.from(value).toString('base64url');
 }
 
 function fromBase64Url(value) {
-	const normalizedValue = String(value).replace(/-/g, '+').replace(/_/g, '/');
-	const paddedValue = normalizedValue.padEnd(Math.ceil(normalizedValue.length / 4) * 4, '=');
-	return Buffer.from(paddedValue, 'base64').toString('utf8');
+	return Buffer.from(String(value), 'base64url').toString('utf8');
 }
 
 function signTokenPayload(encodedHeader, encodedPayload) {
 	return crypto
 		.createHmac('sha256', getEmployeeAuthSecret())
 		.update(`${encodedHeader}.${encodedPayload}`)
-		.digest('base64')
-		.replace(/\+/g, '-')
-		.replace(/\//g, '_')
-		.replace(/=+$/g, '');
+		.digest('base64url');
 }
 
 function createEmployeeAccessToken(employee) {

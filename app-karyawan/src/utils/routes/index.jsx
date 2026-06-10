@@ -29,19 +29,12 @@ const EmployeeLeavePrintPage = withLazyLoadably(lazy(() => import('@/pages/emplo
 const EmployeeLeaveApprovalDetailPage = withLazyLoadably(
 	lazy(() => import('@/pages/employeeMobile/leaveApprovalDetail')),
 );
-const WorkLocationsPage = withLazyLoadably(lazy(() => import('@/pages/masterData/workLocations')));
-const DepartmentsPage = withLazyLoadably(lazy(() => import('@/pages/masterData/departments')));
-const JobRolesPage = withLazyLoadably(lazy(() => import('@/pages/masterData/jobRoles')));
-const JobLevelsPage = withLazyLoadably(lazy(() => import('@/pages/masterData/jobLevels')));
-const GroupShiftsPage = withLazyLoadably(lazy(() => import('@/pages/masterData/groupShifts')));
 const MasterUnitsPage = withLazyLoadably(lazy(() => import('@/pages/masterData/masterUnits')));
 const MasterVendorsPage = withLazyLoadably(lazy(() => import('@/pages/masterData/masterVendors')));
 const AdminsPage = withLazyLoadably(lazy(() => import('@/pages/masterData/admins')));
-const EmployeesPage = withLazyLoadably(lazy(() => import('@/pages/masterData/employees')));
-const MasterDokPkbPage = withLazyLoadably(lazy(() => import('@/pages/masterData/masterDokPkb')));
-const MasterDokKaryawanPage = withLazyLoadably(lazy(() => import('@/pages/masterData/masterDokKaryawan')));
-const MasterCutiKaryawanPage = withLazyLoadably(lazy(() => import('@/pages/masterData/masterCutiKaryawan')));
-const MasterHariLiburPage = withLazyLoadably(lazy(() => import('@/pages/masterData/masterHoliday')));
+const MasterDataDokumenCombinedPage = withLazyLoadably(
+	lazy(() => import('@/pages/masterData/masterDataDokumenCombined')),
+);
 const GuidanceRecordsPage = withLazyLoadably(lazy(() => import('@/pages/employeeData/guidanceRecords')));
 const GuidanceRecordDetailPage = withLazyLoadably(lazy(() => import('@/pages/employeeData/guidanceRecords/detail')));
 const GuidanceRecordBulkPrintPage = withLazyLoadably(
@@ -57,10 +50,14 @@ const LicenseCertificationsPage = withLazyLoadably(lazy(() => import('@/pages/em
 const TrainingRecordsPage = withLazyLoadably(lazy(() => import('@/pages/employeeData/trainingRecords')));
 const EmployeeDetailListPage = withLazyLoadably(lazy(() => import('@/pages/employeeData/employeeDetail')));
 const EmployeeDetailPage = withLazyLoadably(lazy(() => import('@/pages/employeeData/employeeDetail/detail')));
-const EmployeeLeavesPage = withLazyLoadably(lazy(() => import('@/pages/employeeData/leaveRecords')));
-const EmployeeLeaveFlowPage = withLazyLoadably(lazy(() => import('@/pages/employeeData/leaveFlow')));
+const LeaveCombinedPage = withLazyLoadably(lazy(() => import('@/pages/employeeData/leaveCombined')));
 const EmployeeLeavePrintAdminPage = withLazyLoadably(lazy(() => import('@/pages/employeeData/leaveFlow/print')));
 const UnitLicenseCertificationsPage = withLazyLoadably(lazy(() => import('@/pages/unitData/licenseCertifications')));
+const SiteApprovalConfigPage = withLazyLoadably(lazy(() => import('@/pages/masterData/siteApprovalConfig')));
+const MasterDataKaryawanCombinedPage = withLazyLoadably(
+	lazy(() => import('@/pages/masterData/masterDataKaryawanCombined')),
+);
+const DashboardPage = withLazyLoadably(lazy(() => import('@/pages/dashboard')));
 
 function Router() {
 	return (
@@ -106,37 +103,58 @@ function Router() {
 							element={<EmployeeLeavePrintAdminPage />}
 						/>
 						<Route path="/" element={<MainLayout />}>
+							<Route index element={<Navigate to="/dashboard" replace />} />
+							<Route path="dashboard" element={<DashboardPage />} />
 							<Route
-								index
-								element={<Navigate to="/data-master/master-data-karyawan/employees" replace />}
+								path="data-master/master-data-karyawan/employees"
+								element={<MasterDataKaryawanCombinedPage />}
 							/>
-							<Route path="data-master/master-data-karyawan/employees" element={<EmployeesPage />} />
 							<Route path="data-master/master-data-karyawan/admins" element={<AdminsPage />} />
 							<Route
-								path="data-master/master-data-karyawan/work-locations"
-								element={<WorkLocationsPage />}
+								path="data-master/master-data-karyawan/sites"
+								element={<MasterDataKaryawanCombinedPage />}
 							/>
-							<Route path="data-master/master-data-karyawan/departments" element={<DepartmentsPage />} />
-							<Route path="data-master/master-data-karyawan/job-roles" element={<JobRolesPage />} />
-							<Route path="data-master/master-data-karyawan/job-levels" element={<JobLevelsPage />} />
-							<Route path="data-master/master-data-karyawan/group-shifts" element={<GroupShiftsPage />} />
+							<Route
+								path="data-master/master-data-karyawan/work-locations"
+								element={<MasterDataKaryawanCombinedPage />}
+							/>
+							<Route
+								path="data-master/master-data-karyawan/departments"
+								element={<MasterDataKaryawanCombinedPage />}
+							/>
+							<Route
+								path="data-master/master-data-karyawan/job-roles"
+								element={<MasterDataKaryawanCombinedPage />}
+							/>
+							<Route
+								path="data-master/master-data-karyawan/job-levels"
+								element={<MasterDataKaryawanCombinedPage />}
+							/>
+							<Route
+								path="data-master/master-data-karyawan/group-shifts"
+								element={<MasterDataKaryawanCombinedPage />}
+							/>
+							<Route
+								path="data-master/master-data-karyawan/site-approval-config"
+								element={<SiteApprovalConfigPage />}
+							/>
 							<Route path="data-master/master-data-unit/master-unit" element={<MasterUnitsPage />} />
 							<Route path="data-master/master-data-unit/master-vendor" element={<MasterVendorsPage />} />
 							<Route
 								path="data-master/master-data-dokumen/master-dok-pkb"
-								element={<MasterDokPkbPage />}
+								element={<MasterDataDokumenCombinedPage />}
 							/>
 							<Route
 								path="data-master/master-data-dokumen/master-dok-karyawan"
-								element={<MasterDokKaryawanPage />}
+								element={<MasterDataDokumenCombinedPage />}
 							/>
 							<Route
 								path="data-master/master-data-dokumen/master-cuti-karyawan"
-								element={<MasterCutiKaryawanPage />}
+								element={<MasterDataDokumenCombinedPage />}
 							/>
 							<Route
 								path="data-master/master-data-dokumen/master-hari-libur"
-								element={<MasterHariLiburPage />}
+								element={<MasterDataDokumenCombinedPage />}
 							/>
 							<Route path="data-karyawan/bimbingan-pengarahan" element={<GuidanceRecordsPage />} />
 							<Route
@@ -149,8 +167,8 @@ function Router() {
 							<Route path="data-karyawan/lisensi-sertifikasi" element={<LicenseCertificationsPage />} />
 							<Route path="data-karyawan/pelatihan-karyawan" element={<TrainingRecordsPage />} />
 							<Route path="notifikasi" element={<AdminNotificationsPage />} />
-							<Route path="data-karyawan/cuti-karyawan" element={<EmployeeLeavesPage />} />
-							<Route path="data-karyawan/cuti-karyawan/flow" element={<EmployeeLeaveFlowPage />} />
+							<Route path="data-karyawan/cuti-karyawan" element={<LeaveCombinedPage />} />
+							<Route path="data-karyawan/cuti-karyawan/flow" element={<LeaveCombinedPage />} />
 							<Route
 								path="data-unit/lisensi-sertifikasi-unit"
 								element={<UnitLicenseCertificationsPage />}

@@ -1,8 +1,11 @@
 import { Router } from 'express';
 
 import prisma from '../lib/prisma.js';
+import requireSiteIsolation from '../middleware/requireSiteIsolation.js';
 
 const router = Router();
+
+router.use(requireSiteIsolation({ modelType: 'shared' }));
 
 function withAsync(handler) {
 	return (req, res, next) => {

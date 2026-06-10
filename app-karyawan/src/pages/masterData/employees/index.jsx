@@ -5,9 +5,19 @@ import Breadcrumbs from '@mui/material/Breadcrumbs';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
 import CircularProgress from '@mui/material/CircularProgress';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogTitle from '@mui/material/DialogTitle';
 import InputAdornment from '@mui/material/InputAdornment';
 import Link from '@mui/material/Link';
 import Stack from '@mui/material/Stack';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 
@@ -31,15 +41,16 @@ async function fetchEmployees() {
 }
 
 async function fetchLookupOptions() {
-	const [departments, groupShifts, workLocations, jobRoles, jobLevels] = await Promise.all([
+	const [departments, groupShifts, workLocations, jobRoles, jobLevels, sites] = await Promise.all([
 		apiRequest('/master/departments'),
 		apiRequest('/master/group-shifts'),
 		apiRequest('/master/work-locations'),
 		apiRequest('/master/job-roles'),
 		apiRequest('/master/job-levels'),
+		apiRequest('/master/sites').catch(() => []),
 	]);
 
-	return { departments, groupShifts, workLocations, jobRoles, jobLevels };
+	return { departments, groupShifts, workLocations, jobRoles, jobLevels, sites };
 }
 
 function formatEmployeeDate(value) {
@@ -58,7 +69,7 @@ function formatEmployeeDate(value) {
 	return raw;
 }
 
-function EmployeesPage() {
+function EmployeesPage({ hideHeader }) {
 	const { enqueueSnackbar } = useSnackbar();
 	const [rows, setRows] = useState([]);
 	const [options, setOptions] = useState({
@@ -67,6 +78,7 @@ function EmployeesPage() {
 		workLocations: [],
 		jobRoles: [],
 		jobLevels: [],
+		sites: [],
 	});
 	const [loading, setLoading] = useState(true);
 	const [submitting, setSubmitting] = useState(false);
@@ -105,7 +117,7 @@ function EmployeesPage() {
 			row.employeeNo,
 			row.fullName,
 			row.employmentType,
-			row.siteDiv,
+			row.siteName,
 			row.departmentName,
 			row.groupShiftName,
 			row.lengthOfService,
@@ -214,6 +226,8 @@ function EmployeesPage() {
 		}
 	};
 
+	const [importErrors, setImportErrors] = useState(null);
+
 	const handleImport = async (file) => {
 		setSubmitting(true);
 
@@ -231,26 +245,17 @@ function EmployeesPage() {
 			}
 
 			setImportOpen(false);
-
-			if (response.errorReportUrl) {
-				await downloadFile(
-					`${getApiBaseUrl()}${response.errorReportUrl}`,
-					'master-karyawan-import-errors.xlsx',
-				);
-
-				enqueueSnackbar(
-					`${response.message} Berhasil: ${response.importedCount}, gagal: ${response.failedCount}. File error diunduh otomatis.`,
-					{ variant: 'warning' },
-				);
-			} else {
-				enqueueSnackbar(`${response.message} Total import: ${response.importedCount}.`, {
-					variant: 'success',
-				});
-			}
+			enqueueSnackbar(`Import Master Karyawan berhasil. Total: ${response.importedCount} data.`, {
+				variant: 'success',
+			});
 
 			return true;
 		} catch (error) {
-			enqueueSnackbar(error.message, { variant: 'error' });
+			if (error.data?.errors?.length) {
+				setImportErrors(error.data);
+			} else {
+				enqueueSnackbar(error.message, { variant: 'error' });
+			}
 			return false;
 		} finally {
 			setSubmitting(false);
@@ -273,7 +278,7 @@ function EmployeesPage() {
 			{ header: 'Employee No', key: 'employeeNo', width: 18 },
 			{ header: 'Fullname', key: 'fullName', width: 28 },
 			{ header: 'Employment Type', key: 'employmentType', width: 18 },
-			{ header: 'Site / Div', key: 'siteDiv', width: 14 },
+			{ header: 'Site', key: 'siteName', width: 14 },
 			{ header: 'Department', key: 'departmentName', width: 20 },
 			{ header: 'Group Shift', key: 'groupShiftName', width: 20 },
 			{ header: 'Length Of Service', key: 'lengthOfService', width: 20 },
@@ -299,7 +304,7 @@ function EmployeesPage() {
 				employeeNo: row.employeeNo,
 				fullName: row.fullName,
 				employmentType: formatEmploymentTypeLabel(row.employmentType),
-				siteDiv: row.siteDiv,
+				siteName: row.siteName || '',
 				departmentName: row.departmentName,
 				groupShiftName: row.groupShiftName || '',
 				lengthOfService: row.lengthOfService,
@@ -352,15 +357,17 @@ function EmployeesPage() {
 
 	return (
 		<>
-			<PageHeader title="Master Karyawan">
-				<Breadcrumbs aria-label="breadcrumb" sx={{ textTransform: 'uppercase' }}>
-					<Link underline="hover" href="#!">
-						Data Master
-					</Link>
-					<Typography color="text.tertiary">Master Data Karyawan</Typography>
-					<Typography color="text.tertiary">Master Karyawan</Typography>
-				</Breadcrumbs>
-			</PageHeader>
+			{!hideHeader && (
+				<PageHeader title="Master Karyawan">
+					<Breadcrumbs aria-label="breadcrumb" sx={{ textTransform: 'uppercase' }}>
+						<Link underline="hover" href="#!">
+							Data Master
+						</Link>
+						<Typography color="text.tertiary">Master Data Karyawan</Typography>
+						<Typography color="text.tertiary">Master Karyawan</Typography>
+					</Breadcrumbs>
+				</PageHeader>
+			)}
 			<Card sx={{ minHeight: '60vh', p: 3 }}>
 				<CardHeader
 					title="Master Karyawan"
@@ -445,6 +452,71 @@ function EmployeesPage() {
 				onClose={closeDeleteDialog}
 				onConfirm={handleDelete}
 			/>
+			<Dialog
+				open={Boolean(importErrors)}
+				onClose={() => setImportErrors(null)}
+				fullWidth
+				maxWidth="md"
+				scroll="paper"
+			>
+				<DialogTitle color="error.main">Import Gagal</DialogTitle>
+				<DialogContent dividers>
+					<Typography variant="body2" color="text.secondary" gutterBottom>
+						Semua data ditolak karena terdapat {importErrors?.failedCount || 0} baris yang tidak valid.
+						Perbaiki error berikut lalu upload ulang.
+					</Typography>
+					<TableContainer sx={{ mt: 2, maxHeight: 400 }}>
+						<Table size="small" stickyHeader>
+							<TableHead>
+								<TableRow>
+									<TableCell sx={{ fontWeight: 600, width: 70 }}>Baris</TableCell>
+									<TableCell sx={{ fontWeight: 600, width: 140 }}>Employee No</TableCell>
+									<TableCell sx={{ fontWeight: 600, width: 180 }}>Nama</TableCell>
+									<TableCell sx={{ fontWeight: 600 }}>Error</TableCell>
+								</TableRow>
+							</TableHead>
+							<TableBody>
+								{importErrors?.errors?.map((err, index) => (
+									<TableRow key={index}>
+										<TableCell>{err.rowNumber}</TableCell>
+										<TableCell>{err.employeeNo || '-'}</TableCell>
+										<TableCell>{err.fullName || '-'}</TableCell>
+										<TableCell>
+											<Typography variant="body2" color="error.main">
+												{err.error}
+											</Typography>
+										</TableCell>
+									</TableRow>
+								))}
+							</TableBody>
+						</Table>
+					</TableContainer>
+				</DialogContent>
+				<DialogActions sx={{ px: 3, pb: 2 }}>
+					{importErrors?.errorReportUrl && (
+						<Button
+							onClick={async () => {
+								try {
+									await downloadFile(
+										`${getApiBaseUrl()}${importErrors.errorReportUrl}`,
+										'master-karyawan-import-errors.xlsx',
+									);
+								} catch (err) {
+									enqueueSnackbar(err.message || 'Download error report gagal.', {
+										variant: 'error',
+									});
+								}
+							}}
+							color="inherit"
+						>
+							Download Error Report
+						</Button>
+					)}
+					<Button onClick={() => setImportErrors(null)} variant="contained">
+						Tutup
+					</Button>
+				</DialogActions>
+			</Dialog>
 		</>
 	);
 }

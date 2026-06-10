@@ -28,7 +28,7 @@ async function fetchMasterData(resource) {
 	return apiRequest(`/master/${resource}`);
 }
 
-function MasterDataPage({ config }) {
+function MasterDataPage({ config, hideHeader }) {
 	const { enqueueSnackbar } = useSnackbar();
 	const [rows, setRows] = useState([]);
 	const [loading, setLoading] = useState(true);
@@ -232,20 +232,24 @@ function MasterDataPage({ config }) {
 
 	return (
 		<>
-			<PageHeader title={config.title}>
-				<Breadcrumbs
-					aria-label="breadcrumb"
-					sx={{
-						textTransform: 'uppercase',
-					}}
-				>
-					<Link underline="hover" href="#!">
-						Data Master
-					</Link>
-					<Typography color="text.tertiary">{config.groupBreadcrumb || 'Master Data Karyawan'}</Typography>
-					<Typography color="text.tertiary">{config.breadcrumb}</Typography>
-				</Breadcrumbs>
-			</PageHeader>
+			{!hideHeader && (
+				<PageHeader title={config.title}>
+					<Breadcrumbs
+						aria-label="breadcrumb"
+						sx={{
+							textTransform: 'uppercase',
+						}}
+					>
+						<Link underline="hover" href="#!">
+							Data Master
+						</Link>
+						<Typography color="text.tertiary">
+							{config.groupBreadcrumb || 'Master Data Karyawan'}
+						</Typography>
+						<Typography color="text.tertiary">{config.breadcrumb}</Typography>
+					</Breadcrumbs>
+				</PageHeader>
+			)}
 			<Card
 				type="section"
 				sx={{

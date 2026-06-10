@@ -4,6 +4,19 @@ import prisma from '../lib/prisma.js';
 import { buildEmailWorkflowFailureNotification } from '../lib/emailWorkflowFailureLog.js';
 
 const router = Router();
+
+function resolveSiteContext(req) {
+	const role = req.admin?.role;
+	const siteId = req.admin?.siteId ?? null;
+	const isSuperAdmin = role === 'super_admin';
+
+	return { role, siteId, isSuperAdmin };
+}
+
+function isSiteScopedWithNoSite(ctx) {
+	return !ctx.isSuperAdmin && ctx.siteId == null;
+}
+
 const EXPIRING_SOON_DAYS = 25;
 const STALE_APPROVAL_DAYS = 2;
 const PROFILE_CHANGE_DAYS = 30;
@@ -406,13 +419,16 @@ function createEmployeeProfileChangeNotification(record) {
 	};
 }
 
-async function fetchRecentProfileChanges(profileChangeThreshold) {
+async function fetchRecentProfileChanges(profileChangeThreshold, siteContext = {}) {
+	const { isSuperAdmin, siteId } = siteContext;
+
 	try {
 		return await prisma.employeeSelfServiceChangeLog.findMany({
 			where: {
 				createdAt: {
 					gte: profileChangeThreshold,
 				},
+				...(isSuperAdmin ? {} : { employee: { siteId } }),
 			},
 			include: {
 				employee: true,
@@ -431,11 +447,14 @@ async function fetchRecentProfileChanges(profileChangeThreshold) {
 	}
 }
 
-async function fetchOpenEmailWorkflowFailures() {
+async function fetchOpenEmailWorkflowFailures(siteContext = {}) {
+	const { isSuperAdmin, siteId } = siteContext;
+
 	try {
 		return await prisma.emailWorkflowFailureLog.findMany({
 			where: {
 				status: 'OPEN',
+				...(isSuperAdmin ? {} : { employeeLeave: { employee: { siteId } } }),
 			},
 			include: {
 				employeeLeave: {
@@ -468,12 +487,17 @@ async function fetchOpenEmailWorkflowFailures() {
 	}
 }
 
-async function buildLiveNotifications() {
+async function buildLiveNotifications(siteContext = {}) {
+	const { isSuperAdmin, siteId } = siteContext;
+	const employeeSiteFilter = isSuperAdmin ? {} : { employee: { siteId } };
+	const unitSiteFilter = isSuperAdmin ? {} : { masterUnit: { siteId } };
+
 	const staleThreshold = new Date(Date.now() - STALE_APPROVAL_DAYS * 24 * 60 * 60 * 1000);
 	const profileChangeThreshold = new Date(Date.now() - PROFILE_CHANGE_DAYS * 24 * 60 * 60 * 1000);
 	const [employeeLicenses, unitLicenses, staleLeaveApprovals, rejectedLeaveRequests, failedEmails, profileChanges] =
 		await Promise.all([
 			prisma.employeeLicenseCertification.findMany({
+				where: { ...employeeSiteFilter },
 				include: {
 					employee: true,
 					masterDokKaryawan: true,
@@ -481,6 +505,7 @@ async function buildLiveNotifications() {
 				orderBy: [{ expiryDate: 'asc' }, { id: 'desc' }],
 			}),
 			prisma.unitLicenseCertification.findMany({
+				where: { ...unitSiteFilter },
 				include: {
 					masterUnit: true,
 				},
@@ -492,6 +517,7 @@ async function buildLiveNotifications() {
 					updatedAt: {
 						lte: staleThreshold,
 					},
+					...(isSuperAdmin ? {} : { employeeLeave: { employee: { siteId } } }),
 				},
 				include: {
 					approverEmployee: true,
@@ -506,14 +532,15 @@ async function buildLiveNotifications() {
 			prisma.employeeLeave.findMany({
 				where: {
 					status: 'REJECTED',
+					...(isSuperAdmin ? {} : { employee: { siteId } }),
 				},
 				include: {
 					employee: true,
 				},
 				orderBy: [{ rejectedAt: 'desc' }, { updatedAt: 'desc' }, { id: 'desc' }],
 			}),
-			fetchOpenEmailWorkflowFailures(),
-			fetchRecentProfileChanges(profileChangeThreshold),
+			fetchOpenEmailWorkflowFailures(siteContext),
+			fetchRecentProfileChanges(profileChangeThreshold, siteContext),
 		]);
 
 	return [
@@ -685,14 +712,127 @@ async function markNotificationsRead(employeeId, notificationIds = []) {
 	});
 }
 
-async function resolveNotificationIdsForMarkAll(employeeId, notificationIds = []) {
+function extractEmployeeIdFromNotificationId(notificationId = '') {
+	const employeeLicenseMatch = notificationId.match(/^employee-license-(\d+)-/);
+
+	if (employeeLicenseMatch) {
+		return { type: 'employee-license', recordId: Number(employeeLicenseMatch[1]) };
+	}
+
+	const unitLicenseMatch = notificationId.match(/^unit-license-(\d+)-/);
+
+	if (unitLicenseMatch) {
+		return { type: 'unit-license', recordId: Number(unitLicenseMatch[1]) };
+	}
+
+	const leaveFlowMatch = notificationId.match(/^leave-flow-(\d+)-/);
+
+	if (leaveFlowMatch) {
+		return { type: 'leave-flow', recordId: Number(leaveFlowMatch[1]) };
+	}
+
+	const leaveRejectedMatch = notificationId.match(/^leave-rejected-(\d+)-/);
+
+	if (leaveRejectedMatch) {
+		return { type: 'leave-rejected', recordId: Number(leaveRejectedMatch[1]) };
+	}
+
+	const emailFailureMatch = notificationId.match(/^email-workflow-failure-(\d+)$/);
+
+	if (emailFailureMatch) {
+		return { type: 'email-failure', recordId: Number(emailFailureMatch[1]) };
+	}
+
+	const profileChangeMatch = notificationId.match(/^profile-change-(\d+)$/);
+
+	if (profileChangeMatch) {
+		return { type: 'profile-change', recordId: Number(profileChangeMatch[1]) };
+	}
+
+	return null;
+}
+
+async function verifyNotificationBelongsToSite(notificationId, siteId) {
+	const parsed = extractEmployeeIdFromNotificationId(notificationId);
+
+	if (!parsed) {
+		return false;
+	}
+
+	switch (parsed.type) {
+		case 'employee-license': {
+			const record = await prisma.employeeLicenseCertification.findUnique({
+				where: { id: parsed.recordId },
+				include: { employee: { select: { siteId: true } } },
+			});
+			return record?.employee?.siteId === siteId;
+		}
+		case 'unit-license': {
+			const record = await prisma.unitLicenseCertification.findUnique({
+				where: { id: parsed.recordId },
+				include: { masterUnit: { select: { siteId: true } } },
+			});
+			return record?.masterUnit?.siteId === siteId;
+		}
+		case 'leave-flow': {
+			const record = await prisma.employeeLeave.findUnique({
+				where: { id: parsed.recordId },
+				include: { employee: { select: { siteId: true } } },
+			});
+			return record?.employee?.siteId === siteId;
+		}
+		case 'leave-rejected': {
+			const record = await prisma.employeeLeave.findUnique({
+				where: { id: parsed.recordId },
+				include: { employee: { select: { siteId: true } } },
+			});
+			return record?.employee?.siteId === siteId;
+		}
+		case 'email-failure': {
+			const record = await prisma.emailWorkflowFailureLog.findUnique({
+				where: { id: parsed.recordId },
+				include: { employeeLeave: { include: { employee: { select: { siteId: true } } } } },
+			});
+			return record?.employeeLeave?.employee?.siteId === siteId;
+		}
+		case 'profile-change': {
+			try {
+				const record = await prisma.employeeSelfServiceChangeLog.findUnique({
+					where: { id: parsed.recordId },
+					include: { employee: { select: { siteId: true } } },
+				});
+				return record?.employee?.siteId === siteId;
+			} catch (error) {
+				if (error?.code === 'P2021') {
+					return false;
+				}
+				throw error;
+			}
+		}
+		default:
+			return false;
+	}
+}
+
+async function filterNotificationIdsBySite(notificationIds, siteId) {
+	const results = await Promise.all(
+		notificationIds.map(async (notificationId) => {
+			const belongs = await verifyNotificationBelongsToSite(notificationId, siteId);
+			return belongs ? notificationId : null;
+		}),
+	);
+
+	return results.filter(Boolean);
+}
+
+async function resolveNotificationIdsForMarkAll(employeeId, notificationIds = [], siteContext = {}) {
 	const uniqueNotificationIds = [...new Set(notificationIds.map((value) => normalizeString(value)).filter(Boolean))];
 
 	if (uniqueNotificationIds.length) {
 		return uniqueNotificationIds;
 	}
 
-	await syncNotificationRecords(await buildLiveNotifications());
+	await syncNotificationRecords(await buildLiveNotifications(siteContext));
 
 	const [records, reads] = await Promise.all([
 		prisma.adminNotificationRecord.findMany({
@@ -714,8 +854,8 @@ async function resolveNotificationIdsForMarkAll(employeeId, notificationIds = []
 	return records.map((item) => item.notificationId).filter((notificationId) => !readSet.has(notificationId));
 }
 
-async function buildHistoryResponse(employeeId, query) {
-	await syncNotificationRecords(await buildLiveNotifications());
+async function buildHistoryResponse(employeeId, query, siteContext = {}) {
+	await syncNotificationRecords(await buildLiveNotifications(siteContext));
 
 	const page = parsePositiveInt(query.page, 1);
 	const pageSize = parsePositiveInt(query.pageSize, DEFAULT_HISTORY_PAGE_SIZE, MAX_HISTORY_PAGE_SIZE);
@@ -808,9 +948,15 @@ async function buildHistoryResponse(employeeId, query) {
 
 router.get('/', async (req, res, next) => {
 	try {
+		const siteContext = resolveSiteContext(req);
+
+		if (isSiteScopedWithNoSite(siteContext)) {
+			return res.json({ totalCount: 0, unreadCount: 0, items: [] });
+		}
+
 		const employeeId = resolveEmployeeId(req);
 		const limit = parsePositiveInt(req.query.limit, MAX_NOTIFICATION_ITEMS, MAX_NOTIFICATION_ITEMS);
-		const syncedItems = await syncNotificationRecords(await buildLiveNotifications());
+		const syncedItems = await syncNotificationRecords(await buildLiveNotifications(siteContext));
 		const items = await attachReadState(employeeId, syncedItems);
 		const sortedItems = items.sort(compareNotifications);
 
@@ -826,8 +972,26 @@ router.get('/', async (req, res, next) => {
 
 router.get('/history', async (req, res, next) => {
 	try {
+		const siteContext = resolveSiteContext(req);
+
+		if (isSiteScopedWithNoSite(siteContext)) {
+			return res.json({
+				totalCount: 0,
+				unreadCount: 0,
+				activeCount: 0,
+				page: 1,
+				pageSize: DEFAULT_HISTORY_PAGE_SIZE,
+				totalPages: 1,
+				readStatus: 'all',
+				activeStatus: 'all',
+				category: 'ALL',
+				items: [],
+				categories: [],
+			});
+		}
+
 		const employeeId = resolveEmployeeId(req);
-		const response = await buildHistoryResponse(employeeId, req.query);
+		const response = await buildHistoryResponse(employeeId, req.query, siteContext);
 		return res.json(response);
 	} catch (error) {
 		return next(error);
@@ -836,11 +1000,25 @@ router.get('/history', async (req, res, next) => {
 
 router.post('/read', async (req, res, next) => {
 	try {
+		const siteContext = resolveSiteContext(req);
+
+		if (isSiteScopedWithNoSite(siteContext)) {
+			return res.status(403).json({ message: 'Akses ditolak. Admin belum memiliki site yang ditugaskan.' });
+		}
+
 		const employeeId = resolveEmployeeId(req);
 		const notificationId = normalizeString(req.body?.notificationId);
 
 		if (!notificationId) {
 			return res.status(400).json({ message: 'notificationId wajib diisi.' });
+		}
+
+		if (!siteContext.isSuperAdmin) {
+			const belongsToSite = await verifyNotificationBelongsToSite(notificationId, siteContext.siteId);
+
+			if (!belongsToSite) {
+				return res.status(403).json({ message: 'Akses ditolak. Data tidak termasuk dalam site Anda.' });
+			}
 		}
 
 		await markNotificationsRead(employeeId, [notificationId]);
@@ -852,11 +1030,27 @@ router.post('/read', async (req, res, next) => {
 
 router.post('/read-all', async (req, res, next) => {
 	try {
+		const siteContext = resolveSiteContext(req);
+
+		if (isSiteScopedWithNoSite(siteContext)) {
+			return res.status(403).json({ message: 'Akses ditolak. Admin belum memiliki site yang ditugaskan.' });
+		}
+
 		const employeeId = resolveEmployeeId(req);
 		const notificationIds = Array.isArray(req.body?.notificationIds) ? req.body.notificationIds : [];
-		const resolvedNotificationIds = await resolveNotificationIdsForMarkAll(employeeId, notificationIds);
+		const resolvedNotificationIds = await resolveNotificationIdsForMarkAll(
+			employeeId,
+			notificationIds,
+			siteContext,
+		);
 
-		await markNotificationsRead(employeeId, resolvedNotificationIds);
+		if (!siteContext.isSuperAdmin && resolvedNotificationIds.length) {
+			const validIds = await filterNotificationIdsBySite(resolvedNotificationIds, siteContext.siteId);
+			await markNotificationsRead(employeeId, validIds);
+		} else {
+			await markNotificationsRead(employeeId, resolvedNotificationIds);
+		}
+
 		return res.status(204).send();
 	} catch (error) {
 		return next(error);

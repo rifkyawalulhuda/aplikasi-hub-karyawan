@@ -30,10 +30,15 @@ async function fetchEmployeeOptions() {
 	return apiRequest('/master/employees');
 }
 
+async function fetchSiteOptions() {
+	return apiRequest('/master/sites').catch(() => []);
+}
+
 function AdminsPage() {
 	const { enqueueSnackbar } = useSnackbar();
 	const [rows, setRows] = useState([]);
 	const [employeeOptions, setEmployeeOptions] = useState([]);
+	const [siteOptions, setSiteOptions] = useState([]);
 	const [loading, setLoading] = useState(true);
 	const [submitting, setSubmitting] = useState(false);
 	const [formOpen, setFormOpen] = useState(false);
@@ -46,9 +51,14 @@ function AdminsPage() {
 			setLoading(true);
 
 			try {
-				const [admins, employees] = await Promise.all([fetchAdmins(), fetchEmployeeOptions()]);
+				const [admins, employees, sites] = await Promise.all([
+					fetchAdmins(),
+					fetchEmployeeOptions(),
+					fetchSiteOptions(),
+				]);
 				setRows(admins);
 				setEmployeeOptions(employees);
+				setSiteOptions(sites);
 			} catch (error) {
 				enqueueSnackbar(error.message, { variant: 'error' });
 			} finally {
@@ -92,6 +102,7 @@ function AdminsPage() {
 				employeeId: Number(values.employeeId),
 				password: values.password,
 				role: values.role,
+				siteId: values.siteId ? Number(values.siteId) : null,
 			};
 			let savedItem;
 
@@ -208,6 +219,7 @@ function AdminsPage() {
 				loading={submitting}
 				initialValue={selectedItem}
 				employeeOptions={employeeOptions}
+				siteOptions={siteOptions}
 				onClose={closeFormDialog}
 				onSubmit={handleSubmit}
 			/>

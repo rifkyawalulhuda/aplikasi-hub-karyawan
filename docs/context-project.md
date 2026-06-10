@@ -178,6 +178,25 @@ Folder ini dipilih sebagai basis utama pengembangan karena struktur template-nya
 - File error report Excel hasil import bulk `Master Karyawan` sekarang me-mask kolom `Password` menjadi `***`. Cell yang aslinya kosong tetap kosong agar admin masih bisa membedakan baris yang memang belum mengisi password.
 - Tujuan: mencegah residual exposure plaintext password karyawan pada file `.xlsx` yang berakhir di disk server (`ERROR_REPORT_DIR`) dan sering di-download admin.
 
+### Security & Performance Hardening
+
+- Ditambahkan `helmet` middleware untuk security headers (X-Content-Type-Options, X-Frame-Options, Strict-Transport-Security, dll). CSP dinonaktifkan karena SPA.
+- Ditambahkan `compression` middleware untuk gzip response — mengurangi ukuran transfer ~70%.
+- Ditambahkan JSON body size limit `1mb` pada `express.json()` untuk mencegah large payload DoS.
+- Ditambahkan rate limiting:
+  - Login endpoints (`/api/auth`, `/api/employee-auth`): max 20 attempts per IP per 15 menit.
+  - General API (`/api/*`): max 200 requests per IP per menit.
+  - Pesan error rate limit dalam Bahasa Indonesia.
+- Ditambahkan request timeout 30 detik per request untuk mencegah hanging connections.
+- Ditambahkan PM2 ecosystem config (`ecosystem.config.cjs`) untuk production deployment:
+  - Cluster mode (multi-process, memanfaatkan semua CPU core).
+  - Auto-restart saat crash atau memory > 512MB.
+  - Log rotation dengan timestamp.
+- Health check endpoint `/api/health` sekarang mengembalikan uptime dan memory usage (RSS, heap) untuk monitoring.
+- Standardisasi implementasi `toBase64Url` pada employee session agar konsisten dengan admin session (menggunakan `toString('base64url')` native).
+- Untuk production, disarankan menambahkan `connection_limit=10` pada `DATABASE_URL` agar Prisma connection pool lebih besar dari default (5).
+- Dependencies baru: `helmet@8.1.0`, `compression@1.8.0`, `express-rate-limit@7.5.0`.
+
 ### Skema dan Migration Terbaru
 
 - Migration `20260519144643_add_master_admin_token_version` menambahkan kolom `tokenVersion INTEGER NOT NULL DEFAULT 0` pada tabel `master_admins`. Sifatnya additive dan aman dijalankan di production lewat `npx prisma migrate deploy`.
@@ -199,32 +218,29 @@ Folder ini dipilih sebagai basis utama pengembangan karena struktur template-nya
 
 ## Struktur Navigasi yang Sudah Disepakati
 
+- Tab navigasi utama: `Dashboard`
+  - Halaman dashboard admin dengan grafik dan ringkasan data karyawan
+  - Data difilter berdasarkan site yang dipilih di header (Super Admin bisa pilih "Semua Site")
 - Tab utama: `Data Master`
-- Dropdown: `Master Data Karyawan`
-- Submenu awal:
-  - `Master Admin`
-  - `Master Work Location`
-  - `Master Department`
-  - `Master Job Role`
-  - `Master Job Level`
-  - `Master Group Shift`
-- Dropdown tambahan: `Master Data Dokumen`
-- Submenu dokumen:
-  - `Master Dok PKB`
-  - `Master Dok Karyawan`
-  - `Master Cuti Karyawan`
-- Dropdown tambahan: `Master Data Unit`
-- Submenu unit:
-  - `Master Unit`
-  - `Master Vendor`
-- Tab utama tambahan: `Data Karyawan`
-- Menu utama: `Bimbingan & Pengarahan`
-- Menu tambahan: `Data Surat Peringatan`
-- Menu tambahan: `Detail Karyawan`
-- Menu tambahan: `Lisensi & Sertifikasi`
-- Menu tambahan: `Cuti Karyawan`
-- Tab utama tambahan: `Data Unit`
-- Menu utama: `Lisensi & Sertifikasi Unit`
+  - Menu item: `Master Data Karyawan` → halaman tabbed gabungan:
+    - Tab: Master Karyawan | Master Site | Master Department | Master Job Role | Master Job Level | Master Work Location | Master Group Shift
+  - Menu item: `Master Admin` (terpisah, bukan tab)
+  - Menu item: `Site Approval Config` (Super Admin only, terpisah)
+  - Menu item: `Master Data Unit` (dropdown):
+    - `Master Unit`
+    - `Master Vendor`
+  - Menu item: `Master Data Dokumen` → halaman tabbed gabungan:
+    - Tab: Master Dok PKB | Master Dok Karyawan | Master Cuti Karyawan | Master Hari Libur
+- Tab utama: `Data Karyawan`
+  - Menu item: `Detail Karyawan`
+  - Menu item: `Bimbingan & Pengarahan`
+  - Menu item: `Data Surat Peringatan`
+  - Menu item: `Lisensi & Sertifikasi`
+  - Menu item: `Pelatihan Karyawan`
+  - Menu item: `Cuti Karyawan` → halaman tabbed gabungan:
+    - Tab: Data Cuti Karyawan | Flow Proses Cuti
+- Tab utama: `Data Unit`
+  - Menu item: `Lisensi & Sertifikasi Unit`
 
 ## Scope Modul yang Sudah Dibahas
 
@@ -272,7 +288,7 @@ Relasi master yang dipakai:
 Catatan implementasi:
 
 - `Employee No` disimpan sebagai unique field.
-- `Site / Div` default awal adalah `CLC`.
+- `Site / Div` sekarang mengacu pada `Master Site` dan dipilih via dropdown di template import (tidak lagi default CLC).
 - `Age` dan `Length Of Service` dihitung otomatis dari tanggal pada layer aplikasi/API.
 - Kolom `Password` tidak boleh dikirim balik ke frontend, tidak ditampilkan pada tabel/export, dan disimpan sebagai hash `scrypt` untuk data baru maupun reset password.
 - Login aplikasi sekarang menggunakan data `Master Admin` dengan rule:
@@ -291,6 +307,11 @@ Catatan implementasi:
 - Import bulk mendukung partial success:
   - baris valid tetap diimport
   - baris gagal menghasilkan file error report `.xlsx`
+- Import bulk `Master Karyawan` sekarang menggunakan mekanisme **all-or-nothing**:
+  - jika ada 1 baris error, seluruh data ditolak
+  - semua baris valid di-insert dalam satu database transaction
+  - detail error per baris ditampilkan di dialog popup frontend
+  - non-super_admin hanya bisa import karyawan ke site mereka sendiri
 - Tombol download template tersedia pada halaman `Master Karyawan`.
 
 #### Master Work Location
@@ -316,6 +337,8 @@ Catatan implementasi:
 - Kolom database utama:
   - `id` : auto increment
   - `jobLevel` : varchar
+  - `approvalRank` : integer nullable (posisi dalam hierarki approval)
+- Kolom `Approval Rank` sekarang tampil di tabel dan form edit halaman Master Job Level.
 
 #### Master Dok PKB
 
@@ -352,10 +375,14 @@ Catatan implementasi:
 - Kolom database utama:
   - `id` : auto increment
   - `leaveType` : varchar
+  - `leaveCode` : varchar(10) nullable (kode checkbox dokumen cetak: C1, C2, C3, H1, H2, DP, S1, S2, SC, A, B)
 - Ditempatkan pada grup menu `Master Data Dokumen`
 - Form input mengikuti pola halaman master yang sudah ada, dengan field:
   - `Jenis Cuti`
+  - `Leave Code` sebagai dropdown dengan pilihan kode standar
 - Kolom `NO` pada tabel menggunakan nomor urut tampilan dan otomatis rapat kembali saat ada row yang dihapus.
+- Data Master Cuti Karyawan harus sesuai dengan jenis cuti yang ada di template dokumen cetak cuti (Form Permohonan Cuti dan Ijin).
+- Migration seed otomatis mengisi 11 jenis cuti standar: Cuti Tahunan, Cuti 10 Tahunan, Cuti Spesial, Cuti Haid, Cuti Melahirkan, Dispensasi, Sakit Ijin Dokter, Sakit Karena Kecelakaan, Skorsing, Absen, Ijin.
 
 #### Master Group Shift
 
@@ -981,6 +1008,60 @@ Yang sudah selesai:
   - Nomor telepon karyawan dari database (format `08xx`) otomatis dinormalisasi ke format internasional `62xx`.
   - Konfigurasi memakai env var `FONNTE_TOKEN`; jika kosong, notifikasi WA dilewati tanpa error.
   - Bersifat fire-and-forget — kegagalan kirim WA tidak menggagalkan proses workflow cuti.
+- Menambahkan fitur **Site Approval Workflow Config** — konfigurasi approval cuti per-site yang menggantikan hardcoded `APPROVAL_STAGE_SEQUENCE`:
+  - Model baru `SiteApprovalConfig` menyimpan mapping `siteId + jobLevelId → approvalRank + maxApprovalRank`.
+  - Kolom `approvalRank` (nullable integer) ditambahkan pada model `JobLevel`.
+  - Migration seed otomatis mengisi konfigurasi default untuk semua site existing agar backward compatible.
+  - API CRUD + Bulk endpoint di `/api/master/site-approval-configs` (Super Admin only).
+  - Workflow engine `resolveApprovalStages` sekarang query `SiteApprovalConfig` secara dinamis, bukan hardcoded.
+  - Halaman konfigurasi UI di `data-master/master-data-karyawan/site-approval-config` (Super Admin only).
+  - Kolom `Approval Rank` sekarang tampil dan bisa diedit di halaman Master Job Level.
+- Memperbaiki kolom `Site / Div` pada profil PWA Karyawan:
+  - `requireEmployeeAuth` middleware sekarang include relasi `site`.
+  - `buildEmployeePortalProfile` mengambil `employee.site?.name` alih-alih field `siteDiv` yang tidak ada.
+- Mengubah template import `Master Karyawan` agar kolom `Site / Div` menjadi dropdown dari Master Site:
+  - Tidak lagi default hardcode `CLC`.
+  - Dropdown mengacu pada data `Master Site` terbaru.
+  - Import handler resolve site per-baris dari kolom Excel.
+  - Non-super_admin hanya bisa import karyawan ke site mereka sendiri.
+  - Super Admin bisa import lintas site.
+- Mengubah mekanisme import `Master Karyawan` menjadi **all-or-nothing**:
+  - Jika ada 1 baris error, seluruh data ditolak (tidak ada yang masuk database).
+  - Semua baris valid di-insert dalam satu database transaction.
+  - Detail error per baris (nomor baris, Employee No, nama, pesan error) dikembalikan di response.
+  - Frontend menampilkan dialog popup detail error dengan tabel per baris + tombol download error report.
+  - Toast notifikasi sukses ditampilkan jika semua data berhasil diimport.
+- Menambahkan kolom `leaveCode` pada model `MasterCutiKaryawan`:
+  - Kolom `leaveCode` (VARCHAR 10, nullable) menyimpan kode checkbox dokumen cetak cuti (C1, C2, C3, H1, H2, DP, S1, S2, SC, A, B).
+  - Migration seed otomatis mengisi 11 jenis cuti standar beserta kode-nya.
+  - Halaman Master Cuti Karyawan sekarang menampilkan kolom `Leave Code` di tabel dan dropdown di form.
+  - Template print cuti sekarang prioritaskan `leaveCode` dari database untuk menentukan checkbox yang dicentang, fallback ke name-matching jika kosong.
+  - Backend `mapLeaveRequestSummary` mengembalikan `leaveCode` di response API.
+- Menambahkan halaman **Dashboard** admin:
+  - Navigasi menu "Dashboard" di posisi pertama (sebelah kiri Data Master).
+  - Summary cards: Total Karyawan, Jumlah Site, Cuti Aktif, Lisensi Akan Expired.
+  - Grafik: Distribusi per Department (bar), per Job Level (donut), Tipe Karyawan (donut), Tren Cuti per Bulan (area), per Site (bar).
+  - Tabel ringkas: Lisensi Akan Expired (5 teratas), Pengajuan Cuti Terbaru (5 terbaru).
+  - Data difilter berdasarkan site yang dipilih di header (Super Admin bisa filter per site atau "Semua Site").
+  - Backend endpoint `GET /api/dashboard?siteId=` mendukung query parameter opsional.
+- Menambahkan validasi duplikasi peserta pada form **Tambah Pelatihan Karyawan**:
+  - Karyawan yang sudah dipilih di satu dropdown peserta otomatis disembunyikan dari dropdown peserta lainnya.
+  - Menggunakan `useWatch` dari react-hook-form untuk memantau semua `participantEmployeeIds` dan memfilter opsi secara real-time.
+- Menggabungkan halaman **Data Cuti Karyawan** dan **Flow Proses Cuti** menjadi satu halaman tabbed:
+  - Halaman gabungan `src/pages/employeeData/leaveCombined/index.jsx`.
+  - Tab: "Data Cuti Karyawan" | "Flow Proses Cuti".
+  - URL-based tab switching (kedua URL lama tetap berfungsi).
+  - Menu sidebar "Cuti Karyawan" sekarang jadi satu item (bukan dropdown 2 sub-item).
+- Menggabungkan halaman **Master Data Karyawan** menjadi satu halaman tabbed:
+  - Halaman gabungan `src/pages/masterData/masterDataKaryawanCombined/index.jsx`.
+  - Tab (scrollable): Master Karyawan | Master Site | Master Department | Master Job Role | Master Job Level | Master Work Location | Master Group Shift.
+  - URL-based tab switching, state preserved antar tab.
+  - Menu sidebar "Master Data Karyawan" sekarang jadi satu item. "Master Admin" dan "Site Approval Config" tetap terpisah.
+- Menggabungkan halaman **Master Data Dokumen** menjadi satu halaman tabbed:
+  - Halaman gabungan `src/pages/masterData/masterDataDokumenCombined/index.jsx`.
+  - Tab: Master Dok PKB | Master Dok Karyawan | Master Cuti Karyawan | Master Hari Libur.
+  - URL-based tab switching, state preserved antar tab.
+  - Menu sidebar "Master Data Dokumen" sekarang jadi satu item.
 
 ## Struktur Teknis Awal yang Sudah Dibangun
 
