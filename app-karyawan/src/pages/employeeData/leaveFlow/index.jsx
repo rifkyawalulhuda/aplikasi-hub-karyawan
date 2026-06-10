@@ -48,7 +48,7 @@ function SummaryCard({ label, value, helper }) {
 	);
 }
 
-function EmployeeLeaveFlowPage() {
+function EmployeeLeaveFlowPage({ hideHeader = false }) {
 	const { enqueueSnackbar } = useSnackbar();
 	const [rows, setRows] = useState([]);
 	const [loading, setLoading] = useState(true);
@@ -210,17 +210,19 @@ function EmployeeLeaveFlowPage() {
 
 	return (
 		<>
-			<PageHeader title="Flow Proses Cuti">
-				<Breadcrumbs aria-label="breadcrumb" sx={{ textTransform: 'uppercase' }}>
-					<Link underline="hover" href="#!">
-						Data Karyawan
-					</Link>
-					<Link underline="hover" href="#!">
-						Cuti Karyawan
-					</Link>
-					<Typography color="text.tertiary">Flow Proses Cuti</Typography>
-				</Breadcrumbs>
-			</PageHeader>
+			{!hideHeader && (
+				<PageHeader title="Flow Proses Cuti">
+					<Breadcrumbs aria-label="breadcrumb" sx={{ textTransform: 'uppercase' }}>
+						<Link underline="hover" href="#!">
+							Data Karyawan
+						</Link>
+						<Link underline="hover" href="#!">
+							Cuti Karyawan
+						</Link>
+						<Typography color="text.tertiary">Flow Proses Cuti</Typography>
+					</Breadcrumbs>
+				</PageHeader>
+			)}
 
 			<Stack spacing={2.5}>
 				<Stack

@@ -8,6 +8,7 @@ import logo from '@/assets/images/logo/png/Color_logotext2_nobg.png';
 
 import LoggedUser from './loggedUser';
 import SearchBar from './searchBar';
+import SiteSelector from './SiteSelector';
 
 function MainHeader() {
 	return (
@@ -45,6 +46,7 @@ function MainHeader() {
 						Hub Karyawan
 					</Typography>
 				</Stack>
+				<SiteSelector />
 				<SearchBar />
 				<LoggedUser />
 			</Stack>

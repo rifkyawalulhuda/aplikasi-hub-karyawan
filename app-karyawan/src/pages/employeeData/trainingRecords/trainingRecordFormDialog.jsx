@@ -73,6 +73,11 @@ function TrainingRecordFormDialog({ open, loading, initialValue, employeeOptions
 		name: 'participantEmployeeIds',
 	});
 
+	const watchedParticipantIds = useWatch({
+		control,
+		name: 'participantEmployeeIds',
+	});
+
 	const startDate = useWatch({
 		control,
 		name: 'startDate',
@@ -82,6 +87,17 @@ function TrainingRecordFormDialog({ open, loading, initialValue, employeeOptions
 		name: 'endDate',
 	});
 	const calculatedDayCount = calculateTrainingDays(startDate, endDate);
+
+	// Build a set of selected employee IDs to exclude from other dropdowns
+	const getFilteredOptions = (currentIndex) => {
+		const selectedIds = new Set(
+			(watchedParticipantIds || [])
+				.filter((_, idx) => idx !== currentIndex)
+				.map((id) => Number(id))
+				.filter((id) => Number.isInteger(id) && id > 0),
+		);
+		return employeeOptions.filter((option) => !selectedIds.has(option.id));
+	};
 
 	useEffect(() => {
 		reset(toDefaultValues(initialValue));
@@ -159,7 +175,7 @@ function TrainingRecordFormDialog({ open, loading, initialValue, employeeOptions
 													rules={{ required: 'Nama Karyawan wajib dipilih.' }}
 													render={({ field: participantField }) => (
 														<Autocomplete
-															options={employeeOptions}
+															options={getFilteredOptions(index)}
 															value={
 																employeeOptions.find(
 																	(option) =>

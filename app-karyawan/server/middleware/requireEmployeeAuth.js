@@ -15,6 +15,7 @@ async function requireEmployeeAuth(req, res, next) {
 			where: { id: Number(payload.sub) },
 			include: {
 				department: true,
+				site: true,
 				workLocation: true,
 				jobRole: true,
 				jobLevel: true,

@@ -17,6 +17,8 @@ function mapSession(record) {
 		employeeId: record.employeeId,
 		name: record.employee.fullName,
 		nik: record.employee.employeeNo,
+		siteId: record.siteId,
+		siteName: record.site?.name,
 	};
 }
 
@@ -44,6 +46,7 @@ router.post('/login', async (req, res, next) => {
 			},
 			include: {
 				employee: true,
+				site: true,
 			},
 		});
 

@@ -24,10 +24,11 @@ function toDefaultValues(initialValue) {
 		employeeNo: initialValue?.employeeNo || '',
 		password: '',
 		role: initialValue?.role || 'user',
+		siteId: initialValue?.siteId || '',
 	};
 }
 
-function AdminFormDialog({ open, loading, initialValue, employeeOptions, onClose, onSubmit }) {
+function AdminFormDialog({ open, loading, initialValue, employeeOptions, siteOptions, onClose, onSubmit }) {
 	const isEditMode = Boolean(initialValue);
 	const {
 		control,
@@ -41,6 +42,8 @@ function AdminFormDialog({ open, loading, initialValue, employeeOptions, onClose
 	});
 
 	const selectedEmployeeId = watch('employeeId');
+	const selectedRole = watch('role');
+	const showSiteField = selectedRole === 'admin' || selectedRole === 'user';
 	const selectedEmployee = employeeOptions.find((item) => item.id === Number(selectedEmployeeId)) || null;
 
 	useEffect(() => {
@@ -128,6 +131,26 @@ function AdminFormDialog({ open, loading, initialValue, employeeOptions, onClose
 							))}
 						</FormInput>
 					</Grid>
+					{showSiteField && (
+						<Grid item xs={12} md={6}>
+							<FormInput
+								name="siteId"
+								label="Site"
+								control={control}
+								errors={errors}
+								dirtyFields={dirtyFields}
+								rules={{ required: 'Site wajib dipilih untuk role yang dipilih.' }}
+								fullWidth
+								select
+							>
+								{(siteOptions || []).map((option) => (
+									<MenuItem key={option.id} value={option.id}>
+										{option.name}
+									</MenuItem>
+								))}
+							</FormInput>
+						</Grid>
+					)}
 				</Grid>
 			</DialogContent>
 			<DialogActions sx={{ px: 3, pb: 3 }}>

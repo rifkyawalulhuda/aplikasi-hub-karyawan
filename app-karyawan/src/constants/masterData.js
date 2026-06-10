@@ -77,10 +77,18 @@ const MASTER_DATA_PAGE_CONFIG = {
 				placeholder: 'Masukkan job level',
 				searchable: true,
 			},
+			{
+				name: 'approvalRank',
+				label: 'Approval Rank',
+				placeholder: 'Kosong = bukan approver',
+				type: 'number',
+				required: false,
+			},
 		],
 		tableColumns: [
 			{ id: 'id', label: 'NO' },
 			{ id: 'name', label: 'JOB LEVEL' },
+			{ id: 'approvalRank', label: 'APPROVAL RANK' },
 		],
 	},
 	masterUnits: {
@@ -264,7 +272,7 @@ const MASTER_DATA_PAGE_CONFIG = {
 		fieldLabel: 'Master Cuti Karyawan',
 		fieldPlaceholder: 'Masukkan jenis cuti',
 		description: 'Kelola daftar jenis cuti karyawan yang dipakai pada modul pengajuan cuti.',
-		searchPlaceholder: 'Jenis cuti, nomor...',
+		searchPlaceholder: 'Jenis cuti, leave code, nomor...',
 		itemNameField: 'leaveType',
 		fields: [
 			{
@@ -273,10 +281,19 @@ const MASTER_DATA_PAGE_CONFIG = {
 				placeholder: 'Masukkan jenis cuti',
 				searchable: true,
 			},
+			{
+				name: 'leaveCode',
+				label: 'Leave Code',
+				placeholder: 'Pilih kode cuti',
+				type: 'select',
+				options: ['C1', 'C2', 'C3', 'H1', 'H2', 'DP', 'S1', 'S2', 'SC', 'A', 'B'],
+				required: false,
+			},
 		],
 		tableColumns: [
 			{ id: 'id', label: 'NO' },
 			{ id: 'leaveType', label: 'JENIS CUTI' },
+			{ id: 'leaveCode', label: 'LEAVE CODE' },
 		],
 	},
 	masterHolidays: {

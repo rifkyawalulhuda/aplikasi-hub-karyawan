@@ -35,6 +35,7 @@ async function requireAdminAuth(req, res, next) {
 			id: admin.id,
 			role: admin.role,
 			employeeId: admin.employeeId,
+			siteId: admin.siteId ?? null,
 			employee: admin.employee,
 		};
 

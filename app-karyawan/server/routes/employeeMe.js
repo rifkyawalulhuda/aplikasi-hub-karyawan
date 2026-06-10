@@ -1691,7 +1691,11 @@ router.post('/leave-approvals/:id/approve', async (req, res, next) => {
 			const approval = await tx.employeeLeaveApproval.findUnique({
 				where: { id },
 				include: {
-					employeeLeave: true,
+					employeeLeave: {
+						include: {
+							employee: { select: { siteId: true } },
+						},
+					},
 				},
 			});
 
@@ -1701,6 +1705,12 @@ router.post('/leave-approvals/:id/approve', async (req, res, next) => {
 
 			if (approval.approverEmployeeId !== req.employee.id) {
 				throw Object.assign(new Error('Anda tidak memiliki akses untuk approval ini.'), {
+					statusCode: 403,
+				});
+			}
+
+			if (req.employee.siteId !== approval.employeeLeave.employee.siteId) {
+				throw Object.assign(new Error('Akses ditolak. Data tidak termasuk dalam site Anda.'), {
 					statusCode: 403,
 				});
 			}
@@ -1895,7 +1905,11 @@ router.post('/leave-approvals/:id/reject', async (req, res, next) => {
 			const approval = await tx.employeeLeaveApproval.findUnique({
 				where: { id },
 				include: {
-					employeeLeave: true,
+					employeeLeave: {
+						include: {
+							employee: { select: { siteId: true } },
+						},
+					},
 				},
 			});
 
@@ -1905,6 +1919,12 @@ router.post('/leave-approvals/:id/reject', async (req, res, next) => {
 
 			if (approval.approverEmployeeId !== req.employee.id) {
 				throw Object.assign(new Error('Anda tidak memiliki akses untuk approval ini.'), {
+					statusCode: 403,
+				});
+			}
+
+			if (req.employee.siteId !== approval.employeeLeave.employee.siteId) {
+				throw Object.assign(new Error('Akses ditolak. Data tidak termasuk dalam site Anda.'), {
 					statusCode: 403,
 				});
 			}

@@ -11,6 +11,7 @@ import { useEffect } from 'react';
 
 import StoreProvider from '@/store';
 import { AuthProvider } from '@/contexts/authContext';
+import { SiteProvider } from '@/contexts/siteContext';
 import { EmployeeAuthProvider } from '@/contexts/employeeAuthContext';
 
 import { Provider as SnackbarProvider } from '@/components/snackbar';
@@ -39,14 +40,16 @@ function App() {
 	return (
 		<StoreProvider>
 			<AuthProvider>
-				<EmployeeAuthProvider>
-					<MUITheme>
-						<SnackbarProvider>
-							<CustomizationLayout />
-							<Router />
-						</SnackbarProvider>
-					</MUITheme>
-				</EmployeeAuthProvider>
+				<SiteProvider>
+					<EmployeeAuthProvider>
+						<MUITheme>
+							<SnackbarProvider>
+								<CustomizationLayout />
+								<Router />
+							</SnackbarProvider>
+						</MUITheme>
+					</EmployeeAuthProvider>
+				</SiteProvider>
 			</AuthProvider>
 		</StoreProvider>
 	);

@@ -1,7 +1,10 @@
 import 'dotenv/config';
+import compression from 'compression';
 import cors from 'cors';
 import express from 'express';
+import helmet from 'helmet';
 import http from 'http';
+import rateLimit from 'express-rate-limit';
 
 import prisma from './lib/prisma.js';
 import authRouter from './routes/auth.js';
@@ -20,10 +23,15 @@ import unitLicenseCertificationsRouter from './routes/unitLicenseCertifications.
 import employeeMeRouter from './routes/employeeMe.js';
 import guidanceRecordsRouter from './routes/guidanceRecords.js';
 import groupShiftsRouter from './routes/groupShifts.js';
+import vendorsRouter from './routes/vendors.js';
 import employeesRouter from './routes/employees.js';
 import masterDataRouter from './routes/masterData.js';
 import warningLettersRouter from './routes/warningLetters.js';
 import requireAdminAuth from './middleware/requireAdminAuth.js';
+import requireSuperAdmin from './middleware/requireSuperAdmin.js';
+import siteApprovalConfigsRouter from './routes/siteApprovalConfigs.js';
+import sitesRouter from './routes/sites.js';
+import dashboardRouter from './routes/dashboard.js';
 
 const app = express();
 const port = Number(process.env.PORT || 4000);
@@ -106,12 +114,61 @@ app.use(
 		credentials: true,
 	}),
 );
-app.use(express.json());
+
+// Security headers
+app.use(
+	helmet({
+		contentSecurityPolicy: false,
+		crossOriginEmbedderPolicy: false,
+	}),
+);
+
+// Response compression
+app.use(compression());
+
+// JSON body size limit (prevent large payload DoS)
+app.use(express.json({ limit: '1mb' }));
+
+// Rate limiting for auth endpoints (prevent brute-force)
+const authRateLimiter = rateLimit({
+	windowMs: 15 * 60 * 1000, // 15 minutes
+	max: 20, // max 20 login attempts per IP per window
+	standardHeaders: true,
+	legacyHeaders: false,
+	message: { message: 'Terlalu banyak percobaan login. Coba lagi dalam 15 menit.' },
+});
+
+// General API rate limiter (prevent abuse)
+const apiRateLimiter = rateLimit({
+	windowMs: 1 * 60 * 1000, // 1 minute
+	max: 200, // max 200 requests per IP per minute
+	standardHeaders: true,
+	legacyHeaders: false,
+	message: { message: 'Terlalu banyak request. Coba lagi nanti.' },
+});
+
+app.use('/api', apiRateLimiter);
+
+// Request timeout (30 seconds)
+app.use((req, res, next) => {
+	req.setTimeout(30000);
+	res.setTimeout(30000);
+	next();
+});
 
 app.get('/api/health', async (req, res) => {
 	try {
 		await prisma.$queryRaw`SELECT 1`;
-		return res.json({ status: 'ok' });
+		const memUsage = process.memoryUsage();
+		return res.json({
+			status: 'ok',
+			uptime: Math.floor(process.uptime()),
+			memory: {
+				rss: Math.round(memUsage.rss / 1024 / 1024),
+				heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024),
+				heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024),
+			},
+		});
 	} catch (error) {
 		return res.status(500).json({
 			status: 'error',
@@ -120,16 +177,20 @@ app.get('/api/health', async (req, res) => {
 	}
 });
 
-app.use('/api/auth', authRouter);
-app.use('/api/employee-auth', employeeAuthRouter);
+app.use('/api/auth', authRateLimiter, authRouter);
+app.use('/api/employee-auth', authRateLimiter, employeeAuthRouter);
 app.use('/api/employee-me', employeeMeRouter);
 app.use('/api/global-search', requireAdminAuth, globalSearchRouter);
+app.use('/api/dashboard', requireAdminAuth, dashboardRouter);
 app.use('/api/notifications', requireAdminAuth, notificationsRouter);
 app.use('/api/admin/email-workflow-failures', requireAdminAuth, emailWorkflowFailuresRouter);
 app.use('/api/master/employees', requireAdminAuth, employeesRouter);
 app.use('/api/master/admins', requireAdminAuth, adminsRouter);
 app.use('/api/master/group-shifts', requireAdminAuth, groupShiftsRouter);
+app.use('/api/master/master-vendors', requireAdminAuth, vendorsRouter);
 app.use('/api/master/employee-documents', requireAdminAuth, employeeDocumentsRouter);
+app.use('/api/master/site-approval-configs', requireAdminAuth, siteApprovalConfigsRouter);
+app.use('/api/master/sites', requireAdminAuth, requireSuperAdmin, sitesRouter);
 app.use('/api/master', requireAdminAuth, masterDataRouter);
 app.use('/api/data-karyawan/guidance-records', requireAdminAuth, guidanceRecordsRouter);
 app.use('/api/data-karyawan/warning-letters', requireAdminAuth, warningLettersRouter);

@@ -109,12 +109,17 @@ function formatPrintShortDate(value) {
 	)}/${parsed.getFullYear()}`;
 }
 
-function getLeaveTypeCode(leaveType = '') {
+function getLeaveTypeCode(leaveType = '', leaveCode = '') {
+	// Prioritize leaveCode from database if available
+	if (leaveCode) {
+		return normalizeString(leaveCode).toUpperCase();
+	}
+	// Fallback to name-based matching
 	return LEAVE_TYPE_CHECKBOX_MAP[normalizeLeaveType(leaveType)] || '';
 }
 
-function buildCheckboxState(leaveType = '') {
-	const activeCode = getLeaveTypeCode(leaveType);
+function buildCheckboxState(leaveType = '', leaveCode = '') {
+	const activeCode = getLeaveTypeCode(leaveType, leaveCode);
 
 	return CHECKBOX_GROUPS.map((row) =>
 		row.map((item) => ({
@@ -152,7 +157,7 @@ function getLatestApprovedStage(approvals, revisionNo, stageTypes) {
 }
 
 function buildBalanceFields(record) {
-	const leaveTypeCode = getLeaveTypeCode(record.leaveType);
+	const leaveTypeCode = getLeaveTypeCode(record.leaveType, record.leaveCode);
 	const availableBalance = String(record.availableLeaveBalance ?? '');
 	const remainingBalance = String(record.remainingLeave ?? '');
 
@@ -174,8 +179,9 @@ function buildLeavePrintPayload(record) {
 		employeeSiteDiv: record.employeeSiteDiv || '',
 		employeeDepartmentName: record.employeeDepartmentName || '',
 		leaveType: record.leaveType || '',
-		leaveTypeCode: getLeaveTypeCode(record.leaveType),
-		checkboxRows: buildCheckboxState(record.leaveType),
+		leaveCode: record.leaveCode || '',
+		leaveTypeCode: getLeaveTypeCode(record.leaveType, record.leaveCode),
+		checkboxRows: buildCheckboxState(record.leaveType, record.leaveCode),
 		submissionDateLong: formatPrintLongDate(record.submissionDate),
 		submissionDateShort: formatPrintShortDate(record.submissionDate),
 		periodStartShort: formatPrintShortDate(record.periodStart),

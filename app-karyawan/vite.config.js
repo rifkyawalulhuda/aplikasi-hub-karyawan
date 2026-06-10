@@ -8,11 +8,12 @@ import { buildAllowedHosts } from './pwaHosts';
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
 	const env = loadEnv(mode, process.cwd(), '');
+	const isTest = mode === 'test' || process.env.VITEST;
 
 	return {
 		plugins: [
-			react(),
-			eslint(),
+			!isTest && react(),
+			!isTest && eslint(),
 			VitePWA({
 				registerType: 'autoUpdate',
 				includeAssets: ['pwa/icon-192.png', 'pwa/icon-512.png'],

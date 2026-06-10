@@ -99,7 +99,7 @@ function buildEmployeePortalProfile(employee) {
 		fullName: employee.fullName,
 		employmentType: employee.employmentType,
 		employmentTypeLabel: formatEmploymentTypeLabel(employee.employmentType),
-		siteDiv: employee.siteDiv,
+		siteDiv: employee.site?.name || null,
 		departmentId: employee.departmentId,
 		departmentName: employee.department.name,
 		workLocationId: employee.workLocationId,

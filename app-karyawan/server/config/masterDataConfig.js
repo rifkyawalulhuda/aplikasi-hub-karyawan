@@ -53,6 +53,15 @@ const MASTER_DATA_CONFIG = {
 				unique: true,
 				searchable: true,
 			},
+			{
+				name: 'approvalRank',
+				label: 'Approval Rank',
+				required: false,
+				type: 'number',
+				integer: true,
+				min: 1,
+				invalidMessage: 'Approval Rank harus berupa bilangan bulat positif atau kosong.',
+			},
 		],
 	},
 	'master-units': {
@@ -106,121 +115,8 @@ const MASTER_DATA_CONFIG = {
 			errorFilePrefix: 'master-unit-import-errors',
 		},
 	},
-	'master-vendors': {
-		label: 'Master Vendor',
-		model: 'masterVendor',
-		path: 'master-vendors',
-		fields: [
-			{
-				name: 'vendorName',
-				label: 'Nama Vendor',
-				required: true,
-				searchable: true,
-			},
-			{
-				name: 'vendorType',
-				label: 'Jenis Vendor',
-				required: true,
-				searchable: true,
-				options: ['Consumable', 'Building', 'Trucking', 'Jasa', 'Warehousing', 'Disposable'],
-				allowCustomOption: true,
-				customOptionLabel: 'Lainnya',
-			},
-			{
-				name: 'address',
-				label: 'Alamat',
-				required: true,
-				searchable: true,
-			},
-			{
-				name: 'picName',
-				label: 'Nama PIC',
-				required: true,
-				searchable: true,
-			},
-			{
-				name: 'phoneNumber',
-				label: 'Nomor Telfon',
-				importHeader: 'Nomor Telepon',
-				required: false,
-				allowEmptyString: true,
-				defaultValue: '',
-				importDefaultValue: '',
-				invalidMessage: 'Nomor Telepon tidak valid.',
-				searchable: true,
-			},
-			{
-				name: 'email',
-				label: 'Email',
-				required: false,
-				allowEmptyString: true,
-				defaultValue: '',
-				importDefaultValue: '',
-				invalidMessage: 'Email tidak valid.',
-				searchable: true,
-			},
-			{
-				name: 'detailLainnya',
-				label: 'Detail Lainnya',
-				required: true,
-				allowEmptyString: true,
-				importDefaultValue: '',
-				searchable: true,
-			},
-		],
-		validatePayload: async ({ payload, currentId, delegate, helpers }) => {
-			const normalizedVendorName = helpers.normalizeString(payload.vendorName || '');
-			const normalizedPhoneNumber = helpers.normalizeString(payload.phoneNumber || '');
-			const normalizedEmail = helpers.normalizeString(payload.email || '');
-
-			if (!normalizedVendorName) {
-				return;
-			}
-
-			if (normalizedPhoneNumber && !/^[0-9+\-() ]{6,20}$/.test(normalizedPhoneNumber)) {
-				throw Object.assign(new Error('Nomor Telepon harus berisi 6-20 karakter angka yang valid.'), {
-					statusCode: 400,
-				});
-			}
-
-			if (normalizedEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/i.test(normalizedEmail)) {
-				throw Object.assign(new Error('Email harus menggunakan format alamat email yang valid.'), {
-					statusCode: 400,
-				});
-			}
-
-			const duplicate = await delegate.findFirst({
-				where: {
-					vendorName: {
-						equals: normalizedVendorName,
-						mode: 'insensitive',
-					},
-					...(currentId ? { NOT: { id: currentId } } : {}),
-				},
-			});
-
-			if (duplicate) {
-				throw Object.assign(new Error(`Nama Vendor "${normalizedVendorName}" sudah ada.`), {
-					statusCode: 409,
-				});
-			}
-		},
-		import: {
-			worksheetName: 'Data Import',
-			dataStartRow: 2,
-			headers: ['Nama Vendor', 'Jenis Vendor', 'Alamat', 'Nama PIC', 'Nomor Telepon', 'Email', 'Detail Lainnya'],
-			instructionRowValues: {
-				'Nama Vendor': 'Contoh: PT. BSP',
-				'Jenis Vendor': 'Pilih dari dropdown atau isi manual untuk jenis vendor custom, contoh: Trucking',
-				Alamat: 'Contoh: BADAMI',
-				'Nama PIC': 'Contoh: Udin',
-				'Nomor Telepon': 'Opsional, contoh: 088989899999',
-				Email: 'Opsional, contoh: vendor@example.com',
-				'Detail Lainnya': 'Opsional, isi keterangan tambahan vendor bila ada',
-			},
-			errorFilePrefix: 'master-vendor-import-errors',
-		},
-	},
+	// NOTE: 'master-vendors' has been moved to a dedicated route file (server/routes/vendors.js)
+	// with site isolation support. Do not re-add here.
 	'master-dok-pkb': {
 		label: 'Master Dok PKB',
 		model: 'masterDokPkb',
@@ -263,6 +159,13 @@ const MASTER_DATA_CONFIG = {
 				label: 'Jenis Cuti',
 				required: true,
 				searchable: true,
+			},
+			{
+				name: 'leaveCode',
+				label: 'Leave Code',
+				required: false,
+				searchable: true,
+				options: ['C1', 'C2', 'C3', 'H1', 'H2', 'DP', 'S1', 'S2', 'SC', 'A', 'B'],
 			},
 		],
 	},

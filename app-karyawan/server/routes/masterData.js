@@ -8,8 +8,22 @@ import multer from 'multer';
 
 import prisma from '../lib/prisma.js';
 import MASTER_DATA_CONFIG from '../config/masterDataConfig.js';
+import requireSiteIsolation from '../middleware/requireSiteIsolation.js';
 
 const router = Router();
+
+const PER_SITE_RESOURCES = new Set(['master-units', 'master-vendors']);
+
+function isPerSiteResource(resource) {
+	return PER_SITE_RESOURCES.has(resource);
+}
+
+// Dynamic site isolation middleware: applies per-site filtering for per-site resources,
+// shared (no filtering) for all other resources.
+router.use('/:resource', (req, res, next) => {
+	const modelType = isPerSiteResource(req.params.resource) ? 'per-site' : 'shared';
+	return requireSiteIsolation({ modelType })(req, res, next);
+});
 const upload = multer({
 	storage: multer.memoryStorage(),
 	limits: {
@@ -364,6 +378,24 @@ router.post(
 		const importedRows = [];
 		const errorRows = [];
 
+		// Determine siteId for per-site resource imports
+		let importSiteId = null;
+		if (isPerSiteResource(req.params.resource)) {
+			if (req.isSuperAdmin) {
+				const siteId = req.body?.siteId || req.query?.siteId;
+				if (!siteId) {
+					return res.status(400).json({ message: 'siteId wajib diisi.' });
+				}
+				const site = await prisma.masterSite.findUnique({ where: { id: Number(siteId) } });
+				if (!site) {
+					return res.status(400).json({ message: 'Site tidak valid.' });
+				}
+				importSiteId = site.id;
+			} else {
+				importSiteId = req.admin.siteId;
+			}
+		}
+
 		for (let rowNumber = config.import.dataStartRow || 2; rowNumber <= worksheet.rowCount; rowNumber += 1) {
 			const row = worksheet.getRow(rowNumber);
 			const raw = worksheetRowToPayload(row, headerMap);
@@ -381,6 +413,11 @@ router.post(
 					return accumulator;
 				}, {});
 				const data = await buildPayload(config, body, null, { source: 'import' });
+
+				if (isPerSiteResource(req.params.resource)) {
+					data.siteId = importSiteId;
+				}
+
 				const item = await delegate.create({ data });
 
 				importedRows.push(item);
@@ -540,7 +577,10 @@ router.get(
 			return res.status(404).json({ message: 'Master data resource not found.' });
 		}
 
+		const where = isPerSiteResource(req.params.resource) ? { ...req.siteFilter } : {};
+
 		const items = await getDelegate(config.model).findMany({
+			where,
 			orderBy: {
 				id: 'asc',
 			},
@@ -559,6 +599,22 @@ router.post(
 			return res.status(404).json({ message: 'Master data resource not found.' });
 		}
 		const data = await buildPayload(config, req.body);
+
+		if (isPerSiteResource(req.params.resource)) {
+			if (req.isSuperAdmin) {
+				const { siteId } = req.body;
+				if (!siteId) {
+					return res.status(400).json({ message: 'siteId wajib diisi.' });
+				}
+				const site = await prisma.masterSite.findUnique({ where: { id: Number(siteId) } });
+				if (!site) {
+					return res.status(400).json({ message: 'Site tidak valid.' });
+				}
+				data.siteId = site.id;
+			} else {
+				data.siteId = req.admin.siteId;
+			}
+		}
 
 		const item = await getDelegate(config.model).create({
 			data,
@@ -591,7 +647,21 @@ router.put(
 		if (!existing) {
 			return res.status(404).json({ message: `${config.label} tidak ditemukan.` });
 		}
+
+		if (isPerSiteResource(req.params.resource)) {
+			if (!req.isSuperAdmin && existing.siteId !== req.admin.siteId) {
+				return res.status(403).json({
+					message: 'Akses ditolak. Data tidak termasuk dalam site Anda.',
+				});
+			}
+		}
+
 		const data = await buildPayload(config, req.body, id);
+
+		// Preserve original siteId for per-site resources (strip from payload)
+		if (isPerSiteResource(req.params.resource)) {
+			delete data.siteId;
+		}
 
 		const item = await getDelegate(config.model).update({
 			where: {
@@ -626,6 +696,14 @@ router.delete(
 
 		if (!existing) {
 			return res.status(404).json({ message: `${config.label} tidak ditemukan.` });
+		}
+
+		if (isPerSiteResource(req.params.resource)) {
+			if (!req.isSuperAdmin && existing.siteId !== req.admin.siteId) {
+				return res.status(403).json({
+					message: 'Akses ditolak. Data tidak termasuk dalam site Anda.',
+				});
+			}
 		}
 
 		await getDelegate(config.model).delete({
