@@ -48,3 +48,13 @@ Ubah CORS_ALLOWED_ORIGINS di .env (dan kalau perlu .env.example) dari :5173 ke p
 
 Fallback hardcoded di backend
 Jika env kosong, backend pakai default 5173 di server/index.js dan server/lib/emailService.js.
+
+
+Seed Login :
+
+NIK	: CLC000
+Password : masteradmin123
+Role : masteradmin
+
+Admin login: NIK CLC001 | Password admin123
+Employee login: NIK CLC002 | Password user123

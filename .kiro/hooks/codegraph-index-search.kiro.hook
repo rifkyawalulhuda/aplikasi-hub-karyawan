@@ -1,0 +1,16 @@
+{
+  "enabled": true,
+  "name": "Codegraph Index Search",
+  "description": "Sebelum membaca file, gunakan codegraph MCP (get_file_structure atau query_codebase) untuk mencari file index.js/index.jsx terlebih dahulu agar lebih cepat dan hemat token.",
+  "version": "1",
+  "when": {
+    "type": "preToolUse",
+    "toolTypes": [
+      "read"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Sebelum membaca file secara langsung, pertimbangkan untuk menggunakan tool codegraph (mcp_codegraph_get_file_structure, mcp_codegraph_query_codebase, atau mcp_codegraph_analyze_module_structure) untuk mencari dan memahami struktur file index.js/index.jsx terlebih dahulu. Ini lebih hemat token dibanding membaca seluruh file. Gunakan codegraph untuk discovery, lalu baca file spesifik yang relevan saja."
+  }
+}
