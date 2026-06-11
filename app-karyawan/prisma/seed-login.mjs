@@ -6,6 +6,12 @@ import { hashPassword } from '../server/lib/password.js';
 const prisma = new PrismaClient();
 
 async function ensureMasterData() {
+	const site = await prisma.masterSite.upsert({
+		where: { name: 'CLC' },
+		update: {},
+		create: { name: 'CLC' },
+	});
+
 	const workLocation = await prisma.workLocation.upsert({
 		where: { name: 'Site CLC' },
 		update: {},
@@ -30,7 +36,7 @@ async function ensureMasterData() {
 		create: { name: 'Staff' },
 	});
 
-	return { workLocation, department, jobRole, jobLevel };
+	return { site, workLocation, department, jobRole, jobLevel };
 }
 
 async function upsertEmployee({ employeeNo, password, fullName, email }, refs) {
@@ -42,28 +48,24 @@ async function upsertEmployee({ employeeNo, password, fullName, email }, refs) {
 			password: passwordHash,
 			fullName,
 			email,
-			departmentId: refs.department.id,
-			workLocationId: refs.workLocation.id,
-			jobRoleId: refs.jobRole.id,
-			jobLevelId: refs.jobLevel.id,
 		},
 		create: {
 			employeeNo,
 			password: passwordHash,
 			fullName,
 			employmentType: 'PERMANENT',
-			siteDiv: 'CLC',
-			departmentId: refs.department.id,
 			birthDate: new Date('1995-01-10T00:00:00.000Z'),
 			gender: 'MALE',
-			workLocationId: refs.workLocation.id,
-			jobRoleId: refs.jobRole.id,
-			jobLevelId: refs.jobLevel.id,
 			educationLevel: 'S1',
 			grade: 'RANK_3',
 			joinDate: new Date('2024-01-01T00:00:00.000Z'),
 			phoneNumber: '081234567890',
 			email,
+			site: { connect: { id: refs.site.id } },
+			department: { connect: { id: refs.department.id } },
+			workLocation: { connect: { id: refs.workLocation.id } },
+			jobRole: { connect: { id: refs.jobRole.id } },
+			jobLevel: { connect: { id: refs.jobLevel.id } },
 		},
 	});
 }
@@ -97,15 +99,41 @@ async function main() {
 		update: {
 			password: adminPasswordHash,
 			role: 'admin',
+			siteId: refs.site.id,
 		},
 		create: {
 			employeeId: adminEmployee.id,
 			password: adminPasswordHash,
 			role: 'admin',
+			siteId: refs.site.id,
+		},
+	});
+
+	const masterAdminEmployee = await upsertEmployee(
+		{
+			employeeNo: 'CLC000',
+			password: 'masteradmin123',
+			fullName: 'Master Admin',
+			email: 'master.admin@local.test',
+		},
+		refs,
+	);
+
+	await prisma.masterAdmin.upsert({
+		where: { employeeId: masterAdminEmployee.id },
+		update: {
+			password: await hashPassword('masteradmin123'),
+			role: 'super_admin',
+		},
+		create: {
+			employeeId: masterAdminEmployee.id,
+			password: await hashPassword('masteradmin123'),
+			role: 'super_admin',
 		},
 	});
 
 	console.log('Seed login berhasil dibuat.');
+	console.log('Master Admin login: NIK CLC000 | Password masteradmin123');
 	console.log('Admin login: NIK CLC001 | Password admin123');
 	console.log('Employee login: NIK CLC002 | Password user123');
 }

@@ -25,15 +25,25 @@
       "autoApprove": []
     },
     "codegraph": {
-      "command": "codegraph",
+      "command": "codegraph-mcp",
       "args": [
         "serve",
-        "--mcp"
+        "--repo",
+        "E:\\Github\\aplikasi-hub-karyawan\\app-karyawan"
       ],
       "env": {},
       "disabled": false,
       "autoApprove": [
-        "codegraph_context"
+        "query_codebase",
+        "find_dependencies",
+        "find_callers",
+        "find_callees",
+        "get_code_snippet",
+        "get_file_structure",
+        "analyze_module_structure",
+        "execute_shell_command",
+        "read_file_content",
+        "global_search"
       ]
     }
   }
