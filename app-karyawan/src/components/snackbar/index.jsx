@@ -43,6 +43,7 @@ export function Provider({ children }) {
 	return (
 		<SnackbarProvider
 			maxSnack={3}
+			preventDuplicate
 			anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
 			Components={{
 				muiSnackbar: MuiSnackbarVariant,

@@ -64,9 +64,11 @@ function MasterDataKaryawanCombinedPage() {
 			<Box sx={{ display: activeTab === 0 ? 'block' : 'none' }}>
 				<EmployeesPage hideHeader />
 			</Box>
-			<Box sx={{ display: activeTab === 1 ? 'block' : 'none' }}>
-				<SitesPage hideHeader />
-			</Box>
+			{activeTab === 1 && (
+				<Box>
+					<SitesPage hideHeader />
+				</Box>
+			)}
 			<Box sx={{ display: activeTab === 2 ? 'block' : 'none' }}>
 				<DepartmentsPage hideHeader />
 			</Box>
