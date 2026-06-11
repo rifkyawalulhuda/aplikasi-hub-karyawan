@@ -251,10 +251,14 @@ function mapEmployeeTrainingRecord(record, selfEmployee = null) {
 		displayLabel: item.employee ? formatEmployeeLabel(item.employee) : item.participantName || '',
 		isSelf: selfEmployeeId
 			? item.employeeId === selfEmployeeId ||
-				(Boolean(selfEmployeeName) &&
-					normalizeString(item.participantName || '').toLowerCase().includes(selfEmployeeName)) ||
-				(Boolean(selfEmployeeNo) &&
-					normalizeString(item.participantName || '').toLowerCase().includes(selfEmployeeNo))
+			  (Boolean(selfEmployeeName) &&
+					normalizeString(item.participantName || '')
+						.toLowerCase()
+						.includes(selfEmployeeName)) ||
+			  (Boolean(selfEmployeeNo) &&
+					normalizeString(item.participantName || '')
+						.toLowerCase()
+						.includes(selfEmployeeNo))
 			: false,
 	}));
 	const participantNames = participants.map((item) => item.displayLabel).filter(Boolean);

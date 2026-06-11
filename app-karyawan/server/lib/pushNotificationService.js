@@ -138,7 +138,9 @@ async function sendEmployeePushNotification(prisma, { employeeIds = [], title, b
 		};
 	}
 
-	const uniqueEmployeeIds = [...new Set(employeeIds.map((value) => Number(value)).filter((value) => Number.isInteger(value)))];
+	const uniqueEmployeeIds = [
+		...new Set(employeeIds.map((value) => Number(value)).filter((value) => Number.isInteger(value))),
+	];
 
 	if (!uniqueEmployeeIds.length) {
 		return {

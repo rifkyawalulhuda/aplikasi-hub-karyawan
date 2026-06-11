@@ -17,7 +17,15 @@ const upload = multer({
 	},
 });
 const ERROR_REPORT_DIR = path.resolve(process.cwd(), 'tmp', 'import-results');
-const IMPORT_HEADERS = ['Nama Vendor', 'Jenis Vendor', 'Alamat', 'Nama PIC', 'Nomor Telepon', 'Email', 'Detail Lainnya'];
+const IMPORT_HEADERS = [
+	'Nama Vendor',
+	'Jenis Vendor',
+	'Alamat',
+	'Nama PIC',
+	'Nomor Telepon',
+	'Email',
+	'Detail Lainnya',
+];
 const VENDOR_TYPE_OPTIONS = ['Consumable', 'Building', 'Trucking', 'Jasa', 'Warehousing', 'Disposable'];
 
 // Apply site isolation middleware to all routes
@@ -248,9 +256,7 @@ router.post(
 				raw[header] = typeof cellValue === 'object' && cellValue?.text ? cellValue.text : cellValue;
 			});
 
-			const isEmpty = IMPORT_HEADERS.every(
-				(header) => !normalizeString(raw[header] || ''),
-			);
+			const isEmpty = IMPORT_HEADERS.every((header) => !normalizeString(raw[header] || ''));
 
 			if (isEmpty) {
 				continue;
@@ -265,10 +271,10 @@ router.post(
 				const body = {
 					vendorName: raw['Nama Vendor'],
 					vendorType: raw['Jenis Vendor'],
-					address: raw['Alamat'],
+					address: raw.Alamat,
 					picName: raw['Nama PIC'],
 					phoneNumber: raw['Nomor Telepon'],
-					email: raw['Email'],
+					email: raw.Email,
 					detailLainnya: raw['Detail Lainnya'],
 				};
 				const data = await validatePayload(body);
@@ -286,7 +292,8 @@ router.post(
 
 		if (importedRows.length === 0 && errorRows.length === 0) {
 			return res.status(400).json({
-				message: 'Tidak ada data yang terbaca dari file import. Isi data mulai dari baris setelah header template.',
+				message:
+					'Tidak ada data yang terbaca dari file import. Isi data mulai dari baris setelah header template.',
 			});
 		}
 
@@ -385,10 +392,10 @@ async function createErrorReport(rows) {
 		worksheet.addRow([
 			row.raw['Nama Vendor'] || '',
 			row.raw['Jenis Vendor'] || '',
-			row.raw['Alamat'] || '',
+			row.raw.Alamat || '',
 			row.raw['Nama PIC'] || '',
 			row.raw['Nomor Telepon'] || '',
-			row.raw['Email'] || '',
+			row.raw.Email || '',
 			row.raw['Detail Lainnya'] || '',
 			row.error,
 		]);

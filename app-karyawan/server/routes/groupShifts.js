@@ -378,23 +378,13 @@ async function createErrorReport(rows) {
 	worksheet.addRow([...IMPORT_HEADERS, 'Error Message']);
 
 	rows.forEach((row) => {
-		worksheet.addRow([
-			row.raw['Nama Group Shift'] || '',
-			row.raw.Foreman || '',
-			row.raw.Karyawan || '',
-			row.error,
-		]);
+		worksheet.addRow([row.raw['Nama Group Shift'] || '', row.raw.Foreman || '', row.raw.Karyawan || '', row.error]);
 	});
 
 	const headerRow = worksheet.getRow(1);
 	headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
 	headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFB71C1C' } };
-	worksheet.columns = [
-		{ width: 28 },
-		{ width: 42 },
-		{ width: 54 },
-		{ width: 48 },
-	];
+	worksheet.columns = [{ width: 28 }, { width: 42 }, { width: 54 }, { width: 48 }];
 
 	const fileName = `master-group-shift-import-errors-${randomUUID()}.xlsx`;
 	const filePath = path.join(ERROR_REPORT_DIR, fileName);

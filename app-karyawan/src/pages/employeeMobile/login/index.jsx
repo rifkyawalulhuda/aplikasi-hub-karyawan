@@ -88,7 +88,7 @@ function EmployeeLoginPage() {
 			enqueueSnackbar(`Selamat datang, ${response.user.name}.`, { variant: 'success' });
 			navigate(redirectTo, { replace: true });
 		} catch (error) {
-			enqueueSnackbar(error.message, { variant: 'error' });
+			enqueueSnackbar(error.message || 'Terjadi kesalahan. Silakan coba lagi.', { variant: 'error' });
 		} finally {
 			setSubmitting(false);
 		}
@@ -122,13 +122,13 @@ function EmployeeLoginPage() {
 				border: (theme) => `1px solid ${theme.palette.employeeSurface.borderSoft}`,
 				backgroundColor: (theme) => theme.palette.employeeSurface.card,
 				boxShadow: (theme) => theme.palette.employeeSurface.shadowMedium,
-				backdropFilter: 'blur(16px)',
 			}}
 		>
+			{/* Header band */}
 			<Box
 				sx={{
 					position: 'relative',
-					p: 2.5,
+					p: 3,
 					color: '#FFFFFF',
 					background: 'linear-gradient(160deg, #0B2746 0%, #123C6C 54%, #2F74BC 100%)',
 					'&::after': {
@@ -141,63 +141,54 @@ function EmployeeLoginPage() {
 					},
 				}}
 			>
-				<Stack spacing={1.5} alignItems="center" sx={{ position: 'relative', zIndex: 1, textAlign: 'center' }}>
-					<Box
+				<Stack spacing={1} alignItems="center" sx={{ position: 'relative', zIndex: 1, textAlign: 'center' }}>
+					<Typography
+						variant="overline"
 						sx={{
-							display: 'flex',
-							flexDirection: 'column',
-							gap: 0.7,
-							alignItems: 'center',
-							width: '100%',
+							color: 'rgba(255,255,255,0.72)',
+							letterSpacing: '0.16em',
+							fontWeight: 800,
 						}}
 					>
-						<Typography
-							variant="body2"
-							sx={{
-								color: 'rgba(255,255,255,0.72)',
-								letterSpacing: '0.16em',
-								textTransform: 'uppercase',
-								fontWeight: 800,
-								fontSize: '0.78rem',
-							}}
-						>
-							Sankyu
-						</Typography>
-						<Typography
-							variant="subtitle1"
-							sx={{
-								color: '#FFFFFF',
-								fontWeight: 800,
-								lineHeight: 1.1,
-								fontSize: '1.18rem',
-								letterSpacing: '-0.01em',
-							}}
-						>
-							Portal Karyawan
-						</Typography>
-					</Box>
+						SANKYU
+					</Typography>
+					<Typography
+						variant="subtitle1"
+						sx={{
+							color: '#FFFFFF',
+							fontWeight: 800,
+							lineHeight: 1.1,
+							fontSize: '1.18rem',
+							letterSpacing: '-0.01em',
+						}}
+					>
+						Portal Karyawan
+					</Typography>
 				</Stack>
 			</Box>
 
-			<Box component="form" onSubmit={handleSubmit} sx={{ p: 2.5 }}>
-				<Stack spacing={2.2}>
-					<Box>
+			{/* Form body */}
+			<Box component="form" onSubmit={handleSubmit} sx={{ p: 3 }}>
+				<Stack spacing={3}>
+					{/* Intro block */}
+					<Stack spacing={1}>
 						<Typography
 							variant="overline"
 							sx={{ color: 'primary.main', letterSpacing: '0.12em', fontWeight: 800 }}
 						>
 							Login Karyawan
 						</Typography>
-						<Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 700, mt: 0.5 }}>
+						<Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 700 }}>
 							Masuk dengan NIK
 						</Typography>
-						<Typography variant="body2" color="text.secondary" sx={{ mt: 0.75, lineHeight: 1.55 }}>
+						<Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.55, fontSize: '1rem' }}>
 							Gunakan NIK dan password yang sudah diberikan oleh Admin. Jika lupa, hubungi Admin untuk
 							reset password.
 						</Typography>
-					</Box>
+					</Stack>
 
-					<Stack spacing={1.5}>
+					{/* Fields stack */}
+					<Stack spacing={2}>
 						<TextField
 							label="NIK"
 							name="nik"
@@ -214,14 +205,19 @@ function EmployeeLoginPage() {
 									</InputAdornment>
 								),
 							}}
+							InputLabelProps={{
+								sx: { fontSize: '1rem' },
+							}}
 							sx={{
 								'& .MuiOutlinedInput-root': {
-									borderRadius: 3,
 									backgroundColor: (theme) =>
 										alpha(
 											theme.palette.background.paper,
 											theme.palette.mode === 'dark' ? 0.4 : 0.92,
 										),
+								},
+								'& .MuiOutlinedInput-input': {
+									fontSize: '1rem',
 								},
 							}}
 						/>
@@ -241,49 +237,68 @@ function EmployeeLoginPage() {
 									</InputAdornment>
 								),
 							}}
+							InputLabelProps={{
+								sx: { fontSize: '1rem' },
+							}}
 							sx={{
 								'& .MuiOutlinedInput-root': {
-									borderRadius: 3,
 									backgroundColor: (theme) =>
 										alpha(
 											theme.palette.background.paper,
 											theme.palette.mode === 'dark' ? 0.4 : 0.92,
 										),
 								},
+								'& .MuiOutlinedInput-input': {
+									fontSize: '1rem',
+								},
 							}}
 						/>
 					</Stack>
 
-					<FormControlLabel
-						control={
-							<Checkbox
-								size="small"
-								checked={showPassword}
-								onChange={(event) => setShowPassword(event.target.checked)}
-							/>
-						}
-						label="Tampilkan password"
-						sx={{ ml: -0.5 }}
-					/>
+					{/* Checkbox + CTA group */}
+					<Stack spacing={2}>
+						<FormControlLabel
+							control={
+								<Checkbox
+									size="small"
+									checked={showPassword}
+									onChange={(event) => setShowPassword(event.target.checked)}
+								/>
+							}
+							label="Tampilkan password"
+							sx={{
+								minHeight: 44,
+								ml: -0.5,
+								'& .MuiFormControlLabel-label': {
+									fontSize: '0.875rem',
+								},
+							}}
+						/>
 
-					<Button
-						type="submit"
-						variant="contained"
-						disabled={submitting}
-						endIcon={submitting ? <CircularProgress size={18} color="inherit" /> : <LoginRoundedIcon />}
-						sx={{
-							minHeight: 50,
-							borderRadius: 3,
-							boxShadow: 'none',
-							background: (theme) =>
-								`linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.main} 100%)`,
-						}}
-					>
-						{submitting ? 'Memproses...' : 'Masuk'}
-					</Button>
+						<Button
+							type="submit"
+							variant="contained"
+							disabled={submitting}
+							endIcon={submitting ? <CircularProgress size={18} color="inherit" /> : <LoginRoundedIcon />}
+							sx={{
+								minHeight: 48,
+								boxShadow: 'none',
+								background: (theme) =>
+									`linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.main} 100%)`,
+								'&.Mui-focusVisible': {
+									outline: '2px solid',
+									outlineColor: 'primary.main',
+									outlineOffset: '2px',
+								},
+							}}
+						>
+							{submitting ? 'Memproses...' : 'Masuk'}
+						</Button>
+					</Stack>
 
+					{/* Install section */}
 					{!isStandalone ? (
-						<Box sx={{ display: 'grid', gap: 1.25 }}>
+						<Stack spacing={2}>
 							<Divider sx={{ borderColor: (theme) => alpha(theme.palette.primary.main, 0.12) }} />
 							<Button
 								type="button"
@@ -299,7 +314,6 @@ function EmployeeLoginPage() {
 								}
 								sx={{
 									minHeight: 44,
-									borderRadius: 3,
 									borderColor: (theme) => alpha(theme.palette.primary.main, 0.3),
 									color: 'primary.main',
 									bgcolor: (theme) =>
@@ -315,7 +329,6 @@ function EmployeeLoginPage() {
 									variant="outlined"
 									sx={{
 										alignItems: 'center',
-										borderRadius: 3,
 										borderColor: (theme) =>
 											alpha(
 												theme.palette.primary.main,
@@ -334,7 +347,7 @@ function EmployeeLoginPage() {
 									</Typography>
 								</Alert>
 							) : null}
-						</Box>
+						</Stack>
 					) : null}
 				</Stack>
 			</Box>

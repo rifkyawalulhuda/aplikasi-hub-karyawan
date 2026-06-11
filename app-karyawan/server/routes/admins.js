@@ -56,7 +56,9 @@ async function validatePayload(body, currentId = null) {
 	}
 
 	if (!ALLOWED_ROLES.includes(role)) {
-		throw Object.assign(new Error('Role tidak valid. Hanya super_admin, admin, atau user yang diperbolehkan.'), { statusCode: 400 });
+		throw Object.assign(new Error('Role tidak valid. Hanya super_admin, admin, atau user yang diperbolehkan.'), {
+			statusCode: 400,
+		});
 	}
 
 	// For admin or user roles, siteId is required

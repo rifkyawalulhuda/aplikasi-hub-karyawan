@@ -26,9 +26,7 @@ async function requireAdminAuth(req, res, next) {
 		const tokenVersion = typeof payload.tokenVersion === 'number' ? payload.tokenVersion : 0;
 
 		if (tokenVersion !== expectedTokenVersion) {
-			return res
-				.status(401)
-				.json({ message: 'Sesi sudah tidak berlaku. Silakan login kembali.' });
+			return res.status(401).json({ message: 'Sesi sudah tidak berlaku. Silakan login kembali.' });
 		}
 
 		req.admin = {
