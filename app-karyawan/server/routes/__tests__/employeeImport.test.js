@@ -44,16 +44,14 @@ import router from '../employees.js';
 // withAsync wraps handlers as: (req, res, next) => { Promise.resolve(handler(req, res, next)).catch(next) }
 // It does NOT return the promise. We detect completion by patching res.json before calling.
 function getRouteHandler(method, path) {
-	const layer = router.stack.find(
-		(l) => l.route && l.route.path === path && l.route.methods[method],
-	);
+	const layer = router.stack.find((l) => l.route && l.route.path === path && l.route.methods[method]);
 	if (!layer) throw new Error(`Route ${method.toUpperCase()} ${path} not found`);
 	const handlers = layer.route.stack.map((s) => s.handle);
 	// The last handler is the withAsync wrapper. We call it and catch errors via next.
 	const wrappedHandler = handlers[handlers.length - 1];
 
-	return (req, res) => {
-		return new Promise((resolve, reject) => {
+	return (req, res) =>
+		new Promise((resolve, reject) => {
 			// Patch res.json BEFORE calling handler so it resolves the promise
 			const originalJson = res.json;
 			res.json = function patchedJson(data) {
@@ -70,7 +68,6 @@ function getRouteHandler(method, path) {
 
 			wrappedHandler(req, res, next);
 		});
-	};
 }
 
 function createMockRes() {

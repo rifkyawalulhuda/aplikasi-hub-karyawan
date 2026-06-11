@@ -1,9 +1,6 @@
 import nodemailer from 'nodemailer';
 
-import {
-	recordEmailWorkflowFailure,
-	sanitizeEmailWorkflowErrorMessage,
-} from './emailWorkflowFailureLog.js';
+import { recordEmailWorkflowFailure, sanitizeEmailWorkflowErrorMessage } from './emailWorkflowFailureLog.js';
 
 let cachedTransporter = null;
 

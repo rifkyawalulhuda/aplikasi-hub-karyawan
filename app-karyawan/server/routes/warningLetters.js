@@ -210,14 +210,13 @@ async function validatePayload(payload, currentId) {
 		shouldRequireArticle(category) ? getMasterDokPkbOrThrow(masterDokPkbId) : Promise.resolve(null),
 	]);
 
-	const warningEscalationState =
-		shouldApplyWarningLevelRule(category)
-			? await getWarningLetterEscalationStateForEmployee(prisma, {
-					employeeId: employee.id,
-					referenceDate: letterDate,
-					excludeId: currentId,
-			  })
-			: null;
+	const warningEscalationState = shouldApplyWarningLevelRule(category)
+		? await getWarningLetterEscalationStateForEmployee(prisma, {
+				employeeId: employee.id,
+				referenceDate: letterDate,
+				excludeId: currentId,
+		  })
+		: null;
 
 	if (!NORMALIZED_SUPERIOR_JOB_LEVELS.includes(normalizeString(superiorEmployee.jobLevel?.name).toLowerCase())) {
 		throw Object.assign(new Error(`Superior harus memiliki Job Level ${SUPERIOR_JOB_LEVEL}.`), { statusCode: 400 });
@@ -230,10 +229,7 @@ async function validatePayload(payload, currentId) {
 		});
 
 		if (!validationResult.ok) {
-			throw Object.assign(
-				new Error(validationResult.message),
-				{ statusCode: 400 },
-			);
+			throw Object.assign(new Error(validationResult.message), { statusCode: 400 });
 		}
 	}
 

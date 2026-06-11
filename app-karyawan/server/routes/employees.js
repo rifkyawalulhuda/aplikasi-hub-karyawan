@@ -865,7 +865,8 @@ router.post(
 			const fileName = await createErrorReport(errorRows);
 
 			return res.status(400).json({
-				message: 'Import gagal. Semua data ditolak karena terdapat baris yang tidak valid. Perbaiki error lalu upload ulang.',
+				message:
+					'Import gagal. Semua data ditolak karena terdapat baris yang tidak valid. Perbaiki error lalu upload ulang.',
 				importedCount: 0,
 				failedCount: errorRows.length,
 				totalRows: validatedRows.length + errorRows.length,
@@ -931,7 +932,14 @@ router.get(
 
 		const employee = await prisma.employee.findUnique({
 			where: { id },
-			include: { department: true, groupShift: true, workLocation: true, jobRole: true, jobLevel: true, site: true },
+			include: {
+				department: true,
+				groupShift: true,
+				workLocation: true,
+				jobRole: true,
+				jobLevel: true,
+				site: true,
+			},
 		});
 
 		if (!employee) {
@@ -1112,7 +1120,14 @@ router.post(
 		const data = await validatePayload(req.body);
 		const employee = await prisma.employee.create({
 			data: { ...data, siteId },
-			include: { department: true, groupShift: true, workLocation: true, jobRole: true, jobLevel: true, site: true },
+			include: {
+				department: true,
+				groupShift: true,
+				workLocation: true,
+				jobRole: true,
+				jobLevel: true,
+				site: true,
+			},
 		});
 
 		return res.status(201).json(mapEmployee(employee, { includeSite: req.isSuperAdmin }));
@@ -1142,7 +1157,14 @@ router.put(
 		const employee = await prisma.employee.update({
 			where: { id },
 			data: updateData,
-			include: { department: true, groupShift: true, workLocation: true, jobRole: true, jobLevel: true, site: true },
+			include: {
+				department: true,
+				groupShift: true,
+				workLocation: true,
+				jobRole: true,
+				jobLevel: true,
+				site: true,
+			},
 		});
 
 		return res.json(mapEmployee(employee, { includeSite: req.isSuperAdmin }));

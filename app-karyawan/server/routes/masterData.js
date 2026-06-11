@@ -59,11 +59,7 @@ const INVALID_FIELD_VALUE = Symbol('invalid-field-value');
 function createUtcDate(year, month, day) {
 	const date = new Date(Date.UTC(year, month - 1, day));
 
-	if (
-		date.getUTCFullYear() !== year ||
-		date.getUTCMonth() !== month - 1 ||
-		date.getUTCDate() !== day
-	) {
+	if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) {
 		return null;
 	}
 
@@ -79,11 +75,7 @@ function parseExcelDateValue(value) {
 		const excelEpochUtc = Date.UTC(1899, 11, 30);
 		const parsedDate = new Date(excelEpochUtc + Math.round(value * 24 * 60 * 60 * 1000));
 
-		return createUtcDate(
-			parsedDate.getUTCFullYear(),
-			parsedDate.getUTCMonth() + 1,
-			parsedDate.getUTCDate(),
-		);
+		return createUtcDate(parsedDate.getUTCFullYear(), parsedDate.getUTCMonth() + 1, parsedDate.getUTCDate());
 	}
 
 	const normalizedValue = normalizeString(value);
@@ -114,11 +106,7 @@ function parseExcelDateValue(value) {
 		return null;
 	}
 
-	return createUtcDate(
-		fallbackDate.getUTCFullYear(),
-		fallbackDate.getUTCMonth() + 1,
-		fallbackDate.getUTCDate(),
-	);
+	return createUtcDate(fallbackDate.getUTCFullYear(), fallbackDate.getUTCMonth() + 1, fallbackDate.getUTCDate());
 }
 
 function formatDateId(value) {

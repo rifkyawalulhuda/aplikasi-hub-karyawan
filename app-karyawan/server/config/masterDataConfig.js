@@ -209,10 +209,9 @@ const MASTER_DATA_CONFIG = {
 			}
 
 			if (payload.holidayDate.getUTCFullYear() !== payload.year) {
-				throw Object.assign(
-					new Error('Tanggal hari libur harus berada pada periode tahun yang sama.'),
-					{ statusCode: 400 },
-				);
+				throw Object.assign(new Error('Tanggal hari libur harus berada pada periode tahun yang sama.'), {
+					statusCode: 400,
+				});
 			}
 
 			const duplicate = await delegate.findFirst({
@@ -230,7 +229,9 @@ const MASTER_DATA_CONFIG = {
 			if (duplicate) {
 				throw Object.assign(
 					new Error(
-						`Hari libur "${normalizedName}" pada ${helpers.formatDateId(payload.holidayDate)} untuk periode ${payload.year} sudah ada.`,
+						`Hari libur "${normalizedName}" pada ${helpers.formatDateId(
+							payload.holidayDate,
+						)} untuk periode ${payload.year} sudah ada.`,
 					),
 					{ statusCode: 409 },
 				);
