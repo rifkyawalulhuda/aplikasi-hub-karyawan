@@ -45,6 +45,18 @@
         "read_file_content",
         "global_search"
       ]
+    },
+    "mcpvault": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@bitbonsai/mcpvault@latest",
+        "--vault",
+        "E:\\Obsidian"
+      ],
+      "env": {},
+      "disabled": false,
+      "autoApprove": []
     }
   }
 }
