@@ -51,12 +51,17 @@
       "args": [
         "-y",
         "@bitbonsai/mcpvault@latest",
-        "--vault",
         "E:\\Obsidian"
       ],
       "env": {},
       "disabled": false,
-      "autoApprove": []
+      "autoApprove": [
+        "write_note",
+        "read_note",
+        "list_directory",
+        "search_notes",
+        "get_vault_stats"
+      ]
     }
   }
 }
