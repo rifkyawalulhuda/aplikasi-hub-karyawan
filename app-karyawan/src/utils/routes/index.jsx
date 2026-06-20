@@ -57,6 +57,9 @@ const SiteApprovalConfigPage = withLazyLoadably(lazy(() => import('@/pages/maste
 const MasterDataKaryawanCombinedPage = withLazyLoadably(
 	lazy(() => import('@/pages/masterData/masterDataKaryawanCombined')),
 );
+const PencatatanLimbahB3Page = withLazyLoadably(
+	lazy(() => import('@/pages/employeeData/pencatatanLimbahB3/PencatatanLimbahB3')),
+);
 const DashboardPage = withLazyLoadably(lazy(() => import('@/pages/dashboard')));
 
 function Router() {
@@ -156,6 +159,10 @@ function Router() {
 								path="data-master/master-data-dokumen/master-hari-libur"
 								element={<MasterDataDokumenCombinedPage />}
 							/>
+							<Route
+								path="data-master/master-data-dokumen/jenis-limbah-b3"
+								element={<MasterDataDokumenCombinedPage />}
+							/>
 							<Route path="data-karyawan/bimbingan-pengarahan" element={<GuidanceRecordsPage />} />
 							<Route
 								path="data-karyawan/bimbingan-pengarahan/:id"
@@ -169,6 +176,7 @@ function Router() {
 							<Route path="notifikasi" element={<AdminNotificationsPage />} />
 							<Route path="data-karyawan/cuti-karyawan" element={<LeaveCombinedPage />} />
 							<Route path="data-karyawan/cuti-karyawan/flow" element={<LeaveCombinedPage />} />
+							<Route path="data-karyawan/pencatatan-limbah-b3" element={<PencatatanLimbahB3Page />} />
 							<Route
 								path="data-unit/lisensi-sertifikasi-unit"
 								element={<UnitLicenseCertificationsPage />}
