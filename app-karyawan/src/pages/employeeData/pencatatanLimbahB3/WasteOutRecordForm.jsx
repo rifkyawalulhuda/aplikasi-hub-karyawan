@@ -1,16 +1,19 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
 import { useSnackbar } from 'notistack';
 
 import Button from '@mui/material/Button';
+import CircularProgress from '@mui/material/CircularProgress';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
+import MenuItem from '@mui/material/MenuItem';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 
+import apiRequest, { appendSiteIdParam } from '@/services/api';
 import { createWasteOutRecord, updateWasteOutRecord } from '@/services/b3WasteService';
 
 const getValidationSchema = (minDate, maxJumlah) =>
@@ -43,12 +46,29 @@ function formatDateForInput(dateValue) {
 	if (!dateValue) return '';
 	const d = new Date(dateValue);
 	if (Number.isNaN(d.getTime())) return '';
-	return d.toISOString().split('T')[0];
+	const yyyy = d.getFullYear();
+	const mm = String(d.getMonth() + 1).padStart(2, '0');
+	const dd = String(d.getDate()).padStart(2, '0');
+	return `${yyyy}-${mm}-${dd}`;
 }
 
 function WasteOutRecordForm({ open, onClose, onSuccess, wasteRecord, editData, adminName, siteId }) {
 	const { enqueueSnackbar } = useSnackbar();
 	const isEditMode = Boolean(editData);
+	const [vendors, setVendors] = useState([]);
+	const [loadingVendors, setLoadingVendors] = useState(false);
+
+	// Fetch vendors on open
+	useEffect(() => {
+		if (open && siteId) {
+			setLoadingVendors(true);
+			const path = appendSiteIdParam('/master/master-vendors', siteId);
+			apiRequest(path)
+				.then((data) => setVendors(Array.isArray(data) ? data : data?.data || []))
+				.catch(() => setVendors([]))
+				.finally(() => setLoadingVendors(false));
+		}
+	}, [open, siteId]);
 
 	const minDate = useMemo(() => {
 		if (!wasteRecord?.tanggalMasuk) return new Date('2020-01-01');
@@ -72,6 +92,7 @@ function WasteOutRecordForm({ open, onClose, onSuccess, wasteRecord, editData, a
 			jumlahKeluar: editData?.jumlahKeluar ?? '',
 			tujuanPenyerahan: editData?.tujuanPenyerahan || '',
 			nomorDokumen: editData?.nomorDokumen || '',
+			vendorId: editData?.vendorId || editData?.vendor?.id || '',
 			petugasPenanggungJawab: editData?.petugasPenanggungJawab || adminName || '',
 		},
 		validationSchema,
@@ -82,6 +103,7 @@ function WasteOutRecordForm({ open, onClose, onSuccess, wasteRecord, editData, a
 					jumlahKeluar: Number(values.jumlahKeluar),
 					tujuanPenyerahan: values.tujuanPenyerahan.trim(),
 					nomorDokumen: values.nomorDokumen.trim(),
+					vendorId: values.vendorId ? Number(values.vendorId) : null,
 					petugasPenanggungJawab: values.petugasPenanggungJawab.trim(),
 				};
 
@@ -175,6 +197,31 @@ function WasteOutRecordForm({ open, onClose, onSuccess, wasteRecord, editData, a
 							error={formik.touched.nomorDokumen && Boolean(formik.errors.nomorDokumen)}
 							helperText={formik.touched.nomorDokumen && formik.errors.nomorDokumen}
 						/>
+						<TextField
+							select
+							fullWidth
+							label="Pengelola Pihak Ketiga"
+							name="vendorId"
+							value={formik.values.vendorId}
+							onChange={formik.handleChange}
+							onBlur={formik.handleBlur}
+							disabled={loadingVendors}
+						>
+							<MenuItem value="">
+								<em>Tidak ada</em>
+							</MenuItem>
+							{loadingVendors ? (
+								<MenuItem value="" disabled>
+									<CircularProgress size={20} sx={{ mr: 1 }} /> Memuat...
+								</MenuItem>
+							) : (
+								vendors.map((v) => (
+									<MenuItem key={v.id} value={v.id}>
+										{v.vendorName}
+									</MenuItem>
+								))
+							)}
+						</TextField>
 						<TextField
 							fullWidth
 							label="Petugas Penanggung Jawab"

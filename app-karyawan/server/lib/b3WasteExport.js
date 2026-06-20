@@ -67,6 +67,7 @@ export async function generateB3WasteExcel(records) {
 		'Nomor Dokumen',
 		'Sisa Limbah',
 		'Sisa Hari',
+		'Pengelola Pihak Ketiga',
 	];
 
 	const headerRow = worksheet.getRow(2);
@@ -97,6 +98,7 @@ export async function generateB3WasteExcel(records) {
 		{ width: 18 }, // Nomor Dokumen
 		{ width: 14 }, // Sisa Limbah
 		{ width: 12 }, // Sisa Hari
+		{ width: 22 }, // Pengelola Pihak Ketiga
 	];
 
 	// Data rows mulai dari row 3
@@ -129,6 +131,7 @@ export async function generateB3WasteExcel(records) {
 			row.getCell(10).value = '';
 			row.getCell(11).value = sisaLimbah;
 			row.getCell(12).value = sisaHari;
+			row.getCell(13).value = '';
 			applyDataRowBorder(row, columns.length);
 			currentRow++;
 		} else {
@@ -161,6 +164,7 @@ export async function generateB3WasteExcel(records) {
 				row.getCell(10).value = outRecord.nomorDokumen || '';
 				row.getCell(11).value = sisaLimbah;
 				row.getCell(12).value = sisaHari;
+				row.getCell(13).value = outRecord.vendor?.vendorName || '';
 
 				applyDataRowBorder(row, columns.length);
 				currentRow++;

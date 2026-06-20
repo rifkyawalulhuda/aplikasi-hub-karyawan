@@ -193,7 +193,8 @@ model MasterVendor {
   createdAt      DateTime                   @default(now())
   updatedAt      DateTime                   @updatedAt
   site           MasterSite                 @relation(fields: [siteId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  certifications UnitLicenseCertification[]
+  certifications   UnitLicenseCertification[]
+  wasteOutRecords  B3WasteOutRecord[]
 
   @@index([siteId])
   @@map("master_vendors")
@@ -835,18 +836,20 @@ model B3WasteRecord {
 }
 
 model B3WasteOutRecord {
-  id                     Int      @id @default(autoincrement())
+  id                     Int           @id @default(autoincrement())
   siteId                 Int
   wasteRecordId          Int
-  tanggalKeluar          DateTime @db.Date
-  jumlahKeluar           Decimal  @db.Decimal(10, 2)
-  tujuanPenyerahan       String   @db.VarChar(200)
-  nomorDokumen           String   @db.VarChar(100)
-  petugasPenanggungJawab String   @db.VarChar(100)
-  createdAt              DateTime @default(now())
-  updatedAt              DateTime @updatedAt
+  tanggalKeluar          DateTime      @db.Date
+  jumlahKeluar           Decimal       @db.Decimal(10, 2)
+  tujuanPenyerahan       String        @db.VarChar(200)
+  nomorDokumen           String        @db.VarChar(100)
+  vendorId               Int?
+  petugasPenanggungJawab String        @db.VarChar(100)
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @updatedAt
 
   wasteRecord B3WasteRecord @relation(fields: [wasteRecordId], references: [id])
+  vendor      MasterVendor? @relation(fields: [vendorId], references: [id])
 
   @@map("b3_waste_out_records")
 }

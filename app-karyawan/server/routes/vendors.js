@@ -105,7 +105,11 @@ async function validatePayload(payload = {}, currentId = null) {
 
 async function resolveSiteId(req) {
 	if (req.isSuperAdmin) {
-		const siteId = req.body.siteId != null ? Number(req.body.siteId) : null;
+		const siteId = req.body.siteId != null
+			? Number(req.body.siteId)
+			: req.query.siteId != null
+				? Number(req.query.siteId)
+				: null;
 
 		if (!siteId || !Number.isInteger(siteId)) {
 			throw Object.assign(new Error('siteId wajib diisi.'), { statusCode: 400 });

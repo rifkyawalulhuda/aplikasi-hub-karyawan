@@ -338,6 +338,18 @@ function PencatatanLimbahB3() {
 					return latest.nomorDokumen || '-';
 				},
 			},
+			{
+				field: 'vendor',
+				headerName: 'PENGELOLA',
+				minWidth: 160,
+				sortable: false,
+				valueGetter: (params) => {
+					const { outRecords } = params.row;
+					if (!outRecords || outRecords.length === 0) return '-';
+					const latest = outRecords[outRecords.length - 1];
+					return latest.vendor?.vendorName || '-';
+				},
+			},
 		],
 		[],
 	);

@@ -1059,9 +1059,60 @@ Yang sudah selesai:
   - Menu sidebar "Master Data Karyawan" sekarang jadi satu item. "Master Admin" dan "Site Approval Config" tetap terpisah.
 - Menggabungkan halaman **Master Data Dokumen** menjadi satu halaman tabbed:
   - Halaman gabungan `src/pages/masterData/masterDataDokumenCombined/index.jsx`.
-  - Tab: Master Dok PKB | Master Dok Karyawan | Master Cuti Karyawan | Master Hari Libur.
+  - Tab: Master Dok PKB | Master Dok Karyawan | Master Cuti Karyawan | Master Hari Libur | Jenis Limbah B3.
   - URL-based tab switching, state preserved antar tab.
   - Menu sidebar "Master Data Dokumen" sekarang jadi satu item.
+- Menambahkan modul **Pencatatan Limbah B3** dengan:
+  - 3 model Prisma baru: `B3WasteType`, `B3WasteRecord`, `B3WasteOutRecord`
+  - Backend CRUD routes dengan site isolation, computed fields, dan export Excel
+  - Frontend halaman utama pencatatan dengan EnhancedTable + context menu klik kanan
+  - Form dialog limbah masuk dan limbah keluar
+  - Master data jenis limbah B3 sebagai tab di Master Data Dokumen
+  - Visual indicator warning/overdue berdasarkan sisa hari penyimpanan
+  - Dropdown Pengelola Pihak Ketiga dari Master Vendor pada form limbah keluar
+  - Kolom `vendorId` (nullable) di `B3WasteOutRecord` dengan relasi ke `MasterVendor`
+  - 11 property-based tests + 1 integration test suite (51+ tests total)
+  - Fix timezone: tanggal disimpan UTC noon, frontend menggunakan local date
+  - Navigasi top-level "Limbah B3" di navbar (bersebelahan dengan Data Unit)
+- Memperbaiki `MasterDataPage` shared component agar menyertakan `siteId` pada semua API request (list, create, update, delete, import) melalui `appendSiteIdParam` — fix issue Master Vendor untuk super_admin.
+
+#### Pencatatan Limbah B3
+
+- Modul baru di bawah menu navigasi top-level `Limbah B3` (terletak setelah `Data Unit`).
+- Route frontend: `/limbah-b3/pencatatan`
+- Breadcrumb: `Limbah B3 / Pencatatan Limbah B3`
+- Kolom database utama (3 model):
+  - `B3WasteType` (`b3_waste_types`): id, siteId, kode (VarChar 20), nama (VarChar 200), unique [siteId, kode]
+  - `B3WasteRecord` (`b3_waste_records`): id, siteId, jenisLimbahId, tanggalMasuk (Date), sumberLimbah, jumlahMasuk (Decimal 10,2), maksimalPenyimpanan (90/180), tanggalBatas (Date, computed), petugasPenanggungJawab
+  - `B3WasteOutRecord` (`b3_waste_out_records`): id, siteId, wasteRecordId, tanggalKeluar (Date), jumlahKeluar (Decimal 10,2), tujuanPenyerahan, nomorDokumen, vendorId (nullable, FK ke MasterVendor), petugasPenanggungJawab
+- Backend routes:
+  - `server/routes/b3WasteRecords.js` — CRUD limbah masuk + limbah keluar + export Excel
+  - `server/routes/b3WasteTypes.js` — CRUD master jenis limbah B3
+  - Mount: `/api/b3-waste/records` dan `/api/b3-waste/types` (requireAdminAuth, requireSiteIsolation internal)
+- Middleware site isolation menggunakan pola `router.use(requireSiteIsolation({ modelType: 'per-site' }))` di dalam route file dengan helper `getSiteId(req)` yang membaca dari `req.query.siteId` (super admin) atau `req.admin.siteId` (admin biasa).
+- Computed fields (server-side):
+  - `sisaLimbah` = jumlahMasuk - SUM(outRecords.jumlahKeluar), presisi 2 desimal
+  - `sisaHari` = tanggalBatas - today (hari)
+  - `statusPenyimpanan`: normal / warning (1-14 hari) / overdue (<=0 hari), hanya berlaku jika sisaLimbah > 0
+- Ekspor Excel (`server/lib/b3WasteExport.js`):
+  - Baris pertama: nomor izin hardcoded "660.3/Per.TPLB3 144/VII/P3LH/DLH/2020"
+  - 13 kolom: Jenis Limbah B3, Tanggal Masuk, Sumber Limbah, Jumlah Masuk, Maks Penyimpanan, Tanggal Batas, Tanggal Keluar, Jumlah Keluar, Tujuan Penyerahan, Nomor Dokumen, Sisa Limbah, Sisa Hari, Pengelola Pihak Ketiga
+  - Format angka Indonesia (titik ribuan, koma desimal)
+  - Record dengan banyak out-records: baris pertama tampilkan semua, baris berikutnya hanya kolom keluar
+- Frontend components:
+  - `src/pages/employeeData/pencatatanLimbahB3/PencatatanLimbahB3.jsx` — halaman utama dengan `EnhancedTable`, context menu klik kanan, visual indicator warning/overdue
+  - `src/pages/employeeData/pencatatanLimbahB3/WasteRecordForm.jsx` — form dialog limbah masuk
+  - `src/pages/employeeData/pencatatanLimbahB3/WasteOutRecordForm.jsx` — form dialog limbah keluar (dengan dropdown vendor dari Master Vendor)
+  - `src/pages/masterData/masterDokumen/JenisLimbahB3Tab.jsx` — tab master jenis limbah di halaman Master Data Dokumen
+- Service layer: `src/services/b3WasteService.js`
+- Master Data Jenis Limbah B3 ditempatkan sebagai tab terakhir pada halaman `Master Data Dokumen`
+- Kolom tabel utama (urutan prioritas): Jenis Limbah B3, Tgl Masuk, Sumber, Masuk (kg), Keluar (kg), Sisa (kg) [bold, hijau "Habis" jika 0], Sisa Hari [chip warning/overdue], Tgl Batas, Maks, Tgl Keluar, Tujuan, No Dokumen, Pengelola
+- Tanggal disimpan ke Postgres kolom DATE sebagai UTC noon (T12:00:00Z) melalui helper `toDateOnly()` untuk mencegah timezone shift
+- Frontend date input menggunakan local timezone (`getFullYear/getMonth/getDate`) untuk `max` dan formatting, bukan `toISOString()` yang bisa bergeser
+- Validasi form: tanggal masuk min 2020-01-01 max hari ini, jumlah masuk 0.01-999999.99 presisi 2, maksimal penyimpanan enum [90, 180], jumlah keluar max = sisa limbah
+- Field `petugasPenanggungJawab` auto-fill dari nama admin login, immutable setelah disimpan
+- Field `kode` pada jenis limbah B3 immutable setelah disimpan
+- Referential integrity: delete waste record ditolak jika punya out-records, delete jenis limbah ditolak jika masih digunakan
 
 ## Struktur Teknis Awal yang Sudah Dibangun
 
