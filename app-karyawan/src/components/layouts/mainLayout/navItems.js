@@ -142,13 +142,6 @@ const NAV_LINKS_CONFIG = [
 				Icon: DescriptionOutlinedIcon,
 				href: '/data-karyawan/cuti-karyawan',
 			},
-			{
-				id: uuid(),
-				type: 'item',
-				title: 'Pencatatan Limbah B3',
-				Icon: ScienceOutlinedIcon,
-				href: '/data-karyawan/pencatatan-limbah-b3',
-			},
 		],
 	},
 	{
@@ -164,6 +157,22 @@ const NAV_LINKS_CONFIG = [
 				title: 'Lisensi & Sertifikasi Unit',
 				Icon: DescriptionOutlinedIcon,
 				href: '/data-unit/lisensi-sertifikasi-unit',
+			},
+		],
+	},
+	{
+		id: uuid(),
+		type: 'group',
+		title: 'Limbah B3',
+		Icon: ScienceOutlinedIcon,
+		menuMinWidth: 260,
+		menuChildren: [
+			{
+				id: uuid(),
+				type: 'item',
+				title: 'Pencatatan Limbah B3',
+				Icon: ScienceOutlinedIcon,
+				href: '/limbah-b3/pencatatan',
 			},
 		],
 	},

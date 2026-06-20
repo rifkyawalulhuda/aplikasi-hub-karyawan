@@ -176,7 +176,7 @@ function Router() {
 							<Route path="notifikasi" element={<AdminNotificationsPage />} />
 							<Route path="data-karyawan/cuti-karyawan" element={<LeaveCombinedPage />} />
 							<Route path="data-karyawan/cuti-karyawan/flow" element={<LeaveCombinedPage />} />
-							<Route path="data-karyawan/pencatatan-limbah-b3" element={<PencatatanLimbahB3Page />} />
+							<Route path="limbah-b3/pencatatan" element={<PencatatanLimbahB3Page />} />
 							<Route
 								path="data-unit/lisensi-sertifikasi-unit"
 								element={<UnitLicenseCertificationsPage />}
