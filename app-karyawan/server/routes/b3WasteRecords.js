@@ -171,6 +171,7 @@ router.get(
 							tujuanPenyerahan: true,
 							nomorDokumen: true,
 							petugasPenanggungJawab: true,
+							vendor: { select: { id: true, vendorName: true } },
 						},
 					},
 				},
@@ -348,6 +349,7 @@ const createOutRecordSchema = yup.object().shape({
 		.trim()
 		.required('Nomor dokumen wajib diisi')
 		.max(100, 'Nomor dokumen maksimal 100 karakter'),
+	vendorId: yup.number().nullable().notRequired(),
 	petugasPenanggungJawab: yup
 		.string()
 		.trim()
@@ -368,6 +370,7 @@ const updateOutRecordSchema = yup.object().shape({
 		.trim()
 		.required('Nomor dokumen wajib diisi')
 		.max(100, 'Nomor dokumen maksimal 100 karakter'),
+	vendorId: yup.number().nullable().notRequired(),
 });
 
 // POST /:id/out — tambah limbah keluar
@@ -440,8 +443,10 @@ router.post(
 				jumlahKeluar: body.jumlahKeluar,
 				tujuanPenyerahan: body.tujuanPenyerahan,
 				nomorDokumen: body.nomorDokumen,
+				vendorId: body.vendorId || null,
 				petugasPenanggungJawab: body.petugasPenanggungJawab,
 			},
+			include: { vendor: { select: { id: true, vendorName: true } } },
 		});
 
 		res.status(201).json(outRecord);
@@ -524,8 +529,10 @@ router.put(
 				jumlahKeluar: body.jumlahKeluar,
 				tujuanPenyerahan: body.tujuanPenyerahan,
 				nomorDokumen: body.nomorDokumen,
+				vendorId: body.vendorId || null,
 				// petugasPenanggungJawab di-strip (immutable)
 			},
+			include: { vendor: { select: { id: true, vendorName: true } } },
 		});
 
 		res.json(updated);
@@ -576,6 +583,7 @@ router.get(
 						tujuanPenyerahan: true,
 						nomorDokumen: true,
 						petugasPenanggungJawab: true,
+						vendor: { select: { id: true, vendorName: true } },
 					},
 				},
 			},

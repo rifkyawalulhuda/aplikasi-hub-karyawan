@@ -22,14 +22,16 @@ import MasterDataFormDialog from '@/components/masterData/masterDataFormDialog';
 import MasterDataImportDialog from '@/components/masterData/masterDataImportDialog';
 import MasterDataTable from '@/components/masterData/masterDataTable';
 import useUrlSearchKeyword from '@/hooks/useUrlSearchKeyword';
-import apiRequest, { downloadFile, getApiBaseUrl } from '@/services/api';
+import { useSite } from '@/contexts/siteContext';
+import apiRequest, { appendSiteIdParam, downloadFile, getApiBaseUrl } from '@/services/api';
 
-async function fetchMasterData(resource) {
-	return apiRequest(`/master/${resource}`);
+async function fetchMasterData(resource, siteId) {
+	return apiRequest(appendSiteIdParam(`/master/${resource}`, siteId));
 }
 
 function MasterDataPage({ config, hideHeader }) {
 	const { enqueueSnackbar } = useSnackbar();
+	const { currentSiteId } = useSite();
 	const [rows, setRows] = useState([]);
 	const [loading, setLoading] = useState(true);
 	const [submitting, setSubmitting] = useState(false);
@@ -61,7 +63,7 @@ function MasterDataPage({ config, hideHeader }) {
 		setLoading(true);
 
 		try {
-			const response = await fetchMasterData(config.resource);
+			const response = await fetchMasterData(config.resource, currentSiteId);
 			setRows(response);
 		} catch (error) {
 			enqueueSnackbar(error.message, {
@@ -74,7 +76,7 @@ function MasterDataPage({ config, hideHeader }) {
 
 	useEffect(() => {
 		loadData();
-	}, [config.resource]);
+	}, [config.resource, currentSiteId]);
 
 	const normalizedKeyword = searchKeyword.trim().toLowerCase();
 	const filteredRows = rows.filter((row) => {
@@ -105,7 +107,7 @@ function MasterDataPage({ config, hideHeader }) {
 			const formData = new FormData();
 			formData.append('file', file);
 
-			const response = await apiRequest(`/master/${config.resource}/import`, {
+			const response = await apiRequest(appendSiteIdParam(`/master/${config.resource}/import`, currentSiteId), {
 				method: 'POST',
 				body: formData,
 			});
@@ -174,12 +176,15 @@ function MasterDataPage({ config, hideHeader }) {
 			let savedItem;
 
 			if (selectedItem) {
-				savedItem = await apiRequest(`/master/${config.resource}/${selectedItem.id}`, {
-					method: 'PUT',
-					body: JSON.stringify(values),
-				});
+				savedItem = await apiRequest(
+					appendSiteIdParam(`/master/${config.resource}/${selectedItem.id}`, currentSiteId),
+					{
+						method: 'PUT',
+						body: JSON.stringify(values),
+					},
+				);
 			} else {
-				savedItem = await apiRequest(`/master/${config.resource}`, {
+				savedItem = await apiRequest(appendSiteIdParam(`/master/${config.resource}`, currentSiteId), {
 					method: 'POST',
 					body: JSON.stringify(values),
 				});
@@ -213,7 +218,7 @@ function MasterDataPage({ config, hideHeader }) {
 		setSubmitting(true);
 
 		try {
-			await apiRequest(`/master/${config.resource}/${selectedItem.id}`, {
+			await apiRequest(appendSiteIdParam(`/master/${config.resource}/${selectedItem.id}`, currentSiteId), {
 				method: 'DELETE',
 			});
 			setRows((currentRows) => currentRows.filter((item) => item.id !== selectedItem.id));
