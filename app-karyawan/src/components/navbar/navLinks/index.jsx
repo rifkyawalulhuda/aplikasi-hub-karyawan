@@ -27,7 +27,7 @@ function NavLinks({ navItems }) {
 		<Stack
 			component="nav"
 			direction="row"
-			flexWrap="wrap"
+			flexWrap="nowrap"
 			width={{ xs: '100%', md: 'fit-content' }}
 			maxWidth="100%"
 			border={1}

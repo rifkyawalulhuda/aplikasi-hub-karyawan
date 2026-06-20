@@ -450,7 +450,7 @@ function PencatatanLimbahB3() {
 			<PageHeader title="Pencatatan Limbah B3">
 				<Breadcrumbs aria-label="breadcrumb" sx={{ textTransform: 'uppercase' }}>
 					<Link underline="hover" href="#!">
-						Data Karyawan
+						Limbah B3
 					</Link>
 					<Typography color="text.tertiary">Pencatatan Limbah B3</Typography>
 				</Breadcrumbs>
