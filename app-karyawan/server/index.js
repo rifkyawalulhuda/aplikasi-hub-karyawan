@@ -31,6 +31,8 @@ import requireAdminAuth from './middleware/requireAdminAuth.js';
 import requireSuperAdmin from './middleware/requireSuperAdmin.js';
 import siteApprovalConfigsRouter from './routes/siteApprovalConfigs.js';
 import sitesRouter from './routes/sites.js';
+import b3WasteRecordsRouter from './routes/b3WasteRecords.js';
+import b3WasteTypesRouter from './routes/b3WasteTypes.js';
 import dashboardRouter from './routes/dashboard.js';
 
 const app = express();
@@ -200,6 +202,8 @@ app.use('/api/data-karyawan/employee-leave-balance-seeds', requireAdminAuth, emp
 app.use('/api/data-karyawan/pelatihan-karyawan', requireAdminAuth, employeeTrainingsRouter);
 app.use('/api/data-karyawan/license-certifications', requireAdminAuth, licenseCertificationsRouter);
 app.use('/api/data-unit/license-certifications', requireAdminAuth, unitLicenseCertificationsRouter);
+app.use('/api/b3-waste/records', requireAdminAuth, b3WasteRecordsRouter);
+app.use('/api/b3-waste/types', requireAdminAuth, b3WasteTypesRouter);
 
 app.use((error, req, res, next) => {
 	if (res.headersSent) {

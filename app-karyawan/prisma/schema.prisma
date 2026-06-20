@@ -800,3 +800,53 @@ model SiteApprovalConfig {
   @@index([jobLevelId])
   @@map("site_approval_configs")
 }
+
+model B3WasteType {
+  id        Int      @id @default(autoincrement())
+  siteId    Int
+  kode      String   @db.VarChar(20)
+  nama      String   @db.VarChar(200)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  wasteRecords B3WasteRecord[]
+
+  @@unique([siteId, kode])
+  @@map("b3_waste_types")
+}
+
+model B3WasteRecord {
+  id                     Int      @id @default(autoincrement())
+  siteId                 Int
+  jenisLimbahId          Int
+  tanggalMasuk           DateTime @db.Date
+  sumberLimbah           String   @db.VarChar(200)
+  jumlahMasuk            Decimal  @db.Decimal(10, 2)
+  maksimalPenyimpanan    Int
+  tanggalBatas           DateTime @db.Date
+  petugasPenanggungJawab String   @db.VarChar(100)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  jenisLimbah B3WasteType       @relation(fields: [jenisLimbahId], references: [id])
+  outRecords  B3WasteOutRecord[]
+
+  @@map("b3_waste_records")
+}
+
+model B3WasteOutRecord {
+  id                     Int      @id @default(autoincrement())
+  siteId                 Int
+  wasteRecordId          Int
+  tanggalKeluar          DateTime @db.Date
+  jumlahKeluar           Decimal  @db.Decimal(10, 2)
+  tujuanPenyerahan       String   @db.VarChar(200)
+  nomorDokumen           String   @db.VarChar(100)
+  petugasPenanggungJawab String   @db.VarChar(100)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  wasteRecord B3WasteRecord @relation(fields: [wasteRecordId], references: [id])
+
+  @@map("b3_waste_out_records")
+}

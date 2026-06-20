@@ -11,6 +11,7 @@ import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import CastForEducationOutlinedIcon from '@mui/icons-material/CastForEducationOutlined';
 
 import DashboardOutlinedIcon from '@mui/icons-material/DashboardOutlined';
+import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
 
 /**
  * @example
@@ -140,6 +141,13 @@ const NAV_LINKS_CONFIG = [
 				title: 'Cuti Karyawan',
 				Icon: DescriptionOutlinedIcon,
 				href: '/data-karyawan/cuti-karyawan',
+			},
+			{
+				id: uuid(),
+				type: 'item',
+				title: 'Pencatatan Limbah B3',
+				Icon: ScienceOutlinedIcon,
+				href: '/data-karyawan/pencatatan-limbah-b3',
 			},
 		],
 	},
