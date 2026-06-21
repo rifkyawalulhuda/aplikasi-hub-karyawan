@@ -12,6 +12,7 @@ import CastForEducationOutlinedIcon from '@mui/icons-material/CastForEducationOu
 
 import DashboardOutlinedIcon from '@mui/icons-material/DashboardOutlined';
 import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
+import BalanceOutlinedIcon from '@mui/icons-material/BalanceOutlined';
 
 /**
  * @example
@@ -173,6 +174,13 @@ const NAV_LINKS_CONFIG = [
 				title: 'Pencatatan Limbah B3',
 				Icon: ScienceOutlinedIcon,
 				href: '/limbah-b3/pencatatan',
+			},
+			{
+				id: uuid(),
+				type: 'item',
+				title: 'Neraca Limbah B3',
+				Icon: BalanceOutlinedIcon,
+				href: '/limbah-b3/neraca',
 			},
 		],
 	},
