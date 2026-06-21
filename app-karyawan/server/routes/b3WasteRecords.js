@@ -214,7 +214,7 @@ router.post(
 		}
 
 		const normalizedTanggalMasuk = toDateOnly(body.tanggalMasuk);
-const tanggalBatas = computeTanggalBatas(normalizedTanggalMasuk, body.maksimalPenyimpanan);
+		const tanggalBatas = computeTanggalBatas(normalizedTanggalMasuk, body.maksimalPenyimpanan);
 
 		const record = await prisma.b3WasteRecord.create({
 			data: {
@@ -273,7 +273,7 @@ router.put(
 		}
 
 		const normalizedTanggalMasuk = toDateOnly(body.tanggalMasuk);
-const tanggalBatas = computeTanggalBatas(normalizedTanggalMasuk, body.maksimalPenyimpanan);
+		const tanggalBatas = computeTanggalBatas(normalizedTanggalMasuk, body.maksimalPenyimpanan);
 
 		const updated = await prisma.b3WasteRecord.update({
 			where: { id },
@@ -564,7 +564,378 @@ router.delete(
 	}),
 );
 
+// GET /neraca — Neraca Limbah B3 format KLHK Triwulan
+router.get(
+	'/neraca',
+	withAsync(async (req, res) => {
+		const siteId = getSiteId(req);
+		const tahun = parseInt(req.query.tahun);
+		const triwulan = parseInt(req.query.triwulan);
+
+		if (!tahun || isNaN(tahun)) {
+			return res.status(400).json({ message: 'Parameter tahun wajib diisi' });
+		}
+		if (!triwulan || isNaN(triwulan) || triwulan < 1 || triwulan > 4) {
+			return res.status(400).json({ message: 'Parameter triwulan wajib diisi (1-4)' });
+		}
+
+		// Triwulan mapping: Q1=Jan-Mar, Q2=Apr-Jun, Q3=Jul-Sep, Q4=Oct-Dec
+		const bulanAwal = (triwulan - 1) * 3; // 0-indexed month
+		const periodeStart = new Date(Date.UTC(tahun, bulanAwal, 1, 0, 0, 0));
+		const periodeEnd = new Date(Date.UTC(tahun, bulanAwal + 3, 0, 23, 59, 59)); // last day of quarter
+
+		const namaBulan = [
+			'Januari',
+			'Februari',
+			'Maret',
+			'April',
+			'Mei',
+			'Juni',
+			'Juli',
+			'Agustus',
+			'September',
+			'Oktober',
+			'November',
+			'Desember',
+		];
+		const periodeLabel = `${namaBulan[bulanAwal]} - ${namaBulan[bulanAwal + 2]} ${tahun}`;
+
+		// Ambil semua jenis limbah di site ini
+		const wasteTypes = await prisma.b3WasteType.findMany({
+			where: { siteId },
+			orderBy: { kode: 'asc' },
+		});
+
+		const data = [];
+
+		for (const wasteType of wasteTypes) {
+			// Saldo Awal = SUM(masuk sebelum periode) - SUM(keluar sebelum periode)
+			const [recordsSebelum, outRecordsSebelum] = await Promise.all([
+				prisma.b3WasteRecord.aggregate({
+					where: { siteId, jenisLimbahId: wasteType.id, tanggalMasuk: { lt: periodeStart } },
+					_sum: { jumlahMasuk: true },
+				}),
+				prisma.b3WasteOutRecord.aggregate({
+					where: {
+						siteId,
+						wasteRecord: { jenisLimbahId: wasteType.id },
+						tanggalKeluar: { lt: periodeStart },
+					},
+					_sum: { jumlahKeluar: true },
+				}),
+			]);
+
+			const totalMasukSebelum = parseFloat(recordsSebelum._sum.jumlahMasuk || 0);
+			const totalKeluarSebelum = parseFloat(outRecordsSebelum._sum.jumlahKeluar || 0);
+			const saldoAwal = parseFloat((totalMasukSebelum - totalKeluarSebelum).toFixed(2));
+
+			// Masuk = SUM(masuk selama periode)
+			const recordsPeriode = await prisma.b3WasteRecord.aggregate({
+				where: {
+					siteId,
+					jenisLimbahId: wasteType.id,
+					tanggalMasuk: { gte: periodeStart, lte: periodeEnd },
+				},
+				_sum: { jumlahMasuk: true },
+			});
+			const masuk = parseFloat(recordsPeriode._sum.jumlahMasuk || 0);
+
+			// Keluar = SUM(keluar selama periode), group by vendor
+			const outRecordsPeriode = await prisma.b3WasteOutRecord.findMany({
+				where: {
+					siteId,
+					wasteRecord: { jenisLimbahId: wasteType.id },
+					tanggalKeluar: { gte: periodeStart, lte: periodeEnd },
+				},
+				include: { vendor: { select: { vendorName: true } } },
+			});
+
+			const keluarTotal = outRecordsPeriode.reduce((sum, r) => sum + parseFloat(r.jumlahKeluar), 0);
+			const keluar = parseFloat(keluarTotal.toFixed(2));
+
+			// Group by vendor
+			const vendorMap = {};
+			outRecordsPeriode.forEach((r) => {
+				const name = r.vendor?.vendorName || 'Lainnya';
+				vendorMap[name] = (vendorMap[name] || 0) + parseFloat(r.jumlahKeluar);
+			});
+			const pengelola = Object.entries(vendorMap).map(([vendorName, jumlah]) => ({
+				vendorName,
+				jumlah: parseFloat(jumlah.toFixed(2)),
+			}));
+
+			const saldoAkhir = parseFloat((saldoAwal + masuk - keluar).toFixed(2));
+
+			// Hanya tampilkan jenis limbah yang ada aktivitas atau saldo
+			if (saldoAwal !== 0 || masuk !== 0 || keluar !== 0) {
+				data.push({
+					jenisLimbah: { id: wasteType.id, kode: wasteType.kode, nama: wasteType.nama },
+					saldoAwal,
+					masuk,
+					keluar,
+					saldoAkhir,
+					pengelola,
+				});
+			}
+		}
+
+		// Total keseluruhan
+		const totalSaldoAwal = parseFloat(data.reduce((s, r) => s + r.saldoAwal, 0).toFixed(2));
+		const totalMasuk = parseFloat(data.reduce((s, r) => s + r.masuk, 0).toFixed(2));
+		const totalKeluar = parseFloat(data.reduce((s, r) => s + r.keluar, 0).toFixed(2));
+		const totalSaldoAkhir = parseFloat(data.reduce((s, r) => s + r.saldoAkhir, 0).toFixed(2));
+
+		res.json({
+			tahun,
+			triwulan,
+			periodeLabel,
+			data,
+			totalSaldoAwal,
+			totalMasuk,
+			totalKeluar,
+			totalSaldoAkhir,
+		});
+	}),
+);
+
+// GET /neraca/export — Ekspor Neraca Limbah B3 ke Excel
+router.get(
+	'/neraca/export',
+	withAsync(async (req, res) => {
+		const siteId = getSiteId(req);
+		const tahun = parseInt(req.query.tahun);
+		const triwulan = parseInt(req.query.triwulan);
+
+		if (!tahun || isNaN(tahun)) {
+			return res.status(400).json({ message: 'Parameter tahun wajib diisi' });
+		}
+		if (!triwulan || isNaN(triwulan) || triwulan < 1 || triwulan > 4) {
+			return res.status(400).json({ message: 'Parameter triwulan wajib diisi (1-4)' });
+		}
+
+		const bulanAwal = (triwulan - 1) * 3;
+		const periodeStart = new Date(Date.UTC(tahun, bulanAwal, 1, 0, 0, 0));
+		const periodeEnd = new Date(Date.UTC(tahun, bulanAwal + 3, 0, 23, 59, 59));
+
+		const namaBulan = [
+			'Januari',
+			'Februari',
+			'Maret',
+			'April',
+			'Mei',
+			'Juni',
+			'Juli',
+			'Agustus',
+			'September',
+			'Oktober',
+			'November',
+			'Desember',
+		];
+		const periodeLabel = `${namaBulan[bulanAwal]} - ${namaBulan[bulanAwal + 2]} ${tahun}`;
+
+		const wasteTypes = await prisma.b3WasteType.findMany({
+			where: { siteId },
+			orderBy: { kode: 'asc' },
+		});
+
+		const neracaData = [];
+
+		for (const wasteType of wasteTypes) {
+			const [recordsSebelum, outRecordsSebelum] = await Promise.all([
+				prisma.b3WasteRecord.aggregate({
+					where: { siteId, jenisLimbahId: wasteType.id, tanggalMasuk: { lt: periodeStart } },
+					_sum: { jumlahMasuk: true },
+				}),
+				prisma.b3WasteOutRecord.aggregate({
+					where: {
+						siteId,
+						wasteRecord: { jenisLimbahId: wasteType.id },
+						tanggalKeluar: { lt: periodeStart },
+					},
+					_sum: { jumlahKeluar: true },
+				}),
+			]);
+
+			const totalMasukSebelum = parseFloat(recordsSebelum._sum.jumlahMasuk || 0);
+			const totalKeluarSebelum = parseFloat(outRecordsSebelum._sum.jumlahKeluar || 0);
+			const saldoAwal = parseFloat((totalMasukSebelum - totalKeluarSebelum).toFixed(2));
+
+			const recordsPeriode = await prisma.b3WasteRecord.aggregate({
+				where: {
+					siteId,
+					jenisLimbahId: wasteType.id,
+					tanggalMasuk: { gte: periodeStart, lte: periodeEnd },
+				},
+				_sum: { jumlahMasuk: true },
+			});
+			const masuk = parseFloat(recordsPeriode._sum.jumlahMasuk || 0);
+
+			const outRecordsPeriode = await prisma.b3WasteOutRecord.findMany({
+				where: {
+					siteId,
+					wasteRecord: { jenisLimbahId: wasteType.id },
+					tanggalKeluar: { gte: periodeStart, lte: periodeEnd },
+				},
+				include: { vendor: { select: { vendorName: true } } },
+			});
+
+			const keluarTotal = outRecordsPeriode.reduce((sum, r) => sum + parseFloat(r.jumlahKeluar), 0);
+			const keluar = parseFloat(keluarTotal.toFixed(2));
+
+			// Group by vendor for pengelola column
+			const vendorMap = {};
+			outRecordsPeriode.forEach((r) => {
+				const name = r.vendor?.vendorName || 'Lainnya';
+				vendorMap[name] = (vendorMap[name] || 0) + parseFloat(r.jumlahKeluar);
+			});
+			const pengelolaNames = Object.keys(vendorMap);
+
+			const saldoAkhir = parseFloat((saldoAwal + masuk - keluar).toFixed(2));
+
+			if (saldoAwal !== 0 || masuk !== 0 || keluar !== 0) {
+				neracaData.push({
+					kode: wasteType.kode,
+					nama: wasteType.nama,
+					saldoAwal,
+					masuk,
+					keluar,
+					saldoAkhir,
+					pengelola: pengelolaNames.join(', ') || '-',
+				});
+			}
+		}
+
+		// Build Excel workbook
+		const ExcelJS = (await import('exceljs')).default;
+		const { formatIndonesianNumber: fmtNum } = await import('../lib/b3WasteExport.js');
+
+		const workbook = new ExcelJS.Workbook();
+		const sheet = workbook.addWorksheet('Neraca Limbah B3');
+
+		// Row 1: Title
+		sheet.mergeCells('A1:H1');
+		const titleCell = sheet.getCell('A1');
+		titleCell.value = 'NERACA LIMBAH B3';
+		titleCell.font = { bold: true, size: 14 };
+		titleCell.alignment = { horizontal: 'center' };
+
+		// Row 2: Izin
+		sheet.mergeCells('A2:H2');
+		const izinCell = sheet.getCell('A2');
+		izinCell.value = 'Izin: 660.3/Per.TPLB3 144/VII/P3LH/DLH/2020';
+		izinCell.alignment = { horizontal: 'center' };
+
+		// Row 3: Periode
+		sheet.mergeCells('A3:H3');
+		const periodeCell = sheet.getCell('A3');
+		periodeCell.value = `Periode: ${periodeLabel}`;
+		periodeCell.alignment = { horizontal: 'center' };
+
+		// Row 4: kosong
+		// Row 5: Header kolom
+		const headerRow = sheet.getRow(5);
+		const headers = [
+			'No',
+			'Kode Limbah',
+			'Jenis Limbah B3',
+			'Saldo Awal (kg)',
+			'Limbah Masuk (kg)',
+			'Limbah Keluar (kg)',
+			'Saldo Akhir (kg)',
+			'Pengelola Pihak Ketiga',
+		];
+		headers.forEach((h, i) => {
+			const cell = headerRow.getCell(i + 1);
+			cell.value = h;
+			cell.font = { bold: true };
+			cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+			cell.border = {
+				top: { style: 'thin' },
+				bottom: { style: 'thin' },
+				left: { style: 'thin' },
+				right: { style: 'thin' },
+			};
+		});
+
+		// Column widths
+		sheet.getColumn(1).width = 5;
+		sheet.getColumn(2).width = 15;
+		sheet.getColumn(3).width = 30;
+		sheet.getColumn(4).width = 16;
+		sheet.getColumn(5).width = 16;
+		sheet.getColumn(6).width = 16;
+		sheet.getColumn(7).width = 16;
+		sheet.getColumn(8).width = 25;
+
+		// Row 6+: Data
+		let rowIdx = 6;
+		neracaData.forEach((item, idx) => {
+			const row = sheet.getRow(rowIdx);
+			row.getCell(1).value = idx + 1;
+			row.getCell(2).value = item.kode;
+			row.getCell(3).value = item.nama;
+			row.getCell(4).value = fmtNum(item.saldoAwal);
+			row.getCell(5).value = fmtNum(item.masuk);
+			row.getCell(6).value = fmtNum(item.keluar);
+			row.getCell(7).value = fmtNum(item.saldoAkhir);
+			row.getCell(8).value = item.pengelola;
+
+			for (let c = 1; c <= 8; c += 1) {
+				row.getCell(c).border = {
+					top: { style: 'thin' },
+					bottom: { style: 'thin' },
+					left: { style: 'thin' },
+					right: { style: 'thin' },
+				};
+			}
+			// Right-align number columns
+			for (let c = 4; c <= 7; c += 1) {
+				row.getCell(c).alignment = { horizontal: 'right' };
+			}
+			rowIdx += 1;
+		});
+
+		// Row TOTAL
+		const totalSaldoAwal = neracaData.reduce((s, r) => s + r.saldoAwal, 0);
+		const totalMasuk = neracaData.reduce((s, r) => s + r.masuk, 0);
+		const totalKeluar = neracaData.reduce((s, r) => s + r.keluar, 0);
+		const totalSaldoAkhir = neracaData.reduce((s, r) => s + r.saldoAkhir, 0);
+
+		const totalRow = sheet.getRow(rowIdx);
+		sheet.mergeCells(`A${rowIdx}:C${rowIdx}`);
+		totalRow.getCell(1).value = 'TOTAL';
+		totalRow.getCell(1).font = { bold: true };
+		totalRow.getCell(1).alignment = { horizontal: 'center' };
+		totalRow.getCell(4).value = fmtNum(totalSaldoAwal);
+		totalRow.getCell(5).value = fmtNum(totalMasuk);
+		totalRow.getCell(6).value = fmtNum(totalKeluar);
+		totalRow.getCell(7).value = fmtNum(totalSaldoAkhir);
+		totalRow.getCell(8).value = '';
+
+		for (let c = 1; c <= 8; c += 1) {
+			totalRow.getCell(c).font = { bold: true };
+			totalRow.getCell(c).border = {
+				top: { style: 'thin' },
+				bottom: { style: 'thin' },
+				left: { style: 'thin' },
+				right: { style: 'thin' },
+			};
+		}
+		for (let c = 4; c <= 7; c += 1) {
+			totalRow.getCell(c).alignment = { horizontal: 'right' };
+		}
+
+		const filename = `Neraca_Limbah_B3_Q${triwulan}_${tahun}.xlsx`;
+		res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+		res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+		await workbook.xlsx.write(res);
+		res.end();
+	}),
+);
+
 // GET /export — ekspor data pencatatan ke Excel
+
 router.get(
 	'/export',
 	withAsync(async (req, res) => {

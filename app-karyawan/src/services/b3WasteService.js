@@ -92,3 +92,18 @@ export async function deleteWasteType(siteId, id) {
 	const path = appendSiteIdParam(`/b3-waste/types/${id}`, siteId);
 	return apiRequest(path, { method: 'DELETE' });
 }
+
+// --- Neraca Limbah B3 ---
+
+export async function getNeracaLimbah(siteId, tahun, triwulan) {
+	const path = appendSiteIdParam('/b3-waste/records/neraca', siteId);
+	const sep = path.includes('?') ? '&' : '?';
+	return apiRequest(`${path}${sep}tahun=${tahun}&triwulan=${triwulan}`);
+}
+
+export async function exportNeracaLimbah(siteId, tahun, triwulan) {
+	const path = appendSiteIdParam('/b3-waste/records/neraca/export', siteId);
+	const sep = path.includes('?') ? '&' : '?';
+	const url = `${getApiBaseUrl()}${path}${sep}tahun=${tahun}&triwulan=${triwulan}`;
+	return downloadFile(url, `Neraca_Limbah_B3_Q${triwulan}_${tahun}.xlsx`);
+}

@@ -60,6 +60,9 @@ const MasterDataKaryawanCombinedPage = withLazyLoadably(
 const PencatatanLimbahB3Page = withLazyLoadably(
 	lazy(() => import('@/pages/employeeData/pencatatanLimbahB3/PencatatanLimbahB3')),
 );
+const NeracaLimbahB3Page = withLazyLoadably(
+	lazy(() => import('@/pages/employeeData/pencatatanLimbahB3/NeracaLimbahB3')),
+);
 const DashboardPage = withLazyLoadably(lazy(() => import('@/pages/dashboard')));
 
 function Router() {
@@ -177,6 +180,7 @@ function Router() {
 							<Route path="data-karyawan/cuti-karyawan" element={<LeaveCombinedPage />} />
 							<Route path="data-karyawan/cuti-karyawan/flow" element={<LeaveCombinedPage />} />
 							<Route path="limbah-b3/pencatatan" element={<PencatatanLimbahB3Page />} />
+							<Route path="limbah-b3/neraca" element={<NeracaLimbahB3Page />} />
 							<Route
 								path="data-unit/lisensi-sertifikasi-unit"
 								element={<UnitLicenseCertificationsPage />}
