@@ -42,6 +42,8 @@ router.get(
 			unitLicenseCertifications,
 			monthlyLeaveRequests,
 			recentLeaveRequests,
+			b3WasteRecords,
+			b3WasteOutRecords,
 		] = await Promise.all([
 			// All employees with relations
 			prisma.employee.findMany({
@@ -111,6 +113,27 @@ router.get(
 				},
 				orderBy: { createdAt: 'desc' },
 				take: 5,
+			}),
+			// B3 Waste Records (with outRecords for computing sisaLimbah)
+			prisma.b3WasteRecord.findMany({
+				where: { ...siteFilter },
+				select: {
+					id: true,
+					jumlahMasuk: true,
+					tanggalMasuk: true,
+					tanggalBatas: true,
+					outRecords: {
+						select: { jumlahKeluar: true, tanggalKeluar: true },
+					},
+				},
+			}),
+			// B3 Waste Out Records (for trend)
+			prisma.b3WasteOutRecord.findMany({
+				where: { ...siteFilter },
+				select: {
+					jumlahKeluar: true,
+					tanggalKeluar: true,
+				},
 			}),
 		]);
 
@@ -186,6 +209,65 @@ router.get(
 			createdAt: item.createdAt ? item.createdAt.toISOString().slice(0, 10) : null,
 		}));
 
+		// B3 Waste calculations
+		const totalMasuk = b3WasteRecords.reduce((sum, r) => sum + Number(r.jumlahMasuk), 0);
+		const totalKeluar = b3WasteOutRecords.reduce((sum, r) => sum + Number(r.jumlahKeluar), 0);
+		const sisaDiTps = totalMasuk - totalKeluar;
+
+		let overdueCount = 0;
+		let warningCount = 0;
+		b3WasteRecords.forEach((record) => {
+			const masuk = Number(record.jumlahMasuk);
+			const keluar = record.outRecords.reduce((s, o) => s + Number(o.jumlahKeluar), 0);
+			const sisaLimbah = masuk - keluar;
+			if (sisaLimbah <= 0) return;
+
+			const tanggalBatas = new Date(record.tanggalBatas);
+			const diffMs = tanggalBatas.getTime() - today.getTime();
+			const sisaHari = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+			if (sisaHari < 0) {
+				overdueCount++;
+			} else if (sisaHari >= 1 && sisaHari <= 14) {
+				warningCount++;
+			}
+		});
+
+		// B3 Waste trend (last 6 months)
+		const trendBulanan = [];
+		const bulanLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+		for (let i = 5; i >= 0; i--) {
+			const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+			const year = d.getFullYear();
+			const month = d.getMonth();
+			const label = `${bulanLabels[month]} ${year}`;
+
+			const masukBulan = b3WasteRecords
+				.filter((r) => {
+					const t = new Date(r.tanggalMasuk);
+					return t.getFullYear() === year && t.getMonth() === month;
+				})
+				.reduce((s, r) => s + Number(r.jumlahMasuk), 0);
+
+			const keluarBulan = b3WasteOutRecords
+				.filter((r) => {
+					const t = new Date(r.tanggalKeluar);
+					return t.getFullYear() === year && t.getMonth() === month;
+				})
+				.reduce((s, r) => s + Number(r.jumlahKeluar), 0);
+
+			trendBulanan.push({ bulan: label, masuk: masukBulan, keluar: keluarBulan });
+		}
+
+		const b3Waste = {
+			totalMasuk,
+			totalKeluar,
+			sisaDiTps,
+			overdueCount,
+			warningCount,
+			trendBulanan,
+		};
+
 		return res.json({
 			summary: {
 				totalEmployees,
@@ -204,6 +286,7 @@ router.get(
 				expiringLicenses: expiringLicensesList,
 				recentLeaves,
 			},
+			b3Waste,
 		});
 	}),
 );
