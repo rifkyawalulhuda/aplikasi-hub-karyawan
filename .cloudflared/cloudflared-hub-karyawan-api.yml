@@ -1,5 +1,5 @@
 tunnel: 4e8a52e4-b3df-45ab-9c5e-1a2548008cb9
-credentials-file: C:\Users\rifky\.cloudflared\4e8a52e4-b3df-45ab-9c5e-1a2548008cb9.json
+credentials-file: E:\Github\aplikasi-hub-karyawan\.cloudflared\4e8a52e4-b3df-45ab-9c5e-1a2548008cb9.json
 
 ingress:
   - hostname: aplikasi-hub.my.id
