@@ -5,6 +5,12 @@ import express from 'express';
 import helmet from 'helmet';
 import http from 'http';
 import rateLimit from 'express-rate-limit';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+import { existsSync } from 'fs';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 import prisma from './lib/prisma.js';
 import authRouter from './routes/auth.js';
@@ -204,6 +210,16 @@ app.use('/api/data-karyawan/license-certifications', requireAdminAuth, licenseCe
 app.use('/api/data-unit/license-certifications', requireAdminAuth, unitLicenseCertificationsRouter);
 app.use('/api/b3-waste/records', requireAdminAuth, b3WasteRecordsRouter);
 app.use('/api/b3-waste/types', requireAdminAuth, b3WasteTypesRouter);
+
+// Serve static frontend build (production only)
+const distPath = join(__dirname, '..', 'dist');
+if (existsSync(distPath)) {
+	app.use(express.static(distPath, { maxAge: '1d', etag: true }));
+	// SPA fallback: semua non-API route diarahkan ke index.html
+	app.get(/^(?!\/api).*$/, (req, res) => {
+		res.sendFile(join(distPath, 'index.html'));
+	});
+}
 
 app.use((error, req, res, next) => {
 	if (res.headersSent) {
