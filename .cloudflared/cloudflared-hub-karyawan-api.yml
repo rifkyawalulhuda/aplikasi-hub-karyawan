@@ -3,11 +3,11 @@ credentials-file: C:\Users\rifky\.cloudflared\4e8a52e4-b3df-45ab-9c5e-1a2548008c
 
 ingress:
   - hostname: aplikasi-hub.my.id
-    service: http://127.0.0.1:5173
+    service: http://127.0.0.1:4000
   - hostname: www.aplikasi-hub.my.id
-    service: http://127.0.0.1:5173
+    service: http://127.0.0.1:4000
   - hostname: pwa.aplikasi-hub.my.id
-    service: http://127.0.0.1:5173
+    service: http://127.0.0.1:4000
   - hostname: api.aplikasi-hub.my.id
     service: http://127.0.0.1:4000
   - service: http_status:404

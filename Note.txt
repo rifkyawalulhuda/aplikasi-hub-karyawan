@@ -1,60 +1,115 @@
-https://themewagon.github.io/slim-free-react-mui-template/components/snackbar
+# CATATAN PROYEK - Aplikasi Hub Karyawan
+# Project path: E:\Github\aplikasi-hub-karyawan\app-karyawan
+
+================================================================================
+REFERENSI
+================================================================================
+
+Template UI  : https://themewagon.github.io/slim-free-react-mui-template/components/snackbar
+Project docs : docs/context-project.md
+Deploy docs  : docs/deploy-cloudflare-tunnel.md
+Dev workflow : docs/dev-workflow.md
 
 
-D:\Github\aplikasi-hub-karyawan\app-karyawan\npm run dev:full
+================================================================================
+AKUN SEED (Development)
+================================================================================
 
-npm run dev:server
-npm run dev:host
+Master Admin : NIK CLC000  | Password masteradmin123 | Role: masteradmin
+Admin        : NIK CLC001  | Password admin123
+Employee     : NIK CLC002  | Password user123
+
+Buat akun seed:
+  npm run prisma:seed:login
 
 
-cd folder_docker
-docker compose up -d
+================================================================================
+RITUAL WAJIB - PINDAH LAPTOP / FRESH CLONE
+================================================================================
+
+cd E:\Github\aplikasi-hub-karyawan\app-karyawan
+
+1. git pull
+2. npm install                        # install dependencies
+3. docker compose up -d               # jalankan PostgreSQL via Docker (port 5434)
+4. npx prisma migrate dev             # sync schema ke DB (development only)
+5. npm run prisma:generate            # generate Prisma client
+6. npm run prisma:seed:login          # buat akun seed (opsional, jika DB kosong)
 
 
-SETIAP KALI PINDAH LAPTOP (RITUAL WAJIB
+================================================================================
+DEVELOPMENT (Sehari-hari)
+================================================================================
 
-git pull
-docker compose up -d (docker)
-npm run build (backend)
-npx prisma migrate dev (backend) (Development only)
-npm run prisma:generate
-npm run prisma:migrate:deploy
-npm install (jika ada perubahan dependency) (Backend)
-npm run dev (front end)
+cd E:\Github\aplikasi-hub-karyawan\app-karyawan
 
-npm ci
-npx prisma -v
-npx prisma migrate dev
-npx prisma migrate status
-npx prisma studio   (masuk ke Prisma Studio)
+# Jalankan frontend + backend sekaligus (mode dev, proxy API via Vite)
+npm run dev:full
 
-npm run prisma:seed:login   (untuk membuat akun dummy)
+# Atau pisah:
+npm run dev:server    # backend Express di port 4000
+npm run dev:host      # frontend Vite di port 5173 (host terbuka LAN)
 
+# Database
+npm run db:up         # start Docker PostgreSQL
+npm run db:down       # stop Docker PostgreSQL
+
+
+================================================================================
+DEPLOY LOKAL + CLOUDFLARE TUNNEL (Akses Publik)
+================================================================================
+
+cd E:\Github\aplikasi-hub-karyawan\app-karyawan
+
+# 1. Build frontend ke dist/ (jalankan tiap ada perubahan kode frontend)
+npm run build:prod
+
+# 2. Jalankan backend (Express melayani dist/ + API di port 4000)
+npm run start:prod
+# atau dengan PM2:
+pm2 start ecosystem.config.cjs
+
+# 3. Jalankan tunnel Cloudflare (mengarah ke port 4000)
+cloudflared tunnel --config .cloudflared\cloudflared-hub-karyawan-api.yml run
+
+# Tunnel config:
+#   aplikasi-hub.my.id       -> http://127.0.0.1:4000  (static dist/ + admin)
+#   www.aplikasi-hub.my.id   -> http://127.0.0.1:4000
+#   pwa.aplikasi-hub.my.id   -> http://127.0.0.1:4000
+#   api.aplikasi-hub.my.id   -> http://127.0.0.1:4000  (API)
+
+# Catatan: Vite dev server TIDAK perlu jalan saat deploy publik.
+
+
+================================================================================
+PRISMA & DATABASE
+================================================================================
+
+npx prisma migrate dev          # buat & jalankan migration baru (dev only)
+npx prisma migrate deploy       # jalankan migration di production
+npx prisma migrate status       # cek status migration
+npx prisma generate             # generate Prisma client
+npx prisma studio               # buka Prisma Studio (GUI database)
+npm run prisma:generate:safe    # generate Prisma client tanpa matikan backend
+
+npm run security:hash-passwords # konversi password plaintext lama ke hash scrypt
+
+
+================================================================================
+POWERSHELL - IZIN SCRIPT
+================================================================================
 
 Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
 
 
-Ada 3 tempat utama pengaturan PORT:
+================================================================================
+PORT & KONFIGURASI
+================================================================================
 
-Port frontend dev server (default Vite 5173)
-Ubah di vite.config.js pada server, tambahkan:
+Frontend dev server  : http://127.0.0.1:5173  (Vite)
+Backend API          : http://127.0.0.1:4000  (Express)
+PostgreSQL Docker    : localhost:5434
 
-server: {
-  port: 3000,
-  // ...
-}
-Whitelist CORS backend untuk frontend local
-Ubah CORS_ALLOWED_ORIGINS di .env (dan kalau perlu .env.example) dari :5173 ke port baru Anda.
-
-Fallback hardcoded di backend
-Jika env kosong, backend pakai default 5173 di server/index.js dan server/lib/emailService.js.
-
-
-Seed Login :
-
-NIK	: CLC000
-Password : masteradmin123
-Role : masteradmin
-
-Admin login: NIK CLC001 | Password admin123
-Employee login: NIK CLC002 | Password user123
+Ubah port frontend dev (jika perlu):
+  vite.config.js -> server.port: <PORT_BARU>
+  .env -> tambahkan ip:PORT_BARU ke CORS_ALLOWED_ORIGINS
