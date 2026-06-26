@@ -1,1 +1,1 @@
-cloudflared tunnel --config C:\Users\rifky\.cloudflared\cloudflared-hub-karyawan-api.yml run
+cloudflared tunnel --config E:\Github\aplikasi-hub-karyawan\.cloudflared\cloudflared-hub-karyawan-api.yml run
