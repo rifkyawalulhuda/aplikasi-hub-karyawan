@@ -20,6 +20,7 @@ import CardHeader from '@/components/cardHeader';
 import DeleteConfirmDialog from '@/components/masterData/deleteConfirmDialog';
 import MasterDataImportDialog from '@/components/masterData/masterDataImportDialog';
 import PageHeader from '@/components/pageHeader';
+import { useSite } from '@/contexts/siteContext';
 import useUrlSearchKeyword from '@/hooks/useUrlSearchKeyword';
 import apiRequest, { downloadFile, getApiBaseUrl } from '@/services/api';
 
@@ -55,6 +56,7 @@ function mergeImportedRows(currentRows, importedRows) {
 
 function TrainingRecordsPage() {
 	const { enqueueSnackbar } = useSnackbar();
+	const { currentSiteId, isSuperAdmin } = useSite();
 	const [rows, setRows] = useState([]);
 	const [employeeOptions, setEmployeeOptions] = useState([]);
 	const [loading, setLoading] = useState(true);
@@ -211,6 +213,11 @@ function TrainingRecordsPage() {
 	};
 
 	const handleSubmit = async (values) => {
+		if (!selectedItem && !currentSiteId) {
+			enqueueSnackbar('Pilih site terlebih dahulu sebelum menambah data pelatihan.', { variant: 'warning' });
+			return;
+		}
+
 		setSubmitting(true);
 
 		try {
@@ -224,6 +231,7 @@ function TrainingRecordsPage() {
 				endDate: values.endDate,
 				address: values.address,
 				notes: values.notes,
+				...(!selectedItem && { siteId: currentSiteId }),
 			};
 
 			const savedItem = await apiRequest(

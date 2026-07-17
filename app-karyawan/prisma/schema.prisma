@@ -7,6 +7,752 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model WorkLocation {
+  id        Int        @id @default(autoincrement())
+  name      String     @unique @db.VarChar(255)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  employees Employee[]
+
+  @@map("work_locations")
+}
+
+model Department {
+  id        Int        @id @default(autoincrement())
+  name      String     @unique @db.VarChar(255)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  employees Employee[]
+
+  @@map("departments")
+}
+
+model JobRole {
+  id        Int        @id @default(autoincrement())
+  name      String     @unique @db.VarChar(255)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  employees Employee[]
+
+  @@map("job_roles")
+}
+
+model JobLevel {
+  id                  Int                  @id @default(autoincrement())
+  name                String               @unique @db.VarChar(255)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  approvalRank        Int?
+  employees           Employee[]
+  siteApprovalConfigs SiteApprovalConfig[]
+
+  @@map("job_levels")
+}
+
+model MasterSite {
+  id                  Int                  @id @default(autoincrement())
+  name                String               @unique @db.VarChar(100)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  trainings           EmployeeTraining[]
+  employees           Employee[]
+  admins              MasterAdmin[]
+  groupShifts         MasterGroupShift[]
+  units               MasterUnit[]
+  vendors             MasterVendor[]
+  siteApprovalConfigs SiteApprovalConfig[]
+
+  @@map("master_sites")
+}
+
+model MasterUnit {
+  id               Int                        @id @default(autoincrement())
+  unitName         String                     @db.VarChar(255)
+  unitType         String                     @db.VarChar(100)
+  capacity         String                     @db.VarChar(255)
+  unitSerialNumber String                     @db.VarChar(255)
+  detailLainnya    String                     @db.VarChar(255)
+  createdAt        DateTime                   @default(now())
+  updatedAt        DateTime                   @updatedAt
+  siteId           Int
+  site             MasterSite                 @relation(fields: [siteId], references: [id])
+  certifications   UnitLicenseCertification[]
+
+  @@index([siteId])
+  @@map("master_units")
+}
+
+model MasterVendor {
+  id              Int                        @id @default(autoincrement())
+  vendorName      String                     @db.VarChar(255)
+  vendorType      String                     @db.VarChar(100)
+  address         String                     @db.VarChar(255)
+  picName         String                     @db.VarChar(255)
+  phoneNumber     String                     @db.VarChar(100)
+  email           String                     @db.VarChar(255)
+  detailLainnya   String                     @db.VarChar(255)
+  createdAt       DateTime                   @default(now())
+  updatedAt       DateTime                   @updatedAt
+  siteId          Int
+  wasteOutRecords B3WasteOutRecord[]
+  site            MasterSite                 @relation(fields: [siteId], references: [id])
+  certifications  UnitLicenseCertification[]
+
+  @@index([siteId])
+  @@map("master_vendors")
+}
+
+model MasterDokPkb {
+  id             Int             @id @default(autoincrement())
+  article        String          @unique @db.VarChar(255)
+  content        String
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  warningLetters WarningLetter[]
+
+  @@map("master_dok_pkb")
+}
+
+model MasterDokKaryawan {
+  id                    Int                            @id @default(autoincrement())
+  documentName          String                         @db.VarChar(255)
+  documentType          String                         @db.VarChar(100)
+  issuer                String                         @db.VarChar(255)
+  createdAt             DateTime                       @default(now())
+  updatedAt             DateTime                       @updatedAt
+  licenseCertifications EmployeeLicenseCertification[]
+
+  @@map("master_dok_karyawan")
+}
+
+model MasterCutiKaryawan {
+  id              Int                     @id @default(autoincrement())
+  leaveType       String                  @db.VarChar(255)
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+  leaveCode       String?                 @db.VarChar(10)
+  databaseRecords EmployeeLeaveDatabase[]
+  revisionRecords EmployeeLeaveRevision[]
+  records         EmployeeLeave[]
+
+  @@map("master_cuti_karyawan")
+}
+
+model MasterHoliday {
+  id          Int      @id @default(autoincrement())
+  year        Int
+  holidayDate DateTime @db.Date
+  name        String   @db.VarChar(255)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("master_holidays")
+}
+
+model MasterGroupShift {
+  id             Int                 @id @default(autoincrement())
+  groupShiftName String              @db.VarChar(255)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  siteId         Int
+  employees      Employee[]
+  foremen        GroupShiftForeman[]
+  site           MasterSite          @relation(fields: [siteId], references: [id])
+
+  @@index([siteId])
+  @@map("master_group_shifts")
+}
+
+model GroupShiftForeman {
+  id                 Int              @id @default(autoincrement())
+  masterGroupShiftId Int
+  employeeId         Int
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  employee           Employee         @relation(fields: [employeeId], references: [id])
+  masterGroupShift   MasterGroupShift @relation(fields: [masterGroupShiftId], references: [id], onDelete: Cascade)
+
+  @@unique([masterGroupShiftId, employeeId])
+  @@index([masterGroupShiftId])
+  @@index([employeeId])
+  @@map("group_shift_foremen")
+}
+
+model Employee {
+  id                                 Int                                @id @default(autoincrement())
+  employeeNo                         String                             @unique @db.VarChar(100)
+  password                           String                             @db.VarChar(255)
+  fullName                           String                             @db.VarChar(255)
+  employmentType                     EmploymentType
+  departmentId                       Int
+  birthDate                          DateTime                           @db.Date
+  gender                             Gender
+  workLocationId                     Int
+  jobRoleId                          Int
+  jobLevelId                         Int
+  educationLevel                     EducationLevel
+  grade                              GradeRank
+  joinDate                           DateTime                           @db.Date
+  phoneNumber                        String                             @db.VarChar(50)
+  email                              String?                            @db.VarChar(255)
+  createdAt                          DateTime                           @default(now())
+  updatedAt                          DateTime                           @updatedAt
+  groupShiftId                       Int?
+  siteId                             Int
+  notificationReadStates             AdminNotificationReadState[]
+  emailWorkflowFailureLogsResolvedBy EmailWorkflowFailureLog[]
+  leaveApprovals                     EmployeeLeaveApproval[]            @relation("EmployeeLeaveApprover")
+  leaveBalanceSeeds                  EmployeeLeaveBalanceSeed[]
+  leaveDatabaseRecords               EmployeeLeaveDatabase[]
+  leaveReplacementAssignments        EmployeeLeaveReplacementAssignee[] @relation("EmployeeLeaveReplacementAssigneeEmployee")
+  leaveRevisionReplacements          EmployeeLeaveRevision[]            @relation("EmployeeLeaveRevisionReplacement")
+  leaveRecords                       EmployeeLeave[]                    @relation("EmployeeLeaveRequester")
+  leaveReplacementRequests           EmployeeLeave[]                    @relation("EmployeeLeaveReplacement")
+  licenseCertifications              EmployeeLicenseCertification[]
+  pushSubscriptions                  EmployeePushSubscription[]
+  selfServiceChangeLogs              EmployeeSelfServiceChangeLog[]
+  trainingParticipants               EmployeeTrainingParticipant[]
+  department                         Department                         @relation(fields: [departmentId], references: [id])
+  groupShift                         MasterGroupShift?                  @relation(fields: [groupShiftId], references: [id])
+  jobLevel                           JobLevel                           @relation(fields: [jobLevelId], references: [id])
+  jobRole                            JobRole                            @relation(fields: [jobRoleId], references: [id])
+  site                               MasterSite                         @relation(fields: [siteId], references: [id])
+  workLocation                       WorkLocation                       @relation(fields: [workLocationId], references: [id])
+  groupShiftAssignments              GroupShiftForeman[]
+  guidanceRecords                    GuidanceRecord[]
+  adminAccounts                      MasterAdmin?
+  warningLetters                     WarningLetter[]                    @relation("WarningLetterEmployee")
+  warningLetterApprovals             WarningLetter[]                    @relation("WarningLetterSuperior")
+
+  @@index([siteId])
+  @@index([departmentId])
+  @@index([groupShiftId])
+  @@index([workLocationId])
+  @@index([jobRoleId])
+  @@index([jobLevelId])
+  @@map("employees")
+}
+
+model EmployeeLeave {
+  id                       Int                                @id @default(autoincrement())
+  employeeId               Int
+  masterCutiKaryawanId     Int
+  leaveDays                Int
+  periodStart              DateTime                           @db.Date
+  periodEnd                DateTime                           @db.Date
+  remainingLeave           Int
+  notes                    String?
+  createdAt                DateTime                           @default(now())
+  updatedAt                DateTime                           @updatedAt
+  approvedAt               DateTime?
+  balanceBefore            Int
+  cancelledAt              DateTime?
+  currentStageOrder        Int?
+  leaveYear                Int
+  rejectedAt               DateTime?
+  rejectionNote            String?
+  requestNumber            String                             @unique @db.VarChar(50)
+  revisionNo               Int                                @default(1)
+  status                   LeaveRequestStatus                 @default(SUBMITTED)
+  submittedAt              DateTime                           @default(now())
+  leaveAddress             String?
+  leaveReason              String?
+  replacementEmployeeId    Int?
+  emailOutbox              EmailOutbox[]
+  emailWorkflowFailureLogs EmailWorkflowFailureLog[]
+  approvals                EmployeeLeaveApproval[]
+  leaveDatabaseHistories   EmployeeLeaveDatabaseHistory[]
+  replacementAssignments   EmployeeLeaveReplacementAssignee[]
+  revisions                EmployeeLeaveRevision[]
+  employee                 Employee                           @relation("EmployeeLeaveRequester", fields: [employeeId], references: [id])
+  masterCutiKaryawan       MasterCutiKaryawan                 @relation(fields: [masterCutiKaryawanId], references: [id])
+  replacementEmployee      Employee?                          @relation("EmployeeLeaveReplacement", fields: [replacementEmployeeId], references: [id])
+
+  @@index([employeeId])
+  @@index([replacementEmployeeId])
+  @@index([masterCutiKaryawanId])
+  @@index([status])
+  @@index([leaveYear])
+  @@map("employee_leaves")
+}
+
+model EmployeeLeaveDatabase {
+  id                   Int                            @id @default(autoincrement())
+  employeeId           Int
+  masterCutiKaryawanId Int
+  leaveDays            Int
+  periodStart          DateTime                       @db.Date
+  periodEnd            DateTime                       @db.Date
+  remainingLeave       Int
+  notes                String?
+  createdAt            DateTime                       @default(now())
+  updatedAt            DateTime                       @updatedAt
+  year                 Int
+  employee             Employee                       @relation(fields: [employeeId], references: [id])
+  masterCutiKaryawan   MasterCutiKaryawan             @relation(fields: [masterCutiKaryawanId], references: [id])
+  histories            EmployeeLeaveDatabaseHistory[]
+
+  @@unique([employeeId, masterCutiKaryawanId, year])
+  @@index([employeeId])
+  @@index([masterCutiKaryawanId])
+  @@index([year])
+  @@index([periodStart])
+  @@map("employee_leave_database")
+}
+
+model EmployeeLeaveDatabaseHistory {
+  id                      Int                            @id @default(autoincrement())
+  employeeLeaveDatabaseId Int
+  employeeLeaveId         Int?
+  sourceType              LeaveDatabaseHistorySourceType
+  changeDate              DateTime                       @default(now())
+  leaveDays               Int
+  periodStart             DateTime                       @db.Date
+  periodEnd               DateTime                       @db.Date
+  balanceBefore           Int
+  balanceAfter            Int
+  notes                   String?
+  createdAt               DateTime                       @default(now())
+  employeeLeaveDatabase   EmployeeLeaveDatabase          @relation(fields: [employeeLeaveDatabaseId], references: [id], onDelete: Cascade)
+  employeeLeave           EmployeeLeave?                 @relation(fields: [employeeLeaveId], references: [id])
+
+  @@index([employeeLeaveDatabaseId])
+  @@index([employeeLeaveId])
+  @@index([sourceType])
+  @@index([changeDate])
+  @@map("employee_leave_database_histories")
+}
+
+model EmployeeLeaveRevision {
+  id                     Int                                @id @default(autoincrement())
+  employeeLeaveId        Int
+  revisionNo             Int
+  status                 LeaveRequestStatus
+  leaveDays              Int
+  periodStart            DateTime                           @db.Date
+  periodEnd              DateTime                           @db.Date
+  balanceBefore          Int
+  remainingLeave         Int
+  notes                  String?
+  rejectionNote          String?
+  submittedAt            DateTime                           @default(now())
+  approvedAt             DateTime?
+  rejectedAt             DateTime?
+  cancelledAt            DateTime?
+  createdAt              DateTime                           @default(now())
+  updatedAt              DateTime                           @updatedAt
+  masterCutiKaryawanId   Int
+  leaveAddress           String?
+  leaveReason            String?
+  replacementEmployeeId  Int?
+  replacementAssignments EmployeeLeaveReplacementAssignee[] @relation("EmployeeLeaveRevisionAssignments")
+  employeeLeave          EmployeeLeave                      @relation(fields: [employeeLeaveId], references: [id], onDelete: Cascade)
+  masterCutiKaryawan     MasterCutiKaryawan                 @relation(fields: [masterCutiKaryawanId], references: [id])
+  replacementEmployee    Employee?                          @relation("EmployeeLeaveRevisionReplacement", fields: [replacementEmployeeId], references: [id])
+
+  @@unique([employeeLeaveId, revisionNo])
+  @@index([employeeLeaveId])
+  @@index([masterCutiKaryawanId])
+  @@index([replacementEmployeeId])
+  @@map("employee_leave_revisions")
+}
+
+model EmployeeLeaveReplacementAssignee {
+  id                    Int                   @id @default(autoincrement())
+  employeeLeaveId       Int
+  revisionNo            Int
+  replacementEmployeeId Int
+  sequenceNo            Int
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  employeeLeave         EmployeeLeave         @relation(fields: [employeeLeaveId], references: [id], onDelete: Cascade)
+  revision              EmployeeLeaveRevision @relation("EmployeeLeaveRevisionAssignments", fields: [employeeLeaveId, revisionNo], references: [employeeLeaveId, revisionNo], onDelete: Cascade)
+  replacementEmployee   Employee              @relation("EmployeeLeaveReplacementAssigneeEmployee", fields: [replacementEmployeeId], references: [id])
+
+  @@unique([employeeLeaveId, revisionNo, sequenceNo], map: "elra_leave_rev_seq_key")
+  @@unique([employeeLeaveId, revisionNo, replacementEmployeeId], map: "elra_leave_rev_emp_key")
+  @@index([employeeLeaveId])
+  @@index([employeeLeaveId, revisionNo])
+  @@index([replacementEmployeeId])
+  @@map("employee_leave_replacement_assignees")
+}
+
+model EmployeeLeaveApproval {
+  id                       Int                       @id @default(autoincrement())
+  employeeLeaveId          Int
+  revisionNo               Int
+  stageOrder               Int
+  stageType                LeaveStageType
+  approverEmployeeId       Int
+  status                   LeaveApprovalStatus       @default(WAITING)
+  actionNote               String?
+  actedAt                  DateTime?
+  createdAt                DateTime                  @default(now())
+  updatedAt                DateTime                  @updatedAt
+  emailOutbox              EmailOutbox[]
+  emailWorkflowFailureLogs EmailWorkflowFailureLog[]
+  approverEmployee         Employee                  @relation("EmployeeLeaveApprover", fields: [approverEmployeeId], references: [id])
+  employeeLeave            EmployeeLeave             @relation(fields: [employeeLeaveId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeLeaveId, revisionNo, stageOrder, approverEmployeeId])
+  @@index([employeeLeaveId])
+  @@index([approverEmployeeId])
+  @@index([status])
+  @@map("employee_leave_approvals")
+}
+
+model EmployeeLeaveBalanceSeed {
+  id             Int      @id @default(autoincrement())
+  employeeId     Int
+  year           Int
+  openingBalance Int
+  currentBalance Int
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  employee       Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, year])
+  @@index([employeeId])
+  @@index([year])
+  @@map("employee_leave_balance_seeds")
+}
+
+model EmailOutbox {
+  id                      Int                    @id @default(autoincrement())
+  employeeLeaveId         Int?
+  employeeLeaveApprovalId Int?
+  revisionNo              Int?
+  recipientEmail          String                 @db.VarChar(255)
+  recipientName           String?                @db.VarChar(255)
+  subject                 String                 @db.VarChar(255)
+  htmlBody                String?
+  textBody                String?
+  status                  EmailOutboxStatus      @default(PENDING)
+  sentAt                  DateTime?
+  errorMessage            String?
+  createdAt               DateTime               @default(now())
+  updatedAt               DateTime               @updatedAt
+  employeeLeaveApproval   EmployeeLeaveApproval? @relation(fields: [employeeLeaveApprovalId], references: [id])
+  employeeLeave           EmployeeLeave?         @relation(fields: [employeeLeaveId], references: [id])
+
+  @@index([employeeLeaveId])
+  @@index([employeeLeaveApprovalId])
+  @@index([status])
+  @@map("email_outbox")
+}
+
+model EmailWorkflowFailureLog {
+  id                      Int                        @id @default(autoincrement())
+  event                   String                     @db.VarChar(100)
+  entityType              String                     @db.VarChar(50)
+  employeeLeaveId         Int?
+  employeeLeaveApprovalId Int?
+  recipientEmail          String                     @db.VarChar(255)
+  recipientName           String?                    @db.VarChar(255)
+  subject                 String                     @db.VarChar(255)
+  errorMessage            String
+  status                  EmailWorkflowFailureStatus @default(OPEN)
+  resolvedAt              DateTime?
+  resolvedByEmployeeId    Int?
+  resolvedNote            String?
+  createdAt               DateTime                   @default(now())
+  updatedAt               DateTime                   @updatedAt
+  employeeLeaveApproval   EmployeeLeaveApproval?     @relation(fields: [employeeLeaveApprovalId], references: [id])
+  employeeLeave           EmployeeLeave?             @relation(fields: [employeeLeaveId], references: [id])
+  resolvedByEmployee      Employee?                  @relation(fields: [resolvedByEmployeeId], references: [id])
+
+  @@index([event])
+  @@index([entityType])
+  @@index([employeeLeaveId])
+  @@index([employeeLeaveApprovalId])
+  @@index([status])
+  @@index([resolvedAt])
+  @@map("email_workflow_failure_logs")
+}
+
+model AdminNotificationReadState {
+  id             Int      @id @default(autoincrement())
+  employeeId     Int
+  notificationId String   @db.VarChar(255)
+  readAt         DateTime @default(now())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  employee       Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, notificationId])
+  @@index([employeeId])
+  @@index([readAt])
+  @@map("admin_notification_read_states")
+}
+
+model AdminNotificationRecord {
+  id              Int      @id @default(autoincrement())
+  notificationId  String   @unique @db.VarChar(255)
+  category        String   @db.VarChar(100)
+  severity        String   @db.VarChar(50)
+  title           String   @db.VarChar(255)
+  description     String
+  targetPath      String?  @db.VarChar(255)
+  targetSearch    String?  @db.VarChar(255)
+  href            String?  @db.VarChar(500)
+  dateLabel       String?  @db.VarChar(255)
+  sortDate        DateTime
+  firstDetectedAt DateTime @default(now())
+  lastDetectedAt  DateTime @default(now())
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([category])
+  @@index([severity])
+  @@index([sortDate])
+  @@index([lastDetectedAt])
+  @@index([isActive])
+  @@map("admin_notification_records")
+}
+
+model EmployeeSelfServiceChangeLog {
+  id         Int                           @id @default(autoincrement())
+  employeeId Int
+  changeType EmployeeSelfServiceChangeType
+  summary    String
+  createdAt  DateTime                      @default(now())
+  updatedAt  DateTime                      @updatedAt
+  employee   Employee                      @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+  @@index([changeType])
+  @@index([createdAt])
+  @@map("employee_self_service_change_logs")
+}
+
+model EmployeePushSubscription {
+  id             Int       @id @default(autoincrement())
+  employeeId     Int
+  endpoint       String
+  p256dh         String
+  auth           String
+  expirationTime DateTime?
+  userAgent      String?
+  isActive       Boolean   @default(true)
+  lastUsedAt     DateTime  @default(now())
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  employee       Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, endpoint])
+  @@index([employeeId])
+  @@index([isActive])
+  @@index([lastUsedAt])
+  @@map("employee_push_subscriptions")
+}
+
+model MasterAdmin {
+  id           Int         @id @default(autoincrement())
+  employeeId   Int         @unique
+  password     String      @db.VarChar(255)
+  role         String      @db.VarChar(20)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  tokenVersion Int         @default(0)
+  siteId       Int?
+  employee     Employee    @relation(fields: [employeeId], references: [id])
+  site         MasterSite? @relation(fields: [siteId], references: [id])
+
+  @@index([employeeId])
+  @@index([siteId])
+  @@map("master_admins")
+}
+
+model GuidanceRecord {
+  id                    Int                    @id @default(autoincrement())
+  employeeId            Int
+  meetingNumber         Int
+  meetingDate           DateTime               @db.Date
+  meetingTime           String                 @db.VarChar(10)
+  location              String                 @db.VarChar(255)
+  problemFaced          String
+  problemCause          String
+  problemSolving        String
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  category              GuidanceRecordCategory @default(GUIDANCE)
+  problemFacedSecondary String?
+  employee              Employee               @relation(fields: [employeeId], references: [id])
+
+  @@index([employeeId])
+  @@map("guidance_records")
+}
+
+model WarningLetter {
+  id                 Int                      @id @default(autoincrement())
+  employeeId         Int
+  superiorEmployeeId Int
+  masterDokPkbId     Int?
+  warningLevel       Int?
+  letterNumber       String                   @db.VarChar(25)
+  letterDate         DateTime                 @db.Date
+  violation          String
+  articleLabel       String?                  @db.VarChar(255)
+  articleContent     String?
+  createdAt          DateTime                 @default(now())
+  updatedAt          DateTime                 @updatedAt
+  category           DisciplineLetterCategory @default(WARNING_LETTER)
+  departmentName     String?                  @db.VarChar(255)
+  jobLevelName       String?                  @db.VarChar(255)
+  employee           Employee                 @relation("WarningLetterEmployee", fields: [employeeId], references: [id])
+  masterDokPkb       MasterDokPkb?            @relation(fields: [masterDokPkbId], references: [id], onDelete: Restrict)
+  superiorEmployee   Employee                 @relation("WarningLetterSuperior", fields: [superiorEmployeeId], references: [id])
+
+  @@index([employeeId])
+  @@index([superiorEmployeeId])
+  @@index([masterDokPkbId])
+  @@map("warning_letters")
+}
+
+model EmployeeLicenseCertification {
+  id                  Int               @id @default(autoincrement())
+  employeeId          Int
+  masterDokKaryawanId Int
+  type                String            @db.VarChar(255)
+  documentNumber      String            @db.VarChar(255)
+  issuerSnapshot      String            @db.VarChar(255)
+  expiryDate          DateTime          @db.Date
+  notes               String?
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  employee            Employee          @relation(fields: [employeeId], references: [id])
+  masterDokKaryawan   MasterDokKaryawan @relation(fields: [masterDokKaryawanId], references: [id])
+
+  @@index([employeeId])
+  @@index([masterDokKaryawanId])
+  @@map("employee_license_certifications")
+}
+
+model EmployeeTraining {
+  id                 Int                           @id @default(autoincrement())
+  trainingType       TrainingType
+  material           String
+  trainerInstitution String                        @db.VarChar(255)
+  trainerName        String                        @db.VarChar(255)
+  startDate          DateTime                      @db.Date
+  endDate            DateTime                      @db.Date
+  dayCount           Int
+  address            String?
+  notes              String?
+  createdAt          DateTime                      @default(now())
+  updatedAt          DateTime                      @updatedAt
+  siteId             Int
+  participants       EmployeeTrainingParticipant[]
+  site               MasterSite                    @relation(fields: [siteId], references: [id])
+
+  @@index([siteId])
+  @@index([trainingType])
+  @@index([startDate])
+  @@index([endDate])
+  @@map("employee_trainings")
+}
+
+model EmployeeTrainingParticipant {
+  id                 Int              @id @default(autoincrement())
+  employeeTrainingId Int
+  participantName    String           @db.VarChar(255)
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  employeeId         Int?
+  employee           Employee?        @relation(fields: [employeeId], references: [id])
+  employeeTraining   EmployeeTraining @relation(fields: [employeeTrainingId], references: [id], onDelete: Cascade)
+
+  @@index([employeeTrainingId])
+  @@index([employeeId])
+  @@map("employee_training_participants")
+}
+
+model UnitLicenseCertification {
+  id             Int          @id @default(autoincrement())
+  masterUnitId   Int
+  assetNo        String       @db.VarChar(255)
+  documentNumber String       @db.VarChar(255)
+  issuedBy       String       @db.VarChar(255)
+  vendorId       Int
+  expiryDate     DateTime     @db.Date
+  notes          String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  masterUnit     MasterUnit   @relation(fields: [masterUnitId], references: [id])
+  vendor         MasterVendor @relation(fields: [vendorId], references: [id])
+
+  @@index([masterUnitId])
+  @@index([vendorId])
+  @@map("unit_license_certifications")
+}
+
+model SiteApprovalConfig {
+  id              Int        @id @default(autoincrement())
+  siteId          Int
+  jobLevelId      Int
+  approvalRank    Int?
+  maxApprovalRank Int
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  jobLevel        JobLevel   @relation(fields: [jobLevelId], references: [id])
+  site            MasterSite @relation(fields: [siteId], references: [id])
+
+  @@unique([siteId, jobLevelId])
+  @@index([siteId])
+  @@index([jobLevelId])
+  @@map("site_approval_configs")
+}
+
+model B3WasteType {
+  id           Int             @id @default(autoincrement())
+  siteId       Int
+  kode         String          @db.VarChar(20)
+  nama         String          @db.VarChar(200)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  wasteRecords B3WasteRecord[]
+
+  @@unique([siteId, kode])
+  @@map("b3_waste_types")
+}
+
+model B3WasteRecord {
+  id                     Int                @id @default(autoincrement())
+  siteId                 Int
+  jenisLimbahId          Int
+  tanggalMasuk           DateTime           @db.Date
+  sumberLimbah           String             @db.VarChar(200)
+  jumlahMasuk            Decimal            @db.Decimal(10, 2)
+  maksimalPenyimpanan    Int
+  tanggalBatas           DateTime           @db.Date
+  petugasPenanggungJawab String             @db.VarChar(100)
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+  outRecords             B3WasteOutRecord[]
+  jenisLimbah            B3WasteType        @relation(fields: [jenisLimbahId], references: [id])
+
+  @@map("b3_waste_records")
+}
+
+model B3WasteOutRecord {
+  id                     Int           @id @default(autoincrement())
+  siteId                 Int
+  wasteRecordId          Int
+  tanggalKeluar          DateTime      @db.Date
+  jumlahKeluar           Decimal       @db.Decimal(10, 2)
+  tujuanPenyerahan       String        @db.VarChar(200)
+  nomorDokumen           String        @db.VarChar(100)
+  petugasPenanggungJawab String        @db.VarChar(100)
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @updatedAt
+  vendorId               Int?
+  vendor                 MasterVendor? @relation(fields: [vendorId], references: [id])
+  wasteRecord            B3WasteRecord @relation(fields: [wasteRecordId], references: [id])
+
+  @@map("b3_waste_out_records")
+}
+
 enum EmploymentType {
   PERMANENT
   CONTRACT
@@ -102,754 +848,4 @@ enum EmployeeSelfServiceChangeType {
 enum TrainingType {
   INTERNAL
   EXTERNAL
-}
-
-model WorkLocation {
-  id        Int        @id @default(autoincrement())
-  name      String     @unique @db.VarChar(255)
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  employees Employee[]
-
-  @@map("work_locations")
-}
-
-model Department {
-  id        Int        @id @default(autoincrement())
-  name      String     @unique @db.VarChar(255)
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  employees Employee[]
-
-  @@map("departments")
-}
-
-model JobRole {
-  id        Int        @id @default(autoincrement())
-  name      String     @unique @db.VarChar(255)
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  employees Employee[]
-
-  @@map("job_roles")
-}
-
-model JobLevel {
-  id                  Int                  @id @default(autoincrement())
-  name                String               @unique @db.VarChar(255)
-  approvalRank        Int?
-  createdAt           DateTime             @default(now())
-  updatedAt           DateTime             @updatedAt
-  employees           Employee[]
-  siteApprovalConfigs SiteApprovalConfig[]
-
-  @@map("job_levels")
-}
-
-model MasterSite {
-  id        Int      @id @default(autoincrement())
-  name      String   @unique @db.VarChar(100)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  employees           Employee[]
-  admins              MasterAdmin[]
-  groupShifts         MasterGroupShift[]
-  units               MasterUnit[]
-  vendors             MasterVendor[]
-  trainings           EmployeeTraining[]
-  siteApprovalConfigs SiteApprovalConfig[]
-
-  @@map("master_sites")
-}
-
-model MasterUnit {
-  id               Int                        @id @default(autoincrement())
-  unitName         String                     @db.VarChar(255)
-  unitType         String                     @db.VarChar(100)
-  capacity         String                     @db.VarChar(255)
-  unitSerialNumber String                     @db.VarChar(255)
-  detailLainnya    String                     @db.VarChar(255)
-  siteId           Int
-  createdAt        DateTime                   @default(now())
-  updatedAt        DateTime                   @updatedAt
-  site             MasterSite                 @relation(fields: [siteId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  certifications   UnitLicenseCertification[]
-
-  @@index([siteId])
-  @@map("master_units")
-}
-
-model MasterVendor {
-  id             Int                        @id @default(autoincrement())
-  vendorName     String                     @db.VarChar(255)
-  vendorType     String                     @db.VarChar(100)
-  address        String                     @db.VarChar(255)
-  picName        String                     @db.VarChar(255)
-  phoneNumber    String                     @db.VarChar(100)
-  email          String                     @db.VarChar(255)
-  detailLainnya  String                     @db.VarChar(255)
-  siteId         Int
-  createdAt      DateTime                   @default(now())
-  updatedAt      DateTime                   @updatedAt
-  site           MasterSite                 @relation(fields: [siteId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  certifications   UnitLicenseCertification[]
-  wasteOutRecords  B3WasteOutRecord[]
-
-  @@index([siteId])
-  @@map("master_vendors")
-}
-
-model MasterDokPkb {
-  id             Int             @id @default(autoincrement())
-  article        String          @unique @db.VarChar(255)
-  content        String          @db.Text
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  warningLetters WarningLetter[]
-
-  @@map("master_dok_pkb")
-}
-
-model MasterDokKaryawan {
-  id                    Int                            @id @default(autoincrement())
-  documentName          String                         @db.VarChar(255)
-  documentType          String                         @db.VarChar(100)
-  issuer                String                         @db.VarChar(255)
-  createdAt             DateTime                       @default(now())
-  updatedAt             DateTime                       @updatedAt
-  licenseCertifications EmployeeLicenseCertification[]
-
-  @@map("master_dok_karyawan")
-}
-
-model MasterCutiKaryawan {
-  id              Int                     @id @default(autoincrement())
-  leaveType       String                  @db.VarChar(255)
-  leaveCode       String?                 @db.VarChar(10)
-  createdAt       DateTime                @default(now())
-  updatedAt       DateTime                @updatedAt
-  records         EmployeeLeave[]
-  revisionRecords EmployeeLeaveRevision[]
-  databaseRecords EmployeeLeaveDatabase[]
-
-  @@map("master_cuti_karyawan")
-}
-
-model MasterHoliday {
-  id          Int      @id @default(autoincrement())
-  year        Int
-  holidayDate DateTime @db.Date
-  name        String   @db.VarChar(255)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@map("master_holidays")
-}
-
-model MasterGroupShift {
-  id             Int                 @id @default(autoincrement())
-  groupShiftName String              @db.VarChar(255)
-  siteId         Int
-  createdAt      DateTime            @default(now())
-  updatedAt      DateTime            @updatedAt
-  site           MasterSite          @relation(fields: [siteId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  employees      Employee[]
-  foremen        GroupShiftForeman[]
-
-  @@index([siteId])
-  @@map("master_group_shifts")
-}
-
-model GroupShiftForeman {
-  id                 Int              @id @default(autoincrement())
-  masterGroupShiftId Int
-  employeeId         Int
-  createdAt          DateTime         @default(now())
-  updatedAt          DateTime         @updatedAt
-  masterGroupShift   MasterGroupShift @relation(fields: [masterGroupShiftId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  employee           Employee         @relation(fields: [employeeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-
-  @@unique([masterGroupShiftId, employeeId])
-  @@index([masterGroupShiftId])
-  @@index([employeeId])
-  @@map("group_shift_foremen")
-}
-
-model Employee {
-  id                          Int                                @id @default(autoincrement())
-  employeeNo                  String                             @unique @db.VarChar(100)
-  password                    String                             @db.VarChar(255)
-  fullName                    String                             @db.VarChar(255)
-  employmentType              EmploymentType
-  siteId                      Int
-  departmentId                Int
-  groupShiftId                Int?
-  birthDate                   DateTime                           @db.Date
-  gender                      Gender
-  workLocationId              Int
-  jobRoleId                   Int
-  jobLevelId                  Int
-  educationLevel              EducationLevel
-  grade                       GradeRank
-  joinDate                    DateTime                           @db.Date
-  phoneNumber                 String                             @db.VarChar(50)
-  email                       String?                            @db.VarChar(255)
-  createdAt                   DateTime                           @default(now())
-  updatedAt                   DateTime                           @updatedAt
-  department                  Department                         @relation(fields: [departmentId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  site                        MasterSite                         @relation(fields: [siteId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  groupShift                  MasterGroupShift?                  @relation(fields: [groupShiftId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  workLocation                WorkLocation                       @relation(fields: [workLocationId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  jobRole                     JobRole                            @relation(fields: [jobRoleId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  jobLevel                    JobLevel                           @relation(fields: [jobLevelId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  guidanceRecords             GuidanceRecord[]
-  warningLetters              WarningLetter[]                    @relation("WarningLetterEmployee")
-  warningLetterApprovals      WarningLetter[]                    @relation("WarningLetterSuperior")
-  adminAccounts               MasterAdmin[]
-  licenseCertifications       EmployeeLicenseCertification[]
-  leaveRecords                EmployeeLeave[]                    @relation("EmployeeLeaveRequester")
-  leaveReplacementRequests    EmployeeLeave[]                    @relation("EmployeeLeaveReplacement")
-  leaveDatabaseRecords        EmployeeLeaveDatabase[]
-  leaveApprovals              EmployeeLeaveApproval[]            @relation("EmployeeLeaveApprover")
-  leaveBalanceSeeds           EmployeeLeaveBalanceSeed[]
-  leaveRevisionReplacements   EmployeeLeaveRevision[]            @relation("EmployeeLeaveRevisionReplacement")
-  leaveReplacementAssignments EmployeeLeaveReplacementAssignee[] @relation("EmployeeLeaveReplacementAssigneeEmployee")
-  groupShiftAssignments       GroupShiftForeman[]
-  notificationReadStates      AdminNotificationReadState[]
-  emailWorkflowFailureLogsResolvedBy EmailWorkflowFailureLog[]
-  pushSubscriptions           EmployeePushSubscription[]
-  selfServiceChangeLogs       EmployeeSelfServiceChangeLog[]
-  trainingParticipants        EmployeeTrainingParticipant[]
-
-  @@index([siteId])
-  @@index([departmentId])
-  @@index([groupShiftId])
-  @@index([workLocationId])
-  @@index([jobRoleId])
-  @@index([jobLevelId])
-  @@map("employees")
-}
-
-model EmployeeLeave {
-  id                     Int                                @id @default(autoincrement())
-  requestNumber          String                             @unique @db.VarChar(50)
-  employeeId             Int
-  masterCutiKaryawanId   Int
-  leaveYear              Int
-  revisionNo             Int                                @default(1)
-  status                 LeaveRequestStatus                 @default(SUBMITTED)
-  leaveDays              Int
-  periodStart            DateTime                           @db.Date
-  periodEnd              DateTime                           @db.Date
-  balanceBefore          Int
-  remainingLeave         Int
-  currentStageOrder      Int?
-  notes                  String?                            @db.Text
-  leaveAddress           String?                            @db.Text
-  leaveReason            String?                            @db.Text
-  replacementEmployeeId  Int?
-  rejectionNote          String?                            @db.Text
-  submittedAt            DateTime                           @default(now())
-  approvedAt             DateTime?
-  rejectedAt             DateTime?
-  cancelledAt            DateTime?
-  createdAt              DateTime                           @default(now())
-  updatedAt              DateTime                           @updatedAt
-  employee               Employee                           @relation("EmployeeLeaveRequester", fields: [employeeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  replacementEmployee    Employee?                          @relation("EmployeeLeaveReplacement", fields: [replacementEmployeeId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  masterCutiKaryawan     MasterCutiKaryawan                 @relation(fields: [masterCutiKaryawanId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  revisions              EmployeeLeaveRevision[]
-  approvals              EmployeeLeaveApproval[]
-  emailOutbox            EmailOutbox[]
-  emailWorkflowFailureLogs EmailWorkflowFailureLog[]
-  leaveDatabaseHistories EmployeeLeaveDatabaseHistory[]
-  replacementAssignments EmployeeLeaveReplacementAssignee[]
-
-  @@index([employeeId])
-  @@index([replacementEmployeeId])
-  @@index([masterCutiKaryawanId])
-  @@index([status])
-  @@index([leaveYear])
-  @@map("employee_leaves")
-}
-
-model EmployeeLeaveDatabase {
-  id                   Int                            @id @default(autoincrement())
-  employeeId           Int
-  masterCutiKaryawanId Int
-  year                 Int
-  leaveDays            Int
-  periodStart          DateTime                       @db.Date
-  periodEnd            DateTime                       @db.Date
-  remainingLeave       Int
-  notes                String?                        @db.Text
-  createdAt            DateTime                       @default(now())
-  updatedAt            DateTime                       @updatedAt
-  employee             Employee                       @relation(fields: [employeeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  masterCutiKaryawan   MasterCutiKaryawan             @relation(fields: [masterCutiKaryawanId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  histories            EmployeeLeaveDatabaseHistory[]
-
-  @@unique([employeeId, masterCutiKaryawanId, year])
-  @@index([employeeId])
-  @@index([masterCutiKaryawanId])
-  @@index([year])
-  @@index([periodStart])
-  @@map("employee_leave_database")
-}
-
-model EmployeeLeaveDatabaseHistory {
-  id                      Int                            @id @default(autoincrement())
-  employeeLeaveDatabaseId Int
-  employeeLeaveId         Int?
-  sourceType              LeaveDatabaseHistorySourceType
-  changeDate              DateTime                       @default(now())
-  leaveDays               Int
-  periodStart             DateTime                       @db.Date
-  periodEnd               DateTime                       @db.Date
-  balanceBefore           Int
-  balanceAfter            Int
-  notes                   String?                        @db.Text
-  createdAt               DateTime                       @default(now())
-  employeeLeaveDatabase   EmployeeLeaveDatabase          @relation(fields: [employeeLeaveDatabaseId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  employeeLeave           EmployeeLeave?                 @relation(fields: [employeeLeaveId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-
-  @@index([employeeLeaveDatabaseId])
-  @@index([employeeLeaveId])
-  @@index([sourceType])
-  @@index([changeDate])
-  @@map("employee_leave_database_histories")
-}
-
-model EmployeeLeaveRevision {
-  id                     Int                                @id @default(autoincrement())
-  employeeLeaveId        Int
-  revisionNo             Int
-  masterCutiKaryawanId   Int
-  replacementEmployeeId  Int?
-  status                 LeaveRequestStatus
-  leaveDays              Int
-  periodStart            DateTime                           @db.Date
-  periodEnd              DateTime                           @db.Date
-  balanceBefore          Int
-  remainingLeave         Int
-  notes                  String?                            @db.Text
-  leaveAddress           String?                            @db.Text
-  leaveReason            String?                            @db.Text
-  rejectionNote          String?                            @db.Text
-  submittedAt            DateTime                           @default(now())
-  approvedAt             DateTime?
-  rejectedAt             DateTime?
-  cancelledAt            DateTime?
-  createdAt              DateTime                           @default(now())
-  updatedAt              DateTime                           @updatedAt
-  employeeLeave          EmployeeLeave                      @relation(fields: [employeeLeaveId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  masterCutiKaryawan     MasterCutiKaryawan                 @relation(fields: [masterCutiKaryawanId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  replacementEmployee    Employee?                          @relation("EmployeeLeaveRevisionReplacement", fields: [replacementEmployeeId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  replacementAssignments EmployeeLeaveReplacementAssignee[] @relation("EmployeeLeaveRevisionAssignments")
-
-  @@unique([employeeLeaveId, revisionNo])
-  @@index([employeeLeaveId])
-  @@index([masterCutiKaryawanId])
-  @@index([replacementEmployeeId])
-  @@map("employee_leave_revisions")
-}
-
-model EmployeeLeaveReplacementAssignee {
-  id                    Int                   @id @default(autoincrement())
-  employeeLeaveId       Int
-  revisionNo            Int
-  replacementEmployeeId Int
-  sequenceNo            Int
-  createdAt             DateTime              @default(now())
-  updatedAt             DateTime              @updatedAt
-  employeeLeave         EmployeeLeave         @relation(fields: [employeeLeaveId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  revision              EmployeeLeaveRevision @relation("EmployeeLeaveRevisionAssignments", fields: [employeeLeaveId, revisionNo], references: [employeeLeaveId, revisionNo], onDelete: Cascade, onUpdate: Cascade)
-  replacementEmployee   Employee              @relation("EmployeeLeaveReplacementAssigneeEmployee", fields: [replacementEmployeeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-
-  @@unique([employeeLeaveId, revisionNo, sequenceNo], map: "elra_leave_rev_seq_key")
-  @@unique([employeeLeaveId, revisionNo, replacementEmployeeId], map: "elra_leave_rev_emp_key")
-  @@index([employeeLeaveId])
-  @@index([employeeLeaveId, revisionNo])
-  @@index([replacementEmployeeId])
-  @@map("employee_leave_replacement_assignees")
-}
-
-model EmployeeLeaveApproval {
-  id                 Int                 @id @default(autoincrement())
-  employeeLeaveId    Int
-  revisionNo         Int
-  stageOrder         Int
-  stageType          LeaveStageType
-  approverEmployeeId Int
-  status             LeaveApprovalStatus @default(WAITING)
-  actionNote         String?             @db.Text
-  actedAt            DateTime?
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
-  employeeLeave      EmployeeLeave       @relation(fields: [employeeLeaveId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  approverEmployee   Employee            @relation("EmployeeLeaveApprover", fields: [approverEmployeeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  emailOutbox        EmailOutbox[]
-  emailWorkflowFailureLogs EmailWorkflowFailureLog[]
-
-  @@unique([employeeLeaveId, revisionNo, stageOrder, approverEmployeeId])
-  @@index([employeeLeaveId])
-  @@index([approverEmployeeId])
-  @@index([status])
-  @@map("employee_leave_approvals")
-}
-
-model EmployeeLeaveBalanceSeed {
-  id             Int      @id @default(autoincrement())
-  employeeId     Int
-  year           Int
-  openingBalance Int
-  currentBalance Int
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  employee       Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-
-  @@unique([employeeId, year])
-  @@index([employeeId])
-  @@index([year])
-  @@map("employee_leave_balance_seeds")
-}
-
-model EmailOutbox {
-  id                      Int                    @id @default(autoincrement())
-  employeeLeaveId         Int?
-  employeeLeaveApprovalId Int?
-  revisionNo              Int?
-  recipientEmail          String                 @db.VarChar(255)
-  recipientName           String?                @db.VarChar(255)
-  subject                 String                 @db.VarChar(255)
-  htmlBody                String?                @db.Text
-  textBody                String?                @db.Text
-  status                  EmailOutboxStatus      @default(PENDING)
-  sentAt                  DateTime?
-  errorMessage            String?                @db.Text
-  createdAt               DateTime               @default(now())
-  updatedAt               DateTime               @updatedAt
-  employeeLeave           EmployeeLeave?         @relation(fields: [employeeLeaveId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  employeeLeaveApproval   EmployeeLeaveApproval? @relation(fields: [employeeLeaveApprovalId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-
-  @@index([employeeLeaveId])
-  @@index([employeeLeaveApprovalId])
-  @@index([status])
-  @@map("email_outbox")
-}
-
-model EmailWorkflowFailureLog {
-  id                     Int                        @id @default(autoincrement())
-  event                  String                     @db.VarChar(100)
-  entityType             String                     @db.VarChar(50)
-  employeeLeaveId        Int?
-  employeeLeaveApprovalId Int?
-  recipientEmail         String                     @db.VarChar(255)
-  recipientName          String?                    @db.VarChar(255)
-  subject                String                     @db.VarChar(255)
-  errorMessage           String                     @db.Text
-  status                 EmailWorkflowFailureStatus @default(OPEN)
-  resolvedAt             DateTime?
-  resolvedByEmployeeId   Int?
-  resolvedNote           String?                    @db.Text
-  createdAt              DateTime                   @default(now())
-  updatedAt              DateTime                   @updatedAt
-  employeeLeave          EmployeeLeave?             @relation(fields: [employeeLeaveId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  employeeLeaveApproval  EmployeeLeaveApproval?      @relation(fields: [employeeLeaveApprovalId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  resolvedByEmployee     Employee?                  @relation(fields: [resolvedByEmployeeId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-
-  @@index([event])
-  @@index([entityType])
-  @@index([employeeLeaveId])
-  @@index([employeeLeaveApprovalId])
-  @@index([status])
-  @@index([resolvedAt])
-  @@map("email_workflow_failure_logs")
-}
-
-model AdminNotificationReadState {
-  id             Int      @id @default(autoincrement())
-  employeeId     Int
-  notificationId String   @db.VarChar(255)
-  readAt         DateTime @default(now())
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  employee       Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-
-  @@unique([employeeId, notificationId])
-  @@index([employeeId])
-  @@index([readAt])
-  @@map("admin_notification_read_states")
-}
-
-model AdminNotificationRecord {
-  id              Int      @id @default(autoincrement())
-  notificationId  String   @unique @db.VarChar(255)
-  category        String   @db.VarChar(100)
-  severity        String   @db.VarChar(50)
-  title           String   @db.VarChar(255)
-  description     String   @db.Text
-  targetPath      String?  @db.VarChar(255)
-  targetSearch    String?  @db.VarChar(255)
-  href            String?  @db.VarChar(500)
-  dateLabel       String?  @db.VarChar(255)
-  sortDate        DateTime
-  firstDetectedAt DateTime @default(now())
-  lastDetectedAt  DateTime @default(now())
-  isActive        Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  @@index([category])
-  @@index([severity])
-  @@index([sortDate])
-  @@index([lastDetectedAt])
-  @@index([isActive])
-  @@map("admin_notification_records")
-}
-
-model EmployeeSelfServiceChangeLog {
-  id          Int                         @id @default(autoincrement())
-  employeeId  Int
-  changeType  EmployeeSelfServiceChangeType
-  summary     String                      @db.Text
-  createdAt   DateTime                    @default(now())
-  updatedAt   DateTime                    @updatedAt
-  employee    Employee                    @relation(fields: [employeeId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-
-  @@index([employeeId])
-  @@index([changeType])
-  @@index([createdAt])
-  @@map("employee_self_service_change_logs")
-}
-
-model EmployeePushSubscription {
-  id             Int       @id @default(autoincrement())
-  employeeId     Int
-  endpoint       String    @db.Text
-  p256dh         String    @db.Text
-  auth           String    @db.Text
-  expirationTime DateTime?
-  userAgent      String?   @db.Text
-  isActive       Boolean   @default(true)
-  lastUsedAt     DateTime  @default(now())
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  employee       Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-
-  @@unique([employeeId, endpoint])
-  @@index([employeeId])
-  @@index([isActive])
-  @@index([lastUsedAt])
-  @@map("employee_push_subscriptions")
-}
-
-model MasterAdmin {
-  id           Int         @id @default(autoincrement())
-  employeeId   Int         @unique
-  password     String      @db.VarChar(255)
-  role         String      @db.VarChar(20)
-  siteId       Int?
-  tokenVersion Int         @default(0)
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
-  employee     Employee    @relation(fields: [employeeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  site         MasterSite? @relation(fields: [siteId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-
-  @@index([employeeId])
-  @@index([siteId])
-  @@map("master_admins")
-}
-
-model GuidanceRecord {
-  id                    Int                    @id @default(autoincrement())
-  category              GuidanceRecordCategory @default(GUIDANCE)
-  employeeId            Int
-  meetingNumber         Int
-  meetingDate           DateTime               @db.Date
-  meetingTime           String                 @db.VarChar(10)
-  location              String                 @db.VarChar(255)
-  problemFaced          String                 @db.Text
-  problemFacedSecondary String?                @db.Text
-  problemCause          String                 @db.Text
-  problemSolving        String                 @db.Text
-  createdAt             DateTime               @default(now())
-  updatedAt             DateTime               @updatedAt
-  employee              Employee               @relation(fields: [employeeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-
-  @@index([employeeId])
-  @@map("guidance_records")
-}
-
-model WarningLetter {
-  category           DisciplineLetterCategory @default(WARNING_LETTER)
-  id                 Int                      @id @default(autoincrement())
-  employeeId         Int
-  superiorEmployeeId Int
-  masterDokPkbId     Int?
-  warningLevel       Int?
-  letterNumber       String                   @db.VarChar(25)
-  letterDate         DateTime                 @db.Date
-  departmentName     String?                  @db.VarChar(255)
-  jobLevelName       String?                  @db.VarChar(255)
-  violation          String                   @db.Text
-  articleLabel       String?                  @db.VarChar(255)
-  articleContent     String?                  @db.Text
-  createdAt          DateTime                 @default(now())
-  updatedAt          DateTime                 @updatedAt
-  employee           Employee                 @relation("WarningLetterEmployee", fields: [employeeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  superiorEmployee   Employee                 @relation("WarningLetterSuperior", fields: [superiorEmployeeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  masterDokPkb       MasterDokPkb?            @relation(fields: [masterDokPkbId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-
-  @@index([employeeId])
-  @@index([superiorEmployeeId])
-  @@index([masterDokPkbId])
-  @@map("warning_letters")
-}
-
-model EmployeeLicenseCertification {
-  id                  Int               @id @default(autoincrement())
-  employeeId          Int
-  masterDokKaryawanId Int
-  type                String            @db.VarChar(255)
-  documentNumber      String            @db.VarChar(255)
-  issuerSnapshot      String            @db.VarChar(255)
-  expiryDate          DateTime          @db.Date
-  notes               String?           @db.Text
-  createdAt           DateTime          @default(now())
-  updatedAt           DateTime          @updatedAt
-  employee            Employee          @relation(fields: [employeeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  masterDokKaryawan   MasterDokKaryawan @relation(fields: [masterDokKaryawanId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-
-  @@index([employeeId])
-  @@index([masterDokKaryawanId])
-  @@map("employee_license_certifications")
-}
-
-model EmployeeTraining {
-  id                  Int                         @id @default(autoincrement())
-  trainingType        TrainingType
-  material            String                      @db.Text
-  trainerInstitution  String                      @db.VarChar(255)
-  trainerName         String                      @db.VarChar(255)
-  startDate           DateTime                    @db.Date
-  endDate             DateTime                    @db.Date
-  dayCount            Int
-  siteId              Int
-  address             String?                     @db.Text
-  notes               String?                     @db.Text
-  createdAt           DateTime                    @default(now())
-  updatedAt           DateTime                    @updatedAt
-  site                MasterSite                  @relation(fields: [siteId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  participants        EmployeeTrainingParticipant[]
-
-  @@index([siteId])
-  @@index([trainingType])
-  @@index([startDate])
-  @@index([endDate])
-  @@map("employee_trainings")
-}
-
-model EmployeeTrainingParticipant {
-  id                 Int             @id @default(autoincrement())
-  employeeTrainingId Int
-  employeeId         Int?
-  participantName    String          @db.VarChar(255)
-  createdAt          DateTime        @default(now())
-  updatedAt          DateTime        @updatedAt
-  employeeTraining   EmployeeTraining @relation(fields: [employeeTrainingId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  employee           Employee?       @relation(fields: [employeeId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-
-  @@index([employeeTrainingId])
-  @@index([employeeId])
-  @@map("employee_training_participants")
-}
-
-model UnitLicenseCertification {
-  id             Int          @id @default(autoincrement())
-  masterUnitId   Int
-  assetNo        String       @db.VarChar(255)
-  documentNumber String       @db.VarChar(255)
-  issuedBy       String       @db.VarChar(255)
-  vendorId       Int
-  expiryDate     DateTime     @db.Date
-  notes          String?      @db.Text
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  masterUnit     MasterUnit   @relation(fields: [masterUnitId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  vendor         MasterVendor @relation(fields: [vendorId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-
-  @@index([masterUnitId])
-  @@index([vendorId])
-  @@map("unit_license_certifications")
-}
-
-model SiteApprovalConfig {
-  id              Int        @id @default(autoincrement())
-  siteId          Int
-  jobLevelId      Int
-  approvalRank    Int?
-  maxApprovalRank Int
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
-  site            MasterSite @relation(fields: [siteId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  jobLevel        JobLevel   @relation(fields: [jobLevelId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-
-  @@unique([siteId, jobLevelId])
-  @@index([siteId])
-  @@index([jobLevelId])
-  @@map("site_approval_configs")
-}
-
-model B3WasteType {
-  id        Int      @id @default(autoincrement())
-  siteId    Int
-  kode      String   @db.VarChar(20)
-  nama      String   @db.VarChar(200)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  wasteRecords B3WasteRecord[]
-
-  @@unique([siteId, kode])
-  @@map("b3_waste_types")
-}
-
-model B3WasteRecord {
-  id                     Int      @id @default(autoincrement())
-  siteId                 Int
-  jenisLimbahId          Int
-  tanggalMasuk           DateTime @db.Date
-  sumberLimbah           String   @db.VarChar(200)
-  jumlahMasuk            Decimal  @db.Decimal(10, 2)
-  maksimalPenyimpanan    Int
-  tanggalBatas           DateTime @db.Date
-  petugasPenanggungJawab String   @db.VarChar(100)
-  createdAt              DateTime @default(now())
-  updatedAt              DateTime @updatedAt
-
-  jenisLimbah B3WasteType       @relation(fields: [jenisLimbahId], references: [id])
-  outRecords  B3WasteOutRecord[]
-
-  @@map("b3_waste_records")
-}
-
-model B3WasteOutRecord {
-  id                     Int           @id @default(autoincrement())
-  siteId                 Int
-  wasteRecordId          Int
-  tanggalKeluar          DateTime      @db.Date
-  jumlahKeluar           Decimal       @db.Decimal(10, 2)
-  tujuanPenyerahan       String        @db.VarChar(200)
-  nomorDokumen           String        @db.VarChar(100)
-  vendorId               Int?
-  petugasPenanggungJawab String        @db.VarChar(100)
-  createdAt              DateTime      @default(now())
-  updatedAt              DateTime      @updatedAt
-
-  wasteRecord B3WasteRecord @relation(fields: [wasteRecordId], references: [id])
-  vendor      MasterVendor? @relation(fields: [vendorId], references: [id])
-
-  @@map("b3_waste_out_records")
 }
