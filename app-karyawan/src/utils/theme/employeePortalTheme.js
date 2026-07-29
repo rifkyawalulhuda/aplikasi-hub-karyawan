@@ -1,35 +1,45 @@
-import { alpha, createTheme } from '@mui/material/styles';
+﻿import { alpha, createTheme } from '@mui/material/styles';
 import { enUS } from '@mui/material/locale';
 
-const EMPLOYEE_BRAND = '#3A93F2';
-const EMPLOYEE_BRAND_DARK = '#266FB6';
-const EMPLOYEE_BRAND_DEEP = '#153A64';
+// Open Workspace design tokens (docs/Design.md)
+const OW_PRIMARY = '#4f6bff'; // Open Blue
+const OW_SECONDARY = '#8b5cf6'; // AI Purple
+const OW_SUCCESS = '#10b981';
+const OW_WARNING = '#f59e0b';
+const OW_DANGER = '#ef4444';
+const OW_INFO = '#0ea5e9';
 
 function createEmployeeSurface(mode) {
 	const isDarkMode = mode === 'dark';
 
 	return {
-		pageBackground: isDarkMode
-			? 'radial-gradient(circle at top center, rgba(58, 147, 242, 0.16), transparent 26%), linear-gradient(180deg, #09121E 0%, #0E1828 48%, #122033 100%)'
-			: 'radial-gradient(circle at top center, rgba(58, 147, 242, 0.22), transparent 22%), linear-gradient(180deg, #F7FBFF 0%, #EEF4FA 48%, #E7EFF8 100%)',
+		// Flat canvas backgrounds — no radial gradients per Open Workspace spec
+		pageBackground: isDarkMode ? '#0e0f14' : '#f8f9fc',
 		authBackground: isDarkMode
-			? 'radial-gradient(circle at top left, rgba(58, 147, 242, 0.24), transparent 28%), radial-gradient(circle at bottom right, rgba(255,255,255,0.08), transparent 20%), linear-gradient(160deg, #08111D 0%, #11233A 52%, #1F5E9B 100%)'
-			: 'radial-gradient(circle at top left, rgba(76, 154, 232, 0.32), transparent 28%), radial-gradient(circle at bottom right, rgba(255,255,255,0.12), transparent 22%), linear-gradient(160deg, #071A2F 0%, #123B66 48%, #3A93F2 100%)',
+			? 'linear-gradient(160deg, #0e0f14 0%, #1c1e26 100%)'
+			: 'linear-gradient(160deg, #f8f9fc 0%, #eef1f8 100%)',
 		cardGradient: isDarkMode
-			? 'linear-gradient(180deg, rgba(20, 31, 47, 0.94) 0%, rgba(18, 29, 45, 0.9) 100%)'
-			: 'linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(248,251,255,0.96) 100%)',
+			? 'linear-gradient(180deg, rgba(28,30,38,0.97) 0%, rgba(21,23,30,0.97) 100%)'
+			: 'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,249,252,0.98) 100%)',
 		heroGradient: isDarkMode
-			? 'linear-gradient(145deg, #173A61 0%, #1D4C7C 58%, #2D6FB4 100%)'
-			: 'linear-gradient(145deg, #123B66 0%, #1B5189 58%, #3A93F2 100%)',
-		glass: isDarkMode ? alpha('#162235', 0.86) : alpha('#FFFFFF', 0.84),
-		card: isDarkMode ? alpha('#152132', 0.94) : '#FFFFFF',
-		muted: isDarkMode ? alpha('#0F1724', 0.92) : alpha('#F7FAFD', 0.94),
-		soft: isDarkMode ? alpha('#132030', 0.76) : alpha('#FFFFFF', 0.82),
-		borderSoft: isDarkMode ? alpha('#D9E6F4', 0.08) : alpha('#123B66', 0.08),
-		borderStrong: isDarkMode ? alpha('#D9E6F4', 0.14) : alpha('#123B66', 0.14),
-		shadowSoft: isDarkMode ? '0 16px 36px rgba(0, 0, 0, 0.28)' : '0 14px 34px rgba(18, 59, 102, 0.08)',
-		shadowMedium: isDarkMode ? '0 18px 42px rgba(0, 0, 0, 0.34)' : '0 18px 40px rgba(18, 59, 102, 0.12)',
-		shadowFloating: isDarkMode ? '0 22px 48px rgba(0, 0, 0, 0.42)' : '0 20px 44px rgba(18, 59, 102, 0.16)',
+			? 'linear-gradient(145deg, #1c1e26 0%, #22253a 58%, #2a2d4a 100%)'
+			: 'linear-gradient(145deg, #eef1ff 0%, #e0e6ff 58%, #d0d9ff 100%)',
+		glass: isDarkMode ? alpha('#1c1e26', 0.88) : alpha('#ffffff', 0.88),
+		card: isDarkMode ? '#1c1e26' : '#ffffff',
+		muted: isDarkMode ? '#15171e' : '#f1f3f8',
+		soft: isDarkMode ? alpha('#1c1e26', 0.76) : alpha('#ffffff', 0.82),
+		borderSoft: isDarkMode ? alpha('#e2e8f0', 0.08) : alpha('#0e0f14', 0.07),
+		borderStrong: isDarkMode ? alpha('#e2e8f0', 0.14) : alpha('#0e0f14', 0.13),
+		// Moderate layered shadows — professional depth, not dramatic
+		shadowSoft: isDarkMode
+			? '0 2px 8px rgba(0,0,0,0.32), 0 1px 3px rgba(0,0,0,0.24)'
+			: '0 2px 8px rgba(79,107,255,0.06), 0 1px 3px rgba(14,15,20,0.06)',
+		shadowMedium: isDarkMode
+			? '0 4px 16px rgba(0,0,0,0.36), 0 2px 6px rgba(0,0,0,0.24)'
+			: '0 4px 16px rgba(79,107,255,0.08), 0 2px 6px rgba(14,15,20,0.06)',
+		shadowFloating: isDarkMode
+			? '0 8px 24px rgba(0,0,0,0.42), 0 3px 8px rgba(0,0,0,0.28)'
+			: '0 8px 24px rgba(79,107,255,0.10), 0 3px 8px rgba(14,15,20,0.07)',
 	};
 }
 
@@ -42,54 +52,60 @@ export function createEmployeePortalTheme(mode = 'light') {
 			palette: {
 				mode,
 				primary: {
-					light: '#8BC0F8',
-					main: EMPLOYEE_BRAND,
-					dark: EMPLOYEE_BRAND_DARK,
-					contrastText: '#FFFFFF',
+					light: alpha(OW_PRIMARY, 0.6),
+					main: OW_PRIMARY,
+					dark: '#3a52e0',
+					contrastText: '#ffffff',
 				},
 				secondary: {
-					light: '#D9E7F6',
-					main: '#89A9CB',
-					dark: '#5C7696',
-					contrastText: '#09121E',
+					light: alpha(OW_SECONDARY, 0.6),
+					main: OW_SECONDARY,
+					dark: '#6d3fd4',
+					contrastText: '#ffffff',
 				},
 				success: {
-					light: '#CDEBD9',
-					main: '#3FA56A',
-					dark: '#1E6A42',
-					contrastText: '#FFFFFF',
+					light: alpha(OW_SUCCESS, 0.6),
+					main: OW_SUCCESS,
+					dark: '#059669',
+					contrastText: '#ffffff',
 				},
 				warning: {
-					light: '#F6DEB3',
-					main: '#D38A19',
-					dark: '#9B6210',
-					contrastText: '#FFFFFF',
+					light: alpha(OW_WARNING, 0.6),
+					main: OW_WARNING,
+					dark: '#d97706',
+					contrastText: '#ffffff',
 				},
 				error: {
-					light: '#F4C9C9',
-					main: '#D45757',
-					dark: '#A73B3B',
-					contrastText: '#FFFFFF',
+					light: alpha(OW_DANGER, 0.6),
+					main: OW_DANGER,
+					dark: '#dc2626',
+					contrastText: '#ffffff',
+				},
+				info: {
+					light: alpha(OW_INFO, 0.6),
+					main: OW_INFO,
+					dark: '#0284c7',
+					contrastText: '#ffffff',
 				},
 				background: {
-					default: isDarkMode ? '#0B1420' : '#EEF4FA',
-					paper: isDarkMode ? '#152132' : '#FFFFFF',
+					default: isDarkMode ? '#0e0f14' : '#f8f9fc',
+					paper: isDarkMode ? '#1c1e26' : '#ffffff',
 				},
 				text: {
-					primary: isDarkMode ? '#F4F8FC' : '#123B66',
-					secondary: isDarkMode ? '#A7B5C7' : '#5D738B',
+					primary: isDarkMode ? '#e2e8f0' : '#0e0f14',
+					secondary: isDarkMode ? '#94a3b8' : '#64748b',
 				},
-				divider: isDarkMode ? alpha('#D9E6F4', 0.1) : alpha('#123B66', 0.08),
+				divider: isDarkMode ? alpha('#e2e8f0', 0.08) : alpha('#0e0f14', 0.07),
 				employeeSurface,
 			},
 			shape: {
 				borderRadius: 2,
 			},
 			typography: {
-				fontFamily: '"Rubik", "Roboto", "Helvetica", "Arial", sans-serif',
+				fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
 				button: {
 					textTransform: 'none',
-					fontWeight: 700,
+					fontWeight: 600,
 				},
 			},
 			components: {
@@ -99,7 +115,7 @@ export function createEmployeePortalTheme(mode = 'light') {
 							colorScheme: mode,
 						},
 						body: {
-							backgroundColor: isDarkMode ? '#0B1420' : '#EEF4FA',
+							backgroundColor: isDarkMode ? '#0e0f14' : '#f8f9fc',
 						},
 					},
 				},
@@ -117,6 +133,7 @@ export function createEmployeePortalTheme(mode = 'light') {
 					styleOverrides: {
 						paper: {
 							backgroundImage: 'none',
+							borderRadius: 8,
 							border: `1px solid ${employeeSurface.borderSoft}`,
 							boxShadow: employeeSurface.shadowFloating,
 							backgroundColor: employeeSurface.card,
@@ -135,8 +152,8 @@ export function createEmployeePortalTheme(mode = 'light') {
 				MuiBottomNavigation: {
 					styleOverrides: {
 						root: {
-							backgroundColor: alpha(isDarkMode ? '#101A29' : '#FFFFFF', 0.94),
-							backdropFilter: 'blur(18px)',
+							backgroundColor: alpha(isDarkMode ? '#1c1e26' : '#ffffff', 0.94),
+							backdropFilter: 'blur(16px)',
 							borderTop: `1px solid ${employeeSurface.borderSoft}`,
 						},
 					},
@@ -144,9 +161,24 @@ export function createEmployeePortalTheme(mode = 'light') {
 				MuiBottomNavigationAction: {
 					styleOverrides: {
 						root: {
-							color: isDarkMode ? '#94A7BD' : '#5D738B',
+							color: isDarkMode ? '#94a3b8' : '#64748b',
 							'&.Mui-selected': {
-								color: EMPLOYEE_BRAND,
+								color: OW_PRIMARY,
+							},
+						},
+					},
+				},
+				MuiButton: {
+					styleOverrides: {
+						root: {
+							borderRadius: 6,
+							boxShadow: 'none',
+							'&:hover': { boxShadow: 'none' },
+						},
+						contained: {
+							boxShadow: `0 2px 8px ${alpha(OW_PRIMARY, isDarkMode ? 0.28 : 0.22)}`,
+							'&:hover': {
+								boxShadow: `0 4px 12px ${alpha(OW_PRIMARY, isDarkMode ? 0.36 : 0.28)}`,
 							},
 						},
 					},
@@ -154,67 +186,26 @@ export function createEmployeePortalTheme(mode = 'light') {
 				MuiChip: {
 					styleOverrides: {
 						root: {
-							borderRadius: 999,
-						},
-					},
-				},
-				MuiDivider: {
-					styleOverrides: {
-						root: {
-							borderColor: employeeSurface.borderSoft,
-						},
-					},
-				},
-				MuiOutlinedInput: {
-					styleOverrides: {
-						root: {
-							borderRadius: 16,
-							backgroundColor: isDarkMode ? alpha('#0E1826', 0.88) : alpha('#FFFFFF', 0.98),
-							'& fieldset': {
-								borderColor: employeeSurface.borderSoft,
-							},
-							'&:hover fieldset': {
-								borderColor: alpha(EMPLOYEE_BRAND, isDarkMode ? 0.42 : 0.32),
-							},
-							'&.Mui-focused fieldset': {
-								borderColor: EMPLOYEE_BRAND,
-							},
-						},
-					},
-				},
-				MuiTextField: {
-					defaultProps: {
-						variant: 'outlined',
-					},
-				},
-				MuiButton: {
-					styleOverrides: {
-						root: {
-							borderRadius: 14,
-						},
-						containedPrimary: {
-							boxShadow: isDarkMode
-								? '0 14px 28px rgba(58, 147, 242, 0.2)'
-								: '0 12px 26px rgba(58, 147, 242, 0.18)',
+							borderRadius: 6,
 						},
 					},
 				},
 				MuiAlert: {
 					styleOverrides: {
 						root: {
-							borderRadius: 14,
+							borderRadius: 6,
 						},
 						standardSuccess: {
-							backgroundColor: isDarkMode ? alpha('#1E6A42', 0.28) : alpha('#3FA56A', 0.12),
+							backgroundColor: isDarkMode ? alpha(OW_SUCCESS, 0.18) : alpha(OW_SUCCESS, 0.1),
 						},
 						standardError: {
-							backgroundColor: isDarkMode ? alpha('#A73B3B', 0.28) : alpha('#D45757', 0.12),
+							backgroundColor: isDarkMode ? alpha(OW_DANGER, 0.18) : alpha(OW_DANGER, 0.1),
 						},
 						standardWarning: {
-							backgroundColor: isDarkMode ? alpha('#9B6210', 0.28) : alpha('#D38A19', 0.12),
+							backgroundColor: isDarkMode ? alpha(OW_WARNING, 0.18) : alpha(OW_WARNING, 0.1),
 						},
 						standardInfo: {
-							backgroundColor: isDarkMode ? alpha(EMPLOYEE_BRAND_DEEP, 0.5) : alpha(EMPLOYEE_BRAND, 0.12),
+							backgroundColor: isDarkMode ? alpha(OW_PRIMARY, 0.18) : alpha(OW_PRIMARY, 0.1),
 						},
 					},
 				},

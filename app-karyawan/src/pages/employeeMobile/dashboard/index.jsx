@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSnackbar } from 'notistack';
 import { alpha } from '@mui/material/styles';
@@ -39,44 +39,44 @@ const QUICK_MENU_ITEMS = [
 		icon: <CalendarMonthOutlinedIcon />,
 		path: '/karyawan/cuti',
 		description: 'Lihat pengajuan dan saldo cuti',
-		accent: '#2F74BC',
-		tint: 'rgba(47, 116, 188, 0.12)',
+		accent: '#4f6bff',
+		tint: 'rgba(79,107,255,0.10)',
 	},
 	{
 		title: 'Profil',
 		icon: <BadgeOutlinedIcon />,
 		path: '/karyawan/profil',
 		description: 'Data diri dan keamanan akun',
-		accent: '#123B66',
-		tint: 'rgba(18, 59, 102, 0.1)',
+		accent: '#8b5cf6',
+		tint: 'rgba(139,92,246,0.10)',
 	},
 	{
 		title: 'Bimbingan',
 		icon: <DescriptionOutlinedIcon />,
 		path: '/karyawan/bimbingan-pengarahan',
 		description: 'Riwayat bimbingan dan pengarahan',
-		accent: '#356FA8',
-		tint: 'rgba(53, 111, 168, 0.12)',
+		accent: '#0ea5e9',
+		tint: 'rgba(14,165,233,0.10)',
 	},
 	{
 		title: 'Pelatihan',
 		icon: <SchoolOutlinedIcon />,
 		path: '/karyawan/pelatihan',
 		description: 'Daftar pelatihan yang diikuti',
-		accent: '#2E6F40',
-		tint: 'rgba(46, 111, 64, 0.12)',
+		accent: '#10b981',
+		tint: 'rgba(16,185,129,0.10)',
 	},
 	{
 		title: 'Catatan',
 		icon: <ReportGmailerrorredOutlinedIcon />,
 		path: '/karyawan/surat-peringatan',
 		description: 'Surat peringatan dan teguran',
-		accent: '#4D83BF',
-		tint: 'rgba(77, 131, 191, 0.12)',
+		accent: '#ef4444',
+		tint: 'rgba(239,68,68,0.10)',
 	},
 ];
 
-function SummaryCard({ label, value, helper, icon, accent = '#123B66', badgeLabel = '', onClick = null }) {
+function SummaryCard({ label, value, helper, icon, accent = '#4f6bff', badgeLabel = '', onClick = null }) {
 	const content = (
 		<Stack spacing={1.25} sx={{ p: 1.75 }}>
 			<Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1}>
@@ -169,7 +169,7 @@ function SummaryCard({ label, value, helper, icon, accent = '#123B66', badgeLabe
 	);
 }
 
-function ActivityCard({ title, subtitle, description, meta, icon, accent = '#2F74BC' }) {
+function ActivityCard({ title, subtitle, description, meta, icon, accent = '#4f6bff' }) {
 	return (
 		<Paper
 			elevation={0}
@@ -394,7 +394,7 @@ function EmployeeDashboardPage() {
 			description: item.problemFaced,
 			meta: item.location || '',
 			icon: <DescriptionOutlinedIcon fontSize="small" />,
-			accent: '#356FA8',
+			accent: '#4f6bff',
 		})),
 		...(data?.recentWarningLetters || []).slice(0, 2).map((item) => ({
 			id: `warning-${item.id}`,
@@ -403,7 +403,7 @@ function EmployeeDashboardPage() {
 			description: item.violation,
 			meta: item.letterNumber || '',
 			icon: <WarningAmberRoundedIcon fontSize="small" />,
-			accent: '#C67A1B',
+			accent: '#f59e0b',
 		})),
 	].slice(0, 3);
 
@@ -507,7 +507,7 @@ function EmployeeDashboardPage() {
 							<SummaryCard
 								label={activeLeaveProcess.title}
 								value={activeLeaveProcess.statusLabel}
-								helper={`${activeLeaveProcess.requestNumber} • ${activeLeaveProcess.description}`}
+								helper={`${activeLeaveProcess.requestNumber} â€¢ ${activeLeaveProcess.description}`}
 								icon={
 									activeLeaveProcess.isActionRequired ? (
 										<AssignmentTurnedInRoundedIcon fontSize="small" />
