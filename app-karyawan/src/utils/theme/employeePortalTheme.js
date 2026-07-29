@@ -23,7 +23,7 @@ function createEmployeeSurface(mode) {
 			: 'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,249,252,0.98) 100%)',
 		heroGradient: isDarkMode
 			? 'linear-gradient(145deg, #1c1e26 0%, #22253a 58%, #2a2d4a 100%)'
-			: 'linear-gradient(145deg, #eef1ff 0%, #e0e6ff 58%, #d0d9ff 100%)',
+			: 'linear-gradient(145deg, #3a52e0 0%, #4f6bff 55%, #6b84ff 100%)',
 		glass: isDarkMode ? alpha('#1c1e26', 0.88) : alpha('#ffffff', 0.88),
 		card: isDarkMode ? '#1c1e26' : '#ffffff',
 		muted: isDarkMode ? '#15171e' : '#f1f3f8',
