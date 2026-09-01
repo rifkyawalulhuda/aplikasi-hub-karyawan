@@ -23,12 +23,24 @@ describe('mapJobLevelToStageType', () => {
 		expect(mapJobLevelToStageType('Dy. Dept. Manager')).toBe(LeaveStageType.DY_DEPT_MANAGER);
 	});
 
+	it('maps "Deputy Department Manager" to DY_DEPT_MANAGER', () => {
+		expect(mapJobLevelToStageType('Deputy Department Manager')).toBe(LeaveStageType.DY_DEPT_MANAGER);
+	});
+
 	it('maps "Dept. Manager" to DEPT_MANAGER', () => {
 		expect(mapJobLevelToStageType('Dept. Manager')).toBe(LeaveStageType.DEPT_MANAGER);
 	});
 
+	it('maps "Department Manager" to DEPT_MANAGER', () => {
+		expect(mapJobLevelToStageType('Department Manager')).toBe(LeaveStageType.DEPT_MANAGER);
+	});
+
 	it('maps "Site/Div. Manager" to SITE_DIV_MANAGER', () => {
 		expect(mapJobLevelToStageType('Site/Div. Manager')).toBe(LeaveStageType.SITE_DIV_MANAGER);
+	});
+
+	it('maps "Division Manager" to SITE_DIV_MANAGER', () => {
+		expect(mapJobLevelToStageType('Division Manager')).toBe(LeaveStageType.SITE_DIV_MANAGER);
 	});
 
 	it('performs case-insensitive matching', () => {

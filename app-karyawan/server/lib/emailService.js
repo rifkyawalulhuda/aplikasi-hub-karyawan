@@ -20,6 +20,11 @@ function getEmployeePortalBaseUrl() {
 	return normalizeBaseUrl(process.env.EMPLOYEE_PWA_BASE_URL, getAppBaseUrl());
 }
 
+function getBrevoApiConfig() {
+	const apiKey = (process.env.BREVO_API_KEY || '').trim();
+	return apiKey ? { apiKey } : null;
+}
+
 function getSmtpConfig() {
 	const host = process.env.SMTP_HOST || 'smtp.gmail.com';
 	const port = Number(process.env.SMTP_PORT || 587);
@@ -35,6 +40,8 @@ function getSmtpConfig() {
 		secure: port === 465,
 		auth: user && pass ? { user, pass } : null,
 		from,
+		fromEmail,
+		fromName,
 	};
 }
 
@@ -57,6 +64,45 @@ function getTransporter() {
 	});
 
 	return cachedTransporter;
+}
+
+async function sendViaBrevoApi(payload) {
+	const brevoConfig = getBrevoApiConfig();
+	const smtpConfig = getSmtpConfig();
+
+	if (!smtpConfig.fromEmail) {
+		return { ok: false, error: 'Konfigurasi SMTP belum lengkap (fromEmail).' };
+	}
+
+	const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+			'api-key': brevoConfig.apiKey,
+		},
+		body: JSON.stringify({
+			sender: {
+				name: smtpConfig.fromName || undefined,
+				email: smtpConfig.fromEmail,
+			},
+			to: [{ email: payload.recipientEmail, name: payload.recipientName || undefined }],
+			subject: payload.subject,
+			textContent: payload.textBody || undefined,
+			htmlContent: payload.htmlBody || undefined,
+		}),
+	});
+
+	if (response.ok) {
+		return { ok: true };
+	}
+
+	const errBody = await response.text();
+	return { ok: false, error: `Brevo API error ${response.status}: ${errBody}` };
+}
+
+function useBrevoApi() {
+	const config = getBrevoApiConfig();
+	return config !== null;
 }
 
 async function persistEmailWorkflowFailure(prisma, payload) {
@@ -110,8 +156,9 @@ async function queueAndSendEmail(prisma, payload) {
 
 	const transporter = getTransporter();
 	const config = getSmtpConfig();
+	const brevoApiEnabled = useBrevoApi();
 
-	if (!transporter || !config.from) {
+	if ((!brevoApiEnabled && (!transporter || !config.from)) || (brevoApiEnabled && !config.fromEmail)) {
 		await prisma.emailOutbox.update({
 			where: { id: outbox.id },
 			data: {
@@ -138,13 +185,30 @@ async function queueAndSendEmail(prisma, payload) {
 	}
 
 	try {
-		await transporter.sendMail({
-			from: config.from,
-			to: payload.recipientEmail,
-			subject: payload.subject,
-			text: payload.textBody || undefined,
-			html: payload.htmlBody || undefined,
-		});
+		let sendResult;
+
+		if (useBrevoApi()) {
+			sendResult = await sendViaBrevoApi({
+				recipientEmail: payload.recipientEmail,
+				recipientName: payload.recipientName,
+				subject: payload.subject,
+				textBody: payload.textBody,
+				htmlBody: payload.htmlBody,
+			});
+		} else {
+			await transporter.sendMail({
+				from: config.from,
+				to: payload.recipientEmail,
+				subject: payload.subject,
+				text: payload.textBody || undefined,
+				html: payload.htmlBody || undefined,
+			});
+			sendResult = { ok: true };
+		}
+
+		if (!sendResult.ok) {
+			throw new Error(sendResult.error || 'Gagal mengirim email.');
+		}
 
 		await prisma.emailOutbox.update({
 			where: { id: outbox.id },

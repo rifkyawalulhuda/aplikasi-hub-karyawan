@@ -9,6 +9,12 @@ import {
 	mapEmployeeWarningLetter,
 } from '../lib/employeePortal.js';
 import { getEmployeePortalBaseUrl, queueAndSendEmail } from '../lib/emailService.js';
+import {
+	buildSubmittedEmail,
+	buildStageActivationEmail,
+	buildRejectedEmail,
+	buildApprovedEmail,
+} from '../lib/emailTemplates.js';
 import { sendLeaveWhatsAppNotification } from '../lib/whatsappService.js';
 import {
 	createLeaveRequestRevision,
@@ -549,6 +555,7 @@ async function sendApprovedPush(record) {
 }
 
 async function sendSubmittedEmail(record) {
+	const replacements = getReplacementEmployeesForRecord(record);
 	await queueAndSendEmail(prisma, {
 		event: 'LEAVE_REQUEST_SUBMITTED_EMAIL',
 		entityType: 'LEAVE_REQUEST',
@@ -557,14 +564,17 @@ async function sendSubmittedEmail(record) {
 		recipientEmail: record.employee.email || '',
 		recipientName: record.employee.fullName,
 		subject: `Pengajuan cuti ${record.requestNumber} berhasil dikirim`,
+		htmlBody: buildSubmittedEmail({
+			record,
+			replacements,
+			detailUrl: buildLeaveRequestUrl(record.id),
+		}),
 		textBody: [
 			`Halo ${record.employee.fullName},`,
 			'',
 			`Pengajuan cuti Anda dengan nomor ${record.requestNumber} telah dikirim.`,
 			`Jenis cuti: ${record.masterCutiKaryawan.leaveType}`,
-			`Periode: ${record.periodStart.toLocaleDateString('id-ID')} - ${record.periodEnd.toLocaleDateString(
-				'id-ID',
-			)}`,
+			`Periode: ${record.periodStart.toLocaleDateString('id-ID')} - ${record.periodEnd.toLocaleDateString('id-ID')}`,
 			`Jumlah cuti: ${record.leaveDays} hari`,
 			`Alamat selama cuti: ${record.leaveAddress || '-'}`,
 			`Alasan cuti: ${record.leaveReason || '-'}`,
@@ -578,6 +588,7 @@ async function sendSubmittedEmail(record) {
 
 async function sendStageActivationEmails(record) {
 	const activeApprovals = getActiveApprovals(record);
+	const replacements = getReplacementEmployeesForRecord(record);
 
 	await Promise.allSettled(
 		activeApprovals.map((approval) =>
@@ -590,6 +601,12 @@ async function sendStageActivationEmails(record) {
 				recipientEmail: approval.approverEmployee.email || '',
 				recipientName: approval.approverEmployee.fullName,
 				subject: `Approval cuti menunggu tindakan: ${record.requestNumber}`,
+				htmlBody: buildStageActivationEmail({
+					record,
+					approval,
+					replacements,
+					approvalUrl: buildLeaveApprovalUrl(approval.id),
+				}),
 				textBody: [
 					`Halo ${approval.approverEmployee.fullName},`,
 					'',
@@ -597,9 +614,7 @@ async function sendStageActivationEmails(record) {
 					`Nomor request: ${record.requestNumber}`,
 					`Karyawan: ${record.employee.fullName} (${record.employee.employeeNo})`,
 					`Jenis cuti: ${record.masterCutiKaryawan.leaveType}`,
-					`Periode: ${record.periodStart.toLocaleDateString('id-ID')} - ${record.periodEnd.toLocaleDateString(
-						'id-ID',
-					)}`,
+					`Periode: ${record.periodStart.toLocaleDateString('id-ID')} - ${record.periodEnd.toLocaleDateString('id-ID')}`,
 					`Jumlah cuti: ${record.leaveDays} hari`,
 					`Alamat selama cuti: ${record.leaveAddress || '-'}`,
 					`Alasan cuti: ${record.leaveReason || '-'}`,
@@ -614,6 +629,7 @@ async function sendStageActivationEmails(record) {
 }
 
 async function sendRejectedEmail(record) {
+	const replacements = getReplacementEmployeesForRecord(record);
 	await queueAndSendEmail(prisma, {
 		event: 'LEAVE_REQUEST_REJECTED_EMAIL',
 		entityType: 'LEAVE_REQUEST',
@@ -622,6 +638,11 @@ async function sendRejectedEmail(record) {
 		recipientEmail: record.employee.email || '',
 		recipientName: record.employee.fullName,
 		subject: `Pengajuan cuti ${record.requestNumber} ditolak`,
+		htmlBody: buildRejectedEmail({
+			record,
+			replacements,
+			detailUrl: buildLeaveRequestUrl(record.id),
+		}),
 		textBody: [
 			`Halo ${record.employee.fullName},`,
 			'',
@@ -640,6 +661,7 @@ async function sendRejectedEmail(record) {
 }
 
 async function sendApprovedEmail(record) {
+	const replacements = getReplacementEmployeesForRecord(record);
 	await queueAndSendEmail(prisma, {
 		event: 'LEAVE_REQUEST_APPROVED_EMAIL',
 		entityType: 'LEAVE_REQUEST',
@@ -648,6 +670,11 @@ async function sendApprovedEmail(record) {
 		recipientEmail: record.employee.email || '',
 		recipientName: record.employee.fullName,
 		subject: `Pengajuan cuti ${record.requestNumber} selesai di-approve`,
+		htmlBody: buildApprovedEmail({
+			record,
+			replacements,
+			detailUrl: buildLeaveRequestUrl(record.id),
+		}),
 		textBody: [
 			`Halo ${record.employee.fullName},`,
 			'',
