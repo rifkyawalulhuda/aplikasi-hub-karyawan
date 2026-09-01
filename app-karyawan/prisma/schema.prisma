@@ -51,17 +51,18 @@ model JobLevel {
 }
 
 model MasterSite {
-  id                  Int                  @id @default(autoincrement())
-  name                String               @unique @db.VarChar(100)
-  createdAt           DateTime             @default(now())
-  updatedAt           DateTime             @updatedAt
-  trainings           EmployeeTraining[]
-  employees           Employee[]
-  admins              MasterAdmin[]
-  groupShifts         MasterGroupShift[]
-  units               MasterUnit[]
-  vendors             MasterVendor[]
-  siteApprovalConfigs SiteApprovalConfig[]
+  id                       Int                          @id @default(autoincrement())
+  name                     String                       @unique @db.VarChar(100)
+  createdAt                DateTime                     @default(now())
+  updatedAt                DateTime                     @updatedAt
+  trainings                EmployeeTraining[]
+  employees                Employee[]
+  admins                   MasterAdmin[]
+  groupShifts              MasterGroupShift[]
+  units                    MasterUnit[]
+  vendors                  MasterVendor[]
+  siteApprovalConfigs      SiteApprovalConfig[]
+  emailNotificationSettings EmailNotificationSettings?
 
   @@map("master_sites")
 }
@@ -703,6 +704,22 @@ model SiteApprovalConfig {
   @@index([siteId])
   @@index([jobLevelId])
   @@map("site_approval_configs")
+}
+
+model EmailNotificationSettings {
+  id                 Int        @id @default(autoincrement())
+  siteId             Int        @unique
+  isEnabled          Boolean    @default(false)
+  sendHour           Int        @default(7)
+  unitThresholds     Int[]      @default([90, 60, 30, 0])
+  employeeThresholds Int[]      @default([90, 60, 30, 0])
+  recipients         Json       @default("[]")
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+  site               MasterSite @relation(fields: [siteId], references: [id])
+
+  @@index([siteId])
+  @@map("email_notification_settings")
 }
 
 model B3WasteType {

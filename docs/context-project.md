@@ -147,11 +147,15 @@ Folder ini dipilih sebagai basis utama pengembangan karena struktur template-nya
   - `Stage activation` → ke approver (notifikasi ada cuti yang perlu di-approve)
   - `Cuti rejected` → ke requester (notifikasi ditolak + alasan)
   - `Cuti approved` → ke requester (notifikasi disetujui + sisa cuti)
-- Service WhatsApp diimplementasikan pada `server/lib/whatsappService.js` menggunakan REST API Fonnte (`https://api.fonnte.com/send`).
-- Nomor telepon karyawan dari database (format `08xx`) otomatis dinormalisasi ke format internasional `62xx` sebelum dikirim ke Fonnte.
-- Konfigurasi WhatsApp membutuhkan env var `FONNTE_TOKEN` yang diambil dari dashboard Fonnte.
-- Jika `FONNTE_TOKEN` kosong atau tidak dikonfigurasi, seluruh notifikasi WhatsApp dilewati tanpa error (fire-and-forget).
-- Kegagalan kirim WhatsApp tidak menggagalkan proses workflow cuti — hanya dicatat sebagai warning di console log.
+- Service WhatsApp diimplementasikan pada `server/lib/whatsappService.js` mendukung dua provider:
+  - **Fonnte** (default/production): via REST API `https://api.fonnte.com/send`, env var `FONNTE_TOKEN`.
+  - **WAHA self-hosted** (development): via REST API WAHA v2, env var `WAHA_URL`, `WAHA_API_KEY`, `WAHA_SESSION`.
+- Provider aktif dipilih via env var `WHATSAPP_PROVIDER` (default: `fonnte`). Nilai `waha` mengaktifkan WAHA self-hosted.
+- WAHA self-hosted project ini menggunakan instance `waha.ngopicode.com` (v2026.8.x, engine WEBJS, tier CORE).
+- `WAHA_SESSION` harus diisi persis sama dengan nama session di WAHA dashboard (case-sensitive, contoh: `Default`).
+- Nomor telepon karyawan dari database (format `08xx`) otomatis dinormalisasi ke format internasional `62xx` sebelum dikirim.
+- `mapJobLevelToStageType` di `server/lib/leaveWorkflow.js` sekarang memetakan nama jabatan aktual dari database (`Deputy Department Manager`, `Department Manager`, `Division Manager`) ke enum Prisma `LeaveStageType` yang benar (`DY_DEPT_MANAGER`, `DEPT_MANAGER`, `SITE_DIV_MANAGER`). Sebelumnya hanya ada alias pendek (`Dy. Dept. Manager`, dll.) yang tidak cocok dengan nama di database sehingga menyebabkan `PrismaClientValidationError` saat pengajuan cuti.
+- Kegagalan kirim WhatsApp tidak menggagalkan proses workflow cuti — hanya dicatat sebagai warning di console log (fire-and-forget).
 - Request cuti `Approved` sekarang memiliki fitur `Print A4` baik dari admin maupun dari PWA karyawan.
 - Dokumen print cuti menggunakan halaman HTML/CSS A4 khusus yang dikalibrasi mengikuti file referensi `Form Permohonan Cuti dan Ijin.pdf`.
 - Kolom approval pada dokumen print menampilkan tanggal dan nama requester/approver sesuai grup approval yang sudah disepakati.
@@ -1075,6 +1079,52 @@ Yang sudah selesai:
   - Fix timezone: tanggal disimpan UTC noon, frontend menggunakan local date
   - Navigasi top-level "Limbah B3" di navbar (bersebelahan dengan Data Unit)
 - Memperbaiki `MasterDataPage` shared component agar menyertakan `siteId` pada semua API request (list, create, update, delete, import) melalui `appendSiteIdParam` — fix issue Master Vendor untuk super_admin.
+- Menambahkan **HTML Email Templates** modern dan responsive untuk notifikasi workflow cuti:
+  - File baru: `server/lib/emailTemplates.js`
+  - 4 template HTML: `buildSubmittedEmail` (konfirmasi ke karyawan), `buildStageActivationEmail` (notifikasi ke approver), `buildRejectedEmail` (notifikasi ditolak), `buildApprovedEmail` (notifikasi disetujui)
+  - Semua template menggunakan inline CSS, responsive, email-client-safe (tidak ada external stylesheet)
+  - Setiap template memiliki header berwarna kontekstual (biru/kuning/merah/hijau), tabel info detail, alert box, dan CTA button langsung ke portal karyawan
+  - `textBody` tetap dipertahankan sebagai fallback untuk email client yang tidak support HTML
+  - Template `buildExpiryNotificationEmail` untuk notifikasi kadaluarsa lisensi/sertifikasi dengan tabel unit dan karyawan, urgency badge (merah/kuning/biru), dan test mode banner
+- Menambahkan dukungan **Brevo API v3** untuk pengiriman email (menggantikan SMTP):
+  - `server/lib/emailService.js` sekarang mendukung dua mode: Brevo API (`BREVO_API_KEY`) dan SMTP (fallback)
+  - Brevo API tidak terikat IP (bebas dari `ERR_ERL_UNEXPECTED_X_FORWARDED_FOR` dan IP restriction Brevo SMTP)
+  - Jika `BREVO_API_KEY` diset, semua email dikirim via `POST https://api.brevo.com/v3/smtp/email`
+  - Sender email (`SMTP_FROM`) harus diverifikasi di dashboard Brevo sebelum bisa digunakan sebagai sender API
+  - SMTP tetap digunakan sebagai fallback jika `BREVO_API_KEY` tidak diset
+- Menambahkan **Unit Serial Number** pada dropdown Nama Unit di form Input/Edit Lisensi & Sertifikasi Unit:
+  - `src/pages/unitData/licenseCertifications/unitLicenseCertificationFormDialog.jsx`: `getOptionLabel` dan `renderOption` diperbarui untuk menampilkan `unitName — unitSerialNumber`
+  - Di input field: menampilkan `Nama Unit — Serial Number` setelah dipilih
+  - Di dropdown list: nama unit tebal di kiri, serial number abu-abu kecil di kanan
+  - Pencarian di autocomplete sekarang bisa berdasarkan serial number karena sudah masuk ke `getOptionLabel`
+  - Tidak ada perubahan backend — `unitSerialNumber` sudah ada di response API
+- Menambahkan modul **Pengaturan Email Notifikasi** (`/pengaturan/email-notifikasi`):
+  - **Database**: Model `EmailNotificationSettings` per-site dengan field: `isEnabled`, `sendHour` (jam kirim 0-23), `unitThresholds` (Int[]), `employeeThresholds` (Int[]), `recipients` (Json array of `{email, name, isActive}`)
+  - Migration: `20260901132034_add_email_notification_settings`
+  - **Backend routes**: `server/routes/emailNotificationSettings.js`
+    - `GET /api/admin/email-notification-settings` — load config site aktif
+    - `PUT /api/admin/email-notification-settings` — upsert config
+    - `POST /api/admin/email-notification-settings/test` — kirim test email ke semua penerima aktif
+  - **Cron job**: `server/jobs/expiryNotificationJob.js`
+    - Jadwal: `0 * * * *` (top of every hour) via `node-cron`
+    - PM2 cluster guard: hanya berjalan di instance 0 (`NODE_APP_INSTANCE === '0'` atau undefined)
+    - Logic: cek `isEnabled && sendHour == currentHour` per site → query unit/employee certs yang expiry = today + threshold → kirim summary email ke semua `recipients.isActive == true`
+    - Threshold kadaluarsa dicek dengan exact date match (hari ini + N hari)
+  - **Frontend**: `src/pages/masterData/emailNotificationSettings/index.jsx`
+    - Section 1: Toggle aktif/nonaktif + dropdown jam pengiriman (00:00-23:00 WIB)
+    - Section 2: Threshold Lisensi & Sertifikasi Unit — input angka bebas (≥0) + tambah/hapus, tampil sebagai chip warna urgency (merah=hari-H, kuning=≤30 hari, biru=lainnya)
+    - Section 3: Threshold Lisensi & Sertifikasi Karyawan — sama seperti section 2
+    - Section 4: Penerima Email — tabel dengan checkbox aktif/nonaktif per penerima, form tambah email + nama, tombol hapus per baris
+    - Action: "Kirim Test Email" (POST /test) dan "Simpan Pengaturan" (PUT)
+  - **Route**: `pengaturan/email-notifikasi` ditambahkan di `src/utils/routes/index.jsx`
+  - **Navigasi**: Menu "Pengaturan > Pengaturan Email" ditambahkan di `src/components/layouts/mainLayout/navItems.js` sebagai group top-level baru setelah "Limbah B3"
+  - Frontend menggunakan `apiRequest` dari `src/services/api.js` (Bearer token otomatis dari localStorage)
+- Memperbaiki **navbar tabs overflow** — Tab "Pengaturan" terlalu ke kanan melewati batas layar:
+  - `src/components/navbar/navLinks/navItem.jsx`: `minWidth` dari `260px` → `0` pada desktop (flexShrink: 1) agar setiap tab ukurannya sesuai konten, bukan fixed 260px
+  - `src/components/navbar/navLinks/navItem.jsx`: padding horizontal desktop dikurangi dari `2.5` → `1.5`
+  - `src/components/navbar/navLinks/index.jsx`: tambah `overflowX: 'auto'` sebagai fallback scroll jika viewport terlalu sempit
+- Memperbaiki error `ERR_ERL_UNEXPECTED_X_FORWARDED_FOR` pada production PM2:
+  - `server/index.js`: tambah `app.set('trust proxy', 1)` sebelum rate limiter untuk mendukung reverse proxy (nginx/Cloudflare)
 
 #### Pencatatan Limbah B3
 

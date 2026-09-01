@@ -273,9 +273,89 @@ function buildApprovedEmail({ record, replacements, detailUrl }) {
 	});
 }
 
+/**
+ * Email notifikasi kadaluarsa lisensi & sertifikasi unit dan karyawan.
+ */
+function buildExpiryNotificationEmail({ siteName, unitItems = [], employeeItems = [], isTest = false }) {
+	const totalCount = unitItems.length + employeeItems.length;
+	const testBanner = isTest
+		? `<div style="background:#fef9c3;border:2px dashed #b45309;border-radius:8px;padding:12px 16px;margin-bottom:20px;text-align:center;font-weight:700;color:#b45309;">⚠️ INI ADALAH EMAIL TEST — Bukan data aktual</div>`
+		: '';
+
+	function urgencyColor(daysLeft) {
+		if (daysLeft === 0) return C.danger;
+		if (daysLeft <= 30) return C.warning;
+		return C.primary;
+	}
+
+	function urgencyLabel(daysLeft) {
+		if (daysLeft === 0) return '<span style="font-weight:700;color:#b91c1c;">HARI INI</span>';
+		if (daysLeft <= 30) return `<span style="font-weight:600;color:#b45309;">${daysLeft} hari lagi</span>`;
+		return `<span style="color:#1e40af;">${daysLeft} hari lagi</span>`;
+	}
+
+	function certTable(items, columns) {
+		if (!items.length) return '';
+		const headerCells = columns.map((c) => `<th style="padding:8px 10px;text-align:left;background:#f1f5f9;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:#64748b;border-bottom:2px solid #e2e8f0;">${c.label}</th>`).join('');
+		const rows = items.map((item) => {
+			const cells = columns.map((c) => `<td style="padding:8px 10px;font-size:13px;border-bottom:1px solid #f1f5f9;vertical-align:top;">${c.render(item)}</td>`).join('');
+			return `<tr>${cells}</tr>`;
+		}).join('');
+		return `<table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;margin-bottom:24px;"><thead><tr>${headerCells}</tr></thead><tbody>${rows}</tbody></table>`;
+	}
+
+	const unitTable = certTable(unitItems, [
+		{ label: 'Unit', render: (i) => `<strong>${esc(i.name)}</strong>${i.serialNumber ? `<br><span style="color:#64748b;font-size:12px;">S/N: ${esc(i.serialNumber)}</span>` : ''}` },
+		{ label: 'No. Dokumen', render: (i) => esc(i.documentNumber || '-') },
+		{ label: 'Kadaluarsa', render: (i) => `${new Date(i.expiryDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}<br>${urgencyLabel(i.daysLeft)}` },
+	]);
+
+	const employeeTable = certTable(employeeItems, [
+		{ label: 'Karyawan', render: (i) => `<strong>${esc(i.name)}</strong><br><span style="color:#64748b;font-size:12px;">${esc(i.employeeNo)}</span>` },
+		{ label: 'Dokumen', render: (i) => `${esc(i.documentName || '-')}<br><span style="color:#64748b;font-size:12px;">${esc(i.documentNumber || '-')}</span>` },
+		{ label: 'Kadaluarsa', render: (i) => `${new Date(i.expiryDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}<br>${urgencyLabel(i.daysLeft)}` },
+	]);
+
+	const body = `
+    ${testBanner}
+    <p style="margin:0 0 20px;font-size:15px;color:${C.text};">
+      Berikut daftar lisensi &amp; sertifikasi yang <strong>akan atau telah kadaluarsa</strong> di site <strong>${esc(siteName)}</strong>.
+    </p>
+
+    ${unitItems.length > 0 ? `
+    <h3 style="margin:0 0 12px;font-size:15px;color:${C.text};border-left:4px solid ${C.primary};padding-left:10px;">
+      🚛 Lisensi &amp; Sertifikasi Unit (${unitItems.length})
+    </h3>
+    ${unitTable}
+    ` : ''}
+
+    ${employeeItems.length > 0 ? `
+    <h3 style="margin:0 0 12px;font-size:15px;color:${C.text};border-left:4px solid ${C.warning};padding-left:10px;">
+      👤 Lisensi &amp; Sertifikasi Karyawan (${employeeItems.length})
+    </h3>
+    ${employeeTable}
+    ` : ''}
+
+    ${alertBox(`Total ${totalCount} lisensi/sertifikasi membutuhkan perhatian. Segera lakukan perpanjangan untuk menghindari pelanggaran regulasi.`, C.danger, C.dangerLight)}
+  `;
+
+	return wrapEmail({
+		headerBg: '#fef2f2',
+		headerColor: C.danger,
+		headerIcon: '⚠️',
+		headerTitle: 'Notifikasi Kadaluarsa Lisensi & Sertifikasi',
+		headerSubtitle: `Site: ${esc(siteName)} — ${totalCount} item perlu perhatian`,
+		body,
+		ctaHref: null,
+		ctaLabel: null,
+		ctaColor: null,
+	});
+}
+
 export {
 	buildSubmittedEmail,
 	buildStageActivationEmail,
 	buildRejectedEmail,
 	buildApprovedEmail,
+	buildExpiryNotificationEmail,
 };

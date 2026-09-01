@@ -12,7 +12,7 @@ export function NavItem({ Icon, title, showExpand = false, selected = false }) {
 		<Stack
 			width="100%"
 			direction="row"
-			px={{ xs: 1.5, md: 2.5 }}
+			px={{ xs: 1.5, md: 1.5 }}
 			py={1.5}
 			border={1}
 			borderColor="border"
@@ -68,8 +68,8 @@ export function NavItemButton({ children, selected, sx, ...rest }) {
 		<ButtonBase
 			sx={{
 				flexGrow: { xs: 1, md: 0 },
-				flexShrink: 0,
-				minWidth: { xs: '50%', sm: '50%', md: 260 },
+				flexShrink: { xs: 0, md: 1 },
+				minWidth: { xs: '50%', sm: '50%', md: 0 },
 				...(selected && {
 					backgroundImage: (theme) =>
 						`linear-gradient(90deg, ${theme.palette.primary[300]} 0%,${theme.palette.primary.dark} 100% )`,

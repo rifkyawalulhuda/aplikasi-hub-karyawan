@@ -33,6 +33,7 @@ function NavLinks({ navItems }) {
 			border={1}
 			borderColor="border"
 			justifyContent="flex-start"
+			sx={{ overflowX: 'auto' }}
 		>
 			{navMenuItems}
 		</Stack>

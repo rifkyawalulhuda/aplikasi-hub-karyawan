@@ -40,6 +40,8 @@ import sitesRouter from './routes/sites.js';
 import b3WasteRecordsRouter from './routes/b3WasteRecords.js';
 import b3WasteTypesRouter from './routes/b3WasteTypes.js';
 import dashboardRouter from './routes/dashboard.js';
+import emailNotificationSettingsRouter from './routes/emailNotificationSettings.js';
+import { initExpiryNotificationJob } from './jobs/expiryNotificationJob.js';
 
 const app = express();
 const port = Number(process.env.PORT || 4000);
@@ -215,6 +217,10 @@ app.use('/api/data-karyawan/license-certifications', requireAdminAuth, licenseCe
 app.use('/api/data-unit/license-certifications', requireAdminAuth, unitLicenseCertificationsRouter);
 app.use('/api/b3-waste/records', requireAdminAuth, b3WasteRecordsRouter);
 app.use('/api/b3-waste/types', requireAdminAuth, b3WasteTypesRouter);
+app.use('/api/admin/email-notification-settings', requireAdminAuth, emailNotificationSettingsRouter);
+
+// Initialize cron jobs
+initExpiryNotificationJob();
 
 // Serve static frontend build (production only)
 const distPath = join(__dirname, '..', 'dist');
