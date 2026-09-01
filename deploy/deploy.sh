@@ -53,7 +53,7 @@ log_info "Git pull di server..."
 ssh_run "
   cd /home/rifky/Public/aplikasi-hub-karyawan && \
   git fetch origin && \
-  git reset --hard origin/main && \
+  git reset --hard origin/master && \
   echo 'Git pull OK'
 "
 log_success "Source code updated."
