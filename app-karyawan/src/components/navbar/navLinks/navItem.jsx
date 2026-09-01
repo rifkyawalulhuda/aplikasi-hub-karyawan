@@ -7,25 +7,26 @@ import ButtonBase from '@mui/material/ButtonBase';
 // Icons
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
-export function NavItem({ Icon, title, showExpand = false, selected = false }) {
+export function NavItem({ Icon, title, showExpand = false, selected = false, expanded = false }) {
 	return (
 		<Stack
 			width="100%"
 			direction="row"
-			px={{ xs: 1.5, md: 1.5 }}
+			px={1.5}
 			py={1.5}
-			border={1}
-			borderColor="border"
 			alignItems="center"
 			alignContent="center"
 			justifyContent="center"
 			spacing={0.75}
 			title={title}
 			sx={{
+				borderLeft: 1,
+				borderTop: 1,
+				borderBottom: 0,
+				borderRight: 0,
+				borderColor: 'border',
 				borderLeftWidth: { xs: 0, md: 1 },
 				borderTopWidth: { xs: 0, md: 1 },
-				borderBottomWidth: 0,
-				borderRightWidth: 0,
 			}}
 		>
 			{Icon && (
@@ -38,10 +39,7 @@ export function NavItem({ Icon, title, showExpand = false, selected = false }) {
 			)}
 			<Typography
 				pt={0.2}
-				display={{
-					xs: 'none',
-					md: 'inline',
-				}}
+				display={{ xs: 'none', md: 'inline' }}
 				textTransform="uppercase"
 				fontWeight="500"
 				fontSize="12.5px"
@@ -56,6 +54,8 @@ export function NavItem({ Icon, title, showExpand = false, selected = false }) {
 					sx={{
 						color: selected ? 'primary.contrastText' : 'text.secondary',
 						fontSize: 17,
+						transition: 'transform 200ms ease',
+						transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
 					}}
 				/>
 			)}
@@ -70,13 +70,17 @@ export function NavItemButton({ children, selected, sx, ...rest }) {
 				flexGrow: { xs: 1, md: 0 },
 				flexShrink: { xs: 0, md: 1 },
 				minWidth: { xs: '50%', sm: '50%', md: 0 },
+				cursor: 'pointer',
 				...(selected && {
 					backgroundImage: (theme) =>
-						`linear-gradient(90deg, ${theme.palette.primary[300]} 0%,${theme.palette.primary.dark} 100% )`,
-					// bgcolor: selected ? '#000' : 'transparent',
+						`linear-gradient(90deg, ${theme.palette.primary[300]} 0%, ${theme.palette.primary.dark} 100%)`,
 				}),
 				'&:hover': {
 					bgcolor: (theme) => alpha(theme.palette.primary.light, 0.1),
+				},
+				'&:focus-visible': {
+					outline: (theme) => `2px solid ${theme.palette.primary.main}`,
+					outlineOffset: -2,
 				},
 				...sx,
 			}}
@@ -86,10 +90,9 @@ export function NavItemButton({ children, selected, sx, ...rest }) {
 		</ButtonBase>
 	);
 }
+
 export function NavLink({ href, Icon, title }) {
-	const match = useMatch({
-		path: href,
-	});
+	const match = useMatch({ path: href });
 
 	return (
 		<NavItemButton selected={match} component={RouterLink} to={href}>
