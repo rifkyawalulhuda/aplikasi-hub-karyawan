@@ -1,0 +1,50 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    name: Deploy ke Server Production
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout kode
+        uses: actions/checkout@v4
+
+      - name: Deploy ke server via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          script_stop: true
+          script: |
+            set -e
+            APP_DIR="/home/rifky/Public/aplikasi-hub-karyawan/app-karyawan"
+
+            echo "==> Git pull..."
+            cd /home/rifky/Public/aplikasi-hub-karyawan
+            git fetch origin
+            git reset --hard origin/master
+
+            echo "==> Install dependencies..."
+            cd $APP_DIR
+            npm install --no-audit --no-fund --prefer-offline
+
+            echo "==> Prisma generate..."
+            npx prisma generate
+
+            echo "==> Build frontend..."
+            chmod -R +x node_modules/.bin/
+            npm run build:prod
+
+            echo "==> Reload PM2..."
+            pm2 reload hub-karyawan-api --update-env
+            pm2 save
+
+            echo "==> Deploy selesai!"
+            pm2 list --no-color | grep hub-karyawan
