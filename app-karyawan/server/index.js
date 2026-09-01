@@ -219,9 +219,24 @@ app.use('/api/b3-waste/types', requireAdminAuth, b3WasteTypesRouter);
 // Serve static frontend build (production only)
 const distPath = join(__dirname, '..', 'dist');
 if (existsSync(distPath)) {
-	app.use(express.static(distPath, { maxAge: '1d', etag: true }));
+	// Assets (JS/CSS dengan content-hash) boleh di-cache lama
+	// index.html TIDAK boleh di-cache agar deploy baru langsung terlihat
+	app.use(express.static(distPath, {
+		maxAge: '1d',
+		etag: true,
+		setHeaders: (res, filePath) => {
+			if (filePath.endsWith('index.html')) {
+				res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+				res.setHeader('Pragma', 'no-cache');
+				res.setHeader('Expires', '0');
+			}
+		},
+	}));
 	// SPA fallback: semua non-API route diarahkan ke index.html
 	app.get(/^(?!\/api).*$/, (req, res) => {
+		res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+		res.setHeader('Pragma', 'no-cache');
+		res.setHeader('Expires', '0');
 		res.sendFile(join(distPath, 'index.html'));
 	});
 }
