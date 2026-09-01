@@ -3,7 +3,7 @@ module.exports = {
 		{
 			name: 'hub-karyawan-api',
 			script: 'server/index.js',
-			instances: 'max',
+			instances: 4,
 			exec_mode: 'cluster',
 			node_args: '--experimental-vm-modules',
 			env: {
@@ -21,4 +21,26 @@ module.exports = {
 			restart_delay: 3000,
 		},
 	],
+
+	deploy: {
+		production: {
+			user: 'rifky',
+			host: '100.100.220.113',
+			ref: 'origin/main',
+			repo: 'https://github.com/rifkyawalulhuda/aplikasi-hub-karyawan.git',
+			path: '/home/rifky/deployments/hub-karyawan',
+			'pre-deploy-local': '',
+			'post-deploy':
+				'cd app-karyawan && ' +
+				'npm install --no-audit --no-fund && ' +
+				'npm run build:prod && ' +
+				'npx prisma generate && ' +
+				'pm2 reload ecosystem.config.cjs --env production && ' +
+				'pm2 save',
+			'pre-setup': 'mkdir -p /home/rifky/deployments/hub-karyawan',
+			env: {
+				NODE_ENV: 'production',
+			},
+		},
+	},
 };
