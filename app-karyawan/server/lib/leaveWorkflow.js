@@ -25,8 +25,11 @@ const JOB_LEVEL_TO_STAGE_TYPE_MAP = new Map([
 	['general foreman', LeaveStageType.GENERAL_FOREMAN],
 	['section chief', LeaveStageType.SECTION_CHIEF],
 	['dy. dept. manager', LeaveStageType.DY_DEPT_MANAGER],
+	['deputy department manager', LeaveStageType.DY_DEPT_MANAGER],
 	['dept. manager', LeaveStageType.DEPT_MANAGER],
+	['department manager', LeaveStageType.DEPT_MANAGER],
 	['site/div. manager', LeaveStageType.SITE_DIV_MANAGER],
+	['division manager', LeaveStageType.SITE_DIV_MANAGER],
 ]);
 
 function mapJobLevelToStageType(jobLevelName = '') {
