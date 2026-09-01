@@ -28,3 +28,6 @@ dist-ssr
 
 # Database backups (output dari scripts/backup-db.*)
 backups/
+
+# Secret files — jangan commit ke git
+.env
