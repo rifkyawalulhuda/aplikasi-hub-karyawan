@@ -54,6 +54,9 @@ const LeaveCombinedPage = withLazyLoadably(lazy(() => import('@/pages/employeeDa
 const EmployeeLeavePrintAdminPage = withLazyLoadably(lazy(() => import('@/pages/employeeData/leaveFlow/print')));
 const UnitLicenseCertificationsPage = withLazyLoadably(lazy(() => import('@/pages/unitData/licenseCertifications')));
 const SiteApprovalConfigPage = withLazyLoadably(lazy(() => import('@/pages/masterData/siteApprovalConfig')));
+const EmailNotificationSettingsPage = withLazyLoadably(
+	lazy(() => import('@/pages/masterData/emailNotificationSettings')),
+);
 const MasterDataKaryawanCombinedPage = withLazyLoadably(
 	lazy(() => import('@/pages/masterData/masterDataKaryawanCombined')),
 );
@@ -144,6 +147,7 @@ function Router() {
 								path="data-master/master-data-karyawan/site-approval-config"
 								element={<SiteApprovalConfigPage />}
 							/>
+							<Route path="pengaturan/email-notifikasi" element={<EmailNotificationSettingsPage />} />
 							<Route path="data-master/master-data-unit/master-unit" element={<MasterUnitsPage />} />
 							<Route path="data-master/master-data-unit/master-vendor" element={<MasterVendorsPage />} />
 							<Route

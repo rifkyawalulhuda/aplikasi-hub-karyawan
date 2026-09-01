@@ -9,6 +9,7 @@ import ReportGmailerrorredOutlinedIcon from '@mui/icons-material/ReportGmailerro
 import SettingsApplicationsOutlinedIcon from '@mui/icons-material/SettingsApplicationsOutlined';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import CastForEducationOutlinedIcon from '@mui/icons-material/CastForEducationOutlined';
+import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined';
 
 import DashboardOutlinedIcon from '@mui/icons-material/DashboardOutlined';
 import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
@@ -181,6 +182,22 @@ const NAV_LINKS_CONFIG = [
 				title: 'Neraca Limbah B3',
 				Icon: BalanceOutlinedIcon,
 				href: '/limbah-b3/neraca',
+			},
+		],
+	},
+	{
+		id: uuid(),
+		type: 'group',
+		title: 'Pengaturan',
+		Icon: SettingsApplicationsOutlinedIcon,
+		menuMinWidth: 260,
+		menuChildren: [
+			{
+				id: uuid(),
+				type: 'item',
+				title: 'Pengaturan Email',
+				Icon: EmailOutlinedIcon,
+				href: '/pengaturan/email-notifikasi',
 			},
 		],
 	},
