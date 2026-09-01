@@ -117,7 +117,23 @@ function UnitLicenseCertificationFormDialog({
 										field.onChange(selectedOption?.id || '');
 									}}
 									isOptionEqualToValue={(option, value) => option.id === value.id}
-									getOptionLabel={(option) => option?.unitName || ''}
+									getOptionLabel={(option) =>
+										option?.unitName
+											? `${option.unitName}${
+													option.unitSerialNumber ? ` — ${option.unitSerialNumber}` : ''
+											  }`
+											: ''
+									}
+									renderOption={(props, option) => (
+										<li {...props} key={option.id}>
+											<span style={{ fontWeight: 500 }}>{option.unitName}</span>
+											{option.unitSerialNumber && (
+												<span style={{ marginLeft: 8, fontSize: '0.8em', color: '#64748b' }}>
+													{option.unitSerialNumber}
+												</span>
+											)}
+										</li>
+									)}
 									renderInput={(params) => (
 										<TextField
 											{...params}
