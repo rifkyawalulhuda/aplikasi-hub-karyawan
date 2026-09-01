@@ -43,6 +43,11 @@ import dashboardRouter from './routes/dashboard.js';
 
 const app = express();
 const port = Number(process.env.PORT || 4000);
+
+// Trust reverse proxy (nginx/Cloudflare) in production so express-rate-limit
+// can read the real client IP from X-Forwarded-For without throwing
+// ERR_ERL_UNEXPECTED_X_FORWARDED_FOR.
+app.set('trust proxy', 1);
 const DEFAULT_ALLOWED_ORIGINS = [
 	'http://localhost:5173',
 	'http://127.0.0.1:5173',
