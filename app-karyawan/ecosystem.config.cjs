@@ -26,7 +26,7 @@ module.exports = {
 		production: {
 			user: 'rifky',
 			host: '100.100.220.113',
-			ref: 'origin/main',
+			ref: 'origin/master',
 			repo: 'https://github.com/rifkyawalulhuda/aplikasi-hub-karyawan.git',
 			path: '/home/rifky/deployments/hub-karyawan',
 			'pre-deploy-local': '',
