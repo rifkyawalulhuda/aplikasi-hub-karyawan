@@ -64,6 +64,8 @@ cd E:\Github\aplikasi-hub-karyawan\app-karyawan
 # 1. Build frontend ke dist/ (jalankan tiap ada perubahan kode frontend)
 npm run build:prod
 
+##Test
+
 # 2. Jalankan backend (Express melayani dist/ + API di port 4000)
 npm run start:prod
 # atau dengan PM2:
