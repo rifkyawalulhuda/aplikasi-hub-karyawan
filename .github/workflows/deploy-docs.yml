@@ -1,0 +1,45 @@
+name: Deploy Dokumentasi ke GitHub Pages
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'documentation/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    name: Build & Deploy Docusaurus
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: documentation/package-lock.json
+
+      - name: Install dependencies
+        working-directory: documentation
+        run: npm ci
+
+      - name: Build Docusaurus
+        working-directory: documentation
+        run: npm run build
+
+      - name: Deploy ke GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: documentation/build
+          cname: ''
+          commit_message: 'docs: deploy ${{ github.sha }}'
