@@ -9,11 +9,17 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
 
 jobs:
-  deploy:
-    name: Build & Deploy Docusaurus
+  build:
+    name: Build Docusaurus
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -28,6 +34,9 @@ jobs:
           cache: 'npm'
           cache-dependency-path: documentation/package-lock.json
 
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
       - name: Install dependencies
         working-directory: documentation
         run: npm ci
@@ -36,10 +45,19 @@ jobs:
         working-directory: documentation
         run: npm run build
 
-      - name: Deploy ke GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: documentation/build
-          cname: ''
-          commit_message: 'docs: deploy ${{ github.sha }}'
+          path: documentation/build
+
+  deploy:
+    name: Deploy ke GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

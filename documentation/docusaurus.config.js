@@ -9,7 +9,7 @@ const darkTheme = themes.dracula;
 const config = {
   title: 'Hub Karyawan',
   tagline: 'Dokumentasi Aplikasi Internal Manajemen Karyawan',
-  favicon: 'img/favicon.ico',
+  favicon: 'img/logo.svg',
 
   url: 'https://rifkyawalulhuda.github.io',
   baseUrl: '/aplikasi-hub-karyawan/',
@@ -19,11 +19,7 @@ const config = {
   trailingSlash: false,
 
   onBrokenLinks: 'warn',
-  markdown: {
-    hooks: {
-      onBrokenMarkdownLinks: 'warn',
-    },
-  },
+  onBrokenMarkdownLinks: 'warn',
 
   i18n: {
     defaultLocale: 'id',
@@ -52,7 +48,6 @@ const config = {
   themeConfig:
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
-      image: 'img/social-card.png',
       navbar: {
         title: 'Hub Karyawan',
         logo: {
