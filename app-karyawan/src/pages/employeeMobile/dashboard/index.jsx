@@ -25,6 +25,7 @@ import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined';
 import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded';
 import AssignmentTurnedInRoundedIcon from '@mui/icons-material/AssignmentTurnedInRounded';
 import SchoolOutlinedIcon from '@mui/icons-material/SchoolOutlined';
+import PeopleOutlinedIcon from '@mui/icons-material/PeopleOutlined';
 
 import FeedbackState from '@/components/employeePortal/feedbackState';
 import InstallAppCard from '@/components/employeePortal/installAppCard';
@@ -73,6 +74,14 @@ const QUICK_MENU_ITEMS = [
 		description: 'Surat peringatan dan teguran',
 		accent: '#ef4444',
 		tint: 'rgba(239,68,68,0.10)',
+	},
+	{
+		title: 'Cuti Departemen',
+		icon: <PeopleOutlinedIcon />,
+		path: '/karyawan/cuti-departemen',
+		description: 'Status cuti karyawan sedepartemen',
+		accent: '#f59e0b',
+		tint: 'rgba(245,158,11,0.10)',
 	},
 ];
 

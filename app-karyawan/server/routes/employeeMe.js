@@ -2417,4 +2417,56 @@ router.delete('/push-subscriptions', async (req, res, next) => {
 	}
 });
 
+// GET /department-leaves — daftar karyawan sedepartemen yang IN_APPROVAL atau APPROVED (period aktif/akan datang)
+router.get('/department-leaves', async (req, res, next) => {
+	try {
+		const today = new Date();
+		today.setHours(0, 0, 0, 0);
+
+		const departmentId = req.employee.departmentId;
+
+		if (!departmentId) {
+			return res.json([]);
+		}
+
+		const leaves = await prisma.employeeLeave.findMany({
+			where: {
+				employee: { departmentId },
+				status: { in: ['IN_APPROVAL', 'APPROVED'] },
+				OR: [{ status: 'IN_APPROVAL' }, { periodEnd: { gte: today } }],
+			},
+			include: {
+				employee: {
+					select: {
+						id: true,
+						fullName: true,
+						employeeNo: true,
+						jobLevel: { select: { name: true } },
+					},
+				},
+				masterCutiKaryawan: { select: { leaveType: true } },
+			},
+			orderBy: [{ status: 'asc' }, { periodStart: 'asc' }],
+		});
+
+		const result = leaves.map((l) => ({
+			id: l.id,
+			requestNumber: l.requestNumber,
+			status: l.status,
+			employeeId: l.employee.id,
+			employeeName: l.employee.fullName,
+			employeeNo: l.employee.employeeNo,
+			jobLevelName: l.employee.jobLevel?.name || null,
+			leaveType: l.masterCutiKaryawan.leaveType,
+			periodStart: l.periodStart,
+			periodEnd: l.periodEnd,
+			leaveDays: l.leaveDays,
+		}));
+
+		return res.json(result);
+	} catch (error) {
+		return next(error);
+	}
+});
+
 export default router;
