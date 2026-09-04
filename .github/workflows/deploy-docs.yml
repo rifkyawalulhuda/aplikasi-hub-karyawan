@@ -25,19 +25,25 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 1
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: documentation/package-lock.json
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
+      - name: Cache node_modules
+        id: cache-modules
+        uses: actions/cache@v4
+        with:
+          path: documentation/node_modules
+          key: node-modules-${{ hashFiles('documentation/package-lock.json') }}
+
       - name: Install dependencies
+        if: steps.cache-modules.outputs.cache-hit != 'true'
         working-directory: documentation
         run: npm ci
 
