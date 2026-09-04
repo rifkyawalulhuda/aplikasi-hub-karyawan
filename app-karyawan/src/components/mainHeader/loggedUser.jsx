@@ -16,7 +16,7 @@ import Badge from '@mui/material/Badge';
 // Icons
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
-import NotificationsNoneOutlinedIcon from '@mui/icons-material/NotificationsNoneOutlined';
+import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
 import CommentOutlinedIcon from '@mui/icons-material/CommentOutlined';
 
 // Components
@@ -167,11 +167,17 @@ function UserMenu({ handleClose, user, onLogout }) {
 					my: 1,
 				}}
 			/>
-			<MenuItem onClick={handleClose}>
+			<MenuItem
+				component="a"
+				href="https://rifkyawalulhuda.github.io/aplikasi-hub-karyawan/"
+				target="_blank"
+				rel="noopener noreferrer"
+				onClick={handleClose}
+			>
 				<ListItemIcon>
-					<NotificationsNoneOutlinedIcon fontSize="small" />
+					<MenuBookOutlinedIcon fontSize="small" />
 				</ListItemIcon>
-				Role Login: {user?.role || '-'}
+				Dokumentasi
 			</MenuItem>
 			<Divider
 				sx={{
