@@ -1,0 +1,37 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+app-karyawan/dist/
+app-karyawan/.vite/
+documentation/build/
+documentation/.docusaurus/
+
+# Environment files
+app-karyawan/.env
+app-karyawan/.env.production
+
+# Logs
+app-karyawan/logs/
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/extensions.json
+*.swp
+*.swo
+
+# PM2
+.pm2/
+
+# Prisma
+app-karyawan/node_modules/
+
+# Temp
+tmp/
