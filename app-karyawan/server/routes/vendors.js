@@ -44,7 +44,7 @@ function normalizeString(value = '') {
 	return String(value).trim().replace(/\s+/g, ' ');
 }
 
-async function validatePayload(payload = {}, currentId = null) {
+async function validatePayload(payload = {}, currentId = null, siteId = null) {
 	const vendorName = normalizeString(payload.vendorName);
 	const vendorType = normalizeString(payload.vendorType);
 	const address = normalizeString(payload.address);
@@ -87,6 +87,7 @@ async function validatePayload(payload = {}, currentId = null) {
 				equals: vendorName,
 				mode: 'insensitive',
 			},
+			...(siteId != null ? { siteId } : {}),
 			...(currentId ? { NOT: { id: currentId } } : {}),
 		},
 	});
@@ -108,9 +109,10 @@ async function validatePayload(payload = {}, currentId = null) {
 
 async function resolveSiteId(req) {
 	if (req.isSuperAdmin) {
-		const siteId = req.body.siteId != null
-			? Number(req.body.siteId)
-			: req.query.siteId != null
+		const siteId =
+			req.body.siteId != null
+				? Number(req.body.siteId)
+				: req.query.siteId != null
 				? Number(req.query.siteId)
 				: null;
 
@@ -156,7 +158,7 @@ router.post(
 	'/',
 	withAsync(async (req, res) => {
 		const siteId = await resolveSiteId(req);
-		const data = await validatePayload(req.body);
+		const data = await validatePayload(req.body, null, siteId);
 
 		const item = await prisma.masterVendor.create({
 			data: { ...data, siteId },
@@ -185,7 +187,7 @@ router.put(
 		verifyOwnership(req, existing);
 
 		const { siteId: _ignored, ...bodyWithoutSiteId } = req.body;
-		const data = await validatePayload(bodyWithoutSiteId, id);
+		const data = await validatePayload(bodyWithoutSiteId, id, existing.siteId);
 
 		const item = await prisma.masterVendor.update({
 			where: { id },
@@ -286,7 +288,7 @@ router.post(
 					email: raw.Email,
 					detailLainnya: raw['Detail Lainnya'],
 				};
-				const data = await validatePayload(body);
+				const data = await validatePayload(body, null, siteId);
 				const item = await prisma.masterVendor.create({ data: { ...data, siteId } });
 
 				importedRows.push(item);
@@ -392,7 +394,7 @@ router.get(
 
 async function createErrorReport(rows) {
 	await pruneImportErrorReports(ERROR_REPORT_DIR);
-		await fs.mkdir(ERROR_REPORT_DIR, { recursive: true });
+	await fs.mkdir(ERROR_REPORT_DIR, { recursive: true });
 
 	const workbook = new ExcelJS.Workbook();
 	const worksheet = workbook.addWorksheet('Import Errors');

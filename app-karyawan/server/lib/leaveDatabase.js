@@ -238,6 +238,10 @@ async function createLeaveDatabaseEntry(tx, payload, options = {}) {
 }
 
 async function updateLeaveDatabaseEntry(tx, id, payload, options = {}) {
+	// Serialize writers on this ledger row: read-modify-write of the absolute
+	// remainingLeave value is only safe when the row is locked first.
+	await tx.$queryRaw`SELECT id FROM employee_leave_database WHERE id = ${id} FOR UPDATE`;
+
 	const existing = await tx.employeeLeaveDatabase.findUnique({
 		where: { id },
 		include: {
@@ -278,6 +282,17 @@ async function updateLeaveDatabaseEntry(tx, id, payload, options = {}) {
 }
 
 async function applyApprovedLeaveToDatabase(tx, payload) {
+	// Lock the ledger row before reading the balance, so two concurrent
+	// approvals (or an overlapping import) cannot both derive from the same
+	// pre-write value.
+	await tx.$queryRaw`
+		SELECT id FROM employee_leave_database
+		WHERE "employeeId" = ${payload.employeeId}
+			AND year = ${payload.year}
+			AND "masterCutiKaryawanId" = ${payload.masterCutiKaryawanId}
+		FOR UPDATE
+	`;
+
 	const record = await getLeaveDatabaseRecord(tx, payload.employeeId, payload.year, payload.masterCutiKaryawanId);
 
 	if (!record) {

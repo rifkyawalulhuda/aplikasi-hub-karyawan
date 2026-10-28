@@ -92,6 +92,9 @@ describe('POST /master/group-shifts site scoping', () => {
 				where: expect.objectContaining({ siteId: 7, id: { in: [1, 999] } }),
 			}),
 		);
+		expect(prisma.masterGroupShift.findMany).toHaveBeenCalledWith(
+			expect.objectContaining({ where: expect.objectContaining({ siteId: 7 }) }),
+		);
 		expect(error).toMatchObject({ statusCode: 400 });
 		expect(prisma.masterGroupShift.create).not.toHaveBeenCalled();
 		expect(prisma.employee.updateMany).not.toHaveBeenCalled();

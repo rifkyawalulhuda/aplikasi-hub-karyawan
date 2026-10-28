@@ -31,3 +31,8 @@ backups/
 
 # Secret files — jangan commit ke git
 .env
+
+# Secret variants (keep the two templates tracked)
+.env.*
+!.env.example
+!.env.production

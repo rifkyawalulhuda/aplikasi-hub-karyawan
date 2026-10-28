@@ -155,9 +155,12 @@ router.put(
 		}
 
 		// Determine if tokenVersion should be incremented:
-		// - password change OR siteId change
+		// - password, site, linked employee or role change all alter what the
+		//   existing session would authorize, so each must revoke prior tokens.
 		const siteChanged = existing.siteId !== data.siteId;
-		const shouldIncrementToken = !!data.password || siteChanged;
+		const employeeChanged = existing.employeeId !== data.employeeId;
+		const roleChanged = existing.role !== data.role;
+		const shouldIncrementToken = !!data.password || siteChanged || employeeChanged || roleChanged;
 
 		const updateData = {
 			...data,

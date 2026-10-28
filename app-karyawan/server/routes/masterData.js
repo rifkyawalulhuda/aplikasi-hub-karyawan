@@ -17,13 +17,7 @@ import requireSuperAdminWrite from '../middleware/requireSuperAdminWrite.js';
 
 const router = Router();
 
-const PER_SITE_RESOURCES = new Set([
-	'departments',
-	'work-locations',
-	'job-roles',
-	'master-units',
-	'master-vendors',
-]);
+const PER_SITE_RESOURCES = new Set(['departments', 'work-locations', 'job-roles', 'master-units', 'master-vendors']);
 
 const REFERENCE_RESOURCES = new Set(['job-levels', 'master-dok-pkb', 'master-cuti-karyawan', 'master-holidays']);
 
@@ -264,6 +258,7 @@ async function buildPayload(config, body = {}, currentId = null, options = {}) {
 								mode: 'insensitive',
 						  }
 						: value,
+					...(options.siteId != null ? { siteId: options.siteId } : {}),
 					...(currentId ? { NOT: { id: currentId } } : {}),
 				},
 			});
@@ -323,7 +318,7 @@ function isInstructionRow(config, importHeaders, raw) {
 
 async function createErrorReport(config, rows) {
 	await pruneImportErrorReports(ERROR_REPORT_DIR);
-		await fs.mkdir(ERROR_REPORT_DIR, { recursive: true });
+	await fs.mkdir(ERROR_REPORT_DIR, { recursive: true });
 
 	const workbook = new ExcelJS.Workbook();
 	const worksheet = workbook.addWorksheet('Import Errors');
@@ -429,7 +424,7 @@ router.post(
 					accumulator[fieldConfig.name] = raw[getFieldImportHeader(fieldConfig)];
 					return accumulator;
 				}, {});
-				const data = await buildPayload(config, body, null, { source: 'import' });
+				const data = await buildPayload(config, body, null, { source: 'import', siteId: importSiteId });
 
 				if (isPerSiteResource(req.params.resource)) {
 					data.siteId = importSiteId;
@@ -615,10 +610,11 @@ router.post(
 		if (!config) {
 			return res.status(404).json({ message: 'Master data resource not found.' });
 		}
-		const data = await buildPayload(config, req.body);
+		const targetSiteId = isPerSiteResource(req.params.resource) ? resolveWriteSiteId(req, req.body.siteId) : null;
+		const data = await buildPayload(config, req.body, null, { siteId: targetSiteId });
 
 		if (isPerSiteResource(req.params.resource)) {
-			data.siteId = resolveWriteSiteId(req, req.body.siteId);
+			data.siteId = targetSiteId;
 
 			const site = await prisma.masterSite.findUnique({ where: { id: data.siteId } });
 			if (!site) {
@@ -664,7 +660,9 @@ router.put(
 			}
 		}
 
-		const data = await buildPayload(config, req.body, id);
+		const data = await buildPayload(config, req.body, id, {
+			siteId: isPerSiteResource(req.params.resource) ? existing.siteId : undefined,
+		});
 
 		// Preserve original siteId for per-site resources (strip from payload)
 		if (isPerSiteResource(req.params.resource)) {

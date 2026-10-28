@@ -201,3 +201,114 @@ API server running on http://localhost:4000
 [32m[nodemon] starting `node server/index.js`[39m
 [ExpiryNotification] Cron job initialized (runs every hour)
 API server running on http://localhost:4000
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node server/index.js`[39m
+[ExpiryNotification] Cron job initialized (runs every hour)
+API server running on http://localhost:4000
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node server/index.js`[39m
+[ExpiryNotification] Cron job initialized (runs every hour)
+API server running on http://localhost:4000
+Error: Data Karyawan yang dipilih tidak ditemukan.
+    at validatePayload (file:///E:/Github/aplikasi-hub-karyawan/app-karyawan/server/routes/groupShifts.js:214:23)
+    at async saveGroupShift (file:///E:/Github/aplikasi-hub-karyawan/app-karyawan/server/routes/groupShifts.js:275:15)
+    at async Proxy._transactionWithCallback (E:\Github\aplikasi-hub-karyawan\app-karyawan\node_modules\@prisma\client\runtime\library.js:130:8120)
+    at async file:///E:/Github/aplikasi-hub-karyawan/app-karyawan/server/routes/groupShifts.js:760:18 {
+  statusCode: 400
+}
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node server/index.js`[39m
+[ExpiryNotification] Cron job initialized (runs every hour)
+API server running on http://localhost:4000
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node server/index.js`[39m
+[ExpiryNotification] Cron job initialized (runs every hour)
+API server running on http://localhost:4000
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node server/index.js`[39m
+[ExpiryNotification] Cron job initialized (runs every hour)
+API server running on http://localhost:4000
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node server/index.js`[39m
+[ExpiryNotification] Cron job initialized (runs every hour)
+API server running on http://localhost:4000
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node server/index.js`[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node server/index.js`[39m
+[ExpiryNotification] Cron job initialized (runs every hour)
+API server running on http://localhost:4000
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node server/index.js`[39m
+[ExpiryNotification] Cron job initialized (runs every hour)
+API server running on http://localhost:4000
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node server/index.js`[39m
+[ExpiryNotification] Cron job initialized (runs every hour)
+API server running on http://localhost:4000
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node server/index.js`[39m
+[ExpiryNotification] Cron job initialized (runs every hour)
+API server running on http://localhost:4000
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node server/index.js`[39m
+[ExpiryNotification] Cron job initialized (runs every hour)
+API server running on http://localhost:4000
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node server/index.js`[39m
+[ExpiryNotification] Cron job initialized (runs every hour)
+API server running on http://localhost:4000
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node server/index.js`[39m
+[ExpiryNotification] Cron job initialized (runs every hour)
+API server running on http://localhost:4000
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node server/index.js`[39m
+[ExpiryNotification] Cron job initialized (runs every hour)
+[32m[nodemon] restarting due to changes...[39m
+API server running on http://localhost:4000
+[32m[nodemon] starting `node server/index.js`[39m
+[ExpiryNotification] Cron job initialized (runs every hour)
+API server running on http://localhost:4000
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node server/index.js`[39m
+[ExpiryNotification] Cron job initialized (runs every hour)
+API server running on http://localhost:4000
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node server/index.js`[39m
+[ExpiryNotification] Cron job initialized (runs every hour)
+API server running on http://localhost:4000
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node server/index.js`[39m
+[ExpiryNotification] Cron job initialized (runs every hour)
+API server running on http://localhost:4000
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node server/index.js`[39m
+[ExpiryNotification] Cron job initialized (runs every hour)
+API server running on http://localhost:4000
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node server/index.js`[39m
+[ExpiryNotification] Cron job initialized (runs every hour)
+API server running on http://localhost:4000
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node server/index.js`[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `node server/index.js`[39m
+[ExpiryNotification] Cron job initialized (runs every hour)
+API server running on http://localhost:4000
+
+> slim-mui-template@1.0.0 dev:server
+> nodemon server/index.js
+
+[33m[nodemon] 3.1.14[39m
+[33m[nodemon] to restart at any time, enter `rs`[39m
+[33m[nodemon] watching path(s): *.*[39m
+[33m[nodemon] watching extensions: js,mjs,cjs,json[39m
+[32m[nodemon] starting `node server/index.js`[39m
+[ExpiryNotification] Cron job initialized (runs every hour)
+API server running on http://localhost:4000

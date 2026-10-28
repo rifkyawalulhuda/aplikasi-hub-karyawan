@@ -136,13 +136,14 @@ async function getGroupShiftOrThrow(db, id) {
 	return record;
 }
 
-async function findExistingGroupShiftByName(db, groupShiftName) {
+async function findExistingGroupShiftByName(db, groupShiftName, siteId = null) {
 	const records = await db.masterGroupShift.findMany({
 		where: {
 			groupShiftName: {
 				equals: groupShiftName,
 				mode: 'insensitive',
 			},
+			...(siteId == null ? {} : { siteId }),
 		},
 		select: {
 			id: true,
@@ -160,8 +161,8 @@ async function findExistingGroupShiftByName(db, groupShiftName) {
 	return records[0] || null;
 }
 
-async function ensureGroupShiftNameUnique(db, groupShiftName, currentId = null) {
-	const existingRecord = await findExistingGroupShiftByName(db, groupShiftName);
+async function ensureGroupShiftNameUnique(db, groupShiftName, currentId = null, siteId = null) {
+	const existingRecord = await findExistingGroupShiftByName(db, groupShiftName, siteId);
 
 	if (existingRecord && existingRecord.id !== currentId) {
 		throw Object.assign(new Error('Nama Group Shift sudah digunakan.'), { statusCode: 409 });
@@ -187,7 +188,7 @@ async function validatePayload(db, payload = {}, currentId = null, siteId = null
 		throw Object.assign(new Error('Minimal satu Foreman wajib dipilih.'), { statusCode: 400 });
 	}
 
-	await ensureGroupShiftNameUnique(db, groupShiftName, currentId);
+	await ensureGroupShiftNameUnique(db, groupShiftName, currentId, siteId);
 
 	const uniqueEmployeeIds = [...new Set([...foremanIds, ...employeeIds])];
 	const employees = await db.employee.findMany({
@@ -377,7 +378,7 @@ function resolveEmployeesByNames(names, employeeLookup, label, validator) {
 
 async function createErrorReport(rows) {
 	await pruneImportErrorReports(ERROR_REPORT_DIR);
-		await fs.mkdir(ERROR_REPORT_DIR, { recursive: true });
+	await fs.mkdir(ERROR_REPORT_DIR, { recursive: true });
 
 	const workbook = new ExcelJS.Workbook();
 	const worksheet = workbook.addWorksheet('Import Errors');
