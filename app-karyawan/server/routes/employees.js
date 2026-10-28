@@ -3,6 +3,9 @@ import fs from 'fs/promises';
 import path from 'path';
 
 import ExcelJS from 'exceljs';
+import { pruneImportErrorReports } from '../lib/importErrorReports.js';
+
+import { assertWorksheetWithinLimits, assertXlsxArchiveWithinLimits } from '../lib/xlsxImportGuard.js';
 import { Router } from 'express';
 import multer from 'multer';
 
@@ -494,7 +497,8 @@ async function buildImportPayload(rawPayload) {
 }
 
 async function createErrorReport(rows) {
-	await fs.mkdir(ERROR_REPORT_DIR, { recursive: true });
+	await pruneImportErrorReports(ERROR_REPORT_DIR);
+		await fs.mkdir(ERROR_REPORT_DIR, { recursive: true });
 
 	const workbook = new ExcelJS.Workbook();
 	const worksheet = workbook.addWorksheet('Import Errors');
@@ -544,6 +548,7 @@ router.get(
 	withAsync(async (req, res) => {
 		const [departments, groupShifts, workLocations, jobRoles, jobLevels, sites] = await Promise.all([
 			prisma.department.findMany({
+				where: { ...req.siteFilter },
 				select: { name: true },
 				orderBy: { name: 'asc' },
 			}),
@@ -553,10 +558,12 @@ router.get(
 				orderBy: { groupShiftName: 'asc' },
 			}),
 			prisma.workLocation.findMany({
+				where: { ...req.siteFilter },
 				select: { name: true },
 				orderBy: { name: 'asc' },
 			}),
 			prisma.jobRole.findMany({
+				where: { ...req.siteFilter },
 				select: { name: true },
 				orderBy: { name: 'asc' },
 			}),
@@ -565,6 +572,7 @@ router.get(
 				orderBy: { name: 'asc' },
 			}),
 			prisma.masterSite.findMany({
+				where: req.isSuperAdmin ? {} : { id: req.admin.siteId },
 				select: { name: true },
 				orderBy: { name: 'asc' },
 			}),
@@ -805,9 +813,11 @@ router.post(
 			return res.status(400).json({ message: 'File Excel wajib dipilih.' });
 		}
 
+		assertXlsxArchiveWithinLimits(req.file.buffer);
 		const workbook = new ExcelJS.Workbook();
 		await workbook.xlsx.load(req.file.buffer);
 		const worksheet = workbook.getWorksheet('Data Import') || workbook.worksheets[0];
+		assertWorksheetWithinLimits(worksheet);
 
 		if (!worksheet) {
 			return res.status(400).json({ message: 'Sheet Excel tidak ditemukan.' });
@@ -1164,6 +1174,11 @@ router.put(
 		const data = await validatePayload(req.body, id, existing.siteId);
 		// Strip siteId from update payload for site-scoped admins
 		const { siteId: _ignored, ...updateData } = data;
+
+		if (updateData.password) {
+			updateData.tokenVersion = { increment: 1 };
+		}
+
 		const employee = await prisma.employee.update({
 			where: { id },
 			data: updateData,

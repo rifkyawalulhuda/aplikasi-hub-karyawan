@@ -38,6 +38,7 @@ function createEmployeeAccessToken(employee) {
 			sub: String(employee.id),
 			nik: employee.employeeNo,
 			type: 'employee-access',
+			tv: Number(employee.tokenVersion || 0),
 			iat: issuedAt,
 			exp: issuedAt + TOKEN_TTL_SECONDS,
 		}),
@@ -78,6 +79,10 @@ function verifyEmployeeAccessToken(token) {
 	}
 
 	if (payload.type !== 'employee-access' || !payload.sub) {
+		throw Object.assign(new Error('Token tidak valid.'), { statusCode: 401 });
+	}
+
+	if (!Number.isInteger(Number(payload.tv))) {
 		throw Object.assign(new Error('Token tidak valid.'), { statusCode: 401 });
 	}
 

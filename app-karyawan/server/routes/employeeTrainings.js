@@ -3,6 +3,9 @@ import fs from 'fs/promises';
 import path from 'path';
 
 import ExcelJS from 'exceljs';
+import { pruneImportErrorReports } from '../lib/importErrorReports.js';
+
+import { assertWorksheetWithinLimits, assertXlsxArchiveWithinLimits } from '../lib/xlsxImportGuard.js';
 import { Router } from 'express';
 import multer from 'multer';
 
@@ -348,7 +351,7 @@ function validatePayload(payload = {}) {
 	};
 }
 
-async function saveParticipants(tx, employeeTrainingId, participantEmployeeIds, participantNames = []) {
+async function saveParticipants(tx, employeeTrainingId, participantEmployeeIds, participantNames = [], siteId = null) {
 	await tx.employeeTrainingParticipant.deleteMany({
 		where: { employeeTrainingId },
 	});
@@ -356,6 +359,7 @@ async function saveParticipants(tx, employeeTrainingId, participantEmployeeIds, 
 	if (participantEmployeeIds.length > 0) {
 		const employees = await tx.employee.findMany({
 			where: {
+				...(siteId != null ? { siteId } : {}),
 				id: {
 					in: participantEmployeeIds,
 				},
@@ -398,7 +402,9 @@ async function saveParticipants(tx, employeeTrainingId, participantEmployeeIds, 
 	});
 }
 
-async function saveTrainingRecord(db, id, payload) {
+async function saveTrainingRecord(db, id, payload, siteId = null) {
+	const effectiveSiteId = siteId != null ? siteId : payload.siteId ?? null;
+
 	return db.$transaction(async (tx) => {
 		if (id) {
 			await tx.employeeTraining.update({
@@ -416,7 +422,7 @@ async function saveTrainingRecord(db, id, payload) {
 				},
 			});
 
-			await saveParticipants(tx, id, payload.participantEmployeeIds, payload.participantNames);
+			await saveParticipants(tx, id, payload.participantEmployeeIds, payload.participantNames, effectiveSiteId);
 
 			return getTrainingRecordOrThrow(tx, id);
 		}
@@ -441,13 +447,14 @@ async function saveTrainingRecord(db, id, payload) {
 			data: createData,
 		});
 
-		await saveParticipants(tx, created.id, payload.participantEmployeeIds, payload.participantNames);
+		await saveParticipants(tx, created.id, payload.participantEmployeeIds, payload.participantNames, effectiveSiteId);
 		return getTrainingRecordOrThrow(tx, created.id);
 	});
 }
 
 function createErrorReport(rows) {
 	return (async () => {
+		await pruneImportErrorReports(ERROR_REPORT_DIR);
 		await fs.mkdir(ERROR_REPORT_DIR, { recursive: true });
 
 		const workbook = new ExcelJS.Workbook();
@@ -486,7 +493,7 @@ function createErrorReport(rows) {
 	})();
 }
 
-async function buildImportPayload(rawPayload) {
+async function buildImportPayload(rawPayload, siteId = null) {
 	const participantNames = normalizeParticipantNames(rawPayload['Nama Peserta']);
 	const participantEmployeeIds = [];
 
@@ -497,6 +504,7 @@ async function buildImportPayload(rawPayload) {
 		for (const searchTerm of searchTerms) {
 			matchedEmployee = await prisma.employee.findFirst({
 				where: {
+					...(siteId != null ? { siteId } : {}),
 					OR: [
 						{
 							fullName: {
@@ -718,9 +726,11 @@ router.post(
 			siteId = req.admin.siteId;
 		}
 
+		assertXlsxArchiveWithinLimits(req.file.buffer);
 		const workbook = new ExcelJS.Workbook();
 		await workbook.xlsx.load(req.file.buffer);
 		const worksheet = workbook.getWorksheet('Data Import') || workbook.worksheets[0];
+		assertWorksheetWithinLimits(worksheet);
 
 		if (!worksheet) {
 			return res.status(400).json({ message: 'Sheet Excel tidak ditemukan.' });
@@ -751,8 +761,8 @@ router.post(
 			}
 
 			try {
-				const payload = validatePayload(await buildImportPayload(raw));
-				const record = await saveTrainingRecord(prisma, null, { ...payload, siteId });
+				const payload = validatePayload(await buildImportPayload(raw, siteId));
+				const record = await saveTrainingRecord(prisma, null, { ...payload, siteId }, siteId);
 				importedRows.push(mapTrainingRecord(record));
 			} catch (error) {
 				errorRows.push({
@@ -864,7 +874,7 @@ router.post(
 		}
 
 		const payload = validatePayload(req.body);
-		const record = await saveTrainingRecord(prisma, null, { ...payload, siteId });
+		const record = await saveTrainingRecord(prisma, null, { ...payload, siteId }, siteId);
 
 		return res.status(201).json(mapTrainingRecord(record));
 	}),
@@ -889,7 +899,7 @@ router.put(
 
 		const { siteId: _ignored, ...body } = req.body;
 		const payload = validatePayload(body);
-		const record = await saveTrainingRecord(prisma, id, payload);
+		const record = await saveTrainingRecord(prisma, id, payload, existing.siteId);
 
 		return res.json(mapTrainingRecord(record));
 	}),

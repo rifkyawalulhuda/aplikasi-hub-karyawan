@@ -3,6 +3,9 @@ import fs from 'fs/promises';
 import path from 'path';
 
 import ExcelJS from 'exceljs';
+import { pruneImportErrorReports } from '../lib/importErrorReports.js';
+
+import { assertWorksheetWithinLimits, assertXlsxArchiveWithinLimits } from '../lib/xlsxImportGuard.js';
 import { Router } from 'express';
 import multer from 'multer';
 
@@ -165,7 +168,7 @@ async function ensureGroupShiftNameUnique(db, groupShiftName, currentId = null) 
 	}
 }
 
-async function validatePayload(db, payload = {}, currentId = null) {
+async function validatePayload(db, payload = {}, currentId = null, siteId = null) {
 	const groupShiftName = normalizeString(payload.groupShiftName);
 	const rawForemanIds = Array.isArray(payload.foremanIds) ? payload.foremanIds : [];
 	const rawEmployeeIds = Array.isArray(payload.employeeIds) ? payload.employeeIds : [];
@@ -189,6 +192,7 @@ async function validatePayload(db, payload = {}, currentId = null) {
 	const uniqueEmployeeIds = [...new Set([...foremanIds, ...employeeIds])];
 	const employees = await db.employee.findMany({
 		where: {
+			...(siteId == null ? {} : { siteId }),
 			id: {
 				in: uniqueEmployeeIds,
 			},
@@ -227,7 +231,7 @@ async function validatePayload(db, payload = {}, currentId = null) {
 	};
 }
 
-async function syncGroupShiftEmployees(db, groupShiftId, employeeIds = []) {
+async function syncGroupShiftEmployees(db, groupShiftId, employeeIds = [], siteId = null) {
 	const uniqueEmployeeIds = [...new Set(employeeIds)].filter((value) => Number.isInteger(value));
 
 	if (uniqueEmployeeIds.length === 0) {
@@ -256,6 +260,7 @@ async function syncGroupShiftEmployees(db, groupShiftId, employeeIds = []) {
 
 	await db.employee.updateMany({
 		where: {
+			...(siteId == null ? {} : { siteId }),
 			id: {
 				in: uniqueEmployeeIds,
 			},
@@ -267,7 +272,7 @@ async function syncGroupShiftEmployees(db, groupShiftId, employeeIds = []) {
 }
 
 async function saveGroupShift(db, payload = {}, currentId = null, siteId = null) {
-	const data = await validatePayload(db, payload, currentId);
+	const data = await validatePayload(db, payload, currentId, siteId);
 	let groupShiftId = currentId;
 
 	if (currentId) {
@@ -307,7 +312,7 @@ async function saveGroupShift(db, payload = {}, currentId = null, siteId = null)
 		groupShiftId = createdRecord.id;
 	}
 
-	await syncGroupShiftEmployees(db, groupShiftId, data.employeeIds);
+	await syncGroupShiftEmployees(db, groupShiftId, data.employeeIds, siteId);
 
 	return getGroupShiftOrThrow(db, groupShiftId);
 }
@@ -371,7 +376,8 @@ function resolveEmployeesByNames(names, employeeLookup, label, validator) {
 }
 
 async function createErrorReport(rows) {
-	await fs.mkdir(ERROR_REPORT_DIR, { recursive: true });
+	await pruneImportErrorReports(ERROR_REPORT_DIR);
+		await fs.mkdir(ERROR_REPORT_DIR, { recursive: true });
 
 	const workbook = new ExcelJS.Workbook();
 	const worksheet = workbook.addWorksheet('Import Errors');
@@ -521,9 +527,11 @@ router.post(
 			importSiteId = req.admin.siteId;
 		}
 
+		assertXlsxArchiveWithinLimits(req.file.buffer);
 		const workbook = new ExcelJS.Workbook();
 		await workbook.xlsx.load(req.file.buffer);
 		const worksheet = workbook.getWorksheet('Data Import') || workbook.worksheets[0];
+		assertWorksheetWithinLimits(worksheet);
 
 		if (!worksheet) {
 			return res.status(400).json({ message: 'Sheet Excel tidak ditemukan.' });

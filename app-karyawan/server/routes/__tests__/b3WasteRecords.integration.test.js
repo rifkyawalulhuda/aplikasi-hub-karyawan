@@ -7,7 +7,7 @@ vi.mock('../../lib/prisma.js', () => ({
 	default: {
 		b3WasteType: {
 			create: vi.fn(),
-			findFirst: vi.fn(),
+			findFirst: vi.fn(async ({ where }) => ({ id: where.id, siteId: where.siteId })),
 			findMany: vi.fn(),
 			count: vi.fn(),
 			delete: vi.fn(),
@@ -25,6 +25,9 @@ vi.mock('../../lib/prisma.js', () => ({
 			findFirst: vi.fn(),
 			count: vi.fn(),
 			delete: vi.fn(),
+		},
+		masterVendor: {
+			findFirst: vi.fn(async ({ where }) => ({ id: where.id })),
 		},
 	},
 }));

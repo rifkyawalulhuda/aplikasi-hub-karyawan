@@ -44,14 +44,26 @@ import b3WasteTypesRouter from './routes/b3WasteTypes.js';
 import dashboardRouter from './routes/dashboard.js';
 import emailNotificationSettingsRouter from './routes/emailNotificationSettings.js';
 import { initExpiryNotificationJob } from './jobs/expiryNotificationJob.js';
+import { findMissingProductionEnv, resolveTrustProxy } from './lib/httpConfig.js';
+
+const missingProductionEnv = findMissingProductionEnv();
+
+if (missingProductionEnv.length > 0) {
+	console.error(
+		`[startup] Variabel environment wajib belum diisi: ${missingProductionEnv.join(', ')}. ` +
+			'Server tidak dijalankan agar tidak memakai nilai default yang tidak aman.',
+	);
+	process.exit(1);
+}
 
 const app = express();
 const port = Number(process.env.PORT || 4000);
 
 // Trust reverse proxy (nginx/Cloudflare) in production so express-rate-limit
 // can read the real client IP from X-Forwarded-For without throwing
-// ERR_ERL_UNEXPECTED_X_FORWARDED_FOR.
-app.set('trust proxy', 1);
+// ERR_ERL_UNEXPECTED_X_FORWARDED_FOR. Override with TRUST_PROXY (false, a hop
+// count, or an Express subnet list) when the deployment differs.
+app.set('trust proxy', resolveTrustProxy(process.env.TRUST_PROXY));
 const DEFAULT_ALLOWED_ORIGINS = [
 	'http://localhost:5173',
 	'http://127.0.0.1:5173',

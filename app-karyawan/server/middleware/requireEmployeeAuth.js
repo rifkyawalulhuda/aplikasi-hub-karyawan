@@ -26,6 +26,12 @@ async function requireEmployeeAuth(req, res, next) {
 			return res.status(401).json({ message: 'Akun karyawan tidak ditemukan.' });
 		}
 
+		if (Number(payload.tv ?? 0) !== Number(employee.tokenVersion ?? 0)) {
+			return res.status(401).json({
+				message: 'Sesi login sudah tidak berlaku. Silakan login kembali.',
+			});
+		}
+
 		req.employee = employee;
 		return next();
 	} catch (error) {

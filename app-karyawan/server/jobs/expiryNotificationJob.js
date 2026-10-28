@@ -11,6 +11,7 @@
 
 import cron from 'node-cron';
 import prisma from '../lib/prisma.js';
+import { normalizeRecipients } from '../lib/emailRecipients.js';
 import { queueAndSendEmail } from '../lib/emailService.js';
 import { buildExpiryNotificationEmail } from '../lib/emailTemplates.js';
 
@@ -58,16 +59,12 @@ async function processsite(settings) {
 	const siteId = settings.site.id;
 	const siteName = settings.site.name;
 
-	const recipients = Array.isArray(settings.recipients)
-		? settings.recipients.filter((r) => r.isActive && r.email)
-		: [];
+	const recipients = normalizeRecipients(settings.recipients).filter((r) => r.isActive);
 
 	if (recipients.length === 0) return;
 
 	// ─── Query Unit License Certifications ──────────────────────────────────
-	const unitThresholds = Array.isArray(settings.unitThresholds)
-		? settings.unitThresholds
-		: [90, 60, 30, 0];
+	const unitThresholds = Array.isArray(settings.unitThresholds) ? settings.unitThresholds : [90, 60, 30, 0];
 
 	const unitExpiryDates = unitThresholds.map(targetDate);
 
@@ -83,9 +80,7 @@ async function processsite(settings) {
 	});
 
 	// ─── Query Employee License Certifications ───────────────────────────────
-	const empThresholds = Array.isArray(settings.employeeThresholds)
-		? settings.employeeThresholds
-		: [90, 60, 30, 0];
+	const empThresholds = Array.isArray(settings.employeeThresholds) ? settings.employeeThresholds : [90, 60, 30, 0];
 
 	const empExpiryDates = empThresholds.map(targetDate);
 
@@ -156,7 +151,9 @@ function buildExpiryNotificationText({ siteName, unitItems, employeeItems }) {
 		for (const item of unitItems) {
 			const daysLabel = item.daysLeft === 0 ? 'HARI INI' : `${item.daysLeft} hari lagi`;
 			lines.push(
-				`- ${item.name} (S/N: ${item.serialNumber || '-'}) | No. Dok: ${item.documentNumber} | Kadaluarsa: ${new Date(item.expiryDate).toLocaleDateString('id-ID')} (${daysLabel})`,
+				`- ${item.name} (S/N: ${item.serialNumber || '-'}) | No. Dok: ${
+					item.documentNumber
+				} | Kadaluarsa: ${new Date(item.expiryDate).toLocaleDateString('id-ID')} (${daysLabel})`,
 			);
 		}
 		lines.push('');
@@ -167,7 +164,9 @@ function buildExpiryNotificationText({ siteName, unitItems, employeeItems }) {
 		for (const item of employeeItems) {
 			const daysLabel = item.daysLeft === 0 ? 'HARI INI' : `${item.daysLeft} hari lagi`;
 			lines.push(
-				`- ${item.name} (${item.employeeNo}) | ${item.documentName} | No. Dok: ${item.documentNumber} | Kadaluarsa: ${new Date(item.expiryDate).toLocaleDateString('id-ID')} (${daysLabel})`,
+				`- ${item.name} (${item.employeeNo}) | ${item.documentName} | No. Dok: ${
+					item.documentNumber
+				} | Kadaluarsa: ${new Date(item.expiryDate).toLocaleDateString('id-ID')} (${daysLabel})`,
 			);
 		}
 	}

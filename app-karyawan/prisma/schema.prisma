@@ -225,6 +225,7 @@ model Employee {
   updatedAt                          DateTime                           @updatedAt
   groupShiftId                       Int?
   siteId                             Int
+  tokenVersion                       Int                                @default(0)
   notificationReadStates             AdminNotificationReadState[]
   emailWorkflowFailureLogsResolvedBy EmailWorkflowFailureLog[]
   leaveApprovals                     EmployeeLeaveApproval[]            @relation("EmployeeLeaveApprover")
@@ -523,6 +524,7 @@ model AdminNotificationReadState {
 model AdminNotificationRecord {
   id              Int      @id @default(autoincrement())
   notificationId  String   @unique @db.VarChar(255)
+  siteId          Int?
   category        String   @db.VarChar(100)
   severity        String   @db.VarChar(50)
   title           String   @db.VarChar(255)
@@ -543,6 +545,7 @@ model AdminNotificationRecord {
   @@index([sortDate])
   @@index([lastDetectedAt])
   @@index([isActive])
+  @@index([siteId, isActive])
   @@map("admin_notification_records")
 }
 

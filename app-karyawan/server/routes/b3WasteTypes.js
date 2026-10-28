@@ -3,6 +3,7 @@ import * as yup from 'yup';
 
 import prisma from '../lib/prisma.js';
 import requireSiteIsolation from '../middleware/requireSiteIsolation.js';
+import { parsePage, parsePageSize } from '../lib/pagination.js';
 
 const router = Router();
 
@@ -38,8 +39,8 @@ router.get(
 	'/',
 	withAsync(async (req, res) => {
 		const siteId = getSiteId(req);
-		const page = parseInt(req.query.page) || 0;
-		const pageSize = parseInt(req.query.pageSize) || 25;
+		const page = parsePage(req.query.page);
+		const pageSize = parsePageSize(req.query.pageSize);
 
 		const [data, total] = await Promise.all([
 			prisma.b3WasteType.findMany({

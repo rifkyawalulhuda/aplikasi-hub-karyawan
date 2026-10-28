@@ -3,6 +3,9 @@ import fs from 'fs/promises';
 import path from 'path';
 
 import ExcelJS from 'exceljs';
+import { pruneImportErrorReports } from '../lib/importErrorReports.js';
+
+import { assertWorksheetWithinLimits, assertXlsxArchiveWithinLimits } from '../lib/xlsxImportGuard.js';
 import { Router } from 'express';
 import multer from 'multer';
 
@@ -319,7 +322,8 @@ async function buildImportPayload(rawPayload, siteId) {
 }
 
 async function createErrorReport(rows) {
-	await fs.mkdir(ERROR_REPORT_DIR, { recursive: true });
+	await pruneImportErrorReports(ERROR_REPORT_DIR);
+		await fs.mkdir(ERROR_REPORT_DIR, { recursive: true });
 
 	const workbook = new ExcelJS.Workbook();
 	const worksheet = workbook.addWorksheet('Import Errors');
@@ -602,9 +606,11 @@ router.post(
 
 		const siteId = resolveWriteSiteId(req, req.body.siteId);
 
+		assertXlsxArchiveWithinLimits(req.file.buffer);
 		const workbook = new ExcelJS.Workbook();
 		await workbook.xlsx.load(req.file.buffer);
 		const worksheet = workbook.getWorksheet('Data Import') || workbook.worksheets[0];
+		assertWorksheetWithinLimits(worksheet);
 
 		if (!worksheet) {
 			return res.status(400).json({ message: 'Sheet Excel tidak ditemukan.' });

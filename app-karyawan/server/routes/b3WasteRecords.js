@@ -4,6 +4,7 @@ import * as yup from 'yup';
 import prisma from '../lib/prisma.js';
 import { generateB3WasteExcel } from '../lib/b3WasteExport.js';
 import requireSiteIsolation from '../middleware/requireSiteIsolation.js';
+import { parsePage, parsePageSize } from '../lib/pagination.js';
 
 const router = Router();
 
@@ -63,6 +64,36 @@ function getSiteId(req) {
 		return isNaN(querySiteId) ? null : querySiteId;
 	}
 	return req.admin?.siteId || null;
+}
+
+async function assertWasteTypeInSite(jenisLimbahId, siteId) {
+	const type = await prisma.b3WasteType.findFirst({
+		where: { id: Number(jenisLimbahId), siteId },
+		select: { id: true },
+	});
+
+	if (!type) {
+		throw Object.assign(new Error('Jenis limbah tidak ditemukan untuk site ini'), { statusCode: 400 });
+	}
+
+	return type.id;
+}
+
+async function assertVendorInSite(vendorId, siteId) {
+	if (vendorId === undefined || vendorId === null || vendorId === '') {
+		return null;
+	}
+
+	const vendor = await prisma.masterVendor.findFirst({
+		where: { id: Number(vendorId), siteId },
+		select: { id: true },
+	});
+
+	if (!vendor) {
+		throw Object.assign(new Error('Vendor tidak ditemukan untuk site ini'), { statusCode: 400 });
+	}
+
+	return vendor.id;
 }
 
 function withAsync(handler) {
@@ -196,8 +227,8 @@ router.get(
 	'/',
 	withAsync(async (req, res) => {
 		const siteId = getSiteId(req);
-		const page = parseInt(req.query.page) || 0;
-		const pageSize = parseInt(req.query.pageSize) || 25;
+		const page = parsePage(req.query.page);
+		const pageSize = parsePageSize(req.query.pageSize);
 		const sortField = req.query.sortField || 'tanggalMasuk';
 		const sortOrder = req.query.sortOrder || 'desc';
 
@@ -268,11 +299,12 @@ router.post(
 
 		const normalizedTanggalMasuk = toDateOnly(body.tanggalMasuk);
 		const tanggalBatas = computeTanggalBatas(normalizedTanggalMasuk, body.maksimalPenyimpanan);
+		const jenisLimbahId = await assertWasteTypeInSite(body.jenisLimbahId, siteId);
 
 		const record = await prisma.b3WasteRecord.create({
 			data: {
 				siteId,
-				jenisLimbahId: body.jenisLimbahId,
+				jenisLimbahId,
 				tanggalMasuk: normalizedTanggalMasuk,
 				sumberLimbah: body.sumberLimbah,
 				jumlahMasuk: body.jumlahMasuk,
@@ -361,11 +393,12 @@ router.put(
 		}
 
 		const tanggalBatas = computeTanggalBatas(normalizedTanggalMasuk, body.maksimalPenyimpanan);
+		const jenisLimbahId = await assertWasteTypeInSite(body.jenisLimbahId, siteId);
 
 		const updated = await prisma.b3WasteRecord.update({
 			where: { id },
 			data: {
-				jenisLimbahId: body.jenisLimbahId,
+				jenisLimbahId,
 				tanggalMasuk: normalizedTanggalMasuk,
 				sumberLimbah: body.sumberLimbah,
 				jumlahMasuk: body.jumlahMasuk,
@@ -559,6 +592,8 @@ router.post(
 			return res.status(400).json({ message: 'Jumlah limbah keluar tidak boleh melebihi sisa limbah di TPS' });
 		}
 
+		const vendorId = await assertVendorInSite(body.vendorId, siteId);
+
 		const outRecord = await prisma.b3WasteOutRecord.create({
 			data: {
 				siteId,
@@ -568,7 +603,7 @@ router.post(
 				tujuanPenyerahan: body.tujuanPenyerahan,
 				perlakuan: body.perlakuan || 'DISERAHKAN_KE_PIHAK_KETIGA',
 				nomorDokumen: body.nomorDokumen,
-				vendorId: body.vendorId || null,
+				vendorId,
 				petugasPenanggungJawab: body.petugasPenanggungJawab,
 			},
 			include: { vendor: { select: { id: true, vendorName: true } } },
@@ -647,6 +682,8 @@ router.put(
 			return res.status(400).json({ message: 'Jumlah limbah keluar tidak boleh melebihi sisa limbah di TPS' });
 		}
 
+		const vendorId = await assertVendorInSite(body.vendorId, siteId);
+
 		const updated = await prisma.b3WasteOutRecord.update({
 			where: { id },
 			data: {
@@ -655,7 +692,7 @@ router.put(
 				tujuanPenyerahan: body.tujuanPenyerahan,
 				...(body.perlakuan ? { perlakuan: body.perlakuan } : {}),
 				nomorDokumen: body.nomorDokumen,
-				vendorId: body.vendorId || null,
+				vendorId,
 				petugasPenanggungJawab: body.petugasPenanggungJawab,
 			},
 			include: { vendor: { select: { id: true, vendorName: true } } },

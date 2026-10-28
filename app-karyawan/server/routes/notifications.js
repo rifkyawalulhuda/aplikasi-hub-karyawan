@@ -1,4 +1,4 @@
-import { Router } from 'express';
+﻿import { Router } from 'express';
 
 import prisma from '../lib/prisma.js';
 import { buildEmailWorkflowFailureNotification } from '../lib/emailWorkflowFailureLog.js';
@@ -569,14 +569,16 @@ function toNotificationRecordPayload(item) {
 	};
 }
 
-async function syncNotificationRecords(liveItems = []) {
+async function syncNotificationRecords(liveItems = [], siteContext = {}) {
 	const uniqueItems = Array.from(new Map(liveItems.map((item) => [item.id, item])).values());
 	const liveIds = uniqueItems.map((item) => item.id);
 	const seenAt = new Date();
+	const siteFilter = siteContext.siteId == null ? {} : { siteId: siteContext.siteId };
 
 	if (liveIds.length) {
 		await prisma.adminNotificationRecord.updateMany({
 			where: {
+				...siteFilter,
 				isActive: true,
 				notificationId: {
 					notIn: liveIds,
@@ -589,6 +591,7 @@ async function syncNotificationRecords(liveItems = []) {
 	} else {
 		await prisma.adminNotificationRecord.updateMany({
 			where: {
+				...siteFilter,
 				isActive: true,
 			},
 			data: {
@@ -614,6 +617,7 @@ async function syncNotificationRecords(liveItems = []) {
 				},
 				create: {
 					notificationId: item.id,
+					siteId: siteContext.siteId ?? null,
 					...toNotificationRecordPayload(item),
 					firstDetectedAt: seenAt,
 					lastDetectedAt: seenAt,
@@ -832,10 +836,11 @@ async function resolveNotificationIdsForMarkAll(employeeId, notificationIds = []
 		return uniqueNotificationIds;
 	}
 
-	await syncNotificationRecords(await buildLiveNotifications(siteContext));
+	await syncNotificationRecords(await buildLiveNotifications(siteContext), siteContext);
 
 	const [records, reads] = await Promise.all([
 		prisma.adminNotificationRecord.findMany({
+			...(siteContext.siteId != null ? { where: { siteId: siteContext.siteId } } : {}),
 			select: {
 				notificationId: true,
 			},
@@ -855,7 +860,7 @@ async function resolveNotificationIdsForMarkAll(employeeId, notificationIds = []
 }
 
 async function buildHistoryResponse(employeeId, query, siteContext = {}) {
-	await syncNotificationRecords(await buildLiveNotifications(siteContext));
+	await syncNotificationRecords(await buildLiveNotifications(siteContext), siteContext);
 
 	const page = parsePositiveInt(query.page, 1);
 	const pageSize = parsePositiveInt(query.pageSize, DEFAULT_HISTORY_PAGE_SIZE, MAX_HISTORY_PAGE_SIZE);
@@ -865,6 +870,7 @@ async function buildHistoryResponse(employeeId, query, siteContext = {}) {
 	const keyword = normalizeString(query.keyword);
 
 	const where = {
+		...(siteContext.siteId != null ? { siteId: siteContext.siteId } : {}),
 		...(category !== 'ALL'
 			? {
 					category,
@@ -898,6 +904,7 @@ async function buildHistoryResponse(employeeId, query, siteContext = {}) {
 			orderBy: [{ lastDetectedAt: 'desc' }, { sortDate: 'desc' }, { id: 'desc' }],
 		}),
 		prisma.adminNotificationRecord.findMany({
+			...(siteContext.siteId != null ? { where: { siteId: siteContext.siteId } } : {}),
 			distinct: ['category'],
 			select: {
 				category: true,
@@ -956,7 +963,7 @@ router.get('/', async (req, res, next) => {
 
 		const employeeId = resolveEmployeeId(req);
 		const limit = parsePositiveInt(req.query.limit, MAX_NOTIFICATION_ITEMS, MAX_NOTIFICATION_ITEMS);
-		const syncedItems = await syncNotificationRecords(await buildLiveNotifications(siteContext));
+		const syncedItems = await syncNotificationRecords(await buildLiveNotifications(siteContext), siteContext);
 		const items = await attachReadState(employeeId, syncedItems);
 		const sortedItems = items.sort(compareNotifications);
 

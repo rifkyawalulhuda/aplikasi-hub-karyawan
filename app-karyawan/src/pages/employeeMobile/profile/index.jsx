@@ -44,7 +44,7 @@ function FieldItem({ label, value }) {
 function EmployeeProfilePage() {
 	const navigate = useNavigate();
 	const { enqueueSnackbar } = useSnackbar();
-	const { logout } = useEmployeeAuth();
+	const { logout, login, session } = useEmployeeAuth();
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState('');
 	const [profile, setProfile] = useState(null);
@@ -101,6 +101,9 @@ function EmployeeProfilePage() {
 
 		try {
 			const response = await changeEmployeePassword(values);
+			if (response.accessToken) {
+				login({ ...session, accessToken: response.accessToken, expiresAt: response.expiresAt });
+			}
 			enqueueSnackbar(response.message || 'Password berhasil diperbarui.', {
 				variant: 'success',
 			});

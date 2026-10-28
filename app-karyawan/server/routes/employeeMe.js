@@ -41,6 +41,7 @@ import {
 } from '../lib/pushNotificationService.js';
 import requireEmployeeAuth from '../middleware/requireEmployeeAuth.js';
 import { hashPassword, verifyPassword } from '../lib/password.js';
+import { createEmployeeAccessToken } from '../lib/employeeSession.js';
 
 const router = Router();
 const EXCLUDED_FALLBACK_JOB_ROLES = ['Dy. Dept. Manager', 'Dept. Manager', 'Site/Div. Manager'];
@@ -1075,11 +1076,12 @@ router.post('/change-password', async (req, res, next) => {
 			return res.status(400).json({ message: 'Password Saat Ini tidak sesuai.' });
 		}
 
-		await prisma.$transaction(async (tx) => {
-			await tx.employee.update({
+		const updatedEmployee = await prisma.$transaction(async (tx) => {
+			const employee = await tx.employee.update({
 				where: { id: req.employee.id },
 				data: {
 					password: await hashPassword(newPassword),
+					tokenVersion: { increment: 1 },
 				},
 			});
 
@@ -1090,10 +1092,16 @@ router.post('/change-password', async (req, res, next) => {
 					changeType: 'PASSWORD',
 				}),
 			});
+
+			return employee;
 		});
+
+		const { token, expiresAt } = createEmployeeAccessToken(updatedEmployee);
 
 		return res.json({
 			message: 'Password berhasil diperbarui.',
+			accessToken: token,
+			expiresAt,
 		});
 	} catch (error) {
 		return next(error);

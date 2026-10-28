@@ -20,7 +20,14 @@ vi.mock('../../lib/prisma.js', () => {
 	const prisma = {
 		b3WasteRecord: createModel(),
 		b3WasteOutRecord: createModel(),
-		b3WasteType: createModel(),
+		b3WasteType: {
+		...createModel(),
+		findFirst: vi.fn(async ({ where }) => ({ id: where.id })),
+	},
+		masterVendor: {
+			...createModel(),
+			findFirst: vi.fn(async ({ where }) => ({ id: where.id })),
+		},
 		b3WasteNeracaPeriod: createModel(),
 		siteProfile: createModel(),
 	};
@@ -261,5 +268,53 @@ describe('GET /b3-waste/records/:id/out', () => {
 
 		expect(res.statusCode).toBe(404);
 		expect(prisma.b3WasteOutRecord.findMany).not.toHaveBeenCalled();
+	});
+});
+describe('B3 cross-site master references', () => {
+	it('menolak jenis limbah milik site lain saat menambah limbah masuk', async () => {
+		prisma.b3WasteType.findFirst.mockResolvedValue(null);
+
+		const handler = getRouteHandler('post', '/');
+		const res = createMockRes();
+
+		await expect(handler(createMockReq({ body: validParentBody }), res)).rejects.toMatchObject({
+			statusCode: 400,
+		});
+
+		expect(prisma.b3WasteType.findFirst).toHaveBeenCalledWith(
+			expect.objectContaining({ where: expect.objectContaining({ siteId: 7 }) }),
+		);
+		expect(prisma.b3WasteRecord.create).not.toHaveBeenCalled();
+	});
+
+	it('menolak vendor milik site lain saat menambah limbah keluar', async () => {
+		setupParent([]);
+		prisma.b3WasteOutRecord.findFirst.mockResolvedValue(null);
+		prisma.masterVendor.findFirst.mockResolvedValue(null);
+
+		const handler = getRouteHandler('post', '/:id/out');
+		const res = createMockRes();
+
+		await expect(
+			handler(
+				createMockReq({
+					params: { id: '9' },
+body: {
+						tanggalKeluar: '2026-03-10',
+						jumlahKeluar: 10,
+						tujuanPenyerahan: 'Pihak ketiga',
+						nomorDokumen: 'DOC-1',
+						vendorId: 55,
+						petugasPenanggungJawab: 'Budi',
+					},
+				}),
+				res,
+			),
+		).rejects.toMatchObject({ statusCode: 400 });
+
+		expect(prisma.masterVendor.findFirst).toHaveBeenCalledWith(
+			expect.objectContaining({ where: expect.objectContaining({ siteId: 7 }) }),
+		);
+		expect(prisma.b3WasteOutRecord.create).not.toHaveBeenCalled();
 	});
 });

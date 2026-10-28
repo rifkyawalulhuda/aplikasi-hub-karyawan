@@ -29,6 +29,12 @@ vi.mock('../../lib/prisma.js', () => ({
 		b3WasteOutRecord: {
 			count: vi.fn(),
 		},
+		b3WasteType: {
+			findFirst: vi.fn(async ({ where }) => ({ id: where.id })),
+		},
+		masterVendor: {
+			findFirst: vi.fn(async ({ where }) => ({ id: where.id })),
+		},
 	},
 }));
 

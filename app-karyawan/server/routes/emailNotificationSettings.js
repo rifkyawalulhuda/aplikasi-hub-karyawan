@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import prisma from '../lib/prisma.js';
 import { queueAndSendEmail } from '../lib/emailService.js';
+import { normalizeRecipients } from '../lib/emailRecipients.js';
 import { buildExpiryNotificationEmail } from '../lib/emailTemplates.js';
 
 const router = Router();
@@ -17,18 +18,6 @@ function normalizeThresholds(raw) {
 		.map(Number)
 		.filter((n) => Number.isInteger(n) && n >= 0)
 		.sort((a, b) => b - a);
-}
-
-function normalizeRecipients(raw) {
-	if (!Array.isArray(raw)) return [];
-	return raw
-		.filter((r) => r && typeof r === 'object' && r.email)
-		.map((r) => ({
-			email: String(r.email).trim(),
-			name: String(r.name || '').trim(),
-			isActive: Boolean(r.isActive ?? true),
-		}))
-		.filter((r) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(r.email));
 }
 
 // GET / — get settings for the admin's site
@@ -138,9 +127,7 @@ router.post(
 			return res.status(400).json({ message: 'Pengaturan email belum dikonfigurasi.' });
 		}
 
-		const recipients = Array.isArray(settings.recipients)
-			? settings.recipients.filter((r) => r.isActive)
-			: [];
+		const recipients = normalizeRecipients(settings.recipients).filter((r) => r.isActive);
 
 		if (recipients.length === 0) {
 			return res.status(400).json({ message: 'Tidak ada penerima aktif.' });
