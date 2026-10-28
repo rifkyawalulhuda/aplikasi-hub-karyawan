@@ -85,6 +85,8 @@ model MasterSite {
   employeeLeaveDatabase         EmployeeLeaveDatabase[]
   employeeLeaveBalanceSeeds     EmployeeLeaveBalanceSeed[]
   emailWorkflowFailureLogs      EmailWorkflowFailureLog[]
+  profile                       SiteProfile?
+  b3NeracaPeriods               B3WasteNeracaPeriod[]
 
   @@map("master_sites")
 }
@@ -766,13 +768,14 @@ model EmailNotificationSettings {
 }
 
 model B3WasteType {
-  id           Int             @id @default(autoincrement())
-  siteId       Int
-  kode         String          @db.VarChar(20)
-  nama         String          @db.VarChar(200)
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
-  wasteRecords B3WasteRecord[]
+  id                       Int             @id @default(autoincrement())
+  siteId                   Int
+  kode                     String          @db.VarChar(20)
+  nama                     String          @db.VarChar(200)
+  hasEnvironmentalApproval Boolean         @default(false)
+  createdAt                DateTime        @default(now())
+  updatedAt                DateTime        @updatedAt
+  wasteRecords             B3WasteRecord[]
 
   @@unique([siteId, kode])
   @@map("b3_waste_types")
@@ -797,21 +800,63 @@ model B3WasteRecord {
 }
 
 model B3WasteOutRecord {
-  id                     Int           @id @default(autoincrement())
+  id                     Int              @id @default(autoincrement())
   siteId                 Int
   wasteRecordId          Int
-  tanggalKeluar          DateTime      @db.Date
-  jumlahKeluar           Decimal       @db.Decimal(10, 2)
-  tujuanPenyerahan       String        @db.VarChar(200)
-  nomorDokumen           String        @db.VarChar(100)
-  petugasPenanggungJawab String        @db.VarChar(100)
-  createdAt              DateTime      @default(now())
-  updatedAt              DateTime      @updatedAt
+  tanggalKeluar          DateTime         @db.Date
+  jumlahKeluar           Decimal          @db.Decimal(10, 2)
+  tujuanPenyerahan       String           @db.VarChar(200)
+  perlakuan              B3WasteTreatment @default(DISERAHKAN_KE_PIHAK_KETIGA)
+  nomorDokumen           String           @db.VarChar(100)
+  petugasPenanggungJawab String           @db.VarChar(100)
+  createdAt              DateTime         @default(now())
+  updatedAt              DateTime         @updatedAt
   vendorId               Int?
-  vendor                 MasterVendor? @relation(fields: [vendorId], references: [id])
-  wasteRecord            B3WasteRecord @relation(fields: [wasteRecordId], references: [id])
+  vendor                 MasterVendor?    @relation(fields: [vendorId], references: [id])
+  wasteRecord            B3WasteRecord    @relation(fields: [wasteRecordId], references: [id])
 
   @@map("b3_waste_out_records")
+}
+
+model SiteProfile {
+  id              Int        @id @default(autoincrement())
+  siteId          Int        @unique
+  companyName     String     @db.VarChar(255)
+  businessField   String     @db.VarChar(255)
+  address         String?
+  phoneNumber     String?    @db.VarChar(100)
+  responsibleName String?    @db.VarChar(255)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  site            MasterSite @relation(fields: [siteId], references: [id])
+
+  @@map("site_profiles")
+}
+
+model B3WasteNeracaPeriod {
+  id        Int        @id @default(autoincrement())
+  siteId    Int
+  tahun     Int
+  triwulan  Int
+  residu    Decimal    @default(0) @db.Decimal(14, 2)
+  catatan   String?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  site      MasterSite @relation(fields: [siteId], references: [id])
+
+  @@unique([siteId, tahun, triwulan])
+  @@index([siteId])
+  @@map("b3_waste_neraca_periods")
+}
+
+enum B3WasteTreatment {
+  DISIMPAN
+  DIMANFAATKAN
+  DIOLAH
+  DITIMBUN
+  DISERAHKAN_KE_PIHAK_KETIGA
+  EKSPOR
+  PERLAKUAN_LAINNYA
 }
 
 enum EmploymentType {

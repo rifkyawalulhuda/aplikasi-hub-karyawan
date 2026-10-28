@@ -9,6 +9,54 @@ const router = Router();
 
 router.use(requireSiteIsolation({ modelType: 'per-site' }));
 
+const B3_WASTE_TREATMENTS = [
+	'DISIMPAN',
+	'DIMANFAATKAN',
+	'DIOLAH',
+	'DITIMBUN',
+	'DISERAHKAN_KE_PIHAK_KETIGA',
+	'EKSPOR',
+	'PERLAKUAN_LAINNYA',
+];
+
+const B3_TREATMENT_LABELS = {
+	DISIMPAN: 'DISIMPAN',
+	DIMANFAATKAN: 'DIMANFAATKAN',
+	DIOLAH: 'DIOLAH',
+	DITIMBUN: 'DITIMBUN',
+	DISERAHKAN_KE_PIHAK_KETIGA: 'DISERAHKAN KE PIHAK KETIGA',
+	EKSPOR: 'EKSPOR',
+	PERLAKUAN_LAINNYA: 'PERLAKUAN LAINNYA',
+};
+
+const BULAN_INDONESIA = [
+	'Januari',
+	'Februari',
+	'Maret',
+	'April',
+	'Mei',
+	'Juni',
+	'Juli',
+	'Agustus',
+	'September',
+	'Oktober',
+	'November',
+	'Desember',
+];
+
+function resolvePeriodeTriwulan(tahun, triwulan) {
+	const bulanAwal = (triwulan - 1) * 3;
+	const periodeStart = new Date(Date.UTC(tahun, bulanAwal, 1, 0, 0, 0));
+	const periodeEnd = new Date(Date.UTC(tahun, bulanAwal + 3, 0, 23, 59, 59));
+	const periodeLabel = `${BULAN_INDONESIA[bulanAwal]} - ${BULAN_INDONESIA[bulanAwal + 2]} ${tahun}`;
+
+	return { periodeStart, periodeEnd, periodeLabel };
+}
+
+function kgToTon(value) {
+	return Number((Number(value || 0) / 1000).toFixed(4));
+}
+
 function getSiteId(req) {
 	if (req.isSuperAdmin) {
 		const querySiteId = parseInt(req.query.siteId);
@@ -72,6 +120,11 @@ const updateWasteRecordSchema = yup.object().shape({
 		.number()
 		.required('Maksimal penyimpanan wajib dipilih')
 		.oneOf([90, 180], 'Maksimal penyimpanan harus 90 atau 180 hari'),
+	petugasPenanggungJawab: yup
+		.string()
+		.trim()
+		.required('Petugas penanggung jawab wajib diisi')
+		.max(100, 'Petugas penanggung jawab maksimal 100 karakter'),
 });
 
 /**
@@ -252,6 +305,11 @@ router.put(
 
 		const existing = await prisma.b3WasteRecord.findFirst({
 			where: { id, siteId },
+			include: {
+				outRecords: {
+					select: { tanggalKeluar: true, jumlahKeluar: true },
+				},
+			},
 		});
 
 		if (!existing) {
@@ -273,6 +331,35 @@ router.put(
 		}
 
 		const normalizedTanggalMasuk = toDateOnly(body.tanggalMasuk);
+
+		// Konsistensi dengan limbah keluar yang sudah tercatat
+		if (existing.outRecords.length > 0) {
+			if (Number(body.jenisLimbahId) !== existing.jenisLimbahId) {
+				return res.status(400).json({
+					message: 'Jenis limbah tidak dapat diubah karena sudah ada limbah keluar.',
+				});
+			}
+
+			const totalKeluar = existing.outRecords.reduce((sum, out) => sum + Number(out.jumlahKeluar), 0);
+
+			if (Number(body.jumlahMasuk) < totalKeluar) {
+				return res.status(400).json({
+					message: `Jumlah masuk tidak boleh lebih kecil dari total limbah keluar (${totalKeluar} kg).`,
+				});
+			}
+
+			const earliestKeluarMs = existing.outRecords.reduce((earliest, out) => {
+				const time = new Date(out.tanggalKeluar).getTime();
+				return earliest == null || time < earliest ? time : earliest;
+			}, null);
+
+			if (earliestKeluarMs != null && normalizedTanggalMasuk.getTime() > earliestKeluarMs) {
+				return res.status(400).json({
+					message: 'Tanggal masuk tidak boleh melebihi tanggal limbah keluar.',
+				});
+			}
+		}
+
 		const tanggalBatas = computeTanggalBatas(normalizedTanggalMasuk, body.maksimalPenyimpanan);
 
 		const updated = await prisma.b3WasteRecord.update({
@@ -284,7 +371,7 @@ router.put(
 				jumlahMasuk: body.jumlahMasuk,
 				maksimalPenyimpanan: body.maksimalPenyimpanan,
 				tanggalBatas,
-				// petugasPenanggungJawab di-strip (immutable)
+				petugasPenanggungJawab: body.petugasPenanggungJawab,
 			},
 			include: {
 				jenisLimbah: {
@@ -344,6 +431,7 @@ const createOutRecordSchema = yup.object().shape({
 		.trim()
 		.required('Tujuan penyerahan wajib diisi')
 		.max(200, 'Tujuan penyerahan maksimal 200 karakter'),
+	perlakuan: yup.string().oneOf(B3_WASTE_TREATMENTS, 'Perlakuan tidak valid').notRequired(),
 	nomorDokumen: yup
 		.string()
 		.trim()
@@ -365,13 +453,49 @@ const updateOutRecordSchema = yup.object().shape({
 		.trim()
 		.required('Tujuan penyerahan wajib diisi')
 		.max(200, 'Tujuan penyerahan maksimal 200 karakter'),
+	perlakuan: yup.string().oneOf(B3_WASTE_TREATMENTS, 'Perlakuan tidak valid').notRequired(),
 	nomorDokumen: yup
 		.string()
 		.trim()
 		.required('Nomor dokumen wajib diisi')
 		.max(100, 'Nomor dokumen maksimal 100 karakter'),
 	vendorId: yup.number().nullable().notRequired(),
+	petugasPenanggungJawab: yup
+		.string()
+		.trim()
+		.required('Petugas penanggung jawab wajib diisi')
+		.max(100, 'Petugas penanggung jawab maksimal 100 karakter'),
 });
+
+// GET /:id/out — daftar limbah keluar untuk satu pencatatan
+router.get(
+	'/:id/out',
+	withAsync(async (req, res) => {
+		const siteId = getSiteId(req);
+		const wasteRecordId = parseInt(req.params.id);
+
+		if (isNaN(wasteRecordId)) {
+			return res.status(400).json({ message: 'ID tidak valid' });
+		}
+
+		const parentRecord = await prisma.b3WasteRecord.findFirst({
+			where: { id: wasteRecordId, siteId },
+			select: { id: true },
+		});
+
+		if (!parentRecord) {
+			return res.status(404).json({ message: 'Data tidak ditemukan' });
+		}
+
+		const rows = await prisma.b3WasteOutRecord.findMany({
+			where: { siteId, wasteRecordId },
+			include: { vendor: { select: { id: true, vendorName: true } } },
+			orderBy: [{ tanggalKeluar: 'asc' }, { id: 'asc' }],
+		});
+
+		return res.json(rows);
+	}),
+);
 
 // POST /:id/out — tambah limbah keluar
 router.post(
@@ -442,6 +566,7 @@ router.post(
 				tanggalKeluar: toDateOnly(body.tanggalKeluar),
 				jumlahKeluar: body.jumlahKeluar,
 				tujuanPenyerahan: body.tujuanPenyerahan,
+				perlakuan: body.perlakuan || 'DISERAHKAN_KE_PIHAK_KETIGA',
 				nomorDokumen: body.nomorDokumen,
 				vendorId: body.vendorId || null,
 				petugasPenanggungJawab: body.petugasPenanggungJawab,
@@ -528,9 +653,10 @@ router.put(
 				tanggalKeluar: toDateOnly(body.tanggalKeluar),
 				jumlahKeluar: body.jumlahKeluar,
 				tujuanPenyerahan: body.tujuanPenyerahan,
+				...(body.perlakuan ? { perlakuan: body.perlakuan } : {}),
 				nomorDokumen: body.nomorDokumen,
 				vendorId: body.vendorId || null,
-				// petugasPenanggungJawab di-strip (immutable)
+				petugasPenanggungJawab: body.petugasPenanggungJawab,
 			},
 			include: { vendor: { select: { id: true, vendorName: true } } },
 		});
@@ -935,6 +1061,242 @@ router.get(
 );
 
 // GET /export — ekspor data pencatatan ke Excel
+
+// GET /neraca-klhk — Neraca Limbah B3 sesuai format dokumen KLHK
+router.get(
+	'/neraca-klhk',
+	withAsync(async (req, res) => {
+		const siteId = getSiteId(req);
+		const tahun = parseInt(req.query.tahun, 10);
+		const triwulan = parseInt(req.query.triwulan, 10);
+
+		if (!siteId) {
+			return res.status(403).json({ message: 'Akses ditolak. Site belum dipilih.' });
+		}
+		if (!tahun || Number.isNaN(tahun)) {
+			return res.status(400).json({ message: 'Parameter tahun wajib diisi' });
+		}
+		if (!triwulan || Number.isNaN(triwulan) || triwulan < 1 || triwulan > 4) {
+			return res.status(400).json({ message: 'Parameter triwulan wajib diisi (1-4)' });
+		}
+
+		const { periodeStart, periodeEnd, periodeLabel } = resolvePeriodeTriwulan(tahun, triwulan);
+
+		const [profile, wasteTypes, masukRecords, outRecords, period, storageRows] = await Promise.all([
+			prisma.siteProfile.findUnique({ where: { siteId } }),
+			prisma.b3WasteType.findMany({ where: { siteId }, orderBy: { kode: 'asc' } }),
+			prisma.b3WasteRecord.findMany({
+				where: { siteId, tanggalMasuk: { gte: periodeStart, lte: periodeEnd } },
+				select: { jenisLimbahId: true, jumlahMasuk: true },
+			}),
+			prisma.b3WasteOutRecord.findMany({
+				where: { siteId, tanggalKeluar: { gte: periodeStart, lte: periodeEnd } },
+				select: {
+					jumlahKeluar: true,
+					perlakuan: true,
+					wasteRecord: { select: { jenisLimbahId: true } },
+				},
+			}),
+			prisma.b3WasteNeracaPeriod.findUnique({
+				where: { siteId_tahun_triwulan: { siteId, tahun, triwulan } },
+			}),
+			prisma.b3WasteRecord.findMany({
+				where: { siteId },
+				select: { jenisLimbahId: true, maksimalPenyimpanan: true },
+			}),
+		]);
+
+		const typeById = new Map(wasteTypes.map((type) => [type.id, type]));
+
+		// Bagian I — total limbah masuk pada periode, per jenis limbah
+		const masukByType = new Map();
+		masukRecords.forEach((record) => {
+			const current = masukByType.get(record.jenisLimbahId) || 0;
+			masukByType.set(record.jenisLimbahId, current + Number(record.jumlahMasuk));
+		});
+
+		const sectionA = Array.from(masukByType.entries())
+			.map(([jenisLimbahId, jumlahKg]) => {
+				const type = typeById.get(jenisLimbahId);
+				return {
+					jenisLimbahId,
+					kode: type?.kode || '-',
+					nama: type?.nama || 'Lainnya',
+					jumlahKg: Number(jumlahKg.toFixed(2)),
+					jumlahTon: kgToTon(jumlahKg),
+				};
+			})
+			.sort((left, right) => left.kode.localeCompare(right.kode));
+
+		const totalAKg = Number(sectionA.reduce((sum, row) => sum + row.jumlahKg, 0).toFixed(2));
+		const totalATon = kgToTon(totalAKg);
+
+		// Bagian II — total per kategori perlakuan, per jenis limbah
+		const outByPerlakuan = new Map();
+		outRecords.forEach((record) => {
+			const perlakuan = record.perlakuan || 'DISERAHKAN_KE_PIHAK_KETIGA';
+			const jenisLimbahId = record.wasteRecord?.jenisLimbahId;
+
+			if (!jenisLimbahId) {
+				return;
+			}
+
+			if (!outByPerlakuan.has(perlakuan)) {
+				outByPerlakuan.set(perlakuan, new Map());
+			}
+
+			const byType = outByPerlakuan.get(perlakuan);
+			byType.set(jenisLimbahId, (byType.get(jenisLimbahId) || 0) + Number(record.jumlahKeluar));
+		});
+
+		const sectionB = B3_WASTE_TREATMENTS.filter((perlakuan) => outByPerlakuan.has(perlakuan)).map((perlakuan) => {
+			const byType = outByPerlakuan.get(perlakuan);
+			const items = Array.from(byType.entries())
+				.map(([jenisLimbahId, jumlahKg]) => {
+					const type = typeById.get(jenisLimbahId);
+					return {
+						jenisLimbahId,
+						kode: type?.kode || '-',
+						nama: type?.nama || 'Lainnya',
+						hasEnvironmentalApproval: Boolean(type?.hasEnvironmentalApproval),
+						jumlahKg: Number(jumlahKg.toFixed(2)),
+						jumlahTon: kgToTon(jumlahKg),
+					};
+				})
+				.sort((left, right) => left.kode.localeCompare(right.kode));
+
+			const totalKg = Number(items.reduce((sum, row) => sum + row.jumlahKg, 0).toFixed(2));
+
+			return {
+				perlakuan,
+				label: B3_TREATMENT_LABELS[perlakuan] || perlakuan,
+				items,
+				totalKg,
+				totalTon: kgToTon(totalKg),
+			};
+		});
+
+		const totalBKg = Number(sectionB.reduce((sum, group) => sum + group.totalKg, 0).toFixed(2));
+		const totalBTon = kgToTon(totalBKg);
+
+		// D — limbah yang disimpan melebihi skala waktu penataan (per akhir periode)
+		const openRecords = await prisma.b3WasteRecord.findMany({
+			where: {
+				siteId,
+				tanggalMasuk: { lte: periodeEnd },
+				tanggalBatas: { lte: periodeEnd },
+			},
+			select: {
+				jumlahMasuk: true,
+				outRecords: {
+					where: { tanggalKeluar: { lte: periodeEnd } },
+					select: { jumlahKeluar: true },
+				},
+			},
+		});
+
+		const belumTerkelolaKg = Number(
+			openRecords
+				.reduce((sum, record) => {
+					const keluar = record.outRecords.reduce((total, out) => total + Number(out.jumlahKeluar), 0);
+					return sum + Math.max(0, Number(record.jumlahMasuk) - keluar);
+				}, 0)
+				.toFixed(2),
+		);
+		const belumTerkelolaTon = kgToTon(belumTerkelolaKg);
+
+		const residuTon = Number(period?.residu || 0);
+		const totalTersisaTon = Number((residuTon + belumTerkelolaTon).toFixed(4));
+		const kinerjaPercent =
+			totalATon > 0 ? Number((((totalATon - totalTersisaTon) / totalATon) * 100).toFixed(2)) : null;
+
+		const storageByType = new Map();
+		storageRows.forEach((row) => {
+			const current = storageByType.get(row.jenisLimbahId);
+			if (current == null || row.maksimalPenyimpanan > current) {
+				storageByType.set(row.jenisLimbahId, row.maksimalPenyimpanan);
+			}
+		});
+
+		const skalaWaktu = wasteTypes
+			.filter((type) => storageByType.has(type.id))
+			.map((type) => ({
+				kode: type.kode,
+				nama: type.nama,
+				maksimalHari: storageByType.get(type.id),
+			}));
+
+		return res.json({
+			tahun,
+			triwulan,
+			periodeLabel,
+			profil: {
+				companyName: profile?.companyName || '',
+				businessField: profile?.businessField || '',
+				address: profile?.address || '',
+				phoneNumber: profile?.phoneNumber || '',
+				responsibleName: profile?.responsibleName || '',
+			},
+			sectionA,
+			totalAKg,
+			totalATon,
+			sectionB,
+			totalBKg,
+			totalBTon,
+			residuTon,
+			belumTerkelolaTon,
+			totalTersisaTon,
+			kinerjaPercent,
+			skalaWaktu,
+			catatan: period?.catatan || '',
+			generatedAt: new Date().toISOString(),
+		});
+	}),
+);
+
+// PUT /neraca-klhk/period — simpan residu & catatan untuk site + periode
+router.put(
+	'/neraca-klhk/period',
+	withAsync(async (req, res) => {
+		const siteId = getSiteId(req);
+		const tahun = parseInt(req.body.tahun, 10);
+		const triwulan = parseInt(req.body.triwulan, 10);
+
+		if (!siteId) {
+			return res.status(403).json({ message: 'Akses ditolak. Site belum dipilih.' });
+		}
+		if (!tahun || Number.isNaN(tahun)) {
+			return res.status(400).json({ message: 'Parameter tahun wajib diisi' });
+		}
+		if (!triwulan || Number.isNaN(triwulan) || triwulan < 1 || triwulan > 4) {
+			return res.status(400).json({ message: 'Parameter triwulan wajib diisi (1-4)' });
+		}
+
+		const residu = Number(req.body.residu);
+		if (!Number.isFinite(residu) || residu < 0) {
+			return res.status(400).json({ message: 'Residu harus berupa angka 0 atau lebih' });
+		}
+
+		const catatan = typeof req.body.catatan === 'string' ? req.body.catatan.trim().slice(0, 2000) : '';
+
+		const saved = await prisma.b3WasteNeracaPeriod.upsert({
+			where: { siteId_tahun_triwulan: { siteId, tahun, triwulan } },
+			create: {
+				siteId,
+				tahun,
+				triwulan,
+				residu,
+				catatan: catatan || null,
+			},
+			update: {
+				residu,
+				catatan: catatan || null,
+			},
+		});
+
+		return res.json({ ...saved, residu: Number(saved.residu) });
+	}),
+);
 
 router.get(
 	'/export',

@@ -54,6 +54,10 @@ function WasteRecordForm({ open, onClose, onSuccess, editData, adminName, siteId
 
 	const isEditMode = Boolean(editData);
 
+	const outRecords = editData?.outRecords || [];
+	const hasOutRecords = isEditMode && outRecords.length > 0;
+	const totalKeluar = outRecords.reduce((sum, row) => sum + Number(row.jumlahKeluar || 0), 0);
+
 	// Fetch waste types for dropdown
 	useEffect(() => {
 		if (open && siteId) {
@@ -134,6 +138,13 @@ function WasteRecordForm({ open, onClose, onSuccess, editData, adminName, siteId
 		}
 	}, [open, editData]); // eslint-disable-line
 
+	let jumlahMasukHelperText = '';
+	if (formik.touched.jumlahMasuk && formik.errors.jumlahMasuk) {
+		jumlahMasukHelperText = formik.errors.jumlahMasuk;
+	} else if (hasOutRecords) {
+		jumlahMasukHelperText = `Minimal ${totalKeluar} kg karena sudah ada limbah keluar.`;
+	}
+
 	return (
 		<Dialog open={open} onClose={submitting ? undefined : onClose} fullWidth maxWidth="md">
 			<DialogTitle>{isEditMode ? 'Edit Pencatatan Limbah B3' : 'Tambah Pencatatan Limbah B3'}</DialogTitle>
@@ -156,8 +167,12 @@ function WasteRecordForm({ open, onClose, onSuccess, editData, adminName, siteId
 							onChange={formik.handleChange}
 							onBlur={formik.handleBlur}
 							error={formik.touched.jenisLimbahId && Boolean(formik.errors.jenisLimbahId)}
-							helperText={formik.touched.jenisLimbahId && formik.errors.jenisLimbahId}
-							disabled={loadingTypes}
+							helperText={
+								hasOutRecords
+									? 'Jenis limbah terkunci karena sudah ada limbah keluar.'
+									: formik.touched.jenisLimbahId && formik.errors.jenisLimbahId
+							}
+							disabled={loadingTypes || hasOutRecords}
 						>
 							{loadingTypes ? (
 								<MenuItem value="" disabled>
@@ -213,9 +228,9 @@ function WasteRecordForm({ open, onClose, onSuccess, editData, adminName, siteId
 							onChange={formik.handleChange}
 							onBlur={formik.handleBlur}
 							error={formik.touched.jumlahMasuk && Boolean(formik.errors.jumlahMasuk)}
-							helperText={formik.touched.jumlahMasuk && formik.errors.jumlahMasuk}
+							helperText={jumlahMasukHelperText}
 							inputProps={{
-								min: 0.01,
+								min: hasOutRecords ? Math.max(0.01, totalKeluar) : 0.01,
 								max: 999999.99,
 								step: 0.01,
 							}}
@@ -250,7 +265,6 @@ function WasteRecordForm({ open, onClose, onSuccess, editData, adminName, siteId
 							}
 							helperText={formik.touched.petugasPenanggungJawab && formik.errors.petugasPenanggungJawab}
 							inputProps={{ maxLength: 100 }}
-							disabled={isEditMode}
 						/>
 					</Grid>
 				</Grid>

@@ -10,8 +10,10 @@ import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
+import FormControlLabel from '@mui/material/FormControlLabel';
 import InputAdornment from '@mui/material/InputAdornment';
 import Stack from '@mui/material/Stack';
+import Switch from '@mui/material/Switch';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 
@@ -99,6 +101,7 @@ function JenisLimbahB3Tab() {
 		initialValues: {
 			kode: selectedItem?.kode || '',
 			nama: selectedItem?.nama || '',
+			hasEnvironmentalApproval: Boolean(selectedItem?.hasEnvironmentalApproval),
 		},
 		validationSchema: createSchema,
 		enableReinitialize: true,
@@ -107,7 +110,10 @@ function JenisLimbahB3Tab() {
 
 			try {
 				if (isEditMode) {
-					await updateWasteType(currentSiteId, selectedItem.id, { nama: values.nama });
+					await updateWasteType(currentSiteId, selectedItem.id, {
+						nama: values.nama,
+						hasEnvironmentalApproval: values.hasEnvironmentalApproval,
+					});
 					enqueueSnackbar('Jenis limbah B3 berhasil diperbarui.', { variant: 'success' });
 				} else {
 					await createWasteType(currentSiteId, values);
@@ -134,13 +140,19 @@ function JenisLimbahB3Tab() {
 
 	const handleAdd = () => {
 		setSelectedItem(null);
-		formik.resetForm({ values: { kode: '', nama: '' } });
+		formik.resetForm({ values: { kode: '', nama: '', hasEnvironmentalApproval: false } });
 		setFormOpen(true);
 	};
 
 	const handleEdit = (item) => {
 		setSelectedItem(item);
-		formik.resetForm({ values: { kode: item.kode, nama: item.nama } });
+		formik.resetForm({
+			values: {
+				kode: item.kode,
+				nama: item.nama,
+				hasEnvironmentalApproval: Boolean(item.hasEnvironmentalApproval),
+			},
+		});
 		setFormOpen(true);
 	};
 
@@ -193,6 +205,13 @@ function JenisLimbahB3Tab() {
 				minWidth: 300,
 				flex: 1,
 				sortable: false,
+			},
+			{
+				field: 'hasEnvironmentalApproval',
+				headerName: 'PERSETUJUAN LINGKUNGAN',
+				minWidth: 220,
+				sortable: false,
+				renderCell: (params) => (params.value ? 'ADA' : 'TIDAK ADA'),
 			},
 		],
 		[],
@@ -323,6 +342,18 @@ function JenisLimbahB3Tab() {
 								error={formik.touched.nama && Boolean(formik.errors.nama)}
 								helperText={formik.touched.nama && formik.errors.nama}
 								inputProps={{ maxLength: 200 }}
+							/>
+							<FormControlLabel
+								control={
+									<Switch
+										name="hasEnvironmentalApproval"
+										checked={Boolean(formik.values.hasEnvironmentalApproval)}
+										onChange={(event) =>
+											formik.setFieldValue('hasEnvironmentalApproval', event.target.checked)
+										}
+									/>
+								}
+								label="Memiliki Persetujuan Lingkungan (ADA)"
 							/>
 						</Stack>
 					</DialogContent>

@@ -37,6 +37,7 @@ import requireAdminAuth from './middleware/requireAdminAuth.js';
 import requireSuperAdmin from './middleware/requireSuperAdmin.js';
 import requireWriteRole from './middleware/requireWriteRole.js';
 import siteApprovalConfigsRouter from './routes/siteApprovalConfigs.js';
+import siteProfileRouter from './routes/siteProfile.js';
 import sitesRouter from './routes/sites.js';
 import b3WasteRecordsRouter from './routes/b3WasteRecords.js';
 import b3WasteTypesRouter from './routes/b3WasteTypes.js';
@@ -206,6 +207,7 @@ app.use('/api/master/group-shifts', requireAdminAuth, requireWriteRole, groupShi
 app.use('/api/master/master-vendors', requireAdminAuth, requireWriteRole, vendorsRouter);
 app.use('/api/master/employee-documents', requireAdminAuth, requireWriteRole, employeeDocumentsRouter);
 app.use('/api/master/site-approval-configs', requireAdminAuth, requireWriteRole, siteApprovalConfigsRouter);
+app.use('/api/master/site-profile', requireAdminAuth, requireWriteRole, siteProfileRouter);
 app.use('/api/master/sites', requireAdminAuth, requireSuperAdmin, sitesRouter);
 app.use('/api/master', requireAdminAuth, requireWriteRole, masterDataRouter);
 app.use('/api/data-karyawan/guidance-records', requireAdminAuth, requireWriteRole, guidanceRecordsRouter);

@@ -14,6 +14,7 @@ import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import DeleteOutlineOutlinedIcon from '@mui/icons-material/DeleteOutlineOutlined';
 import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
+import ListAltOutlinedIcon from '@mui/icons-material/ListAltOutlined';
 import OutputOutlinedIcon from '@mui/icons-material/OutputOutlined';
 import RefreshOutlinedIcon from '@mui/icons-material/RefreshOutlined';
 
@@ -28,6 +29,7 @@ import { deleteWasteRecord, exportWasteRecords, getWasteRecords } from '@/servic
 
 import WasteOutRecordForm from './WasteOutRecordForm';
 import WasteRecordForm from './WasteRecordForm';
+import LimbahKeluarDialog from './LimbahKeluarDialog';
 
 // --- Helpers ---
 
@@ -76,6 +78,8 @@ function PencatatanLimbahB3() {
 	// Dialog states
 	const [formOpen, setFormOpen] = useState(false);
 	const [outFormOpen, setOutFormOpen] = useState(false);
+	const [outListOpen, setOutListOpen] = useState(false);
+	const [outListRecord, setOutListRecord] = useState(null);
 	const [deleteOpen, setDeleteOpen] = useState(false);
 	const [selectedRecord, setSelectedRecord] = useState(null);
 	const [submitting, setSubmitting] = useState(false);
@@ -142,6 +146,11 @@ function PencatatanLimbahB3() {
 	const handleEdit = (record) => {
 		setSelectedRecord(record);
 		setFormOpen(true);
+	};
+
+	const handleManageOutgoing = (record) => {
+		setOutListRecord(record);
+		setOutListOpen(true);
 	};
 
 	const handleDeleteClick = (record) => {
@@ -417,6 +426,12 @@ function PencatatanLimbahB3() {
 						disabled: row.sisaLimbah <= 0,
 					},
 					{
+						key: 'manage-out',
+						label: 'Kelola Limbah Keluar',
+						icon: <ListAltOutlinedIcon fontSize="small" color="secondary" />,
+						onClick: handleManageOutgoing,
+					},
+					{
 						key: 'edit',
 						label: 'Edit',
 						icon: <EditOutlinedIcon fontSize="small" color="primary" />,
@@ -535,6 +550,17 @@ function PencatatanLimbahB3() {
 				wasteRecord={selectedRecord}
 				siteId={currentSiteId}
 				adminName={user?.name || ''}
+			/>
+			<LimbahKeluarDialog
+				open={outListOpen}
+				onClose={() => {
+					setOutListOpen(false);
+					setOutListRecord(null);
+				}}
+				wasteRecord={outListRecord}
+				siteId={currentSiteId}
+				adminName={user?.name || ''}
+				onChanged={fetchData}
 			/>
 			<DeleteConfirmDialog
 				open={deleteOpen}

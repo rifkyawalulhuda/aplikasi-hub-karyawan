@@ -25,10 +25,12 @@ function withAsync(handler) {
 const createSchema = yup.object().shape({
 	kode: yup.string().trim().required('Kode limbah wajib diisi').max(20, 'Kode limbah maksimal 20 karakter'),
 	nama: yup.string().trim().required('Jenis limbah B3 wajib diisi').max(200, 'Jenis limbah B3 maksimal 200 karakter'),
+	hasEnvironmentalApproval: yup.boolean().notRequired(),
 });
 
 const updateSchema = yup.object().shape({
 	nama: yup.string().trim().required('Jenis limbah B3 wajib diisi').max(200, 'Jenis limbah B3 maksimal 200 karakter'),
+	hasEnvironmentalApproval: yup.boolean().notRequired(),
 });
 
 // GET / — daftar jenis limbah B3 dengan pagination
@@ -72,6 +74,7 @@ router.post(
 					siteId,
 					kode: body.kode,
 					nama: body.nama,
+					hasEnvironmentalApproval: Boolean(body.hasEnvironmentalApproval),
 				},
 			});
 
@@ -116,6 +119,9 @@ router.put(
 				where: { id },
 				data: {
 					nama: body.nama,
+					...(body.hasEnvironmentalApproval !== undefined
+						? { hasEnvironmentalApproval: Boolean(body.hasEnvironmentalApproval) }
+						: {}),
 				},
 			});
 

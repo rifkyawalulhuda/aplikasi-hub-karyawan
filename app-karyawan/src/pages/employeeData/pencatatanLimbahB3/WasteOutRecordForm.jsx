@@ -13,6 +13,7 @@ import MenuItem from '@mui/material/MenuItem';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 
+import { B3_TREATMENT_OPTIONS, DEFAULT_B3_TREATMENT } from '@/constants/b3Waste';
 import apiRequest, { appendSiteIdParam } from '@/services/api';
 import { createWasteOutRecord, updateWasteOutRecord } from '@/services/b3WasteService';
 
@@ -32,6 +33,7 @@ const getValidationSchema = (minDate, maxJumlah) =>
 			.string()
 			.required('Tujuan penyerahan wajib diisi')
 			.max(200, 'Tujuan penyerahan maksimal 200 karakter'),
+		perlakuan: yup.string().required('Perlakuan wajib dipilih'),
 		nomorDokumen: yup
 			.string()
 			.required('Nomor dokumen wajib diisi')
@@ -91,6 +93,7 @@ function WasteOutRecordForm({ open, onClose, onSuccess, wasteRecord, editData, a
 			tanggalKeluar: formatDateForInput(editData?.tanggalKeluar) || '',
 			jumlahKeluar: editData?.jumlahKeluar ?? '',
 			tujuanPenyerahan: editData?.tujuanPenyerahan || '',
+			perlakuan: editData?.perlakuan || DEFAULT_B3_TREATMENT,
 			nomorDokumen: editData?.nomorDokumen || '',
 			vendorId: editData?.vendorId || editData?.vendor?.id || '',
 			petugasPenanggungJawab: editData?.petugasPenanggungJawab || adminName || '',
@@ -102,6 +105,7 @@ function WasteOutRecordForm({ open, onClose, onSuccess, wasteRecord, editData, a
 					tanggalKeluar: values.tanggalKeluar,
 					jumlahKeluar: Number(values.jumlahKeluar),
 					tujuanPenyerahan: values.tujuanPenyerahan.trim(),
+					perlakuan: values.perlakuan,
 					nomorDokumen: values.nomorDokumen.trim(),
 					vendorId: values.vendorId ? Number(values.vendorId) : null,
 					petugasPenanggungJawab: values.petugasPenanggungJawab.trim(),
@@ -175,6 +179,23 @@ function WasteOutRecordForm({ open, onClose, onSuccess, wasteRecord, editData, a
 						/>
 						<TextField
 							fullWidth
+							select
+							label="Perlakuan"
+							name="perlakuan"
+							value={formik.values.perlakuan}
+							onChange={formik.handleChange}
+							onBlur={formik.handleBlur}
+							error={formik.touched.perlakuan && Boolean(formik.errors.perlakuan)}
+							helperText={formik.touched.perlakuan && formik.errors.perlakuan}
+						>
+							{B3_TREATMENT_OPTIONS.map((option) => (
+								<MenuItem key={option.value} value={option.value}>
+									{option.label}
+								</MenuItem>
+							))}
+						</TextField>
+						<TextField
+							fullWidth
 							label="Tujuan Penyerahan"
 							name="tujuanPenyerahan"
 							multiline
@@ -230,7 +251,6 @@ function WasteOutRecordForm({ open, onClose, onSuccess, wasteRecord, editData, a
 							value={formik.values.petugasPenanggungJawab}
 							onChange={formik.handleChange}
 							onBlur={formik.handleBlur}
-							disabled={isEditMode}
 							error={
 								formik.touched.petugasPenanggungJawab && Boolean(formik.errors.petugasPenanggungJawab)
 							}

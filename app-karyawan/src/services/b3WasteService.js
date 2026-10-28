@@ -42,6 +42,11 @@ export async function createWasteOutRecord(siteId, recordId, data) {
 	});
 }
 
+export async function getWasteOutRecords(siteId, recordId) {
+	const path = appendSiteIdParam(`/b3-waste/records/${recordId}/out`, siteId);
+	return apiRequest(path);
+}
+
 export async function updateWasteOutRecord(siteId, id, data) {
 	const path = appendSiteIdParam(`/b3-waste/records/out-records/${id}`, siteId);
 	return apiRequest(path, {
@@ -106,4 +111,35 @@ export async function exportNeracaLimbah(siteId, tahun, triwulan) {
 	const sep = path.includes('?') ? '&' : '?';
 	const url = `${getApiBaseUrl()}${path}${sep}tahun=${tahun}&triwulan=${triwulan}`;
 	return downloadFile(url, `Neraca_Limbah_B3_Q${triwulan}_${tahun}.xlsx`);
+}
+
+// --- Neraca Limbah B3 (format dokumen KLHK) ---
+
+export async function getNeracaKlhk(siteId, tahun, triwulan) {
+	const path = appendSiteIdParam('/b3-waste/records/neraca-klhk', siteId);
+	const sep = path.includes('?') ? '&' : '?';
+	return apiRequest(`${path}${sep}tahun=${tahun}&triwulan=${triwulan}`);
+}
+
+export async function saveNeracaPeriod(siteId, payload) {
+	const path = appendSiteIdParam('/b3-waste/records/neraca-klhk/period', siteId);
+	return apiRequest(path, {
+		method: 'PUT',
+		body: JSON.stringify(payload),
+	});
+}
+
+// --- Profil Perusahaan per Site ---
+
+export async function getSiteProfile(siteId) {
+	const path = appendSiteIdParam('/master/site-profile', siteId);
+	return apiRequest(path);
+}
+
+export async function saveSiteProfile(siteId, payload) {
+	const path = appendSiteIdParam('/master/site-profile', siteId);
+	return apiRequest(path, {
+		method: 'PUT',
+		body: JSON.stringify(payload),
+	});
 }

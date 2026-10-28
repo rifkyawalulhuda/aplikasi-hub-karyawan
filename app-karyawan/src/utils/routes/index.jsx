@@ -67,6 +67,9 @@ const PencatatanLimbahB3Page = withLazyLoadably(
 const NeracaLimbahB3Page = withLazyLoadably(
 	lazy(() => import('@/pages/employeeData/pencatatanLimbahB3/NeracaLimbahB3')),
 );
+const NeracaLimbahB3PrintPage = withLazyLoadably(
+	lazy(() => import('@/pages/employeeData/pencatatanLimbahB3/NeracaLimbahB3Print')),
+);
 const DashboardPage = withLazyLoadably(lazy(() => import('@/pages/dashboard')));
 
 function Router() {
@@ -113,6 +116,7 @@ function Router() {
 							path="/print/data-karyawan/cuti-karyawan/:id"
 							element={<EmployeeLeavePrintAdminPage />}
 						/>
+						<Route path="/print/limbah-b3/neraca" element={<NeracaLimbahB3PrintPage />} />
 						<Route path="/" element={<MainLayout />}>
 							<Route index element={<Navigate to="/dashboard" replace />} />
 							<Route path="dashboard" element={<DashboardPage />} />
