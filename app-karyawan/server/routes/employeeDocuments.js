@@ -2,10 +2,12 @@ import { Router } from 'express';
 
 import prisma from '../lib/prisma.js';
 import requireSiteIsolation from '../middleware/requireSiteIsolation.js';
+import requireSuperAdminWrite from '../middleware/requireSuperAdminWrite.js';
 
 const router = Router();
 
 router.use(requireSiteIsolation({ modelType: 'shared' }));
+router.use(requireSuperAdminWrite);
 
 function withAsync(handler) {
 	return (req, res, next) => {

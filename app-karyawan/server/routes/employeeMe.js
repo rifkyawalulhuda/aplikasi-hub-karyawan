@@ -376,7 +376,7 @@ function buildReplacementCandidateWhere(employee) {
 async function getReplacementOptionSet(employeeId, { periodStart = null, periodEnd = null, tx = prisma } = {}) {
 	const employee = await getReplacementRequesterOrThrow(employeeId, tx);
 	const candidates = await tx.employee.findMany({
-		where: buildReplacementCandidateWhere(employee),
+		where: { ...buildReplacementCandidateWhere(employee), siteId: employee.siteId },
 		include: {
 			department: true,
 			jobRole: true,
@@ -2431,7 +2431,7 @@ router.get('/department-leaves', async (req, res, next) => {
 
 		const leaves = await prisma.employeeLeave.findMany({
 			where: {
-				employee: { departmentId },
+				employee: { departmentId, siteId: req.employee.siteId },
 				status: { in: ['IN_APPROVAL', 'APPROVED'] },
 				OR: [{ status: 'IN_APPROVAL' }, { periodEnd: { gte: today } }],
 			},

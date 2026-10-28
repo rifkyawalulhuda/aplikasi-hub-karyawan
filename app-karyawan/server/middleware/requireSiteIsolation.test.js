@@ -33,22 +33,21 @@ describe('requireSiteIsolation middleware', () => {
 			expect(res.status).not.toHaveBeenCalled();
 		});
 
-		it('passes through for super_admin without setting isSuperAdmin', () => {
+		it('passes through for super_admin and flags isSuperAdmin', () => {
 			const { req, res, next } = createMockReqResNext({ role: 'super_admin', siteId: null });
 			middleware(req, res, next);
 
 			expect(req.siteFilter).toEqual({});
 			expect(next).toHaveBeenCalled();
-			expect(req.isSuperAdmin).toBeUndefined();
+			expect(req.isSuperAdmin).toBe(true);
 		});
 
-		it('passes through for admin with null siteId (shared data is accessible)', () => {
+		it('returns 403 for admin with null siteId (fail closed)', () => {
 			const { req, res, next } = createMockReqResNext({ role: 'admin', siteId: null });
 			middleware(req, res, next);
 
-			expect(req.siteFilter).toEqual({});
-			expect(next).toHaveBeenCalled();
-			expect(res.status).not.toHaveBeenCalled();
+			expect(res.status).toHaveBeenCalledWith(403);
+			expect(next).not.toHaveBeenCalled();
 		});
 	});
 

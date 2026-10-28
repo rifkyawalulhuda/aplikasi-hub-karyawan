@@ -1,6 +1,7 @@
 import { Router } from 'express';
 
 import prisma from '../lib/prisma.js';
+import { buildRelationSiteWhere, buildSiteWhere } from '../lib/siteScope.js';
 import requireSiteIsolation from '../middleware/requireSiteIsolation.js';
 
 const router = Router();
@@ -75,17 +76,20 @@ router.get(
 			mode: 'insensitive',
 		};
 
+		// Site filter for rows that own a siteId column
+		const siteWhere = buildSiteWhere(req);
+
 		// Site filter for employee-related queries
-		const employeeSiteFilter = req.isSuperAdmin ? {} : { siteId: req.admin.siteId };
+		const employeeSiteFilter = siteWhere;
 
-		// Site filter for models that have their own siteId (MasterGroupShift, MasterUnit, MasterVendor)
-		const perSiteSiteFilter = req.isSuperAdmin ? {} : { siteId: req.admin.siteId };
+		// Site filter for models that have their own siteId
+		const perSiteSiteFilter = siteWhere;
 
-		// Site filter for models related to employee (guidance, warnings, leaves, certifications)
-		const employeeRelatedSiteFilter = req.isSuperAdmin ? {} : { employee: { siteId: req.admin.siteId } };
+		// Site filter for models related to employee (leaves, approvals)
+		const employeeRelatedSiteFilter = buildRelationSiteWhere(req, 'employee');
 
 		// Admin search: filter by site for site-scoped admins (admins are employee-related)
-		const adminSiteFilter = req.isSuperAdmin ? {} : { employee: { siteId: req.admin.siteId } };
+		const adminSiteFilter = employeeRelatedSiteFilter;
 
 		const [
 			admins,
@@ -148,19 +152,19 @@ router.get(
 				orderBy: { id: 'desc' },
 				take: RESULT_LIMIT,
 			}),
-			// Shared master data: no site filtering
+			// Per-site organization master data
 			prisma.workLocation.findMany({
-				where: { name: containsQuery },
+				where: { ...perSiteSiteFilter, name: containsQuery },
 				orderBy: { id: 'desc' },
 				take: RESULT_LIMIT,
 			}),
 			prisma.department.findMany({
-				where: { name: containsQuery },
+				where: { ...perSiteSiteFilter, name: containsQuery },
 				orderBy: { id: 'desc' },
 				take: RESULT_LIMIT,
 			}),
 			prisma.jobRole.findMany({
-				where: { name: containsQuery },
+				where: { ...perSiteSiteFilter, name: containsQuery },
 				orderBy: { id: 'desc' },
 				take: RESULT_LIMIT,
 			}),
@@ -327,10 +331,10 @@ router.get(
 				orderBy: { id: 'desc' },
 				take: RESULT_LIMIT,
 			}),
-			// Per-site data: unit license certifications (filtered via masterUnit's site)
+			// Per-site data: unit license certifications
 			prisma.unitLicenseCertification.findMany({
 				where: {
-					...(req.isSuperAdmin ? {} : { masterUnit: { siteId: req.admin.siteId } }),
+					...perSiteSiteFilter,
 					OR: [
 						{ masterUnit: { is: { unitName: containsQuery } } },
 						{ masterUnit: { is: { unitSerialNumber: containsQuery } } },

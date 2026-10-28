@@ -15,8 +15,12 @@ import {
 } from '../lib/leaveDatabase.js';
 import prisma from '../lib/prisma.js';
 import { normalizeString, toDateOnly } from '../lib/leaveWorkflow.js';
+import { buildSiteWhere, resolveWriteSiteId, siteNotFound } from '../lib/siteScope.js';
+import requireSiteIsolation from '../middleware/requireSiteIsolation.js';
 
 const router = Router();
+
+router.use(requireSiteIsolation({ modelType: 'per-site' }));
 const upload = multer({
 	storage: multer.memoryStorage(),
 	limits: {
@@ -179,6 +183,17 @@ function worksheetRowToPayload(row, headerMap) {
 	return payload;
 }
 
+async function assertEmployeeInSite(employeeId, siteId) {
+	const employee = await prisma.employee.findFirst({
+		where: { id: employeeId, siteId },
+		select: { id: true },
+	});
+
+	if (!employee) {
+		throw Object.assign(new Error('Karyawan tidak ditemukan.'), { statusCode: 400 });
+	}
+}
+
 async function getLeaveTypeByName(leaveType) {
 	const normalizedLeaveType = normalizeString(leaveType);
 
@@ -204,7 +219,7 @@ async function getLeaveTypeByName(leaveType) {
 	return masterLeaveType;
 }
 
-async function resolveEmployeeFromImport(employeeName, employeeNo) {
+async function resolveEmployeeFromImport(employeeName, employeeNo, siteId) {
 	const normalizedEmployeeName = normalizeString(employeeName);
 	const normalizedEmployeeNo = normalizeString(employeeNo);
 
@@ -215,6 +230,7 @@ async function resolveEmployeeFromImport(employeeName, employeeNo) {
 	if (normalizedEmployeeNo) {
 		const employeeByNo = await prisma.employee.findFirst({
 			where: {
+				siteId,
 				employeeNo: {
 					equals: normalizedEmployeeNo,
 					mode: 'insensitive',
@@ -242,6 +258,7 @@ async function resolveEmployeeFromImport(employeeName, employeeNo) {
 
 	const employeesByName = await prisma.employee.findMany({
 		where: {
+			siteId,
 			fullName: {
 				equals: normalizedEmployeeName,
 				mode: 'insensitive',
@@ -269,10 +286,10 @@ async function resolveEmployeeFromImport(employeeName, employeeNo) {
 	return employeesByName[0];
 }
 
-async function buildImportPayload(rawPayload) {
+async function buildImportPayload(rawPayload, siteId) {
 	const recordIdRaw = normalizeString(rawPayload.NO || '');
 	const employeeName = normalizeString(rawPayload['Nama Karyawan'] || '');
-	const employee = await resolveEmployeeFromImport(employeeName, rawPayload.NIK);
+	const employee = await resolveEmployeeFromImport(employeeName, rawPayload.NIK, siteId);
 	const masterLeaveType = await getLeaveTypeByName(rawPayload['Jenis Cuti']);
 
 	const payload = {
@@ -283,6 +300,7 @@ async function buildImportPayload(rawPayload) {
 		periodEnd: parseExcelDate(rawPayload['Periode Sampai']),
 		remainingLeave: Number(rawPayload['Sisa Cuti']),
 		notes: normalizeString(rawPayload.Catatan || ''),
+		siteId,
 	};
 
 	if (!recordIdRaw) {
@@ -372,11 +390,11 @@ async function ensureUpdatePayloadAvailable(tx, id, payload) {
 	}
 }
 
-async function saveImportedRow(recordId, payload) {
+async function saveImportedRow(recordId, payload, siteId) {
 	return prisma.$transaction(async (tx) => {
 		if (recordId) {
-			const existing = await tx.employeeLeaveDatabase.findUnique({
-				where: { id: recordId },
+			const existing = await tx.employeeLeaveDatabase.findFirst({
+				where: { id: recordId, siteId },
 			});
 
 			if (!existing) {
@@ -406,9 +424,10 @@ async function saveImportedRow(recordId, payload) {
 
 router.get(
 	'/import-template',
-	withAsync(async (_req, res) => {
+	withAsync(async (req, res) => {
 		const [employees, leaveTypes] = await Promise.all([
 			prisma.employee.findMany({
+				where: { ...buildSiteWhere(req) },
 				select: {
 					employeeNo: true,
 					fullName: true,
@@ -581,6 +600,8 @@ router.post(
 			return res.status(400).json({ message: 'File Excel wajib dipilih.' });
 		}
 
+		const siteId = resolveWriteSiteId(req, req.body.siteId);
+
 		const workbook = new ExcelJS.Workbook();
 		await workbook.xlsx.load(req.file.buffer);
 		const worksheet = workbook.getWorksheet('Data Import') || workbook.worksheets[0];
@@ -616,7 +637,7 @@ router.post(
 			}
 
 			try {
-				const { recordId, payload } = await buildImportPayload(raw);
+				const { recordId, payload } = await buildImportPayload(raw, siteId);
 
 				if (recordId && seenRecordIds.has(recordId)) {
 					throw new Error('Kolom NO duplikat pada file import.');
@@ -636,7 +657,7 @@ router.post(
 				}
 				seenCompositeKeys.add(compositeKey);
 
-				const record = await saveImportedRow(recordId, validatedPayload);
+				const record = await saveImportedRow(recordId, validatedPayload, siteId);
 				importedRows.push(mapLeaveDatabaseRow(record));
 			} catch (error) {
 				errorRows.push({
@@ -690,8 +711,9 @@ router.get(
 
 router.get(
 	'/export',
-	withAsync(async (_req, res) => {
+	withAsync(async (req, res) => {
 		const rows = await prisma.employeeLeaveDatabase.findMany({
+			where: { ...buildSiteWhere(req) },
 			include: {
 				employee: true,
 				masterCutiKaryawan: true,
@@ -812,8 +834,8 @@ router.get(
 
 router.get(
 	'/',
-	withAsync(async (_req, res) => {
-		const rows = await listLeaveDatabase(prisma);
+	withAsync(async (req, res) => {
+		const rows = await listLeaveDatabase(prisma, buildSiteWhere(req));
 		return res.json(rows);
 	}),
 );
@@ -827,7 +849,12 @@ router.get(
 			return res.status(400).json({ message: 'ID tidak valid.' });
 		}
 
-		const detail = await getLeaveDatabaseDetailOrThrow(prisma, id);
+		const detail = await getLeaveDatabaseDetailOrThrow(prisma, id, buildSiteWhere(req)).catch(() => null);
+
+		if (!detail) {
+			return siteNotFound(res);
+		}
+
 		return res.json(detail.histories);
 	}),
 );
@@ -841,7 +868,12 @@ router.get(
 			return res.status(400).json({ message: 'ID tidak valid.' });
 		}
 
-		const detail = await getLeaveDatabaseDetailOrThrow(prisma, id);
+		const detail = await getLeaveDatabaseDetailOrThrow(prisma, id, buildSiteWhere(req)).catch(() => null);
+
+		if (!detail) {
+			return siteNotFound(res);
+		}
+
 		return res.json(detail);
 	}),
 );
@@ -849,13 +881,19 @@ router.get(
 router.post(
 	'/',
 	withAsync(async (req, res) => {
+		const siteId = resolveWriteSiteId(req, req.body.siteId);
 		const payload = validatePayload(req.body);
+		await assertEmployeeInSite(payload.employeeId, siteId);
 
 		const record = await prisma.$transaction(async (tx) => {
 			await ensureCreatePayloadAvailable(tx, payload);
-			return createLeaveDatabaseEntry(tx, payload, {
-				sourceType: 'ADMIN_CREATE',
-			});
+			return createLeaveDatabaseEntry(
+				tx,
+				{ ...payload, siteId },
+				{
+					sourceType: 'ADMIN_CREATE',
+				},
+			);
 		});
 
 		return res.status(201).json(mapLeaveDatabaseRow(record));
@@ -871,16 +909,18 @@ router.put(
 			return res.status(400).json({ message: 'ID tidak valid.' });
 		}
 
+		const existing = await prisma.employeeLeaveDatabase.findFirst({
+			where: { id, ...buildSiteWhere(req) },
+		});
+
+		if (!existing) {
+			return siteNotFound(res);
+		}
+
 		const payload = validatePayload(req.body);
+		await assertEmployeeInSite(payload.employeeId, existing.siteId);
+
 		const record = await prisma.$transaction(async (tx) => {
-			const existing = await tx.employeeLeaveDatabase.findUnique({
-				where: { id },
-			});
-
-			if (!existing) {
-				throw Object.assign(new Error('Data cuti karyawan tidak ditemukan.'), { statusCode: 404 });
-			}
-
 			await ensureUpdatePayloadAvailable(tx, id, payload);
 
 			return updateLeaveDatabaseEntry(tx, id, payload, {
@@ -901,12 +941,12 @@ router.delete(
 			return res.status(400).json({ message: 'ID tidak valid.' });
 		}
 
-		const existing = await prisma.employeeLeaveDatabase.findUnique({
-			where: { id },
+		const existing = await prisma.employeeLeaveDatabase.findFirst({
+			where: { id, ...buildSiteWhere(req) },
 		});
 
 		if (!existing) {
-			return res.status(404).json({ message: 'Data cuti karyawan tidak ditemukan.' });
+			return siteNotFound(res);
 		}
 
 		await prisma.employeeLeaveDatabase.delete({

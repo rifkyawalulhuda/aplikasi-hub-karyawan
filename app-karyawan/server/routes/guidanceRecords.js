@@ -1,8 +1,13 @@
 import { Router } from 'express';
 
 import prisma from '../lib/prisma.js';
+import { buildSiteWhere, resolveWriteSiteId, siteNotFound } from '../lib/siteScope.js';
+import requireSiteIsolation from '../middleware/requireSiteIsolation.js';
 
 const router = Router();
+
+router.use(requireSiteIsolation({ modelType: 'per-site' }));
+
 
 function withAsync(handler) {
 	return (req, res, next) => {
@@ -106,9 +111,9 @@ function mapGuidanceRecord(record) {
 	};
 }
 
-async function getEmployeeOrThrow(employeeId) {
-	const employee = await prisma.employee.findUnique({
-		where: { id: employeeId },
+async function getEmployeeOrThrow(employeeId, siteId) {
+	const employee = await prisma.employee.findFirst({
+		where: { id: employeeId, siteId },
 		include: {
 			department: true,
 			jobLevel: true,
@@ -122,9 +127,9 @@ async function getEmployeeOrThrow(employeeId) {
 	return employee;
 }
 
-async function getGuidanceRecordOrThrow(id) {
-	const record = await prisma.guidanceRecord.findUnique({
-		where: { id },
+async function getGuidanceRecordOrThrow(id, siteWhere) {
+	const record = await prisma.guidanceRecord.findFirst({
+		where: { id, ...siteWhere },
 		include: {
 			employee: {
 				include: {
@@ -142,7 +147,7 @@ async function getGuidanceRecordOrThrow(id) {
 	return record;
 }
 
-async function validatePayload(payload) {
+async function validatePayload(payload, siteId) {
 	const category = normalizeCategory(payload.category);
 	const employeeId = Number(payload.employeeId);
 	const meetingNumber = Number(payload.meetingNumber);
@@ -197,7 +202,7 @@ async function validatePayload(payload) {
 		throw Object.assign(new Error('Pemecahan masalah wajib diisi.'), { statusCode: 400 });
 	}
 
-	await getEmployeeOrThrow(employeeId);
+	await getEmployeeOrThrow(employeeId, siteId);
 
 	return {
 		category,
@@ -217,6 +222,7 @@ router.get(
 	'/',
 	withAsync(async (req, res) => {
 		const records = await prisma.guidanceRecord.findMany({
+			where: { ...buildSiteWhere(req) },
 			include: {
 				employee: {
 					include: {
@@ -241,7 +247,12 @@ router.get(
 			return res.status(400).json({ message: 'ID tidak valid.' });
 		}
 
-		const record = await getGuidanceRecordOrThrow(id);
+		const record = await getGuidanceRecordOrThrow(id, buildSiteWhere(req)).catch(() => null);
+
+		if (!record) {
+			return siteNotFound(res);
+		}
+
 		return res.json(mapGuidanceRecord(record));
 	}),
 );
@@ -249,9 +260,10 @@ router.get(
 router.post(
 	'/',
 	withAsync(async (req, res) => {
-		const data = await validatePayload(req.body);
+		const siteId = resolveWriteSiteId(req, req.body.siteId);
+		const data = await validatePayload(req.body, siteId);
 		const record = await prisma.guidanceRecord.create({
-			data,
+			data: { ...data, siteId },
 			include: {
 				employee: {
 					include: {
@@ -275,9 +287,13 @@ router.put(
 			return res.status(400).json({ message: 'ID tidak valid.' });
 		}
 
-		await getGuidanceRecordOrThrow(id);
+		const existing = await getGuidanceRecordOrThrow(id, buildSiteWhere(req)).catch(() => null);
 
-		const data = await validatePayload(req.body);
+		if (!existing) {
+			return siteNotFound(res);
+		}
+
+		const data = await validatePayload(req.body, existing.siteId);
 		const record = await prisma.guidanceRecord.update({
 			where: { id },
 			data,
@@ -304,7 +320,12 @@ router.delete(
 			return res.status(400).json({ message: 'ID tidak valid.' });
 		}
 
-		await getGuidanceRecordOrThrow(id);
+		const existing = await getGuidanceRecordOrThrow(id, buildSiteWhere(req)).catch(() => null);
+
+		if (!existing) {
+			return siteNotFound(res);
+		}
+
 		await prisma.guidanceRecord.delete({ where: { id } });
 		return res.status(204).send();
 	}),

@@ -7,23 +7,46 @@ import { Router } from 'express';
 import multer from 'multer';
 
 import prisma from '../lib/prisma.js';
+import { buildSiteWhere, resolveWriteSiteId, siteNotFound } from '../lib/siteScope.js';
 import MASTER_DATA_CONFIG from '../config/masterDataConfig.js';
 import requireSiteIsolation from '../middleware/requireSiteIsolation.js';
+import requireSuperAdminWrite from '../middleware/requireSuperAdminWrite.js';
 
 const router = Router();
 
-const PER_SITE_RESOURCES = new Set(['master-units', 'master-vendors']);
+const PER_SITE_RESOURCES = new Set([
+	'departments',
+	'work-locations',
+	'job-roles',
+	'master-units',
+	'master-vendors',
+]);
+
+const REFERENCE_RESOURCES = new Set(['job-levels', 'master-dok-pkb', 'master-cuti-karyawan', 'master-holidays']);
 
 function isPerSiteResource(resource) {
 	return PER_SITE_RESOURCES.has(resource);
 }
 
+function isReferenceResource(resource) {
+	return REFERENCE_RESOURCES.has(resource);
+}
+
 // Dynamic site isolation middleware: applies per-site filtering for per-site resources,
-// shared (no filtering) for all other resources.
-router.use('/:resource', (req, res, next) => {
-	const modelType = isPerSiteResource(req.params.resource) ? 'per-site' : 'shared';
-	return requireSiteIsolation({ modelType })(req, res, next);
-});
+// shared (read-only reference) for reference resources.
+router.use(
+	'/:resource',
+	(req, res, next) => {
+		const modelType = isPerSiteResource(req.params.resource) ? 'per-site' : 'shared';
+		return requireSiteIsolation({ modelType })(req, res, next);
+	},
+	(req, res, next) => {
+		if (!isReferenceResource(req.params.resource)) {
+			return next();
+		}
+		return requireSuperAdminWrite(req, res, next);
+	},
+);
 const upload = multer({
 	storage: multer.memoryStorage(),
 	limits: {
@@ -565,7 +588,7 @@ router.get(
 			return res.status(404).json({ message: 'Master data resource not found.' });
 		}
 
-		const where = isPerSiteResource(req.params.resource) ? { ...req.siteFilter } : {};
+		const where = isPerSiteResource(req.params.resource) ? { ...buildSiteWhere(req) } : {};
 
 		const items = await getDelegate(config.model).findMany({
 			where,
@@ -589,18 +612,11 @@ router.post(
 		const data = await buildPayload(config, req.body);
 
 		if (isPerSiteResource(req.params.resource)) {
-			if (req.isSuperAdmin) {
-				const { siteId } = req.body;
-				if (!siteId) {
-					return res.status(400).json({ message: 'siteId wajib diisi.' });
-				}
-				const site = await prisma.masterSite.findUnique({ where: { id: Number(siteId) } });
-				if (!site) {
-					return res.status(400).json({ message: 'Site tidak valid.' });
-				}
-				data.siteId = site.id;
-			} else {
-				data.siteId = req.admin.siteId;
+			data.siteId = resolveWriteSiteId(req, req.body.siteId);
+
+			const site = await prisma.masterSite.findUnique({ where: { id: data.siteId } });
+			if (!site) {
+				return res.status(400).json({ message: 'Site tidak valid.' });
 			}
 		}
 
@@ -638,9 +654,7 @@ router.put(
 
 		if (isPerSiteResource(req.params.resource)) {
 			if (!req.isSuperAdmin && existing.siteId !== req.admin.siteId) {
-				return res.status(403).json({
-					message: 'Akses ditolak. Data tidak termasuk dalam site Anda.',
-				});
+				return siteNotFound(res);
 			}
 		}
 
@@ -688,9 +702,7 @@ router.delete(
 
 		if (isPerSiteResource(req.params.resource)) {
 			if (!req.isSuperAdmin && existing.siteId !== req.admin.siteId) {
-				return res.status(403).json({
-					message: 'Akses ditolak. Data tidak termasuk dalam site Anda.',
-				});
+				return siteNotFound(res);
 			}
 		}
 

@@ -85,6 +85,7 @@ router.get(
 			prisma.unitLicenseCertification.count({
 				where: {
 					expiryDate: { lte: soonThreshold },
+					...siteFilter,
 				},
 			}),
 			// Monthly leave requests for current year (for trend chart)

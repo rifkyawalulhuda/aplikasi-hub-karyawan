@@ -1,8 +1,12 @@
 import { Router } from 'express';
 
 import prisma from '../lib/prisma.js';
+import { buildSiteWhere, resolveWriteSiteId, siteNotFound } from '../lib/siteScope.js';
+import requireSiteIsolation from '../middleware/requireSiteIsolation.js';
 
 const router = Router();
+
+router.use(requireSiteIsolation({ modelType: 'per-site' }));
 
 function withAsync(handler) {
 	return (req, res, next) => {
@@ -27,9 +31,9 @@ function mapSeed(record) {
 	};
 }
 
-async function getEmployeeOrThrow(employeeId) {
-	const employee = await prisma.employee.findUnique({
-		where: { id: employeeId },
+async function getEmployeeOrThrow(employeeId, siteId) {
+	const employee = await prisma.employee.findFirst({
+		where: { id: employeeId, siteId },
 	});
 
 	if (!employee) {
@@ -39,7 +43,7 @@ async function getEmployeeOrThrow(employeeId) {
 	return employee;
 }
 
-async function validatePayload(payload = {}, currentId = null) {
+async function validatePayload(payload = {}, currentId = null, siteId) {
 	const employeeId = normalizeInt(payload.employeeId);
 	const year = normalizeInt(payload.year);
 	const openingBalance = normalizeInt(payload.openingBalance);
@@ -71,7 +75,7 @@ async function validatePayload(payload = {}, currentId = null) {
 		});
 	}
 
-	await getEmployeeOrThrow(employeeId);
+	await getEmployeeOrThrow(employeeId, siteId);
 
 	const duplicate = await prisma.employeeLeaveBalanceSeed.findFirst({
 		where: {
@@ -97,8 +101,9 @@ async function validatePayload(payload = {}, currentId = null) {
 
 router.get(
 	'/',
-	withAsync(async (_req, res) => {
+	withAsync(async (req, res) => {
 		const rows = await prisma.employeeLeaveBalanceSeed.findMany({
+			where: { ...buildSiteWhere(req) },
 			include: {
 				employee: true,
 			},
@@ -116,9 +121,10 @@ router.get(
 router.post(
 	'/',
 	withAsync(async (req, res) => {
-		const data = await validatePayload(req.body);
+		const siteId = resolveWriteSiteId(req, req.body.siteId);
+		const data = await validatePayload(req.body, null, siteId);
 		const record = await prisma.employeeLeaveBalanceSeed.create({
-			data,
+			data: { ...data, siteId },
 			include: {
 				employee: true,
 			},
@@ -137,15 +143,15 @@ router.put(
 			return res.status(400).json({ message: 'ID tidak valid.' });
 		}
 
-		const existing = await prisma.employeeLeaveBalanceSeed.findUnique({
-			where: { id },
+		const existing = await prisma.employeeLeaveBalanceSeed.findFirst({
+			where: { id, ...buildSiteWhere(req) },
 		});
 
 		if (!existing) {
-			return res.status(404).json({ message: 'Saldo cuti tahunan tidak ditemukan.' });
+			return siteNotFound(res);
 		}
 
-		const data = await validatePayload(req.body, id);
+		const data = await validatePayload(req.body, id, existing.siteId);
 		const record = await prisma.employeeLeaveBalanceSeed.update({
 			where: { id },
 			data,
@@ -167,12 +173,12 @@ router.delete(
 			return res.status(400).json({ message: 'ID tidak valid.' });
 		}
 
-		const existing = await prisma.employeeLeaveBalanceSeed.findUnique({
-			where: { id },
+		const existing = await prisma.employeeLeaveBalanceSeed.findFirst({
+			where: { id, ...buildSiteWhere(req) },
 		});
 
 		if (!existing) {
-			return res.status(404).json({ message: 'Saldo cuti tahunan tidak ditemukan.' });
+			return siteNotFound(res);
 		}
 
 		await prisma.employeeLeaveBalanceSeed.delete({

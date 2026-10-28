@@ -69,6 +69,7 @@ function buildMainRecordData(payload) {
 		periodEnd: payload.periodEnd,
 		remainingLeave: payload.remainingLeave,
 		notes: payload.notes || null,
+		...(payload.siteId != null ? { siteId: payload.siteId } : {}),
 	};
 }
 
@@ -170,8 +171,9 @@ async function listLeaveTypeBalancesForEmployeeYear(tx, employeeId, year) {
 	}));
 }
 
-async function listLeaveDatabase(tx = prisma) {
+async function listLeaveDatabase(tx = prisma, where = {}) {
 	const rows = await tx.employeeLeaveDatabase.findMany({
+		where,
 		include: {
 			employee: true,
 			masterCutiKaryawan: true,
@@ -182,9 +184,9 @@ async function listLeaveDatabase(tx = prisma) {
 	return rows.map(mapLeaveDatabaseRow);
 }
 
-async function getLeaveDatabaseDetailOrThrow(tx, id) {
-	const record = await tx.employeeLeaveDatabase.findUnique({
-		where: { id },
+async function getLeaveDatabaseDetailOrThrow(tx, id, where = {}) {
+	const record = await tx.employeeLeaveDatabase.findFirst({
+		where: { id, ...where },
 		include: {
 			employee: true,
 			masterCutiKaryawan: true,

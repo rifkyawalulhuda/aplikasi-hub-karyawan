@@ -10,31 +10,43 @@ datasource db {
 
 model WorkLocation {
   id        Int        @id @default(autoincrement())
-  name      String     @unique @db.VarChar(255)
+  name      String     @db.VarChar(255)
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
+  siteId    Int
+  site      MasterSite @relation(fields: [siteId], references: [id])
   employees Employee[]
 
+  @@unique([siteId, name])
+  @@index([siteId])
   @@map("work_locations")
 }
 
 model Department {
   id        Int        @id @default(autoincrement())
-  name      String     @unique @db.VarChar(255)
+  name      String     @db.VarChar(255)
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
+  siteId    Int
+  site      MasterSite @relation(fields: [siteId], references: [id])
   employees Employee[]
 
+  @@unique([siteId, name])
+  @@index([siteId])
   @@map("departments")
 }
 
 model JobRole {
   id        Int        @id @default(autoincrement())
-  name      String     @unique @db.VarChar(255)
+  name      String     @db.VarChar(255)
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
+  siteId    Int
+  site      MasterSite @relation(fields: [siteId], references: [id])
   employees Employee[]
 
+  @@unique([siteId, name])
+  @@index([siteId])
   @@map("job_roles")
 }
 
@@ -51,18 +63,28 @@ model JobLevel {
 }
 
 model MasterSite {
-  id                       Int                          @id @default(autoincrement())
-  name                     String                       @unique @db.VarChar(100)
-  createdAt                DateTime                     @default(now())
-  updatedAt                DateTime                     @updatedAt
-  trainings                EmployeeTraining[]
-  employees                Employee[]
-  admins                   MasterAdmin[]
-  groupShifts              MasterGroupShift[]
-  units                    MasterUnit[]
-  vendors                  MasterVendor[]
-  siteApprovalConfigs      SiteApprovalConfig[]
-  emailNotificationSettings EmailNotificationSettings?
+  id                            Int                            @id @default(autoincrement())
+  name                          String                         @unique @db.VarChar(100)
+  createdAt                     DateTime                       @default(now())
+  updatedAt                     DateTime                       @updatedAt
+  trainings                     EmployeeTraining[]
+  employees                     Employee[]
+  admins                        MasterAdmin[]
+  groupShifts                   MasterGroupShift[]
+  units                         MasterUnit[]
+  vendors                       MasterVendor[]
+  siteApprovalConfigs           SiteApprovalConfig[]
+  emailNotificationSettings     EmailNotificationSettings?
+  workLocations                 WorkLocation[]
+  departments                   Department[]
+  jobRoles                      JobRole[]
+  guidanceRecords               GuidanceRecord[]
+  warningLetters                WarningLetter[]
+  employeeLicenseCertifications EmployeeLicenseCertification[]
+  unitLicenseCertifications     UnitLicenseCertification[]
+  employeeLeaveDatabase         EmployeeLeaveDatabase[]
+  employeeLeaveBalanceSeeds     EmployeeLeaveBalanceSeed[]
+  emailWorkflowFailureLogs      EmailWorkflowFailureLog[]
 
   @@map("master_sites")
 }
@@ -290,15 +312,18 @@ model EmployeeLeaveDatabase {
   createdAt            DateTime                       @default(now())
   updatedAt            DateTime                       @updatedAt
   year                 Int
+  siteId               Int
   employee             Employee                       @relation(fields: [employeeId], references: [id])
   masterCutiKaryawan   MasterCutiKaryawan             @relation(fields: [masterCutiKaryawanId], references: [id])
   histories            EmployeeLeaveDatabaseHistory[]
+  site                 MasterSite                     @relation(fields: [siteId], references: [id])
 
   @@unique([employeeId, masterCutiKaryawanId, year])
   @@index([employeeId])
   @@index([masterCutiKaryawanId])
   @@index([year])
   @@index([periodStart])
+  @@index([siteId])
   @@map("employee_leave_database")
 }
 
@@ -404,18 +429,21 @@ model EmployeeLeaveApproval {
 }
 
 model EmployeeLeaveBalanceSeed {
-  id             Int      @id @default(autoincrement())
+  id             Int        @id @default(autoincrement())
   employeeId     Int
   year           Int
   openingBalance Int
   currentBalance Int
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  employee       Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  siteId         Int
+  employee       Employee   @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  site           MasterSite @relation(fields: [siteId], references: [id])
 
   @@unique([employeeId, year])
   @@index([employeeId])
   @@index([year])
+  @@index([siteId])
   @@map("employee_leave_balance_seeds")
 }
 
@@ -450,7 +478,7 @@ model EmailWorkflowFailureLog {
   employeeLeaveId         Int?
   employeeLeaveApprovalId Int?
   recipientEmail          String                     @db.VarChar(255)
-  recipientName           String?                    @db.VarChar(255)
+  recipientName           String?
   subject                 String                     @db.VarChar(255)
   errorMessage            String
   status                  EmailWorkflowFailureStatus @default(OPEN)
@@ -459,9 +487,11 @@ model EmailWorkflowFailureLog {
   resolvedNote            String?
   createdAt               DateTime                   @default(now())
   updatedAt               DateTime                   @updatedAt
+  siteId                  Int?
   employeeLeaveApproval   EmployeeLeaveApproval?     @relation(fields: [employeeLeaveApprovalId], references: [id])
   employeeLeave           EmployeeLeave?             @relation(fields: [employeeLeaveId], references: [id])
   resolvedByEmployee      Employee?                  @relation(fields: [resolvedByEmployeeId], references: [id])
+  site                    MasterSite?                @relation(fields: [siteId], references: [id])
 
   @@index([event])
   @@index([entityType])
@@ -469,6 +499,7 @@ model EmailWorkflowFailureLog {
   @@index([employeeLeaveApprovalId])
   @@index([status])
   @@index([resolvedAt])
+  @@index([siteId])
   @@map("email_workflow_failure_logs")
 }
 
@@ -580,9 +611,12 @@ model GuidanceRecord {
   updatedAt             DateTime               @updatedAt
   category              GuidanceRecordCategory @default(GUIDANCE)
   problemFacedSecondary String?
+  siteId                Int
   employee              Employee               @relation(fields: [employeeId], references: [id])
+  site                  MasterSite             @relation(fields: [siteId], references: [id])
 
   @@index([employeeId])
+  @@index([siteId])
   @@map("guidance_records")
 }
 
@@ -602,13 +636,16 @@ model WarningLetter {
   category           DisciplineLetterCategory @default(WARNING_LETTER)
   departmentName     String?                  @db.VarChar(255)
   jobLevelName       String?                  @db.VarChar(255)
+  siteId             Int
   employee           Employee                 @relation("WarningLetterEmployee", fields: [employeeId], references: [id])
   masterDokPkb       MasterDokPkb?            @relation(fields: [masterDokPkbId], references: [id], onDelete: Restrict)
   superiorEmployee   Employee                 @relation("WarningLetterSuperior", fields: [superiorEmployeeId], references: [id])
+  site               MasterSite               @relation(fields: [siteId], references: [id])
 
   @@index([employeeId])
   @@index([superiorEmployeeId])
   @@index([masterDokPkbId])
+  @@index([siteId])
   @@map("warning_letters")
 }
 
@@ -623,11 +660,14 @@ model EmployeeLicenseCertification {
   notes               String?
   createdAt           DateTime          @default(now())
   updatedAt           DateTime          @updatedAt
+  siteId              Int
   employee            Employee          @relation(fields: [employeeId], references: [id])
   masterDokKaryawan   MasterDokKaryawan @relation(fields: [masterDokKaryawanId], references: [id])
+  site                MasterSite        @relation(fields: [siteId], references: [id])
 
   @@index([employeeId])
   @@index([masterDokKaryawanId])
+  @@index([siteId])
   @@map("employee_license_certifications")
 }
 
@@ -681,11 +721,14 @@ model UnitLicenseCertification {
   notes          String?
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
+  siteId         Int
   masterUnit     MasterUnit   @relation(fields: [masterUnitId], references: [id])
   vendor         MasterVendor @relation(fields: [vendorId], references: [id])
+  site           MasterSite   @relation(fields: [siteId], references: [id])
 
   @@index([masterUnitId])
   @@index([vendorId])
+  @@index([siteId])
   @@map("unit_license_certifications")
 }
 

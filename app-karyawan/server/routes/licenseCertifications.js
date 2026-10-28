@@ -1,9 +1,13 @@
 import { Router } from 'express';
 
 import prisma from '../lib/prisma.js';
+import { buildSiteWhere, resolveWriteSiteId, siteNotFound } from '../lib/siteScope.js';
+import requireSiteIsolation from '../middleware/requireSiteIsolation.js';
 
 const router = Router();
 const EXPIRING_SOON_DAYS = 25;
+
+router.use(requireSiteIsolation({ modelType: 'per-site' }));
 
 function withAsync(handler) {
 	return (req, res, next) => {
@@ -104,9 +108,9 @@ function mapLicenseCertification(record) {
 	};
 }
 
-async function getEmployeeOrThrow(id) {
-	const employee = await prisma.employee.findUnique({
-		where: { id },
+async function getEmployeeOrThrow(id, siteId) {
+	const employee = await prisma.employee.findFirst({
+		where: { id, siteId },
 	});
 
 	if (!employee) {
@@ -128,9 +132,9 @@ async function getMasterDocumentOrThrow(id) {
 	return document;
 }
 
-async function getLicenseCertificationOrThrow(id) {
-	const record = await prisma.employeeLicenseCertification.findUnique({
-		where: { id },
+async function getLicenseCertificationOrThrow(id, siteWhere) {
+	const record = await prisma.employeeLicenseCertification.findFirst({
+		where: { id, ...siteWhere },
 		include: {
 			employee: true,
 			masterDokKaryawan: true,
@@ -144,7 +148,7 @@ async function getLicenseCertificationOrThrow(id) {
 	return record;
 }
 
-async function validatePayload(payload = {}) {
+async function validatePayload(payload = {}, siteId) {
 	const employeeId = Number(payload.employeeId);
 	const masterDokKaryawanId = Number(payload.masterDokKaryawanId);
 	const type = normalizeString(payload.type);
@@ -173,7 +177,7 @@ async function validatePayload(payload = {}) {
 	}
 
 	const [employee, document] = await Promise.all([
-		getEmployeeOrThrow(employeeId),
+		getEmployeeOrThrow(employeeId, siteId),
 		getMasterDocumentOrThrow(masterDokKaryawanId),
 	]);
 
@@ -190,8 +194,9 @@ async function validatePayload(payload = {}) {
 
 router.get(
 	'/',
-	withAsync(async (_req, res) => {
+	withAsync(async (req, res) => {
 		const records = await prisma.employeeLicenseCertification.findMany({
+			where: { ...buildSiteWhere(req) },
 			include: {
 				employee: true,
 				masterDokKaryawan: true,
@@ -212,7 +217,12 @@ router.get(
 			return res.status(400).json({ message: 'ID tidak valid.' });
 		}
 
-		const record = await getLicenseCertificationOrThrow(id);
+		const record = await getLicenseCertificationOrThrow(id, buildSiteWhere(req)).catch(() => null);
+
+		if (!record) {
+			return siteNotFound(res);
+		}
+
 		return res.json(mapLicenseCertification(record));
 	}),
 );
@@ -220,9 +230,10 @@ router.get(
 router.post(
 	'/',
 	withAsync(async (req, res) => {
-		const data = await validatePayload(req.body);
+		const siteId = resolveWriteSiteId(req, req.body.siteId);
+		const data = await validatePayload(req.body, siteId);
 		const record = await prisma.employeeLicenseCertification.create({
-			data,
+			data: { ...data, siteId },
 			include: {
 				employee: true,
 				masterDokKaryawan: true,
@@ -242,9 +253,13 @@ router.put(
 			return res.status(400).json({ message: 'ID tidak valid.' });
 		}
 
-		await getLicenseCertificationOrThrow(id);
+		const existing = await getLicenseCertificationOrThrow(id, buildSiteWhere(req)).catch(() => null);
 
-		const data = await validatePayload(req.body);
+		if (!existing) {
+			return siteNotFound(res);
+		}
+
+		const data = await validatePayload(req.body, existing.siteId);
 		const record = await prisma.employeeLicenseCertification.update({
 			where: { id },
 			data,
@@ -267,7 +282,12 @@ router.delete(
 			return res.status(400).json({ message: 'ID tidak valid.' });
 		}
 
-		await getLicenseCertificationOrThrow(id);
+		const existing = await getLicenseCertificationOrThrow(id, buildSiteWhere(req)).catch(() => null);
+
+		if (!existing) {
+			return siteNotFound(res);
+		}
+
 		await prisma.employeeLicenseCertification.delete({
 			where: { id },
 		});

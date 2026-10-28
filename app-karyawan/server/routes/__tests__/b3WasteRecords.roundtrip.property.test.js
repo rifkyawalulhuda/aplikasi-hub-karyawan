@@ -66,8 +66,10 @@ function createMockRes() {
 }
 
 function createMockReq(overrides = {}) {
+	const siteId = overrides.siteId ?? 1;
 	return {
-		siteId: 1,
+		siteId,
+		admin: { role: 'admin', siteId },
 		query: {},
 		params: {},
 		body: {},

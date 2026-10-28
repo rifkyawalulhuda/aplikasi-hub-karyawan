@@ -1,13 +1,18 @@
 import { Router } from 'express';
 
 import prisma from '../lib/prisma.js';
+import { buildSiteWhere, resolveWriteSiteId, siteNotFound } from '../lib/siteScope.js';
 import {
 	WARNING_LEVEL_OPTIONS,
 	getWarningLetterEscalationStateForEmployee,
 	validateWarningLetterEscalation,
 } from '../lib/warningLetterEscalation.js';
+import requireSiteIsolation from '../middleware/requireSiteIsolation.js';
 
 const router = Router();
+
+router.use(requireSiteIsolation({ modelType: 'per-site' }));
+
 const SUPERIOR_JOB_LEVEL = 'Dept. Manager';
 const SUPERIOR_JOB_LEVEL_ALIASES = ['Dept. Manager', 'Department Manager'];
 const NORMALIZED_SUPERIOR_JOB_LEVELS = SUPERIOR_JOB_LEVEL_ALIASES.map((value) => value.toLowerCase());
@@ -107,9 +112,9 @@ function mapWarningLetter(record) {
 	};
 }
 
-async function getEmployeeOrThrow(id) {
-	const employee = await prisma.employee.findUnique({
-		where: { id },
+async function getEmployeeOrThrow(id, siteId) {
+	const employee = await prisma.employee.findFirst({
+		where: { id, siteId },
 		include: {
 			department: true,
 			jobRole: true,
@@ -136,9 +141,9 @@ async function getMasterDokPkbOrThrow(id) {
 	return document;
 }
 
-async function getWarningLetterOrThrow(id) {
-	const record = await prisma.warningLetter.findUnique({
-		where: { id },
+async function getWarningLetterOrThrow(id, siteWhere) {
+	const record = await prisma.warningLetter.findFirst({
+		where: { id, ...siteWhere },
 		include: {
 			employee: {
 				include: {
@@ -162,7 +167,7 @@ async function getWarningLetterOrThrow(id) {
 	return record;
 }
 
-async function validatePayload(payload, currentId) {
+async function validatePayload(payload, currentId, siteId) {
 	const category = normalizeCategory(payload.category);
 	const employeeId = Number(payload.employeeId);
 	const superiorEmployeeId = Number(payload.superiorEmployeeId);
@@ -205,8 +210,8 @@ async function validatePayload(payload, currentId) {
 	}
 
 	const [employee, superiorEmployee, masterDokPkb] = await Promise.all([
-		getEmployeeOrThrow(employeeId),
-		getEmployeeOrThrow(superiorEmployeeId),
+		getEmployeeOrThrow(employeeId, siteId),
+		getEmployeeOrThrow(superiorEmployeeId, siteId),
 		shouldRequireArticle(category) ? getMasterDokPkbOrThrow(masterDokPkbId) : Promise.resolve(null),
 	]);
 
@@ -253,6 +258,7 @@ router.get(
 	'/',
 	withAsync(async (req, res) => {
 		const records = await prisma.warningLetter.findMany({
+			where: { ...buildSiteWhere(req) },
 			include: {
 				employee: {
 					include: {
@@ -283,7 +289,12 @@ router.get(
 			return res.status(400).json({ message: 'ID tidak valid.' });
 		}
 
-		const record = await getWarningLetterOrThrow(id);
+		const record = await getWarningLetterOrThrow(id, buildSiteWhere(req)).catch(() => null);
+
+		if (!record) {
+			return siteNotFound(res);
+		}
+
 		return res.json(mapWarningLetter(record));
 	}),
 );
@@ -291,9 +302,10 @@ router.get(
 router.post(
 	'/',
 	withAsync(async (req, res) => {
-		const data = await validatePayload(req.body);
+		const siteId = resolveWriteSiteId(req, req.body.siteId);
+		const data = await validatePayload(req.body, null, siteId);
 		const record = await prisma.warningLetter.create({
-			data,
+			data: { ...data, siteId },
 			include: {
 				employee: {
 					include: {
@@ -323,9 +335,13 @@ router.put(
 			return res.status(400).json({ message: 'ID tidak valid.' });
 		}
 
-		await getWarningLetterOrThrow(id);
+		const existing = await getWarningLetterOrThrow(id, buildSiteWhere(req)).catch(() => null);
 
-		const data = await validatePayload(req.body, id);
+		if (!existing) {
+			return siteNotFound(res);
+		}
+
+		const data = await validatePayload(req.body, id, existing.siteId);
 		const record = await prisma.warningLetter.update({
 			where: { id },
 			data,
@@ -358,7 +374,12 @@ router.delete(
 			return res.status(400).json({ message: 'ID tidak valid.' });
 		}
 
-		await getWarningLetterOrThrow(id);
+		const existing = await getWarningLetterOrThrow(id, buildSiteWhere(req)).catch(() => null);
+
+		if (!existing) {
+			return siteNotFound(res);
+		}
+
 		await prisma.warningLetter.delete({ where: { id } });
 
 		return res.status(204).send();

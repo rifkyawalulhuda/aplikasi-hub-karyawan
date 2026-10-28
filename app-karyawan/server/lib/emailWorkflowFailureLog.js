@@ -169,7 +169,44 @@ function buildEmailWorkflowFailureNotification(record) {
 	};
 }
 
+async function resolveFailureLogSiteId(prismaClient, payload = {}) {
+	try {
+		if (payload.employeeLeaveId) {
+			const leave = await prismaClient.employeeLeave.findUnique({
+				where: { id: Number(payload.employeeLeaveId) },
+				select: { employee: { select: { siteId: true } } },
+			});
+
+			if (leave?.employee?.siteId) {
+				return leave.employee.siteId;
+			}
+		}
+
+		if (payload.employeeLeaveApprovalId) {
+			const approval = await prismaClient.employeeLeaveApproval.findUnique({
+				where: { id: Number(payload.employeeLeaveApprovalId) },
+				select: {
+					employeeLeave: {
+						select: { employee: { select: { siteId: true } } },
+					},
+				},
+			});
+
+			const siteId = approval?.employeeLeave?.employee?.siteId;
+			if (siteId) {
+				return siteId;
+			}
+		}
+	} catch (error) {
+		console.warn('Site untuk log kegagalan email workflow tidak dapat ditentukan.', error);
+	}
+
+	return null;
+}
+
 async function recordEmailWorkflowFailure(prismaClient, payload = {}) {
+	const siteId = await resolveFailureLogSiteId(prismaClient, payload);
+
 	const log = await prismaClient.emailWorkflowFailureLog.create({
 		data: {
 			event: normalizeString(payload.event) || 'EMAIL_WORKFLOW_FAILED',
@@ -180,6 +217,7 @@ async function recordEmailWorkflowFailure(prismaClient, payload = {}) {
 			recipientName: normalizeString(payload.recipientName) || null,
 			subject: truncateString(payload.subject || '', 255),
 			errorMessage: sanitizeEmailWorkflowErrorMessage(payload.error || payload.errorMessage || ''),
+			siteId: siteId ?? null,
 		},
 	});
 

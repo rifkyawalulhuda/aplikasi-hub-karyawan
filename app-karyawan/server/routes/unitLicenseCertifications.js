@@ -1,9 +1,13 @@
 import { Router } from 'express';
 
 import prisma from '../lib/prisma.js';
+import { buildSiteWhere, resolveWriteSiteId, siteNotFound } from '../lib/siteScope.js';
+import requireSiteIsolation from '../middleware/requireSiteIsolation.js';
 
 const router = Router();
 const EXPIRING_SOON_DAYS = 25;
+
+router.use(requireSiteIsolation({ modelType: 'per-site' }));
 
 function withAsync(handler) {
 	return (req, res, next) => {
@@ -105,9 +109,9 @@ function mapUnitCertification(record) {
 	};
 }
 
-async function getMasterUnitOrThrow(id) {
-	const unit = await prisma.masterUnit.findUnique({
-		where: { id },
+async function getMasterUnitOrThrow(id, siteId) {
+	const unit = await prisma.masterUnit.findFirst({
+		where: { id, siteId },
 	});
 
 	if (!unit) {
@@ -117,9 +121,9 @@ async function getMasterUnitOrThrow(id) {
 	return unit;
 }
 
-async function getVendorOrThrow(id) {
-	const vendor = await prisma.masterVendor.findUnique({
-		where: { id },
+async function getVendorOrThrow(id, siteId) {
+	const vendor = await prisma.masterVendor.findFirst({
+		where: { id, siteId },
 	});
 
 	if (!vendor) {
@@ -129,9 +133,9 @@ async function getVendorOrThrow(id) {
 	return vendor;
 }
 
-async function getUnitCertificationOrThrow(id) {
-	const record = await prisma.unitLicenseCertification.findUnique({
-		where: { id },
+async function getUnitCertificationOrThrow(id, siteWhere) {
+	const record = await prisma.unitLicenseCertification.findFirst({
+		where: { id, ...siteWhere },
 		include: {
 			masterUnit: true,
 			vendor: true,
@@ -145,7 +149,7 @@ async function getUnitCertificationOrThrow(id) {
 	return record;
 }
 
-async function validatePayload(payload = {}) {
+async function validatePayload(payload = {}, siteId) {
 	const masterUnitId = Number(payload.masterUnitId);
 	const vendorId = Number(payload.vendorId);
 	const assetNo = normalizeString(payload.assetNo);
@@ -178,7 +182,7 @@ async function validatePayload(payload = {}) {
 		throw Object.assign(new Error('Masa Berlaku wajib diisi.'), { statusCode: 400 });
 	}
 
-	const [unit, vendor] = await Promise.all([getMasterUnitOrThrow(masterUnitId), getVendorOrThrow(vendorId)]);
+	const [unit, vendor] = await Promise.all([getMasterUnitOrThrow(masterUnitId, siteId), getVendorOrThrow(vendorId, siteId)]);
 
 	return {
 		masterUnitId: unit.id,
@@ -193,8 +197,9 @@ async function validatePayload(payload = {}) {
 
 router.get(
 	'/',
-	withAsync(async (_req, res) => {
+	withAsync(async (req, res) => {
 		const records = await prisma.unitLicenseCertification.findMany({
+			where: { ...buildSiteWhere(req) },
 			include: {
 				masterUnit: true,
 				vendor: true,
@@ -215,7 +220,12 @@ router.get(
 			return res.status(400).json({ message: 'ID tidak valid.' });
 		}
 
-		const record = await getUnitCertificationOrThrow(id);
+		const record = await getUnitCertificationOrThrow(id, buildSiteWhere(req)).catch(() => null);
+
+		if (!record) {
+			return siteNotFound(res);
+		}
+
 		return res.json(mapUnitCertification(record));
 	}),
 );
@@ -223,9 +233,10 @@ router.get(
 router.post(
 	'/',
 	withAsync(async (req, res) => {
-		const data = await validatePayload(req.body);
+		const siteId = resolveWriteSiteId(req, req.body.siteId);
+		const data = await validatePayload(req.body, siteId);
 		const record = await prisma.unitLicenseCertification.create({
-			data,
+			data: { ...data, siteId },
 			include: {
 				masterUnit: true,
 				vendor: true,
@@ -245,9 +256,13 @@ router.put(
 			return res.status(400).json({ message: 'ID tidak valid.' });
 		}
 
-		await getUnitCertificationOrThrow(id);
+		const existing = await getUnitCertificationOrThrow(id, buildSiteWhere(req)).catch(() => null);
 
-		const data = await validatePayload(req.body);
+		if (!existing) {
+			return siteNotFound(res);
+		}
+
+		const data = await validatePayload(req.body, existing.siteId);
 		const record = await prisma.unitLicenseCertification.update({
 			where: { id },
 			data,
@@ -270,7 +285,12 @@ router.delete(
 			return res.status(400).json({ message: 'ID tidak valid.' });
 		}
 
-		await getUnitCertificationOrThrow(id);
+		const existing = await getUnitCertificationOrThrow(id, buildSiteWhere(req)).catch(() => null);
+
+		if (!existing) {
+			return siteNotFound(res);
+		}
+
 		await prisma.unitLicenseCertification.delete({
 			where: { id },
 		});

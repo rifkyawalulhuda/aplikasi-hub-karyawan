@@ -1,11 +1,15 @@
 import { Router } from 'express';
 
-import prisma from '../lib/prisma.js';
 import { mapEmailWorkflowFailureLog, resolveEmailWorkflowFailureLog } from '../lib/emailWorkflowFailureLog.js';
+import prisma from '../lib/prisma.js';
+import { buildSiteWhere, siteNotFound } from '../lib/siteScope.js';
+import requireSiteIsolation from '../middleware/requireSiteIsolation.js';
 
 const router = Router();
 const DEFAULT_PAGE_SIZE = 20;
 const MAX_PAGE_SIZE = 100;
+
+router.use(requireSiteIsolation({ modelType: 'per-site' }));
 
 function withAsync(handler) {
 	return (req, res, next) => {
@@ -42,10 +46,10 @@ function resolveEmployeeId(req) {
 	return candidate;
 }
 
-function buildWhereClause(query = {}) {
+function buildWhereClause(query = {}, siteWhere = {}) {
 	const status = normalizeStatus(query.status);
 	const keyword = normalizeString(query.keyword);
-	const where = {};
+	const where = { ...siteWhere };
 
 	if (status === 'open') {
 		where.status = 'OPEN';
@@ -97,7 +101,7 @@ router.get(
 		resolveEmployeeId(req);
 		const page = parsePositiveInt(req.query.page, 1);
 		const pageSize = parsePositiveInt(req.query.pageSize, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE);
-		const where = buildWhereClause(req.query);
+		const where = buildWhereClause(req.query, buildSiteWhere(req));
 
 		const [records, totalCount, openCount, resolvedCount] = await Promise.all([
 			prisma.emailWorkflowFailureLog.findMany({
@@ -161,8 +165,8 @@ router.get(
 			return res.status(400).json({ message: 'ID tidak valid.' });
 		}
 
-		const record = await prisma.emailWorkflowFailureLog.findUnique({
-			where: { id },
+		const record = await prisma.emailWorkflowFailureLog.findFirst({
+			where: { id, ...buildSiteWhere(req) },
 			include: {
 				employeeLeave: {
 					include: {
@@ -194,7 +198,7 @@ router.get(
 		});
 
 		if (!record) {
-			return res.status(404).json({ message: 'Log kegagalan email workflow tidak ditemukan.' });
+			return siteNotFound(res);
 		}
 
 		return res.json({
@@ -214,13 +218,23 @@ router.post(
 
 		const resolvedByEmployeeId = resolveEmployeeId(req);
 		const resolvedNote = normalizeString(req.body?.note || '');
+
+		const existing = await prisma.emailWorkflowFailureLog.findFirst({
+			where: { id, ...buildSiteWhere(req) },
+			select: { id: true },
+		});
+
+		if (!existing) {
+			return siteNotFound(res);
+		}
+
 		await resolveEmailWorkflowFailureLog(prisma, id, {
 			resolvedByEmployeeId,
 			resolvedNote,
 		});
 
-		const record = await prisma.emailWorkflowFailureLog.findUnique({
-			where: { id },
+		const record = await prisma.emailWorkflowFailureLog.findFirst({
+			where: { id, ...buildSiteWhere(req) },
 			include: {
 				employeeLeave: {
 					include: {

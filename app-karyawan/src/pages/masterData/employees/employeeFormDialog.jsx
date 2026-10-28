@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 
 import Button from '@mui/material/Button';
@@ -52,6 +52,7 @@ function EmployeeFormDialog({ open, loading, initialValue, options, onClose, onS
 		control,
 		handleSubmit,
 		reset,
+		watch,
 		formState: { errors, dirtyFields },
 	} = useForm({
 		defaultValues: toDefaultValues(initialValue),
@@ -60,6 +61,26 @@ function EmployeeFormDialog({ open, loading, initialValue, options, onClose, onS
 	useEffect(() => {
 		reset(toDefaultValues(initialValue));
 	}, [initialValue, open, reset]);
+
+	const selectedSiteId = watch('siteId');
+
+	// Organization masters (department, work location, job role, group shift) are per-site.
+	// Super admin sees every site's rows, so narrow the dropdowns to the chosen site.
+	const scopedOptions = useMemo(() => {
+		if (!isSuperAdmin || selectedSiteId === '' || selectedSiteId == null) {
+			return options;
+		}
+
+		const matchesSite = (item) => String(item.siteId) === String(selectedSiteId);
+
+		return {
+			...options,
+			departments: options.departments.filter(matchesSite),
+			workLocations: options.workLocations.filter(matchesSite),
+			jobRoles: options.jobRoles.filter(matchesSite),
+			groupShifts: options.groupShifts.filter(matchesSite),
+		};
+	}, [options, isSuperAdmin, selectedSiteId]);
 
 	return (
 		<Dialog open={open} onClose={loading ? undefined : onClose} fullWidth maxWidth="md">
@@ -156,7 +177,7 @@ function EmployeeFormDialog({ open, loading, initialValue, options, onClose, onS
 							fullWidth
 							select
 						>
-							{options.departments.map((option) => (
+							{scopedOptions.departments.map((option) => (
 								<MenuItem key={option.id} value={option.id}>
 									{option.name}
 								</MenuItem>
@@ -174,7 +195,7 @@ function EmployeeFormDialog({ open, loading, initialValue, options, onClose, onS
 							select
 						>
 							<MenuItem value="">-</MenuItem>
-							{options.groupShifts.map((option) => (
+							{scopedOptions.groupShifts.map((option) => (
 								<MenuItem key={option.id} value={option.id}>
 									{option.groupShiftName}
 								</MenuItem>
@@ -223,7 +244,7 @@ function EmployeeFormDialog({ open, loading, initialValue, options, onClose, onS
 							fullWidth
 							select
 						>
-							{options.workLocations.map((option) => (
+							{scopedOptions.workLocations.map((option) => (
 								<MenuItem key={option.id} value={option.id}>
 									{option.name}
 								</MenuItem>
@@ -241,7 +262,7 @@ function EmployeeFormDialog({ open, loading, initialValue, options, onClose, onS
 							fullWidth
 							select
 						>
-							{options.jobRoles.map((option) => (
+							{scopedOptions.jobRoles.map((option) => (
 								<MenuItem key={option.id} value={option.id}>
 									{option.name}
 								</MenuItem>

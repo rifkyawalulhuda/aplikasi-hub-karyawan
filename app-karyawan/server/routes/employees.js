@@ -8,6 +8,7 @@ import multer from 'multer';
 
 import prisma from '../lib/prisma.js';
 import { hashPassword } from '../lib/password.js';
+import { buildSiteWhere, siteNotFound } from '../lib/siteScope.js';
 import { isWarningLetterActive } from '../lib/warningLetterEscalation.js';
 import requireSiteIsolation from '../middleware/requireSiteIsolation.js';
 
@@ -299,15 +300,20 @@ function mapTrainingRecord(record) {
 	};
 }
 
-async function ensureLookupExists(model, id, label) {
-	const item = await prisma[model].findUnique({ where: { id } });
+async function ensureLookupExists(model, id, label, siteId = null) {
+	const item = await prisma[model].findFirst({
+		where: {
+			id,
+			...(siteId != null ? { siteId } : {}),
+		},
+	});
 
 	if (!item) {
 		throw Object.assign(new Error(`${label} tidak ditemukan.`), { statusCode: 400 });
 	}
 }
 
-async function getLookupByName(model, label, value) {
+async function getLookupByName(model, label, value, siteId = null) {
 	const name = normalizeString(value);
 
 	if (!name) {
@@ -316,6 +322,7 @@ async function getLookupByName(model, label, value) {
 
 	const item = await prisma[model].findFirst({
 		where: {
+			...(siteId != null ? { siteId } : {}),
 			name: {
 				equals: name,
 				mode: 'insensitive',
@@ -330,7 +337,7 @@ async function getLookupByName(model, label, value) {
 	return item;
 }
 
-async function getLookupByField(model, field, label, value) {
+async function getLookupByField(model, field, label, value, siteId = null) {
 	const normalizedValue = normalizeString(value);
 
 	if (!normalizedValue) {
@@ -339,6 +346,7 @@ async function getLookupByField(model, field, label, value) {
 
 	const item = await prisma[model].findFirst({
 		where: {
+			...(siteId != null ? { siteId } : {}),
 			[field]: {
 				equals: normalizedValue,
 				mode: 'insensitive',
@@ -355,7 +363,7 @@ async function getLookupByField(model, field, label, value) {
 	return item;
 }
 
-async function validatePayload(payload, currentEmployeeId = null) {
+async function validatePayload(payload, currentEmployeeId = null, siteId = null) {
 	const employeeNo = normalizeString(payload.employeeNo);
 	const password = normalizeString(payload.password);
 	const fullName = normalizeString(payload.fullName);
@@ -414,10 +422,12 @@ async function validatePayload(payload, currentEmployeeId = null) {
 	}
 
 	await Promise.all([
-		ensureLookupExists('department', departmentId, 'Department'),
-		...(groupShiftId !== null ? [ensureLookupExists('masterGroupShift', groupShiftId, 'Group Shift')] : []),
-		ensureLookupExists('workLocation', workLocationId, 'Work Location'),
-		ensureLookupExists('jobRole', jobRoleId, 'Job Role'),
+		ensureLookupExists('department', departmentId, 'Department', siteId),
+		...(groupShiftId !== null
+			? [ensureLookupExists('masterGroupShift', groupShiftId, 'Group Shift', siteId)]
+			: []),
+		ensureLookupExists('workLocation', workLocationId, 'Work Location', siteId),
+		ensureLookupExists('jobRole', jobRoleId, 'Job Role', siteId),
 		ensureLookupExists('jobLevel', jobLevelId, 'Job Level'),
 	]);
 
@@ -454,12 +464,12 @@ function worksheetRowToPayload(row, headerMap) {
 
 async function buildImportPayload(rawPayload) {
 	const site = await getLookupByName('masterSite', 'Site / Div', rawPayload['Site / Div']);
-	const department = await getLookupByName('department', 'Department', rawPayload.Department);
+	const department = await getLookupByName('department', 'Department', rawPayload.Department, site.id);
 	const groupShift = normalizeString(rawPayload['Group Shift'] || '')
-		? await getLookupByField('masterGroupShift', 'groupShiftName', 'Group Shift', rawPayload['Group Shift'])
+		? await getLookupByField('masterGroupShift', 'groupShiftName', 'Group Shift', rawPayload['Group Shift'], site.id)
 		: null;
-	const workLocation = await getLookupByName('workLocation', 'Work Location', rawPayload['Work Location']);
-	const jobRole = await getLookupByName('jobRole', 'Job Role', rawPayload['Job Role']);
+	const workLocation = await getLookupByName('workLocation', 'Work Location', rawPayload['Work Location'], site.id);
+	const jobRole = await getLookupByName('jobRole', 'Job Role', rawPayload['Job Role'], site.id);
 	const jobLevel = await getLookupByName('jobLevel', 'Job Level', rawPayload['Job Level']);
 
 	return {
@@ -843,7 +853,7 @@ router.post(
 				}
 
 				seenEmployeeNos.add(employeeKey);
-				const validatedPayload = await validatePayload(payload);
+				const validatedPayload = await validatePayload(payload, null, payload.siteId);
 				validatedRows.push(validatedPayload);
 			} catch (error) {
 				errorRows.push({
@@ -947,7 +957,7 @@ router.get(
 		}
 
 		if (!req.isSuperAdmin && employee.siteId !== req.admin.siteId) {
-			return res.status(403).json({ message: 'Akses ditolak. Data tidak termasuk dalam site Anda.' });
+			return siteNotFound(res);
 		}
 
 		const today = new Date();
@@ -1088,7 +1098,7 @@ router.get(
 	'/',
 	withAsync(async (req, res) => {
 		const employees = await prisma.employee.findMany({
-			where: { ...req.siteFilter },
+			where: { ...buildSiteWhere(req) },
 			include: {
 				department: true,
 				groupShift: true,
@@ -1117,7 +1127,7 @@ router.post(
 			siteId = req.admin.siteId;
 		}
 
-		const data = await validatePayload(req.body);
+		const data = await validatePayload(req.body, null, siteId);
 		const employee = await prisma.employee.create({
 			data: { ...data, siteId },
 			include: {
@@ -1148,10 +1158,10 @@ router.put(
 		}
 
 		if (!req.isSuperAdmin && existing.siteId !== req.admin.siteId) {
-			return res.status(403).json({ message: 'Akses ditolak. Data tidak termasuk dalam site Anda.' });
+			return siteNotFound(res);
 		}
 
-		const data = await validatePayload(req.body, id);
+		const data = await validatePayload(req.body, id, existing.siteId);
 		// Strip siteId from update payload for site-scoped admins
 		const { siteId: _ignored, ...updateData } = data;
 		const employee = await prisma.employee.update({
@@ -1185,7 +1195,7 @@ router.delete(
 		}
 
 		if (!req.isSuperAdmin && existing.siteId !== req.admin.siteId) {
-			return res.status(403).json({ message: 'Akses ditolak. Data tidak termasuk dalam site Anda.' });
+			return siteNotFound(res);
 		}
 
 		await prisma.employee.delete({ where: { id } });
