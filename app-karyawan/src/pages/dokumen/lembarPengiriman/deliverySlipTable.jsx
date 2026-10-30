@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react';
 
+import { alpha } from '@mui/material/styles';
+
 import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
 import Menu from '@mui/material/Menu';
@@ -29,7 +31,13 @@ function DeliverySlipTable({ rows, loading, onEdit, onDelete, onPrint }) {
 				width: 70,
 				sortable: false,
 				renderCell: (params) => (
-					<Typography variant="body2" sx={{ fontWeight: 700, color: '#123B66' }}>
+					<Typography
+						variant="body2"
+						sx={{
+							fontWeight: 700,
+							color: (theme) => (theme.palette.mode === 'dark' ? theme.palette.primary[200] : '#123B66'),
+						}}
+					>
 						{params.value}
 					</Typography>
 				),
@@ -127,9 +135,12 @@ function DeliverySlipTable({ rows, loading, onEdit, onDelete, onPrint }) {
 			sx={{
 				borderRadius: 3,
 				overflow: 'hidden',
-				borderColor: 'rgba(15, 23, 42, 0.12)',
-				boxShadow: '0 12px 30px rgba(15, 23, 42, 0.06)',
-				backgroundColor: '#FFFFFF',
+				borderColor: 'border',
+				boxShadow: (theme) =>
+					theme.palette.mode === 'dark'
+						? '0 12px 30px rgba(0, 0, 0, 0.35)'
+						: '0 12px 30px rgba(15, 23, 42, 0.06)',
+				bgcolor: 'background.paper',
 			}}
 		>
 			<Box
@@ -138,17 +149,20 @@ function DeliverySlipTable({ rows, loading, onEdit, onDelete, onPrint }) {
 					width: '100%',
 					'& .MuiDataGrid-root': { border: 'none' },
 					'& .MuiDataGrid-columnHeaders': {
-						backgroundColor: '#F4F7FB',
-						borderBottom: '1px solid rgba(15, 23, 42, 0.12)',
+						backgroundColor: (theme) =>
+							theme.palette.mode === 'dark' ? alpha(theme.palette.common.white, 0.05) : '#F4F7FB',
+						borderBottom: '1px solid',
+						borderColor: 'border',
 					},
 					'& .MuiDataGrid-columnHeaderTitle': {
 						fontWeight: 800,
 						fontSize: '0.78rem',
 						letterSpacing: '0.02em',
-						color: '#20324A',
+						color: 'text.primary',
 					},
 					'& .MuiDataGrid-cell': {
-						borderBottom: '1px solid rgba(15, 23, 42, 0.08)',
+						borderBottom: '1px solid',
+						borderColor: 'divider',
 						alignItems: 'center',
 					},
 					'& .MuiDataGrid-cell:focus, & .MuiDataGrid-columnHeader:focus': { outline: 'none' },
@@ -209,8 +223,10 @@ function DeliverySlipTable({ rows, loading, onEdit, onDelete, onPrint }) {
 					gap: 1,
 					px: 2,
 					py: 1,
-					borderTop: '1px solid rgba(15, 23, 42, 0.08)',
-					backgroundColor: '#FBFCFE',
+					borderTop: '1px solid',
+					borderColor: 'border',
+					bgcolor: (theme) =>
+						theme.palette.mode === 'dark' ? alpha(theme.palette.common.white, 0.02) : '#FBFCFE',
 				}}
 			>
 				<Chip
@@ -218,7 +234,7 @@ function DeliverySlipTable({ rows, loading, onEdit, onDelete, onPrint }) {
 					label={`${rows.length} lembar`}
 					size="small"
 					variant="outlined"
-					sx={{ fontWeight: 700, bgcolor: '#FFFFFF' }}
+					sx={{ fontWeight: 700, bgcolor: 'background.paper' }}
 				/>
 				<Typography variant="caption" color="text.secondary">
 					Klik kanan pada baris untuk Print, Edit, atau Hapus.
