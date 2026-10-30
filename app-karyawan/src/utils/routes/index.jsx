@@ -71,6 +71,8 @@ const NeracaLimbahB3PrintPage = withLazyLoadably(
 	lazy(() => import('@/pages/employeeData/pencatatanLimbahB3/NeracaLimbahB3Print')),
 );
 const DashboardPage = withLazyLoadably(lazy(() => import('@/pages/dashboard')));
+const LembarPengirimanPage = withLazyLoadably(lazy(() => import('@/pages/dokumen/lembarPengiriman')));
+const LembarPengirimanPrintPage = withLazyLoadably(lazy(() => import('@/pages/dokumen/lembarPengiriman/print')));
 
 function Router() {
 	return (
@@ -117,6 +119,7 @@ function Router() {
 							element={<EmployeeLeavePrintAdminPage />}
 						/>
 						<Route path="/print/limbah-b3/neraca" element={<NeracaLimbahB3PrintPage />} />
+						<Route path="/print/dokumen/lembar-pengiriman/:id" element={<LembarPengirimanPrintPage />} />
 						<Route path="/" element={<MainLayout />}>
 							<Route index element={<Navigate to="/dashboard" replace />} />
 							<Route path="dashboard" element={<DashboardPage />} />
@@ -191,6 +194,7 @@ function Router() {
 							<Route path="data-karyawan/cuti-karyawan/flow" element={<LeaveCombinedPage />} />
 							<Route path="limbah-b3/pencatatan" element={<PencatatanLimbahB3Page />} />
 							<Route path="limbah-b3/neraca" element={<NeracaLimbahB3Page />} />
+							<Route path="dokumen/lembar-pengiriman" element={<LembarPengirimanPage />} />
 							<Route
 								path="data-unit/lisensi-sertifikasi-unit"
 								element={<UnitLicenseCertificationsPage />}

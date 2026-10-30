@@ -188,6 +188,22 @@ const NAV_LINKS_CONFIG = [
 	{
 		id: uuid(),
 		type: 'group',
+		title: 'Dokumen',
+		Icon: DescriptionOutlinedIcon,
+		menuMinWidth: 240,
+		menuChildren: [
+			{
+				id: uuid(),
+				type: 'item',
+				title: 'Lembar Pengiriman',
+				Icon: LocalShippingOutlinedIcon,
+				href: '/dokumen/lembar-pengiriman',
+			},
+		],
+	},
+	{
+		id: uuid(),
+		type: 'group',
 		title: 'Pengaturan',
 		Icon: SettingsApplicationsOutlinedIcon,
 		menuMinWidth: 260,

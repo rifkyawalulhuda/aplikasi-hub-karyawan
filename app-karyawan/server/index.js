@@ -42,6 +42,7 @@ import sitesRouter from './routes/sites.js';
 import b3WasteRecordsRouter from './routes/b3WasteRecords.js';
 import b3WasteTypesRouter from './routes/b3WasteTypes.js';
 import dashboardRouter from './routes/dashboard.js';
+import deliverySlipsRouter from './routes/deliverySlips.js';
 import emailNotificationSettingsRouter from './routes/emailNotificationSettings.js';
 import { initExpiryNotificationJob } from './jobs/expiryNotificationJob.js';
 import { findMissingProductionEnv, resolveTrustProxy } from './lib/httpConfig.js';
@@ -232,6 +233,7 @@ app.use('/api/data-karyawan/license-certifications', requireAdminAuth, requireWr
 app.use('/api/data-unit/license-certifications', requireAdminAuth, requireWriteRole, unitLicenseCertificationsRouter);
 app.use('/api/b3-waste/records', requireAdminAuth, requireWriteRole, b3WasteRecordsRouter);
 app.use('/api/b3-waste/types', requireAdminAuth, requireWriteRole, b3WasteTypesRouter);
+app.use('/api/dokumen/lembar-pengiriman', requireAdminAuth, requireWriteRole, deliverySlipsRouter);
 app.use('/api/admin/email-notification-settings', requireAdminAuth, requireWriteRole, emailNotificationSettingsRouter);
 
 // Initialize cron jobs

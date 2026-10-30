@@ -87,6 +87,7 @@ model MasterSite {
   emailWorkflowFailureLogs      EmailWorkflowFailureLog[]
   profile                       SiteProfile?
   b3NeracaPeriods               B3WasteNeracaPeriod[]
+  deliverySlips                 DeliverySlip[]
 
   @@map("master_sites")
 }
@@ -957,4 +958,58 @@ enum EmployeeSelfServiceChangeType {
 enum TrainingType {
   INTERNAL
   EXTERNAL
+}
+
+model DeliverySlip {
+  id                           Int                @id @default(autoincrement())
+  slipNumber                   String             @db.VarChar(100)
+  slipDate                     DateTime           @db.Date
+  recipientName                String             @db.VarChar(255)
+  recipientAddress             String?
+  recipientAttention           String?            @db.VarChar(255)
+  recipientPosition            String?            @db.VarChar(255)
+  senderCompany                String?            @db.VarChar(255)
+  senderName                   String             @db.VarChar(255)
+  senderPosition               String?            @db.VarChar(255)
+  senderAddress                String?
+  senderEmployeeId             Int?
+  slipTypes                    String[]           @default([])
+  slipTypeOther                String?            @db.VarChar(255)
+  documentConfidentiality      String?            @db.VarChar(50)
+  documentConfidentialityOther String?            @db.VarChar(255)
+  goodsTypes                   String[]           @default([])
+  goodsTypeOther               String?            @db.VarChar(255)
+  handlingTypes                String[]           @default([])
+  handlingTypeOther            String?            @db.VarChar(255)
+  purposes                     String[]           @default([])
+  purposeOther                 String?            @db.VarChar(255)
+  confirmationMode             String?            @db.VarChar(50)
+  confirmationEmail            String?
+  returnAddress                String?
+  senderDate                   DateTime?          @db.Date
+  receiverName                 String?            @db.VarChar(255)
+  receiverPosition             String?            @db.VarChar(255)
+  receiverDate                 DateTime?          @db.Date
+  createdAt                    DateTime           @default(now())
+  updatedAt                    DateTime           @updatedAt
+  siteId                       Int
+  items                        DeliverySlipItem[]
+  site                         MasterSite         @relation(fields: [siteId], references: [id])
+
+  @@unique([siteId, slipNumber])
+  @@index([siteId])
+  @@index([slipDate])
+  @@map("delivery_slips")
+}
+
+model DeliverySlipItem {
+  id             Int          @id @default(autoincrement())
+  deliverySlipId Int
+  sortOrder      Int          @default(0)
+  description    String?
+  note           String?
+  deliverySlip   DeliverySlip @relation(fields: [deliverySlipId], references: [id], onDelete: Cascade)
+
+  @@index([deliverySlipId])
+  @@map("delivery_slip_items")
 }
