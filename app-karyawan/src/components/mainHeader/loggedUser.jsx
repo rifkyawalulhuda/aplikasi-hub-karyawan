@@ -11,19 +11,17 @@ import Menu from '@mui/material/Menu';
 import MenuList from '@mui/material/MenuList';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import Divider from '@mui/material/Divider';
-import IconButton from '@mui/material/IconButton';
-import Badge from '@mui/material/Badge';
+import Switch from '@mui/material/Switch';
 // Icons
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
-import CommentOutlinedIcon from '@mui/icons-material/CommentOutlined';
+import DarkModeOutlinedIcon from '@mui/icons-material/DarkModeOutlined';
+import LightModeOutlinedIcon from '@mui/icons-material/LightModeOutlined';
 
-// Components
-import NotificationsButton from './notificationButton';
-import SiteLabel from './SiteLabel';
-import ThemeModeToggle from './themeModeToggle';
 import { useAuth } from '@/contexts/authContext';
+import { useDispatch, useSelector } from '@/store';
+import { setConfigKey } from '@/store/theme';
+import { selectThemeMode } from '@/store/theme/selectors';
 
 function getInitials(name = '') {
 	return name
@@ -56,142 +54,109 @@ function LoggedUser() {
 	return (
 		<>
 			<Menu
-				elevation={26}
-				sx={{
-					'& .MuiMenuItem-root': {
-						mt: 0.5,
-					},
-				}}
+				elevation={8}
 				anchorEl={anchorEl}
-				anchorOrigin={{
-					vertical: 'bottom',
-					horizontal: 'right',
-				}}
-				transformOrigin={{
-					vertical: 'top',
-					horizontal: 'right',
-				}}
+				anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+				transformOrigin={{ vertical: 'top', horizontal: 'right' }}
 				open={Boolean(anchorEl)}
 				onClose={handleClose}
+				PaperProps={{ sx: { mt: 1, borderRadius: 2.5, minWidth: 240, border: 1, borderColor: 'border' } }}
 			>
 				<UserMenu handleClose={handleClose} user={user} onLogout={handleLogout} />
 			</Menu>
-			<Stack height="100%" direction="row" flex={1} justifyContent="flex-end" alignItems="center" spacing={1}>
-				<SiteLabel />
-				<ThemeModeToggle />
-				<NotificationsButton />
-				<IconButton size="small">
-					<Badge color="tertiary" overlap="rectangular" variant="dot">
-						<CommentOutlinedIcon color="primary" fontSize="small" />
-					</Badge>
-				</IconButton>
-				<ButtonBase
-					onClick={handleClick}
-					variant="outlined"
-					sx={{
-						ml: 1,
-						height: '100%',
-						overflow: 'hidden',
-						borderRadius: '25px',
-						transition: '.2s',
-						px: 1,
-						transitionProperty: 'background,color',
-						'&:hover': {
-							bgcolor: (theme) => alpha(theme.palette.primary.main, 0.06),
-						},
-						'&:hover .MuiSvgIcon-root': {
-							opacity: '1',
-							// transform: 'translateX(10px)',
-						},
-					}}
+			<ButtonBase
+				onClick={handleClick}
+				aria-haspopup="true"
+				aria-expanded={Boolean(anchorEl)}
+				aria-label={`Menu pengguna ${user?.name || ''}`.trim()}
+				sx={{
+					ml: 0.5,
+					p: 0.5,
+					borderRadius: '50%',
+					'&:hover': { bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08) },
+					'&:focus-visible': {
+						outline: (theme) => `2px solid ${theme.palette.primary.main}`,
+						outlineOffset: 2,
+					},
+				}}
+			>
+				<Avatar
+					alt={user?.name || 'User'}
+					sx={{ width: 34, height: 34, bgcolor: 'primary.main', fontSize: '0.78rem', fontWeight: 600 }}
 				>
-					<Stack width="100%" direction="row" justifyContent="space-between" alignItems="center" spacing={1}>
-						<Avatar
-							alt={user?.name || 'User'}
-							sx={{
-								width: 35,
-								height: 35,
-								boxShadow: (theme) =>
-									`0px 0px 0px 4px ${theme.palette.background.paper} ,0px 0px 0px 5px ${theme.palette.primary.main} `,
-							}}
-						>
-							{getInitials(user?.name)}
-						</Avatar>
-						<Typography
-							variant="body2"
-							display={{
-								xs: 'none',
-								sm: 'inline-block',
-							}}
-						>
-							{user?.name || '-'}
-						</Typography>
-						<ExpandMoreIcon
-							fontSize="small"
-							sx={{
-								transition: '0.2s',
-								opacity: '0',
-							}}
-						/>
-					</Stack>
-				</ButtonBase>
-			</Stack>
+					{getInitials(user?.name)}
+				</Avatar>
+			</ButtonBase>
 		</>
 	);
 }
 
 function UserMenu({ handleClose, user, onLogout }) {
+	const dispatch = useDispatch();
+	const mode = useSelector(selectThemeMode);
+	const isDarkMode = mode === 'dark';
+
+	const handleToggleTheme = () => {
+		dispatch(setConfigKey({ key: 'mode', value: isDarkMode ? 'light' : 'dark' }));
+	};
+
 	return (
-		<MenuList
-			sx={{
-				p: 1,
-				'& .MuiMenuItem-root': {
-					borderRadius: 2,
-				},
-			}}
-		>
-			<Stack px={3}>
-				<Typography variant="subtitle1" textAlign="center">
+		<MenuList sx={{ p: 1, '& .MuiMenuItem-root': { borderRadius: 2 } }}>
+			<Stack px={1.5} pb={0.5}>
+				<Typography variant="subtitle1" fontWeight={600} noWrap>
 					{user?.name || '-'}
 				</Typography>
-				<Typography variant="subtitle2" textAlign="center" color="text.secondary">
+				<Typography variant="subtitle2" color="text.secondary" noWrap>
 					{user?.role || '-'}
 				</Typography>
-				<Typography variant="caption" textAlign="center" color="text.secondary">
+				<Typography variant="caption" color="text.secondary" noWrap>
 					NIK: {user?.nik || '-'}
 				</Typography>
 			</Stack>
-			<Divider
-				sx={{
-					borderColor: 'primary.light',
-					my: 1,
-				}}
-			/>
+			<Divider sx={{ my: 0.75 }} />
+			<MenuItem onClick={handleToggleTheme} sx={{ gap: 1 }}>
+				<ListItemIcon sx={{ minWidth: 28 }}>
+					{isDarkMode ? (
+						<LightModeOutlinedIcon fontSize="small" />
+					) : (
+						<DarkModeOutlinedIcon fontSize="small" />
+					)}
+				</ListItemIcon>
+				<Typography variant="body2" sx={{ flex: 1 }}>
+					Mode gelap
+				</Typography>
+				<Switch
+					size="small"
+					checked={isDarkMode}
+					tabIndex={-1}
+					inputProps={{ 'aria-label': 'Aktifkan mode gelap', tabIndex: -1 }}
+					sx={{ pointerEvents: 'none' }}
+				/>
+			</MenuItem>
 			<MenuItem
 				component="a"
 				href="https://rifkyawalulhuda.github.io/aplikasi-hub-karyawan/"
 				target="_blank"
 				rel="noopener noreferrer"
 				onClick={handleClose}
+				sx={{ gap: 1 }}
 			>
-				<ListItemIcon>
+				<ListItemIcon sx={{ minWidth: 28 }}>
 					<MenuBookOutlinedIcon fontSize="small" />
 				</ListItemIcon>
-				Dokumentasi
+				<Typography variant="body2">Dokumentasi</Typography>
 			</MenuItem>
-			<Divider
-				sx={{
-					borderColor: 'primary.light',
-					my: 1,
-				}}
-			/>
-			<MenuItem onClick={onLogout}>
-				<ListItemIcon>
+			<Divider sx={{ my: 0.75 }} />
+			<MenuItem onClick={onLogout} sx={{ gap: 1, color: 'error.main' }}>
+				<ListItemIcon sx={{ minWidth: 28 }}>
 					<ExitToAppIcon fontSize="small" />
 				</ListItemIcon>
-				Logout
+				<Typography variant="body2" color="inherit">
+					Logout
+				</Typography>
 			</MenuItem>
 		</MenuList>
 	);
 }
+
 export default LoggedUser;

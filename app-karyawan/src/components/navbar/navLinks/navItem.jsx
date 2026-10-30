@@ -1,4 +1,4 @@
-import { Link as RouterLink, useMatch } from 'react-router-dom';
+import { Link as RouterLink, useLocation } from 'react-router-dom';
 import { alpha } from '@mui/material/styles';
 // MUI
 import Typography from '@mui/material/Typography';
@@ -7,54 +7,53 @@ import ButtonBase from '@mui/material/ButtonBase';
 // Icons
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
-export function NavItem({ Icon, title, showExpand = false, selected = false, expanded = false }) {
+import { isNavItemActive } from '@/utils/navigation';
+
+export const navAccent = (theme) =>
+	theme.palette.mode === 'dark' ? theme.palette.primary[200] : theme.palette.primary.main;
+
+export const navAccentSoft = (theme) => alpha(navAccent(theme), theme.palette.mode === 'dark' ? 0.2 : 0.08);
+
+export function NavItem({ Icon, title, showExpand = false, selected = false, expanded = false, label }) {
+	const showIcon = Boolean(Icon);
+
 	return (
 		<Stack
 			width="100%"
 			direction="row"
-			px={1.5}
-			py={1.5}
+			px={1.75}
 			alignItems="center"
-			alignContent="center"
 			justifyContent="center"
 			spacing={0.75}
-			title={title}
-			sx={{
-				borderLeft: 1,
-				borderTop: 1,
-				borderBottom: 0,
-				borderRight: 0,
-				borderColor: 'border',
-				borderLeftWidth: { xs: 0, md: 1 },
-				borderTopWidth: { xs: 0, md: 1 },
-			}}
+			title={label || title}
+			sx={{ height: '100%' }}
 		>
-			{Icon && (
+			{showIcon && (
 				<Icon
 					sx={{
-						fontSize: 17,
-						color: (theme) => (selected ? theme.palette.primary.contrastText : theme.palette.primary[300]),
+						fontSize: 18,
+						display: { xs: 'inline-flex', lg: 'none' },
+						color: (theme) => (selected ? navAccent(theme) : theme.palette.text.tertiary),
 					}}
 				/>
 			)}
 			<Typography
-				pt={0.2}
-				display={{ xs: 'none', md: 'inline' }}
-				textTransform="uppercase"
-				fontWeight="500"
-				fontSize="12.5px"
-				letterSpacing={0.2}
-				color={selected ? 'primary.contrastText' : 'text.tertiary'}
+				noWrap
+				display={{ xs: 'none', lg: 'block' }}
+				fontWeight={selected ? 600 : 500}
+				fontSize="0.84rem"
+				letterSpacing={0}
+				color="inherit"
 			>
 				{title}
 			</Typography>
 			{showExpand && (
 				<ExpandMoreIcon
-					fontSize="small"
 					sx={{
-						color: selected ? 'primary.contrastText' : 'text.secondary',
+						display: { xs: 'none', lg: 'block' },
 						fontSize: 17,
-						transition: 'transform 200ms ease',
+						opacity: 0.75,
+						transition: 'transform 180ms ease',
 						transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
 					}}
 				/>
@@ -67,20 +66,39 @@ export function NavItemButton({ children, selected, sx, ...rest }) {
 	return (
 		<ButtonBase
 			sx={{
-				flexGrow: { xs: 1, md: 0 },
-				flexShrink: { xs: 0, md: 1 },
-				minWidth: { xs: '50%', sm: '50%', md: 0 },
+				position: 'relative',
+				flexGrow: { xs: 1, lg: 0 },
+				flexShrink: 0,
+				height: 44,
+				minWidth: { xs: 52, lg: 'auto' },
+				borderRadius: 1.5,
+				color: (theme) => (selected ? navAccent(theme) : theme.palette.text.tertiary),
+				transition: 'color 150ms ease, background-color 150ms ease',
 				cursor: 'pointer',
-				...(selected && {
-					backgroundImage: (theme) =>
-						`linear-gradient(90deg, ${theme.palette.primary[300]} 0%, ${theme.palette.primary.dark} 100%)`,
-				}),
+				'&::after': {
+					content: '""',
+					position: 'absolute',
+					left: 14,
+					right: 14,
+					bottom: 0,
+					height: 2,
+					borderRadius: 1,
+					bgcolor: (theme) => navAccent(theme),
+					opacity: selected ? 1 : 0,
+					transform: selected ? 'scaleX(1)' : 'scaleX(0.4)',
+					transition: 'opacity 150ms ease, transform 150ms ease',
+				},
 				'&:hover': {
-					bgcolor: (theme) => alpha(theme.palette.primary.light, 0.1),
+					bgcolor: (theme) => navAccentSoft(theme),
+					color: (theme) => navAccent(theme),
+				},
+				'&:hover::after': {
+					opacity: selected ? 1 : 0.35,
+					transform: 'scaleX(1)',
 				},
 				'&:focus-visible': {
-					outline: (theme) => `2px solid ${theme.palette.primary.main}`,
-					outlineOffset: -2,
+					outline: (theme) => `2px solid ${navAccent(theme)}`,
+					outlineOffset: 2,
 				},
 				...sx,
 			}}
@@ -91,12 +109,18 @@ export function NavItemButton({ children, selected, sx, ...rest }) {
 	);
 }
 
-export function NavLink({ href, Icon, title }) {
-	const match = useMatch({ path: href });
+export function NavLink({ href, Icon, title, matchPaths }) {
+	const { pathname } = useLocation();
+	const selected = isNavItemActive({ href, matchPaths }, pathname);
 
 	return (
-		<NavItemButton selected={match} component={RouterLink} to={href}>
-			<NavItem Icon={Icon} title={title} selected={match} />
+		<NavItemButton
+			component={RouterLink}
+			to={href}
+			selected={selected}
+			aria-current={selected ? 'page' : undefined}
+		>
+			<NavItem Icon={Icon} title={title} selected={selected} />
 		</NavItemButton>
 	);
 }

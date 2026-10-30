@@ -13,7 +13,6 @@ import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined';
 
 import DashboardOutlinedIcon from '@mui/icons-material/DashboardOutlined';
 import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
-import BalanceOutlinedIcon from '@mui/icons-material/BalanceOutlined';
 
 /**
  * @example
@@ -21,10 +20,12 @@ import BalanceOutlinedIcon from '@mui/icons-material/BalanceOutlined';
  *	id: number,
  *	type: "group" | "item",
  *	title: string,
- *	Icon: NodeElement
- *	menuChildren?: {title: string, href: string}[]
- *  menuMinWidth?: number
+ *	Icon: NodeElement,
+ *	menuChildren?: {title: string, href: string, section?: string, description?: string}[]
  * }
+ *
+ * Every destination lives at depth 2 (tab -> page). `section` groups
+ * children into columns inside the mega-menu.
  */
 
 const NAV_LINKS_CONFIG = [
@@ -40,12 +41,13 @@ const NAV_LINKS_CONFIG = [
 		type: 'group',
 		title: 'Data Master',
 		Icon: SettingsApplicationsOutlinedIcon,
-		menuMinWidth: 220,
 		menuChildren: [
 			{
 				id: uuid(),
 				type: 'item',
 				title: 'Master Data Karyawan',
+				section: 'Karyawan & Akses',
+				description: 'Data induk seluruh karyawan',
 				Icon: BadgeOutlinedIcon,
 				href: '/data-master/master-data-karyawan/employees',
 			},
@@ -53,6 +55,8 @@ const NAV_LINKS_CONFIG = [
 				id: uuid(),
 				type: 'item',
 				title: 'Master Admin',
+				section: 'Karyawan & Akses',
+				description: 'Akun dan hak akses admin',
 				Icon: BadgeOutlinedIcon,
 				href: '/data-master/master-data-karyawan/admins',
 			},
@@ -60,36 +64,36 @@ const NAV_LINKS_CONFIG = [
 				id: uuid(),
 				type: 'item',
 				title: 'Site Approval Config',
+				section: 'Karyawan & Akses',
+				description: 'Alur persetujuan per site',
 				Icon: SettingsApplicationsOutlinedIcon,
 				href: '/data-master/master-data-karyawan/site-approval-config',
 				roles: ['super_admin'],
 			},
 			{
 				id: uuid(),
-				type: 'group',
-				title: 'Master Data Unit',
+				type: 'item',
+				title: 'Master Unit',
+				section: 'Unit & Vendor',
+				description: 'Data unit dan armada',
 				Icon: LocalShippingOutlinedIcon,
-				menuChildren: [
-					{
-						id: uuid(),
-						type: 'item',
-						title: 'Master Unit',
-						Icon: LocalShippingOutlinedIcon,
-						href: '/data-master/master-data-unit/master-unit',
-					},
-					{
-						id: uuid(),
-						type: 'item',
-						title: 'Master Vendor',
-						Icon: BusinessOutlinedIcon,
-						href: '/data-master/master-data-unit/master-vendor',
-					},
-				],
+				href: '/data-master/master-data-unit/master-unit',
+			},
+			{
+				id: uuid(),
+				type: 'item',
+				title: 'Master Vendor',
+				section: 'Unit & Vendor',
+				description: 'Data vendor rekanan',
+				Icon: BusinessOutlinedIcon,
+				href: '/data-master/master-data-unit/master-vendor',
 			},
 			{
 				id: uuid(),
 				type: 'item',
 				title: 'Master Data Dokumen',
+				section: 'Dokumen',
+				description: 'Master dokumen PKB',
 				Icon: DescriptionOutlinedIcon,
 				href: '/data-master/master-data-dokumen/master-dok-pkb',
 			},
@@ -100,12 +104,13 @@ const NAV_LINKS_CONFIG = [
 		type: 'group',
 		title: 'Data Karyawan',
 		Icon: PeopleAltOutlinedIcon,
-		menuMinWidth: 240,
 		menuChildren: [
 			{
 				id: uuid(),
 				type: 'item',
 				title: 'Detail Karyawan',
+				section: 'Profil',
+				description: 'Profil dan riwayat karyawan',
 				Icon: PeopleAltOutlinedIcon,
 				href: '/data-karyawan/detail-karyawan',
 			},
@@ -113,6 +118,8 @@ const NAV_LINKS_CONFIG = [
 				id: uuid(),
 				type: 'item',
 				title: 'Bimbingan & Pengarahan',
+				section: 'Pembinaan',
+				description: 'Catatan bimbingan atasan',
 				Icon: FeedOutlinedIcon,
 				href: '/data-karyawan/bimbingan-pengarahan',
 			},
@@ -120,6 +127,8 @@ const NAV_LINKS_CONFIG = [
 				id: uuid(),
 				type: 'item',
 				title: 'Data Surat Peringatan',
+				section: 'Pembinaan',
+				description: 'SP1 sampai SP3',
 				Icon: ReportGmailerrorredOutlinedIcon,
 				href: '/data-karyawan/data-surat-peringatan',
 			},
@@ -127,6 +136,8 @@ const NAV_LINKS_CONFIG = [
 				id: uuid(),
 				type: 'item',
 				title: 'Lisensi & Sertifikasi',
+				section: 'Kompetensi',
+				description: 'Lisensi dan sertifikat karyawan',
 				Icon: DescriptionOutlinedIcon,
 				href: '/data-karyawan/lisensi-sertifikasi',
 			},
@@ -134,6 +145,8 @@ const NAV_LINKS_CONFIG = [
 				id: uuid(),
 				type: 'item',
 				title: 'Pelatihan Karyawan',
+				section: 'Kompetensi',
+				description: 'Riwayat pelatihan',
 				Icon: CastForEducationOutlinedIcon,
 				href: '/data-karyawan/pelatihan-karyawan',
 			},
@@ -141,6 +154,8 @@ const NAV_LINKS_CONFIG = [
 				id: uuid(),
 				type: 'item',
 				title: 'Cuti Karyawan',
+				section: 'Kehadiran',
+				description: 'Pengajuan dan riwayat cuti',
 				Icon: DescriptionOutlinedIcon,
 				href: '/data-karyawan/cuti-karyawan',
 			},
@@ -149,39 +164,27 @@ const NAV_LINKS_CONFIG = [
 	{
 		id: uuid(),
 		type: 'group',
-		title: 'Data Unit',
+		title: 'Operasional',
 		Icon: LocalShippingOutlinedIcon,
-		menuMinWidth: 260,
 		menuChildren: [
 			{
 				id: uuid(),
 				type: 'item',
 				title: 'Lisensi & Sertifikasi Unit',
+				section: 'Unit',
+				description: 'Legalitas unit dan armada',
 				Icon: DescriptionOutlinedIcon,
 				href: '/data-unit/lisensi-sertifikasi-unit',
 			},
-		],
-	},
-	{
-		id: uuid(),
-		type: 'group',
-		title: 'Limbah B3',
-		Icon: ScienceOutlinedIcon,
-		menuMinWidth: 260,
-		menuChildren: [
 			{
 				id: uuid(),
 				type: 'item',
-				title: 'Pencatatan Limbah B3',
+				title: 'Limbah B3',
+				section: 'Limbah B3',
+				description: 'Pencatatan dan neraca limbah B3',
 				Icon: ScienceOutlinedIcon,
 				href: '/limbah-b3/pencatatan',
-			},
-			{
-				id: uuid(),
-				type: 'item',
-				title: 'Neraca Limbah B3',
-				Icon: BalanceOutlinedIcon,
-				href: '/limbah-b3/neraca',
+				matchPaths: ['/limbah-b3/neraca'],
 			},
 		],
 	},
@@ -189,29 +192,24 @@ const NAV_LINKS_CONFIG = [
 		id: uuid(),
 		type: 'group',
 		title: 'Dokumen',
+		fullTitle: 'Dokumen & Pengaturan',
 		Icon: DescriptionOutlinedIcon,
-		menuMinWidth: 240,
 		menuChildren: [
 			{
 				id: uuid(),
 				type: 'item',
 				title: 'Lembar Pengiriman',
+				section: 'Dokumen',
+				description: 'Surat jalan dan bukti kirim',
 				Icon: LocalShippingOutlinedIcon,
 				href: '/dokumen/lembar-pengiriman',
 			},
-		],
-	},
-	{
-		id: uuid(),
-		type: 'group',
-		title: 'Pengaturan',
-		Icon: SettingsApplicationsOutlinedIcon,
-		menuMinWidth: 260,
-		menuChildren: [
 			{
 				id: uuid(),
 				type: 'item',
 				title: 'Pengaturan Email',
+				section: 'Pengaturan',
+				description: 'Notifikasi dan template email',
 				Icon: EmailOutlinedIcon,
 				href: '/pengaturan/email-notifikasi',
 			},

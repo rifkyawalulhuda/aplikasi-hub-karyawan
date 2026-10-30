@@ -79,7 +79,7 @@ function generateTahunOptions() {
 	return options;
 }
 
-function NeracaLimbahB3() {
+function NeracaLimbahB3({ hideHeader = false }) {
 	const { enqueueSnackbar } = useSnackbar();
 	const { currentSiteId } = useSite();
 
@@ -211,15 +211,16 @@ function NeracaLimbahB3() {
 
 	return (
 		<>
-			<PageHeader>
-				<Breadcrumbs aria-label="breadcrumb">
-					<Link underline="hover" color="inherit" href="/limbah-b3/pencatatan">
-						LIMBAH B3
-					</Link>
-					<Typography color="text.primary">NERACA LIMBAH B3</Typography>
-				</Breadcrumbs>
-			</PageHeader>
-
+			{!hideHeader && (
+				<PageHeader>
+					<Breadcrumbs aria-label="breadcrumb">
+						<Link underline="hover" color="inherit" href="/limbah-b3/pencatatan">
+							LIMBAH B3
+						</Link>
+						<Typography color="text.primary">NERACA LIMBAH B3</Typography>
+					</Breadcrumbs>
+				</PageHeader>
+			)}
 			<Card sx={{ p: 0 }}>
 				<CardHeader title="NERACA LIMBAH B3" subtitle="Neraca limbah B3 per triwulan sesuai format KLHK" />
 

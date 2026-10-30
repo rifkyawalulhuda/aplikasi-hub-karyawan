@@ -61,11 +61,8 @@ const EmailNotificationSettingsPage = withLazyLoadably(
 const MasterDataKaryawanCombinedPage = withLazyLoadably(
 	lazy(() => import('@/pages/masterData/masterDataKaryawanCombined')),
 );
-const PencatatanLimbahB3Page = withLazyLoadably(
-	lazy(() => import('@/pages/employeeData/pencatatanLimbahB3/PencatatanLimbahB3')),
-);
-const NeracaLimbahB3Page = withLazyLoadably(
-	lazy(() => import('@/pages/employeeData/pencatatanLimbahB3/NeracaLimbahB3')),
+const LimbahB3CombinedPage = withLazyLoadably(
+	lazy(() => import('@/pages/employeeData/pencatatanLimbahB3/LimbahB3Combined')),
 );
 const NeracaLimbahB3PrintPage = withLazyLoadably(
 	lazy(() => import('@/pages/employeeData/pencatatanLimbahB3/NeracaLimbahB3Print')),
@@ -192,8 +189,8 @@ function Router() {
 							<Route path="notifikasi" element={<AdminNotificationsPage />} />
 							<Route path="data-karyawan/cuti-karyawan" element={<LeaveCombinedPage />} />
 							<Route path="data-karyawan/cuti-karyawan/flow" element={<LeaveCombinedPage />} />
-							<Route path="limbah-b3/pencatatan" element={<PencatatanLimbahB3Page />} />
-							<Route path="limbah-b3/neraca" element={<NeracaLimbahB3Page />} />
+							<Route path="limbah-b3/pencatatan" element={<LimbahB3CombinedPage />} />
+							<Route path="limbah-b3/neraca" element={<LimbahB3CombinedPage />} />
 							<Route path="dokumen/lembar-pengiriman" element={<LembarPengirimanPage />} />
 							<Route
 								path="data-unit/lisensi-sertifikasi-unit"

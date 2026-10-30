@@ -1,228 +1,238 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
 // MUI
-import Menu from '@mui/material/Menu';
-import MenuItem from '@mui/material/MenuItem';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import Divider from '@mui/material/Divider';
-import Collapse from '@mui/material/Collapse';
-import List from '@mui/material/List';
-import ListItemButton from '@mui/material/ListItemButton';
-import ListItemText from '@mui/material/ListItemText';
-// Icons
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import Popover from '@mui/material/Popover';
+import Box from '@mui/material/Box';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
+import ButtonBase from '@mui/material/ButtonBase';
 
-import { NavItem, NavItemButton } from './navItem';
+import { NavItem, NavItemButton, navAccent, navAccentSoft } from './navItem';
+import { isGroupActive, isNavItemActive } from '@/utils/navigation';
 
-/**
- * Recursively checks if any href in `items` matches the current `pathname`.
- */
-const deepMatch = ({ items, pathname }) =>
-	items.some((el) => {
-		if (el?.type === 'group') {
-			return deepMatch({ items: el?.menuChildren ?? [], pathname });
+const MAX_COLUMNS = 3;
+
+function groupBySection(menuChildren) {
+	const sections = new Map();
+
+	menuChildren.forEach((item) => {
+		const key = item.section || 'Lainnya';
+
+		if (!sections.has(key)) {
+			sections.set(key, []);
 		}
-		return el?.href && pathname.includes(el.href);
+		sections.get(key).push(item);
 	});
 
-/**
- * A nested group rendered as an accordion-style collapsible block
- * inside the top-level dropdown Menu.
- */
-function MenuGroup({ title, Icon, menuChildren, level = 0 }) {
-	const [open, setOpen] = useState(false);
-	const location = useLocation();
-	const pathname = location.pathname + location.hash;
-	const isActive = deepMatch({ items: menuChildren, pathname });
-
-	const handleToggle = useCallback((e) => {
-		e.stopPropagation();
-		setOpen((prev) => !prev);
-	}, []);
-
-	// Auto-open group if a child is active
-	useEffect(() => {
-		if (isActive) setOpen(true);
-	}, [isActive]);
-
-	return (
-		<>
-			<ListItemButton
-				onClick={handleToggle}
-				dense
-				sx={{
-					borderRadius: 1.5,
-					mx: 0.5,
-					px: 1.5,
-					py: 0.75,
-					gap: 1,
-					color: isActive ? 'primary.main' : 'text.primary',
-					fontWeight: isActive ? 600 : 400,
-					pl: level > 0 ? 2 + level * 1.5 : 1.5,
-				}}
-			>
-				{Icon && (
-					<ListItemIcon sx={{ minWidth: 28 }}>
-						<Icon sx={{ fontSize: 18, color: isActive ? 'primary.main' : 'text.secondary' }} />
-					</ListItemIcon>
-				)}
-				<ListItemText
-					primary={title}
-					primaryTypographyProps={{
-						fontSize: 13,
-						fontWeight: isActive ? 600 : 500,
-					}}
-				/>
-				{open ? (
-					<ExpandLessIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-				) : (
-					<ExpandMoreIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-				)}
-			</ListItemButton>
-			<Collapse in={open} unmountOnExit>
-				<List disablePadding>
-					{menuChildren.map((child, i) => {
-						if (child.type === 'group') {
-							return (
-								<MenuGroup
-									key={child.id ?? i}
-									title={child.title}
-									Icon={child.Icon}
-									menuChildren={child.menuChildren ?? []}
-									level={level + 1}
-								/>
-							);
-						}
-						return (
-							<MenuLeafItem
-								key={child.id ?? i}
-								href={child.href}
-								title={child.title}
-								Icon={child.Icon}
-								level={level + 1}
-							/>
-						);
-					})}
-				</List>
-			</Collapse>
-		</>
-	);
+	return Array.from(sections, ([name, items]) => ({ name, items }));
 }
 
-/**
- * A single leaf item inside the dropdown Menu.
- */
-function MenuLeafItem({ href, title, Icon, level = 0 }) {
-	const location = useLocation();
-	const pathname = location.pathname + location.hash;
-	const isActive = href && pathname.includes(href);
+function MegaMenuItem({ item, active, onSelect }) {
+	const ItemIcon = item.Icon;
 
 	return (
-		<MenuItem
+		<ButtonBase
 			component={RouterLink}
-			to={href}
-			selected={Boolean(isActive)}
-			dense
+			to={item.href}
+			onClick={onSelect}
+			data-mega-item
+			aria-current={active ? 'page' : undefined}
 			sx={{
+				display: 'flex',
+				alignItems: 'flex-start',
+				gap: 1.25,
+				width: '100%',
+				px: 1.5,
+				py: 1,
 				borderRadius: 1.5,
-				mx: 0.5,
-				fontSize: 13,
-				pl: level > 0 ? 1.5 + level * 1.5 : 1.5,
-				gap: 1,
-				color: isActive ? 'primary.main' : 'text.primary',
-				fontWeight: isActive ? 600 : 400,
-				'&.Mui-selected': {
-					bgcolor: 'primary.50',
-					'&:hover': { bgcolor: 'primary.100' },
+				textAlign: 'left',
+				color: (theme) => (active ? navAccent(theme) : theme.palette.text.primary),
+				bgcolor: (theme) => (active ? navAccentSoft(theme) : 'transparent'),
+				transition: 'background-color 120ms ease',
+				'&:hover': { bgcolor: (theme) => navAccentSoft(theme) },
+				'&:focus-visible': {
+					outline: (theme) => `2px solid ${navAccent(theme)}`,
+					outlineOffset: -2,
 				},
 			}}
 		>
-			{Icon && (
-				<ListItemIcon sx={{ minWidth: 28 }}>
-					<Icon sx={{ fontSize: 18, color: isActive ? 'primary.main' : 'text.secondary' }} />
-				</ListItemIcon>
+			{ItemIcon && (
+				<Box sx={{ display: 'flex', pt: 0.25 }}>
+					<ItemIcon
+						sx={{
+							fontSize: 20,
+							color: (theme) => (active ? navAccent(theme) : theme.palette.text.tertiary),
+						}}
+					/>
+				</Box>
 			)}
-			{title}
-		</MenuItem>
+			<Box sx={{ minWidth: 0 }}>
+				<Typography
+					component="span"
+					display="block"
+					fontSize="0.84rem"
+					fontWeight={active ? 600 : 500}
+					lineHeight={1.35}
+				>
+					{item.title}
+				</Typography>
+				{item.description && (
+					<Typography
+						component="span"
+						display="block"
+						fontSize="0.72rem"
+						color="text.secondary"
+						lineHeight={1.4}
+						mt={0.25}
+					>
+						{item.description}
+					</Typography>
+				)}
+			</Box>
+		</ButtonBase>
 	);
 }
 
-/**
- * Top-level nav group button with a MUI Menu dropdown.
- * - Opens on click (not hover) for reliable touch + mouse support.
- * - Closes on outside click, Escape key, or item selection.
- * - Renders via portal (no clipping from AppBar overflow).
- * - Full keyboard navigation via MUI Menu.
- */
-function NavMenu({ minWidth = 220, menuChildren = [], Icon, title }) {
+function NavMenu({ menuChildren = [], Icon, title, fullTitle }) {
 	const [anchorEl, setAnchorEl] = useState(null);
+	const paperRef = useRef(null);
+	const { pathname } = useLocation();
 	const open = Boolean(anchorEl);
-	const location = useLocation();
-	const pathname = location.pathname + location.hash;
-	const isActive = deepMatch({ items: menuChildren, pathname });
+	const active = isGroupActive(menuChildren, pathname);
+	const sections = useMemo(() => groupBySection(menuChildren), [menuChildren]);
+	const columns = Math.max(1, Math.min(sections.length, MAX_COLUMNS));
+	const accessibleTitle = fullTitle || title;
 
-	const handleOpen = useCallback((e) => {
-		setAnchorEl(e.currentTarget);
+	const handleOpen = useCallback((event) => {
+		setAnchorEl(event.currentTarget);
 	}, []);
 
 	const handleClose = useCallback(() => {
 		setAnchorEl(null);
 	}, []);
 
-	// Close dropdown on route change
 	useEffect(() => {
 		handleClose();
-	}, [location, handleClose]);
+	}, [pathname, handleClose]);
+
+	const focusFirstItem = useCallback(() => {
+		const firstItem = paperRef.current?.querySelector('[data-mega-item]');
+		firstItem?.focus({ preventScroll: true });
+	}, []);
+
+	const handleKeyDown = useCallback((event) => {
+		const nodes = Array.from(event.currentTarget.querySelectorAll('[data-mega-item]'));
+
+		if (nodes.length === 0) {
+			return;
+		}
+
+		const currentIndex = nodes.indexOf(document.activeElement);
+		const { key } = event;
+
+		if (key === 'ArrowDown' || key === 'ArrowRight') {
+			event.preventDefault();
+			nodes[(currentIndex + 1) % nodes.length]?.focus();
+			return;
+		}
+
+		if (key === 'ArrowUp' || key === 'ArrowLeft') {
+			event.preventDefault();
+			nodes[(currentIndex - 1 + nodes.length) % nodes.length]?.focus();
+			return;
+		}
+
+		if (key === 'Home') {
+			event.preventDefault();
+			nodes[0]?.focus();
+			return;
+		}
+
+		if (key === 'End') {
+			event.preventDefault();
+			nodes[nodes.length - 1]?.focus();
+		}
+	}, []);
 
 	return (
 		<>
 			<NavItemButton
-				selected={isActive}
+				selected={active}
 				onClick={handleOpen}
 				aria-haspopup="true"
 				aria-expanded={open}
 				aria-controls={open ? `nav-menu-${title}` : undefined}
+				aria-label={accessibleTitle}
+				aria-current={active ? 'true' : undefined}
 			>
-				<NavItem showExpand Icon={Icon} title={title} selected={isActive} expanded={open} />
+				<NavItem
+					showExpand
+					Icon={Icon}
+					title={title}
+					selected={active}
+					expanded={open}
+					label={accessibleTitle}
+				/>
 			</NavItemButton>
 
-			<Menu
+			<Popover
 				id={`nav-menu-${title}`}
-				anchorEl={anchorEl}
 				open={open}
+				anchorEl={anchorEl}
 				onClose={handleClose}
-				onClick={handleClose}
-				disablePortal={false}
-				elevation={4}
-				transformOrigin={{ horizontal: 'left', vertical: 'top' }}
-				anchorOrigin={{ horizontal: 'left', vertical: 'bottom' }}
-				slotProps={{
-					paper: {
-						sx: {
-							minWidth,
-							mt: 0.5,
-							borderRadius: 2,
-							border: '1px solid',
-							borderColor: 'divider',
-							'& .MuiList-root': { py: 0.5 },
-						},
+				anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+				transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+				TransitionProps={{ onEntered: focusFirstItem }}
+				ModalProps={{ disableAutoFocus: true }}
+				PaperProps={{
+					sx: {
+						mt: 1,
+						p: 1,
+						borderRadius: 2.5,
+						border: '1px solid',
+						borderColor: 'border',
+						boxShadow: '0px 16px 40px rgba(15, 23, 42, 0.14)',
+						maxWidth: 'min(92vw, 720px)',
 					},
 				}}
 			>
-				{menuChildren.map((item, i) => {
-					const isLast = i === menuChildren.length - 1;
-					if (item.type === 'group') {
-						return (
-							<span key={item.id ?? i}>
-								<MenuGroup title={item.title} Icon={item.Icon} menuChildren={item.menuChildren ?? []} />
-								{!isLast && <Divider sx={{ my: 0.5 }} />}
-							</span>
-						);
-					}
-					return <MenuLeafItem key={item.id ?? i} href={item.href} title={item.title} Icon={item.Icon} />;
-				})}
-			</Menu>
+				<Box
+					ref={paperRef}
+					onKeyDown={handleKeyDown}
+					sx={{
+						display: 'grid',
+						gridTemplateColumns: { xs: '1fr', md: `repeat(${columns}, minmax(210px, 1fr))` },
+						gap: 1,
+					}}
+				>
+					{sections.map((section) => (
+						<Stack key={section.name} spacing={0.25} sx={{ minWidth: 0 }}>
+							<Typography
+								sx={{
+									px: 1.5,
+									pt: 0.75,
+									pb: 0.5,
+									fontSize: '0.66rem',
+									fontWeight: 700,
+									letterSpacing: '0.06em',
+									textTransform: 'uppercase',
+									color: 'text.tertiary',
+								}}
+							>
+								{section.name}
+							</Typography>
+							{section.items.map((item) => (
+								<MegaMenuItem
+									key={item.id}
+									item={item}
+									active={isNavItemActive(item, pathname)}
+									onSelect={handleClose}
+								/>
+							))}
+						</Stack>
+					))}
+				</Box>
+			</Popover>
 		</>
 	);
 }

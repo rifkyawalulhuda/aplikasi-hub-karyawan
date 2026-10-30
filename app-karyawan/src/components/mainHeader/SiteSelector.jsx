@@ -48,7 +48,7 @@ function SiteSelector() {
 	if (!isSuperAdmin) return null;
 
 	return (
-		<FormControl size="small" sx={{ minWidth: 140, maxWidth: 200 }}>
+		<FormControl size="small" sx={{ minWidth: 116, maxWidth: 150 }}>
 			<Select
 				value={selectedSiteId ?? ''}
 				onChange={(e) => {
@@ -56,16 +56,21 @@ function SiteSelector() {
 					setSelectedSiteId(val === '' ? null : Number(val));
 				}}
 				displayEmpty
+				inputProps={{ 'aria-label': 'Pilih site' }}
 				startAdornment={<LocationOnOutlinedIcon fontSize="small" sx={{ mr: 0.5, color: 'primary.main' }} />}
 				sx={{
-					fontSize: '0.85rem',
+					fontSize: '0.82rem',
+					height: 40,
 					'& .MuiSelect-select': {
 						py: 0.75,
+					},
+					'& .MuiOutlinedInput-notchedOutline': {
+						borderColor: 'border',
 					},
 				}}
 			>
 				<MenuItem value="">
-					<Typography variant="body2" fontWeight={500}>
+					<Typography variant="body2" fontWeight={500} noWrap>
 						Semua Site
 					</Typography>
 				</MenuItem>
@@ -79,7 +84,9 @@ function SiteSelector() {
 				)}
 				{sites.map((site) => (
 					<MenuItem key={site.id} value={site.id}>
-						<Typography variant="body2">{site.name}</Typography>
+						<Typography variant="body2" noWrap>
+							{site.name}
+						</Typography>
 					</MenuItem>
 				))}
 			</Select>

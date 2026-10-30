@@ -6,7 +6,9 @@ import { useSite } from '@/contexts/siteContext';
 function SiteLabel() {
 	const { siteName, isSuperAdmin } = useSite();
 
-	if (isSuperAdmin || !siteName) return null;
+	if (isSuperAdmin || !siteName) {
+		return null;
+	}
 
 	return (
 		<Chip
@@ -15,7 +17,7 @@ function SiteLabel() {
 			size="small"
 			variant="outlined"
 			color="primary"
-			sx={{ fontWeight: 500 }}
+			sx={{ fontWeight: 500, maxWidth: 160, fontSize: '0.75rem' }}
 		/>
 	);
 }

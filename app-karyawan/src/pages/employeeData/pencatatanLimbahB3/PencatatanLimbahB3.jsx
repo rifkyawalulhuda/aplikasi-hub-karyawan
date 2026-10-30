@@ -58,7 +58,7 @@ const DEFAULT_PAGE_SIZE = 25;
 const DEFAULT_SORT_FIELD = 'tanggalMasuk';
 const DEFAULT_SORT_ORDER = 'desc';
 
-function PencatatanLimbahB3() {
+function PencatatanLimbahB3({ hideHeader = false }) {
 	const { enqueueSnackbar } = useSnackbar();
 	const { currentSiteId } = useSite();
 	const { user } = useAuth();
@@ -474,14 +474,16 @@ function PencatatanLimbahB3() {
 
 	return (
 		<>
-			<PageHeader title="Pencatatan Limbah B3">
-				<Breadcrumbs aria-label="breadcrumb" sx={{ textTransform: 'uppercase' }}>
-					<Link underline="hover" href="#!">
-						Limbah B3
-					</Link>
-					<Typography color="text.tertiary">Pencatatan Limbah B3</Typography>
-				</Breadcrumbs>
-			</PageHeader>
+			{!hideHeader && (
+				<PageHeader title="Pencatatan Limbah B3">
+					<Breadcrumbs aria-label="breadcrumb" sx={{ textTransform: 'uppercase' }}>
+						<Link underline="hover" href="#!">
+							Limbah B3
+						</Link>
+						<Typography color="text.tertiary">Pencatatan Limbah B3</Typography>
+					</Breadcrumbs>
+				</PageHeader>
+			)}
 			<Card sx={{ minHeight: '60vh', p: 3 }}>
 				<CardHeader
 					title="Pencatatan Limbah B3"
