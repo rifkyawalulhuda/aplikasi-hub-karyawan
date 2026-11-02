@@ -160,7 +160,7 @@ const updateWasteRecordSchema = yup.object().shape({
 
 /**
  * Normalize date string ke UTC noon untuk mencegah timezone shift
- * Input: '2026-06-20' → Output: Date('2026-06-20T12:00:00.000Z')
+ * Input: '2026-06-20' â†’ Output: Date('2026-06-20T12:00:00.000Z')
  */
 function toDateOnly(value) {
 	if (!value) return null;
@@ -253,7 +253,9 @@ router.get(
 							tanggalKeluar: true,
 							jumlahKeluar: true,
 							tujuanPenyerahan: true,
-							nomorDokumen: true,
+							nomorSuratJalan: true,
+							nomorEManifest: true,
+							nopolKendaraan: true,
 							petugasPenanggungJawab: true,
 							vendor: { select: { id: true, vendorName: true } },
 						},
@@ -465,11 +467,13 @@ const createOutRecordSchema = yup.object().shape({
 		.required('Tujuan penyerahan wajib diisi')
 		.max(200, 'Tujuan penyerahan maksimal 200 karakter'),
 	perlakuan: yup.string().oneOf(B3_WASTE_TREATMENTS, 'Perlakuan tidak valid').notRequired(),
-	nomorDokumen: yup
+	nomorSuratJalan: yup
 		.string()
 		.trim()
-		.required('Nomor dokumen wajib diisi')
-		.max(100, 'Nomor dokumen maksimal 100 karakter'),
+		.required('Nomor surat jalan wajib diisi')
+		.max(100, 'Nomor surat jalan maksimal 100 karakter'),
+	nomorEManifest: yup.string().trim().max(100, 'Nomor e-Manifest maksimal 100 karakter').nullable().notRequired(),
+	nopolKendaraan: yup.string().trim().max(20, 'Nopol kendaraan maksimal 20 karakter').nullable().notRequired(),
 	vendorId: yup.number().nullable().notRequired(),
 	petugasPenanggungJawab: yup
 		.string()
@@ -487,11 +491,13 @@ const updateOutRecordSchema = yup.object().shape({
 		.required('Tujuan penyerahan wajib diisi')
 		.max(200, 'Tujuan penyerahan maksimal 200 karakter'),
 	perlakuan: yup.string().oneOf(B3_WASTE_TREATMENTS, 'Perlakuan tidak valid').notRequired(),
-	nomorDokumen: yup
+	nomorSuratJalan: yup
 		.string()
 		.trim()
-		.required('Nomor dokumen wajib diisi')
-		.max(100, 'Nomor dokumen maksimal 100 karakter'),
+		.required('Nomor surat jalan wajib diisi')
+		.max(100, 'Nomor surat jalan maksimal 100 karakter'),
+	nomorEManifest: yup.string().trim().max(100, 'Nomor e-Manifest maksimal 100 karakter').nullable().notRequired(),
+	nopolKendaraan: yup.string().trim().max(20, 'Nopol kendaraan maksimal 20 karakter').nullable().notRequired(),
 	vendorId: yup.number().nullable().notRequired(),
 	petugasPenanggungJawab: yup
 		.string()
@@ -602,7 +608,9 @@ router.post(
 				jumlahKeluar: body.jumlahKeluar,
 				tujuanPenyerahan: body.tujuanPenyerahan,
 				perlakuan: body.perlakuan || 'DISERAHKAN_KE_PIHAK_KETIGA',
-				nomorDokumen: body.nomorDokumen,
+				nomorSuratJalan: body.nomorSuratJalan,
+				nomorEManifest: body.nomorEManifest || null,
+				nopolKendaraan: body.nopolKendaraan || null,
 				vendorId,
 				petugasPenanggungJawab: body.petugasPenanggungJawab,
 			},
@@ -691,7 +699,9 @@ router.put(
 				jumlahKeluar: body.jumlahKeluar,
 				tujuanPenyerahan: body.tujuanPenyerahan,
 				...(body.perlakuan ? { perlakuan: body.perlakuan } : {}),
-				nomorDokumen: body.nomorDokumen,
+				nomorSuratJalan: body.nomorSuratJalan,
+				nomorEManifest: body.nomorEManifest || null,
+				nopolKendaraan: body.nopolKendaraan || null,
 				vendorId,
 				petugasPenanggungJawab: body.petugasPenanggungJawab,
 			},
@@ -1335,6 +1345,125 @@ router.put(
 	}),
 );
 
+// GET /pencatatan-print — data siap cetak "Catatan Pengelolaan Limbah" (1 baris per pengiriman)
+router.get(
+	'/pencatatan-print',
+	withAsync(async (req, res) => {
+		const siteId = getSiteId(req);
+
+		if (!siteId) {
+			return res.status(403).json({ message: 'Akses ditolak. Site belum dipilih.' });
+		}
+
+		const parseDateParam = (value) => {
+			if (!value) return null;
+			const match = String(value).match(/^(\d{4})-(\d{2})-(\d{2})/);
+			if (!match) return null;
+			return new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]), 0, 0, 0));
+		};
+
+		const from = parseDateParam(req.query.from);
+		const to = parseDateParam(req.query.to);
+
+		if (req.query.from && !from) {
+			return res.status(400).json({ message: 'Parameter from tidak valid' });
+		}
+		if (req.query.to && !to) {
+			return res.status(400).json({ message: 'Parameter to tidak valid' });
+		}
+		if (from && to && from > to) {
+			return res.status(400).json({ message: 'Rentang periode tidak valid' });
+		}
+
+		const tanggalMasukFilter = {};
+		if (from) tanggalMasukFilter.gte = from;
+		if (to) tanggalMasukFilter.lte = new Date(to.getTime() + 24 * 60 * 60 * 1000 - 1);
+
+		const [site, profile, wasteTypes, records] = await Promise.all([
+			prisma.masterSite.findUnique({ where: { id: siteId }, select: { name: true } }),
+			prisma.siteProfile.findUnique({ where: { siteId } }),
+			prisma.b3WasteType.findMany({
+				where: { siteId },
+				orderBy: { kode: 'asc' },
+				select: { kode: true, nama: true },
+			}),
+			prisma.b3WasteRecord.findMany({
+				where: {
+					siteId,
+					...(from || to ? { tanggalMasuk: tanggalMasukFilter } : {}),
+				},
+				orderBy: [{ tanggalMasuk: 'asc' }, { id: 'asc' }],
+				include: {
+					jenisLimbah: { select: { id: true, kode: true, nama: true } },
+					outRecords: {
+						orderBy: [{ tanggalKeluar: 'asc' }, { id: 'asc' }],
+						include: { vendor: { select: { id: true, vendorName: true } } },
+					},
+				},
+			}),
+		]);
+
+		const rows = [];
+
+		records.forEach((record) => {
+			const jenis = record.jenisLimbah;
+
+			const base = {
+				tanggalMasuk: record.tanggalMasuk,
+				jenisLimbahKode: jenis?.kode || '',
+				jenisLimbahNama: jenis?.nama || '',
+				jumlahMasukTon: kgToTon(record.jumlahMasuk),
+			};
+
+			if (record.outRecords.length === 0) {
+				rows.push({
+					...base,
+					tanggalKeluar: null,
+					pengelola: '',
+					nopolKendaraan: '',
+					jumlahTon: base.jumlahMasukTon,
+					nomorEManifest: '',
+					nomorSuratJalan: '',
+					isFirstOfRecord: true,
+				});
+				return;
+			}
+
+			record.outRecords.forEach((out, index) => {
+				rows.push({
+					...base,
+					tanggalKeluar: out.tanggalKeluar,
+					pengelola: out.vendor?.vendorName || '',
+					nopolKendaraan: out.nopolKendaraan || '',
+					jumlahTon: kgToTon(out.jumlahKeluar),
+					nomorEManifest: out.nomorEManifest || '',
+					nomorSuratJalan: out.nomorSuratJalan || '',
+					isFirstOfRecord: index === 0,
+				});
+			});
+		});
+
+		// Keterangan mengikuti seluruh Master Jenis Limbah B3 milik site (sama seperti dokumen asli)
+		const keterangan = wasteTypes.map((type) => ({ kode: type.kode, nama: type.nama }));
+
+		return res.json({
+			profil: {
+				companyName: profile?.companyName || '',
+				address: profile?.address || '',
+				responsibleName: profile?.responsibleName || '',
+			},
+			lokasiKerja: site?.name || '',
+			periode: {
+				from: from ? from.toISOString().slice(0, 10) : null,
+				to: to ? to.toISOString().slice(0, 10) : null,
+			},
+			rows,
+			keterangan,
+			generatedAt: new Date().toISOString(),
+		});
+	}),
+);
+
 router.get(
 	'/export',
 	withAsync(async (req, res) => {
@@ -1351,7 +1480,9 @@ router.get(
 						tanggalKeluar: true,
 						jumlahKeluar: true,
 						tujuanPenyerahan: true,
-						nomorDokumen: true,
+						nomorSuratJalan: true,
+						nomorEManifest: true,
+						nopolKendaraan: true,
 						petugasPenanggungJawab: true,
 						vendor: { select: { id: true, vendorName: true } },
 					},

@@ -34,10 +34,12 @@ const getValidationSchema = (minDate, maxJumlah) =>
 			.required('Tujuan penyerahan wajib diisi')
 			.max(200, 'Tujuan penyerahan maksimal 200 karakter'),
 		perlakuan: yup.string().required('Perlakuan wajib dipilih'),
-		nomorDokumen: yup
+		nomorSuratJalan: yup
 			.string()
-			.required('Nomor dokumen wajib diisi')
-			.max(100, 'Nomor dokumen maksimal 100 karakter'),
+			.required('Nomor surat jalan wajib diisi')
+			.max(100, 'Nomor surat jalan maksimal 100 karakter'),
+		nomorEManifest: yup.string().max(100, 'Nomor e-Manifest maksimal 100 karakter'),
+		nopolKendaraan: yup.string().max(20, 'Nopol kendaraan maksimal 20 karakter'),
 		petugasPenanggungJawab: yup
 			.string()
 			.required('Petugas penanggung jawab wajib diisi')
@@ -94,7 +96,9 @@ function WasteOutRecordForm({ open, onClose, onSuccess, wasteRecord, editData, a
 			jumlahKeluar: editData?.jumlahKeluar ?? '',
 			tujuanPenyerahan: editData?.tujuanPenyerahan || '',
 			perlakuan: editData?.perlakuan || DEFAULT_B3_TREATMENT,
-			nomorDokumen: editData?.nomorDokumen || '',
+			nomorSuratJalan: editData?.nomorSuratJalan || '',
+			nomorEManifest: editData?.nomorEManifest || '',
+			nopolKendaraan: editData?.nopolKendaraan || '',
 			vendorId: editData?.vendorId || editData?.vendor?.id || '',
 			petugasPenanggungJawab: editData?.petugasPenanggungJawab || adminName || '',
 		},
@@ -106,7 +110,9 @@ function WasteOutRecordForm({ open, onClose, onSuccess, wasteRecord, editData, a
 					jumlahKeluar: Number(values.jumlahKeluar),
 					tujuanPenyerahan: values.tujuanPenyerahan.trim(),
 					perlakuan: values.perlakuan,
-					nomorDokumen: values.nomorDokumen.trim(),
+					nomorSuratJalan: values.nomorSuratJalan.trim(),
+					nomorEManifest: values.nomorEManifest.trim() || null,
+					nopolKendaraan: values.nopolKendaraan.trim() || null,
 					vendorId: values.vendorId ? Number(values.vendorId) : null,
 					petugasPenanggungJawab: values.petugasPenanggungJawab.trim(),
 				};
@@ -209,14 +215,36 @@ function WasteOutRecordForm({ open, onClose, onSuccess, wasteRecord, editData, a
 						/>
 						<TextField
 							fullWidth
-							label="Nomor Dokumen"
-							name="nomorDokumen"
+							label="Nomor Surat Jalan"
+							name="nomorSuratJalan"
 							inputProps={{ maxLength: 100 }}
-							value={formik.values.nomorDokumen}
+							value={formik.values.nomorSuratJalan}
 							onChange={formik.handleChange}
 							onBlur={formik.handleBlur}
-							error={formik.touched.nomorDokumen && Boolean(formik.errors.nomorDokumen)}
-							helperText={formik.touched.nomorDokumen && formik.errors.nomorDokumen}
+							error={formik.touched.nomorSuratJalan && Boolean(formik.errors.nomorSuratJalan)}
+							helperText={formik.touched.nomorSuratJalan && formik.errors.nomorSuratJalan}
+						/>
+						<TextField
+							fullWidth
+							label="Nomor e-Manifest (opsional)"
+							name="nomorEManifest"
+							inputProps={{ maxLength: 100 }}
+							value={formik.values.nomorEManifest}
+							onChange={formik.handleChange}
+							onBlur={formik.handleBlur}
+							error={formik.touched.nomorEManifest && Boolean(formik.errors.nomorEManifest)}
+							helperText={formik.touched.nomorEManifest && formik.errors.nomorEManifest}
+						/>
+						<TextField
+							fullWidth
+							label="Nopol Kendaraan (opsional)"
+							name="nopolKendaraan"
+							inputProps={{ maxLength: 20 }}
+							value={formik.values.nopolKendaraan}
+							onChange={formik.handleChange}
+							onBlur={formik.handleBlur}
+							error={formik.touched.nopolKendaraan && Boolean(formik.errors.nopolKendaraan)}
+							helperText={formik.touched.nopolKendaraan && formik.errors.nopolKendaraan}
 						/>
 						<TextField
 							select

@@ -68,9 +68,12 @@ describe('generateB3WasteExcel', () => {
 			'Tanggal Keluar',
 			'Jumlah Keluar',
 			'Tujuan Penyerahan',
-			'Nomor Dokumen',
+			'Nopol Kendaraan',
+			'No. e-Manifest',
+			'Surat Jalan',
 			'Sisa Limbah',
 			'Sisa Hari',
+			'Pengelola Pihak Ketiga',
 		];
 		const headerRow = worksheet.getRow(2);
 		expectedColumns.forEach((col, index) => {
@@ -107,8 +110,10 @@ describe('generateB3WasteExcel', () => {
 		expect(dataRow.getCell(8).value).toBe('');
 		expect(dataRow.getCell(9).value).toBe('');
 		expect(dataRow.getCell(10).value).toBe('');
-		expect(dataRow.getCell(11).value).toBe('150,75');
-		expect(dataRow.getCell(12).value).toBe('45');
+		expect(dataRow.getCell(11).value).toBe('');
+		expect(dataRow.getCell(12).value).toBe('');
+		expect(dataRow.getCell(13).value).toBe('150,75');
+		expect(dataRow.getCell(14).value).toBe('45');
 	});
 
 	it('should add multiple rows for records with outRecords', async () => {
@@ -125,13 +130,15 @@ describe('generateB3WasteExcel', () => {
 						tanggalKeluar: new Date('2024-02-01'),
 						jumlahKeluar: 50.0,
 						tujuanPenyerahan: 'Pengolahan',
-						nomorDokumen: 'MNF/2024/001',
+						nomorSuratJalan: 'MNF/2024/001',
+						nomorEManifest: 'KLHK-001',
+						nopolKendaraan: 'B 1234 XY',
 					},
 					{
 						tanggalKeluar: new Date('2024-03-01'),
 						jumlahKeluar: 30.5,
 						tujuanPenyerahan: 'Incinerator',
-						nomorDokumen: 'MNF/2024/002',
+						nomorSuratJalan: 'MNF/2024/002',
 					},
 				],
 				sisaLimbah: 70.25,
@@ -149,7 +156,9 @@ describe('generateB3WasteExcel', () => {
 		expect(row1.getCell(7).value).toBe('01/02/2024');
 		expect(row1.getCell(8).value).toBe('50,00');
 		expect(row1.getCell(9).value).toBe('Pengolahan');
-		expect(row1.getCell(10).value).toBe('MNF/2024/001');
+		expect(row1.getCell(10).value).toBe('B 1234 XY');
+		expect(row1.getCell(11).value).toBe('KLHK-001');
+		expect(row1.getCell(12).value).toBe('MNF/2024/001');
 
 		// Second out record row — waste-in columns should be empty
 		const row2 = worksheet.getRow(4);
@@ -162,9 +171,11 @@ describe('generateB3WasteExcel', () => {
 		expect(row2.getCell(7).value).toBe('01/03/2024');
 		expect(row2.getCell(8).value).toBe('30,50');
 		expect(row2.getCell(9).value).toBe('Incinerator');
-		expect(row2.getCell(10).value).toBe('MNF/2024/002');
-		expect(row2.getCell(11).value).toBe('70,25');
-		expect(row2.getCell(12).value).toBe('14');
+		expect(row2.getCell(10).value).toBe('');
+		expect(row2.getCell(11).value).toBe('');
+		expect(row2.getCell(12).value).toBe('MNF/2024/002');
+		expect(row2.getCell(13).value).toBe('70,25');
+		expect(row2.getCell(14).value).toBe('14');
 	});
 
 	it('should format numbers using Indonesian format in data rows', async () => {
@@ -181,7 +192,7 @@ describe('generateB3WasteExcel', () => {
 						tanggalKeluar: new Date('2024-07-15'),
 						jumlahKeluar: 1250.5,
 						tujuanPenyerahan: 'Recycling',
-						nomorDokumen: 'DOC/001',
+						nomorSuratJalan: 'DOC/001',
 					},
 				],
 				sisaLimbah: 3749.5,
@@ -195,6 +206,6 @@ describe('generateB3WasteExcel', () => {
 
 		expect(dataRow.getCell(4).value).toBe('5.000,00');
 		expect(dataRow.getCell(8).value).toBe('1.250,50');
-		expect(dataRow.getCell(11).value).toBe('3.749,50');
+		expect(dataRow.getCell(13).value).toBe('3.749,50');
 	});
 });

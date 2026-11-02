@@ -171,7 +171,9 @@ function LimbahKeluarDialog({ open, onClose, wasteRecord, siteId, adminName, onC
 											</TableCell>
 											<TableCell sx={{ fontWeight: 700 }}>Perlakuan</TableCell>
 											<TableCell sx={{ fontWeight: 700 }}>Tujuan Penyerahan</TableCell>
-											<TableCell sx={{ fontWeight: 700 }}>No. Dokumen</TableCell>
+											<TableCell sx={{ fontWeight: 700 }}>Nopol</TableCell>
+											<TableCell sx={{ fontWeight: 700 }}>No. e-Manifest</TableCell>
+											<TableCell sx={{ fontWeight: 700 }}>Surat Jalan</TableCell>
 											<TableCell sx={{ fontWeight: 700 }}>Pengelola</TableCell>
 											<TableCell sx={{ fontWeight: 700 }}>Petugas</TableCell>
 											<TableCell align="center" sx={{ fontWeight: 700 }}>
@@ -183,7 +185,7 @@ function LimbahKeluarDialog({ open, onClose, wasteRecord, siteId, adminName, onC
 										{rows.length === 0 ? (
 											<TableRow>
 												<TableCell
-													colSpan={8}
+													colSpan={10}
 													align="center"
 													sx={{ py: 4, color: 'text.secondary' }}
 												>
@@ -199,7 +201,9 @@ function LimbahKeluarDialog({ open, onClose, wasteRecord, siteId, adminName, onC
 														{TREATMENT_LABEL_MAP[row.perlakuan] || row.perlakuan || '-'}
 													</TableCell>
 													<TableCell>{row.tujuanPenyerahan || '-'}</TableCell>
-													<TableCell>{row.nomorDokumen || '-'}</TableCell>
+													<TableCell>{row.nopolKendaraan || '-'}</TableCell>
+													<TableCell>{row.nomorEManifest || '-'}</TableCell>
+													<TableCell>{row.nomorSuratJalan || '-'}</TableCell>
 													<TableCell>{row.vendor?.vendorName || '-'}</TableCell>
 													<TableCell>{row.petugasPenanggungJawab || '-'}</TableCell>
 													<TableCell align="center" sx={{ whiteSpace: 'nowrap' }}>

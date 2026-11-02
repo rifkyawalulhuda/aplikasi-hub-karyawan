@@ -129,6 +129,18 @@ export async function saveNeracaPeriod(siteId, payload) {
 	});
 }
 
+// --- Catatan Pengelolaan Limbah (print) ---
+
+export async function getPencatatanPrint(siteId, params = {}) {
+	const path = appendSiteIdParam('/b3-waste/records/pencatatan-print', siteId);
+	const query = new URLSearchParams();
+	if (params.from) query.set('from', params.from);
+	if (params.to) query.set('to', params.to);
+	const sep = path.includes('?') ? '&' : '?';
+	const qs = query.toString();
+	return apiRequest(qs ? `${path}${sep}${qs}` : path);
+}
+
 // --- Profil Perusahaan per Site ---
 
 export async function getSiteProfile(siteId) {

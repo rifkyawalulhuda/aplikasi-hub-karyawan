@@ -1134,7 +1134,7 @@ Yang sudah selesai:
 - Kolom database utama (3 model):
   - `B3WasteType` (`b3_waste_types`): id, siteId, kode (VarChar 20), nama (VarChar 200), unique [siteId, kode]
   - `B3WasteRecord` (`b3_waste_records`): id, siteId, jenisLimbahId, tanggalMasuk (Date), sumberLimbah, jumlahMasuk (Decimal 10,2), maksimalPenyimpanan (90/180), tanggalBatas (Date, computed), petugasPenanggungJawab
-  - `B3WasteOutRecord` (`b3_waste_out_records`): id, siteId, wasteRecordId, tanggalKeluar (Date), jumlahKeluar (Decimal 10,2), tujuanPenyerahan, nomorDokumen, vendorId (nullable, FK ke MasterVendor), petugasPenanggungJawab
+  - `B3WasteOutRecord` (`b3_waste_out_records`): id, siteId, wasteRecordId, tanggalKeluar (Date), jumlahKeluar (Decimal 10,2), tujuanPenyerahan, nomorSuratJalan, nomorEManifest (nullable), nopolKendaraan (nullable), vendorId (nullable, FK ke MasterVendor), petugasPenanggungJawab
 - Backend routes:
   - `server/routes/b3WasteRecords.js` — CRUD limbah masuk + limbah keluar + export Excel
   - `server/routes/b3WasteTypes.js` — CRUD master jenis limbah B3
@@ -1146,7 +1146,7 @@ Yang sudah selesai:
   - `statusPenyimpanan`: normal / warning (1-14 hari) / overdue (<=0 hari), hanya berlaku jika sisaLimbah > 0
 - Ekspor Excel (`server/lib/b3WasteExport.js`):
   - Baris pertama: nomor izin hardcoded "660.3/Per.TPLB3 144/VII/P3LH/DLH/2020"
-  - 13 kolom: Jenis Limbah B3, Tanggal Masuk, Sumber Limbah, Jumlah Masuk, Maks Penyimpanan, Tanggal Batas, Tanggal Keluar, Jumlah Keluar, Tujuan Penyerahan, Nomor Dokumen, Sisa Limbah, Sisa Hari, Pengelola Pihak Ketiga
+  - 15 kolom: Jenis Limbah B3, Tanggal Masuk, Sumber Limbah, Jumlah Masuk, Maks Penyimpanan, Tanggal Batas, Tanggal Keluar, Jumlah Keluar, Tujuan Penyerahan, Nopol Kendaraan, No. e-Manifest, Surat Jalan, Sisa Limbah, Sisa Hari, Pengelola Pihak Ketiga
   - Format angka Indonesia (titik ribuan, koma desimal)
   - Record dengan banyak out-records: baris pertama tampilkan semua, baris berikutnya hanya kolom keluar
 - Frontend components:

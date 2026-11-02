@@ -108,7 +108,7 @@ describe('Feature: b3-waste-recording, Property 4: Cannot Exceed Remaining Waste
 							tanggalKeluar: '2024-02-01',
 							jumlahKeluar,
 							tujuanPenyerahan: 'Pengolahan',
-							nomorDokumen: 'MNF/2024/001',
+							nomorSuratJalan: 'MNF/2024/001',
 							petugasPenanggungJawab: 'Ahmad Fauzi',
 						},
 					};
@@ -173,7 +173,7 @@ describe('Feature: b3-waste-recording, Property 4: Cannot Exceed Remaining Waste
 							tanggalKeluar: '2024-02-01',
 							jumlahKeluar,
 							tujuanPenyerahan: 'Pengolahan',
-							nomorDokumen: 'MNF/2024/001',
+							nomorSuratJalan: 'MNF/2024/001',
 							petugasPenanggungJawab: 'Ahmad Fauzi',
 						},
 					};

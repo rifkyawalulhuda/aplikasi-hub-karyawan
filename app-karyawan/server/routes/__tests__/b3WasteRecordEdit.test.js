@@ -192,7 +192,7 @@ describe('PUT /b3-waste/records/out-records/:id (limbah keluar)', () => {
 		jumlahKeluar: 100,
 		tujuanPenyerahan: 'PENGOLAHAN LIMBAH B3',
 		perlakuan: 'DIOLAH',
-		nomorDokumen: 'DOC-1',
+		nomorSuratJalan: 'DOC-1',
 		vendorId: null,
 		petugasPenanggungJawab: 'Siti',
 	};
@@ -303,7 +303,7 @@ body: {
 						tanggalKeluar: '2026-03-10',
 						jumlahKeluar: 10,
 						tujuanPenyerahan: 'Pihak ketiga',
-						nomorDokumen: 'DOC-1',
+						nomorSuratJalan: 'DOC-1',
 						vendorId: 55,
 						petugasPenanggungJawab: 'Budi',
 					},

@@ -239,7 +239,7 @@ describe('B3 Waste Records Integration Tests', () => {
 				tanggalKeluar: new Date('2024-06-15'),
 				jumlahKeluar: 30.0,
 				tujuanPenyerahan: 'Pengolahan',
-				nomorDokumen: 'MNF/2024/001',
+				nomorSuratJalan: 'MNF/2024/001',
 				petugasPenanggungJawab: 'Ahmad Fauzi',
 			};
 			prisma.b3WasteOutRecord.create.mockResolvedValue(mockOutRecord);
@@ -249,7 +249,7 @@ describe('B3 Waste Records Integration Tests', () => {
 					tanggalKeluar: '2024-06-15',
 					jumlahKeluar: 30.0,
 					tujuanPenyerahan: 'Pengolahan',
-					nomorDokumen: 'MNF/2024/001',
+					nomorSuratJalan: 'MNF/2024/001',
 					petugasPenanggungJawab: 'Ahmad Fauzi',
 				},
 			});
@@ -342,7 +342,7 @@ describe('B3 Waste Records Integration Tests', () => {
 					tanggalKeluar: '2024-06-15',
 					jumlahKeluar: 10.0,
 					tujuanPenyerahan: 'Pengolahan',
-					nomorDokumen: 'DOC/001',
+					nomorSuratJalan: 'DOC/001',
 					petugasPenanggungJawab: 'Test User',
 				},
 			});
@@ -410,7 +410,7 @@ describe('B3 Waste Records Integration Tests', () => {
 							tanggalKeluar: new Date('2024-06-15'),
 							jumlahKeluar: 250.0,
 							tujuanPenyerahan: 'Pengolahan Limbah',
-							nomorDokumen: 'MNF/2024/001',
+							nomorSuratJalan: 'MNF/2024/001',
 							petugasPenanggungJawab: 'Ahmad Fauzi',
 						},
 					],

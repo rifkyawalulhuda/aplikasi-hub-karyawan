@@ -67,6 +67,9 @@ const LimbahB3CombinedPage = withLazyLoadably(
 const NeracaLimbahB3PrintPage = withLazyLoadably(
 	lazy(() => import('@/pages/employeeData/pencatatanLimbahB3/NeracaLimbahB3Print')),
 );
+const PencatatanLimbahB3PrintPage = withLazyLoadably(
+	lazy(() => import('@/pages/employeeData/pencatatanLimbahB3/PencatatanLimbahB3Print')),
+);
 const DashboardPage = withLazyLoadably(lazy(() => import('@/pages/dashboard')));
 const LembarPengirimanPage = withLazyLoadably(lazy(() => import('@/pages/dokumen/lembarPengiriman')));
 const LembarPengirimanPrintPage = withLazyLoadably(lazy(() => import('@/pages/dokumen/lembarPengiriman/print')));
@@ -116,6 +119,7 @@ function Router() {
 							element={<EmployeeLeavePrintAdminPage />}
 						/>
 						<Route path="/print/limbah-b3/neraca" element={<NeracaLimbahB3PrintPage />} />
+						<Route path="/print/limbah-b3/pencatatan" element={<PencatatanLimbahB3PrintPage />} />
 						<Route path="/print/dokumen/lembar-pengiriman/:id" element={<LembarPengirimanPrintPage />} />
 						<Route path="/" element={<MainLayout />}>
 							<Route index element={<Navigate to="/dashboard" replace />} />

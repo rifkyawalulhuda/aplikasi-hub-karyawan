@@ -47,7 +47,7 @@ export async function generateB3WasteExcel(records) {
 	const worksheet = workbook.addWorksheet('Pencatatan Limbah B3');
 
 	// Row 1: Header nomor izin
-	worksheet.mergeCells('A1:L1');
+	worksheet.mergeCells('A1:O1');
 	const headerCell = worksheet.getCell('A1');
 	headerCell.value = '660.3/Per.TPLB3 144/VII/P3LH/DLH/2020';
 	headerCell.font = { bold: true, size: 12 };
@@ -64,7 +64,9 @@ export async function generateB3WasteExcel(records) {
 		'Tanggal Keluar',
 		'Jumlah Keluar',
 		'Tujuan Penyerahan',
-		'Nomor Dokumen',
+		'Nopol Kendaraan',
+		'No. e-Manifest',
+		'Surat Jalan',
 		'Sisa Limbah',
 		'Sisa Hari',
 		'Pengelola Pihak Ketiga',
@@ -95,7 +97,9 @@ export async function generateB3WasteExcel(records) {
 		{ width: 14 }, // Tanggal Keluar
 		{ width: 14 }, // Jumlah Keluar
 		{ width: 20 }, // Tujuan Penyerahan
-		{ width: 18 }, // Nomor Dokumen
+		{ width: 16 }, // Nopol Kendaraan
+		{ width: 20 }, // No. e-Manifest
+		{ width: 22 }, // Surat Jalan
 		{ width: 14 }, // Sisa Limbah
 		{ width: 12 }, // Sisa Hari
 		{ width: 22 }, // Pengelola Pihak Ketiga
@@ -129,9 +133,11 @@ export async function generateB3WasteExcel(records) {
 			row.getCell(8).value = '';
 			row.getCell(9).value = '';
 			row.getCell(10).value = '';
-			row.getCell(11).value = sisaLimbah;
-			row.getCell(12).value = sisaHari;
-			row.getCell(13).value = '';
+			row.getCell(11).value = '';
+			row.getCell(12).value = '';
+			row.getCell(13).value = sisaLimbah;
+			row.getCell(14).value = sisaHari;
+			row.getCell(15).value = '';
 			applyDataRowBorder(row, columns.length);
 			currentRow++;
 		} else {
@@ -161,10 +167,12 @@ export async function generateB3WasteExcel(records) {
 				row.getCell(7).value = formatDate(outRecord.tanggalKeluar);
 				row.getCell(8).value = formatIndonesianNumber(outRecord.jumlahKeluar);
 				row.getCell(9).value = outRecord.tujuanPenyerahan || '';
-				row.getCell(10).value = outRecord.nomorDokumen || '';
-				row.getCell(11).value = sisaLimbah;
-				row.getCell(12).value = sisaHari;
-				row.getCell(13).value = outRecord.vendor?.vendorName || '';
+				row.getCell(10).value = outRecord.nopolKendaraan || '';
+				row.getCell(11).value = outRecord.nomorEManifest || '';
+				row.getCell(12).value = outRecord.nomorSuratJalan || '';
+				row.getCell(13).value = sisaLimbah;
+				row.getCell(14).value = sisaHari;
+				row.getCell(15).value = outRecord.vendor?.vendorName || '';
 
 				applyDataRowBorder(row, columns.length);
 				currentRow++;

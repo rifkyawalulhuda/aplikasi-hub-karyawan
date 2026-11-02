@@ -115,7 +115,7 @@ describe('Feature: b3-waste-recording, Property 3: Remaining Waste Accounting In
 					tanggalKeluar: new Date('2024-02-01'),
 					jumlahKeluar: keluar,
 					tujuanPenyerahan: 'Pengolahan',
-					nomorDokumen: `MNF/2024/${String(idx + 1).padStart(3, '0')}`,
+					nomorSuratJalan: `MNF/2024/${String(idx + 1).padStart(3, '0')}`,
 					petugasPenanggungJawab: 'Ahmad Fauzi',
 				}));
 
@@ -223,7 +223,7 @@ describe('Feature: b3-waste-recording, Property 3: Remaining Waste Accounting In
 						tanggalKeluar: new Date('2024-02-01'),
 						jumlahKeluar: parseFloat((cents / 100).toFixed(2)),
 						tujuanPenyerahan: 'Pengolahan',
-						nomorDokumen: `MNF/2024/${String(idx + 1).padStart(3, '0')}`,
+						nomorSuratJalan: `MNF/2024/${String(idx + 1).padStart(3, '0')}`,
 						petugasPenanggungJawab: 'Ahmad Fauzi',
 					}));
 

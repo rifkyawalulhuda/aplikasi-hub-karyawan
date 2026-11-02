@@ -811,7 +811,9 @@ model B3WasteOutRecord {
   jumlahKeluar           Decimal          @db.Decimal(10, 2)
   tujuanPenyerahan       String           @db.VarChar(200)
   perlakuan              B3WasteTreatment @default(DISERAHKAN_KE_PIHAK_KETIGA)
-  nomorDokumen           String           @db.VarChar(100)
+  nomorSuratJalan        String           @db.VarChar(100)
+  nomorEManifest         String?          @db.VarChar(100)
+  nopolKendaraan         String?          @db.VarChar(20)
   petugasPenanggungJawab String           @db.VarChar(100)
   createdAt              DateTime         @default(now())
   updatedAt              DateTime         @updatedAt

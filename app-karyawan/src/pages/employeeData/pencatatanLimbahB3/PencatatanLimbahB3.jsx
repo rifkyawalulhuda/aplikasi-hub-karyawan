@@ -16,6 +16,7 @@ import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import ListAltOutlinedIcon from '@mui/icons-material/ListAltOutlined';
 import OutputOutlinedIcon from '@mui/icons-material/OutputOutlined';
+import PrintOutlinedIcon from '@mui/icons-material/PrintOutlined';
 import RefreshOutlinedIcon from '@mui/icons-material/RefreshOutlined';
 
 import EnhancedTable from '@/components/dataTable';
@@ -25,8 +26,9 @@ import DeleteConfirmDialog from '@/components/masterData/deleteConfirmDialog';
 import PageHeader from '@/components/pageHeader';
 import { useAuth } from '@/contexts/authContext';
 import { useSite } from '@/contexts/siteContext';
-import { deleteWasteRecord, exportWasteRecords, getWasteRecords } from '@/services/b3WasteService';
+import { deleteWasteRecord, exportWasteRecords, getSiteProfile, getWasteRecords } from '@/services/b3WasteService';
 
+import CetakPencatatanDialog from './CetakPencatatanDialog';
 import WasteOutRecordForm from './WasteOutRecordForm';
 import WasteRecordForm from './WasteRecordForm';
 import LimbahKeluarDialog from './LimbahKeluarDialog';
@@ -60,7 +62,7 @@ const DEFAULT_SORT_ORDER = 'desc';
 
 function PencatatanLimbahB3({ hideHeader = false }) {
 	const { enqueueSnackbar } = useSnackbar();
-	const { currentSiteId } = useSite();
+	const { currentSiteId, siteName } = useSite();
 	const { user } = useAuth();
 
 	// --- State ---
@@ -81,6 +83,8 @@ function PencatatanLimbahB3({ hideHeader = false }) {
 	const [outListOpen, setOutListOpen] = useState(false);
 	const [outListRecord, setOutListRecord] = useState(null);
 	const [deleteOpen, setDeleteOpen] = useState(false);
+	const [cetakOpen, setCetakOpen] = useState(false);
+	const [responsibleName, setResponsibleName] = useState('');
 	const [selectedRecord, setSelectedRecord] = useState(null);
 	const [submitting, setSubmitting] = useState(false);
 
@@ -195,6 +199,14 @@ function PencatatanLimbahB3({ hideHeader = false }) {
 		setOutFormOpen(false);
 		setSelectedRecord(null);
 		fetchData();
+	};
+
+	const handleOpenCetak = () => {
+		if (!currentSiteId) return;
+		setCetakOpen(true);
+		getSiteProfile(currentSiteId)
+			.then((profile) => setResponsibleName(profile?.responsibleName || ''))
+			.catch(() => setResponsibleName(''));
 	};
 
 	// --- Columns ---
@@ -336,15 +348,39 @@ function PencatatanLimbahB3({ hideHeader = false }) {
 				},
 			},
 			{
-				field: 'nomorDokumen',
-				headerName: 'NO. DOKUMEN',
-				minWidth: 140,
+				field: 'nopolKendaraan',
+				headerName: 'NOPOL',
+				width: 120,
 				sortable: false,
 				valueGetter: (params) => {
 					const { outRecords } = params.row;
 					if (!outRecords || outRecords.length === 0) return '-';
 					const latest = outRecords[outRecords.length - 1];
-					return latest.nomorDokumen || '-';
+					return latest.nopolKendaraan || '-';
+				},
+			},
+			{
+				field: 'nomorEManifest',
+				headerName: 'NO. E-MANIFEST',
+				minWidth: 160,
+				sortable: false,
+				valueGetter: (params) => {
+					const { outRecords } = params.row;
+					if (!outRecords || outRecords.length === 0) return '-';
+					const latest = outRecords[outRecords.length - 1];
+					return latest.nomorEManifest || '-';
+				},
+			},
+			{
+				field: 'nomorSuratJalan',
+				headerName: 'SURAT JALAN',
+				minWidth: 160,
+				sortable: false,
+				valueGetter: (params) => {
+					const { outRecords } = params.row;
+					if (!outRecords || outRecords.length === 0) return '-';
+					const latest = outRecords[outRecords.length - 1];
+					return latest.nomorSuratJalan || '-';
 				},
 			},
 			{
@@ -507,6 +543,15 @@ function PencatatanLimbahB3({ hideHeader = false }) {
 						</Button>
 						<Button
 							variant="outlined"
+							startIcon={<PrintOutlinedIcon />}
+							onClick={handleOpenCetak}
+							disabled={!currentSiteId}
+							sx={{ minWidth: 130, whiteSpace: 'nowrap' }}
+						>
+							Cetak
+						</Button>
+						<Button
+							variant="outlined"
 							startIcon={<RefreshOutlinedIcon />}
 							onClick={fetchData}
 							sx={{ minWidth: 130, whiteSpace: 'nowrap' }}
@@ -563,6 +608,14 @@ function PencatatanLimbahB3({ hideHeader = false }) {
 				siteId={currentSiteId}
 				adminName={user?.name || ''}
 				onChanged={fetchData}
+			/>
+			<CetakPencatatanDialog
+				open={cetakOpen}
+				onClose={() => setCetakOpen(false)}
+				siteId={currentSiteId}
+				siteName={siteName || ''}
+				adminName={user?.name || ''}
+				responsibleName={responsibleName}
 			/>
 			<DeleteConfirmDialog
 				open={deleteOpen}
