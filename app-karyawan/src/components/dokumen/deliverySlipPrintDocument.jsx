@@ -1,21 +1,18 @@
 ﻿import { useLayoutEffect, useRef, useState } from 'react';
 
 import Box from '@mui/material/Box';
-import Stack from '@mui/material/Stack';
 
+import CompanyLetterhead from '@/components/dokumen/companyLetterhead';
 import {
 	CONFIRMATION_MODE_OPTIONS,
 	DOCUMENT_CONFIDENTIALITY_OPTIONS,
 	FORM_TEMPLATE,
 	GOODS_TYPE_OPTIONS,
 	HANDLING_TYPE_OPTIONS,
-	HEADER_COMPANY_LINES,
 	PURPOSE_OPTIONS,
 	SLIP_TYPE_OPTIONS,
 } from '@/pages/dokumen/lembarPengiriman/constants';
 import { formatDateId } from '@/pages/dokumen/lembarPengiriman/utils';
-
-import logoUrl from '@/assets/images/logo/png/logo_sankyu.png';
 
 const FONT_FAMILY = 'Calibri, Carlito, "Segoe UI", Arial, sans-serif';
 const TEXT_COLOR = '#000000';
@@ -94,29 +91,6 @@ function PageBox({ pageNumber, totalPages, children }) {
 			>
 				Page {pageNumber} of {totalPages}
 			</Box>
-		</Box>
-	);
-}
-
-function Letterhead() {
-	return (
-		<Box sx={{ mb: '1.2mm' }}>
-			<Stack direction="row" spacing="3mm" alignItems="center">
-				<Box
-					component="img"
-					src={logoUrl}
-					alt="Logo Sankyu"
-					sx={{ height: '10mm', width: 'auto', objectFit: 'contain', flexShrink: 0 }}
-				/>
-				<Box sx={{ flex: 1 }}>
-					<Box sx={{ fontSize: '12pt', fontWeight: 700, letterSpacing: '0.02em', lineHeight: 1.1 }}>
-						{HEADER_COMPANY_LINES[0]}
-					</Box>
-					<Box sx={{ fontSize: '9.5pt', lineHeight: 1.12, mt: '0.3mm' }}>{HEADER_COMPANY_LINES[1]}</Box>
-					<Box sx={{ fontSize: '9.5pt', lineHeight: 1.12 }}>{HEADER_COMPANY_LINES[2]}</Box>
-				</Box>
-			</Stack>
-			<Box sx={{ borderBottom: '0.8pt solid #000', mt: '1.2mm' }} />
 		</Box>
 	);
 }
@@ -509,7 +483,7 @@ function SignatureRow({ slip }) {
 function HeaderBlock({ slip }) {
 	return (
 		<>
-			<Letterhead />
+			<CompanyLetterhead gap="1.2mm" />
 			<IdentityTable />
 			<TitleBlock slip={slip} />
 			<PartyTable slip={slip} />

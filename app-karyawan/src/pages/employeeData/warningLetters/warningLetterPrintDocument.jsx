@@ -2,6 +2,8 @@ import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
+import CompanyLetterhead from '@/components/dokumen/companyLetterhead';
+
 import { getDisciplinePrintConfig } from './utils';
 
 const PAGE_WIDTH = '210mm';
@@ -124,33 +126,7 @@ function WarningLetterPrintDocument({ record }) {
 					flexDirection: 'column',
 				}}
 			>
-				<Stack direction="row" justifyContent="space-between" alignItems="flex-start">
-					<Stack spacing={0.15}>
-						<Typography
-							sx={{ fontFamily: FONT_FAMILY, fontSize: '8pt', fontWeight: 700, color: '#0837d7' }}
-						>
-							PT SANKYU INDONESIA INTERNATIONAL
-						</Typography>
-						<Typography
-							sx={{ fontFamily: FONT_FAMILY, fontSize: '8pt', fontWeight: 700, color: '#0837d7' }}
-						>
-							QUALITY, SAFETY, HEALTH, AND ENVIRONMENTAL DIVISION
-						</Typography>
-						<Typography
-							sx={{ fontFamily: FONT_FAMILY, fontSize: '8pt', fontWeight: 700, color: '#0837d7' }}
-						>
-							SISTEM MANAJEMEN TERINTEGRASI
-						</Typography>
-					</Stack>
-					<Box
-						component="img"
-						src="/forms/warning-letter-logos.png"
-						alt="Certification logos"
-						sx={{ width: '44mm', height: 'auto', objectFit: 'contain' }}
-					/>
-				</Stack>
-
-				<Box sx={{ borderTop: '1px solid #8e8e8e', mt: 0.7, mb: 3.2 }} />
+				<CompanyLetterhead />
 
 				<Box sx={{ display: 'grid', gridTemplateColumns: '1fr 58mm', alignItems: 'stretch' }}>
 					<Box
