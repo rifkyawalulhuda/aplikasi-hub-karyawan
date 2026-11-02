@@ -97,36 +97,43 @@ function PageBox({ pageNumber, totalPages, children }) {
 
 function IdentityTable() {
 	return (
-		<Box component="table" sx={{ width: '100%', borderCollapse: 'collapse', mb: '2mm' }}>
+		<Box component="table" sx={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', mb: '2mm' }}>
 			<Box component="tbody">
 				<Box component="tr">
 					<Box
 						component="td"
 						rowSpan={3}
-						sx={{ ...cellBase, width: '45%', fontWeight: 700, fontSize: '13pt', verticalAlign: 'middle' }}
+						sx={{
+							...cellBase,
+							width: '70%',
+							fontWeight: 700,
+							fontSize: '15pt',
+							textAlign: 'center',
+							verticalAlign: 'middle',
+						}}
 					>
 						{FORM_TEMPLATE.title}
 					</Box>
-					<Box component="td" sx={{ ...cellBase, width: '25%' }}>
+					<Box component="td" sx={{ ...cellBase, width: '13%', fontSize: '9pt' }}>
 						Tgl. Efektif
 					</Box>
-					<Box component="td" sx={{ ...cellBase, width: '30%' }}>
+					<Box component="td" sx={{ ...cellBase, width: '17%', fontSize: '9pt' }}>
 						{FORM_TEMPLATE.effectiveDate}
 					</Box>
 				</Box>
 				<Box component="tr">
-					<Box component="td" sx={cellBase}>
+					<Box component="td" sx={{ ...cellBase, fontSize: '9pt' }}>
 						Revisi
 					</Box>
-					<Box component="td" sx={cellBase}>
+					<Box component="td" sx={{ ...cellBase, fontSize: '9pt' }}>
 						{FORM_TEMPLATE.revision}
 					</Box>
 				</Box>
 				<Box component="tr">
-					<Box component="td" sx={cellBase}>
+					<Box component="td" sx={{ ...cellBase, fontSize: '9pt' }}>
 						No. Form
 					</Box>
-					<Box component="td" sx={cellBase}>
+					<Box component="td" sx={{ ...cellBase, fontSize: '9pt' }}>
 						{FORM_TEMPLATE.formNumber}
 					</Box>
 				</Box>
