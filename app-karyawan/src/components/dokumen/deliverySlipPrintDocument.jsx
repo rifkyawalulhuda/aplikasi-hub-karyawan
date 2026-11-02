@@ -45,7 +45,7 @@ function toMm(px) {
 	return px / PX_PER_MM;
 }
 
-function PageBox({ pageNumber, totalPages, children }) {
+function PageBox({ pageNumber, totalPages, forceBreakAfter = false, children }) {
 	return (
 		<Box
 			data-page
@@ -71,8 +71,8 @@ function PageBox({ pageNumber, totalPages, children }) {
 				},
 				'&:last-of-type': {
 					'@media print': {
-						breakAfter: 'auto',
-						pageBreakAfter: 'auto',
+						breakAfter: forceBreakAfter ? 'page' : 'auto',
+						pageBreakAfter: forceBreakAfter ? 'always' : 'auto',
 					},
 				},
 			}}
@@ -569,7 +569,7 @@ function buildLayout(measureRoot, rowHeights) {
 	};
 }
 
-function DeliverySlipPrintDocument({ slip, onReady }) {
+function DeliverySlipPrintDocument({ slip, onReady, forceBreakAfterLast = false }) {
 	const measureRef = useRef(null);
 	const [layout, setLayout] = useState(null);
 
@@ -639,7 +639,12 @@ function DeliverySlipPrintDocument({ slip, onReady }) {
 			</Box>
 
 			{(layout?.pages || [{ header: true, from: 0, to: items.length, footer: true }]).map((page, index) => (
-				<PageBox key={`page-${index}`} pageNumber={index + 1} totalPages={totalPages}>
+				<PageBox
+					key={`page-${index}`}
+					pageNumber={index + 1}
+					totalPages={totalPages}
+					forceBreakAfter={forceBreakAfterLast && index === totalPages - 1}
+				>
 					{page.header ? <HeaderBlock slip={slip} /> : null}
 					{page.to > page.from || !page.footer ? (
 						<ItemsTable items={items} from={page.from} to={page.to} />

@@ -8,6 +8,7 @@ import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
+import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 
 import CheckboxOutlinedIcon from '@mui/icons-material/CheckBoxOutlined';
@@ -20,7 +21,7 @@ import { DataGrid } from '@mui/x-data-grid';
 import { getStatusConfig } from './constants';
 import { formatDateShort } from './utils';
 
-function DeliverySlipTable({ rows, loading, onEdit, onDelete, onPrint }) {
+function DeliverySlipTable({ rows, loading, selectedRowIds = [], onSelectionChange, onEdit, onDelete, onPrint }) {
 	const [contextMenu, setContextMenu] = useState(null);
 
 	const columns = useMemo(
@@ -148,10 +149,21 @@ function DeliverySlipTable({ rows, loading, onEdit, onDelete, onPrint }) {
 					height: 540,
 					width: '100%',
 					'& .MuiDataGrid-root': { border: 'none' },
+					'& .MuiDataGrid-root .MuiDataGrid-withBorderColor': {
+						borderColor: 'border',
+					},
+					'& .MuiDataGrid-root .MuiCheckbox-root': {
+						color: (theme) => (theme.palette.mode === 'dark' ? theme.palette.primary[200] : '#1976d2'),
+					},
+					'& .MuiDataGrid-root .MuiCheckbox-root.Mui-checked': {
+						color: (theme) =>
+							theme.palette.mode === 'dark' ? theme.palette.primary[400] : theme.palette.primary.main,
+					},
 					'& .MuiDataGrid-columnHeaders': {
 						backgroundColor: (theme) =>
 							theme.palette.mode === 'dark' ? alpha(theme.palette.common.white, 0.05) : '#F4F7FB',
 						borderBottom: '1px solid',
+						borderTop: '1px solid',
 						borderColor: 'border',
 					},
 					'& .MuiDataGrid-columnHeaderTitle': {
@@ -165,7 +177,22 @@ function DeliverySlipTable({ rows, loading, onEdit, onDelete, onPrint }) {
 						borderColor: 'divider',
 						alignItems: 'center',
 					},
+					'& .MuiDataGrid-root .MuiDataGrid-row:hover': (theme) =>
+						theme.palette.mode === 'dark'
+							? { backgroundColor: alpha(theme.palette.common.white, 0.06) }
+							: {},
+					'& .MuiDataGrid-root .MuiDataGrid-row.Mui-selected': (theme) =>
+						theme.palette.mode === 'dark'
+							? { backgroundColor: alpha(theme.palette.primary[200], 0.16) }
+							: {},
+					'& .MuiDataGrid-root .MuiDataGrid-row.Mui-selected:hover': (theme) =>
+						theme.palette.mode === 'dark'
+							? { backgroundColor: alpha(theme.palette.primary[200], 0.24) }
+							: {},
 					'& .MuiDataGrid-cell:focus, & .MuiDataGrid-columnHeader:focus': { outline: 'none' },
+					'& .MuiDataGrid-columnSeparator': {
+						color: 'border',
+					},
 					'& .MuiDataGrid-row': {
 						cursor: 'context-menu',
 					},
@@ -177,7 +204,11 @@ function DeliverySlipTable({ rows, loading, onEdit, onDelete, onPrint }) {
 					columns={columns}
 					loading={loading}
 					density="compact"
+					checkboxSelection
 					disableRowSelectionOnClick
+					rowSelectionModel={selectedRowIds}
+					onRowSelectionModelChange={onSelectionChange}
+					hideFooterSelectedRowCount
 					pagination
 					initialState={{
 						pagination: { paginationModel: { page: 0, pageSize: 15 } },
@@ -229,15 +260,17 @@ function DeliverySlipTable({ rows, loading, onEdit, onDelete, onPrint }) {
 						theme.palette.mode === 'dark' ? alpha(theme.palette.common.white, 0.02) : '#FBFCFE',
 				}}
 			>
-				<Chip
-					icon={<CheckboxOutlinedIcon sx={{ fontSize: 16 }} />}
-					label={`${rows.length} lembar`}
-					size="small"
-					variant="outlined"
-					sx={{ fontWeight: 700, bgcolor: 'background.paper' }}
-				/>
-				<Typography variant="caption" color="text.secondary">
-					Klik kanan pada baris untuk Print, Edit, atau Hapus.
+				<Tooltip title="Klik kanan pada baris untuk Print, Edit, atau Hapus. Centang baris untuk print massal.">
+					<Chip
+						icon={<CheckboxOutlinedIcon sx={{ fontSize: 16 }} />}
+						label={`${rows.length} lembar`}
+						size="small"
+						variant="outlined"
+						sx={{ fontWeight: 700, bgcolor: 'background.paper' }}
+					/>
+				</Tooltip>
+				<Typography variant="caption" color="text.secondary" sx={{ ml: 'auto' }}>
+					{selectedRowIds.length > 0 ? `${selectedRowIds.length} dipilih` : ''}
 				</Typography>
 			</Box>
 		</Paper>

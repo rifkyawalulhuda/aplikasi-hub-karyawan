@@ -5,6 +5,10 @@ import Box from '@mui/material/Box';
 import Breadcrumbs from '@mui/material/Breadcrumbs';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogTitle from '@mui/material/DialogTitle';
 import Grid from '@mui/material/Grid';
 import InputAdornment from '@mui/material/InputAdornment';
 import Link from '@mui/material/Link';
@@ -15,6 +19,7 @@ import Typography from '@mui/material/Typography';
 
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
+import PrintOutlinedIcon from '@mui/icons-material/PrintOutlined';
 import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
 
 import CardHeader from '@/components/cardHeader';
@@ -34,6 +39,8 @@ import apiRequest from '@/services/api';
 import DeliverySlipFormDialog from './deliverySlipFormDialog';
 import DeliverySlipTable from './deliverySlipTable';
 import { formatDateShort, formatDateId } from './utils';
+
+const BULK_PRINT_WARNING_THRESHOLD = 20;
 
 async function fetchEmployeeOptions(siteId) {
 	const path = siteId ? `/master/employees?siteId=${siteId}` : '/master/employees';
@@ -55,6 +62,8 @@ function LembarPengirimanPage() {
 	const [dateFrom, setDateFrom] = useState('');
 	const [dateTo, setDateTo] = useState('');
 	const [statusFilter, setStatusFilter] = useState('ALL');
+	const [selectedRowIds, setSelectedRowIds] = useState([]);
+	const [bulkPrintConfirmOpen, setBulkPrintConfirmOpen] = useState(false);
 
 	const loadData = useCallback(async () => {
 		setLoading(true);
@@ -117,6 +126,26 @@ function LembarPengirimanPage() {
 			);
 		});
 	}, [rows, searchKeyword, dateFrom, dateTo, statusFilter]);
+
+	useEffect(() => {
+		const filteredRowIdSet = new Set(filteredRows.map((row) => row.id));
+
+		setSelectedRowIds((currentIds) => {
+			const nextIds = currentIds.filter((id) => filteredRowIdSet.has(id));
+
+			if (nextIds.length === currentIds.length && nextIds.every((id, index) => id === currentIds[index])) {
+				return currentIds;
+			}
+
+			return nextIds;
+		});
+	}, [filteredRows]);
+
+	const selectedRows = useMemo(
+		() => filteredRows.filter((row) => selectedRowIds.includes(row.id)),
+		[filteredRows, selectedRowIds],
+	);
+	const hasSelection = selectedRows.length > 0;
 
 	const closeFormDialog = () => {
 		setFormOpen(false);
@@ -189,6 +218,37 @@ function LembarPengirimanPage() {
 	const handlePrint = (row) => {
 		const params = currentSiteId ? `?siteId=${currentSiteId}` : '';
 		window.open(`/print/dokumen/lembar-pengiriman/${row.id}${params}`, '_blank', 'noopener,noreferrer');
+	};
+
+	const openBulkPrint = () => {
+		const searchParams = new URLSearchParams({
+			ids: selectedRows.map((row) => row.id).join(','),
+		});
+
+		if (currentSiteId) {
+			searchParams.set('siteId', String(currentSiteId));
+		}
+
+		setBulkPrintConfirmOpen(false);
+		window.open(
+			`/print/dokumen/lembar-pengiriman-massal?${searchParams.toString()}`,
+			'_blank',
+			'noopener,noreferrer',
+		);
+	};
+
+	const handlePrintSelected = () => {
+		if (!hasSelection) {
+			enqueueSnackbar('Pilih minimal satu lembar pengiriman untuk dicetak.', { variant: 'error' });
+			return;
+		}
+
+		if (selectedRows.length > BULK_PRINT_WARNING_THRESHOLD) {
+			setBulkPrintConfirmOpen(true);
+			return;
+		}
+
+		openBulkPrint();
 	};
 
 	const handleExportExcel = async () => {
@@ -358,7 +418,37 @@ function LembarPengirimanPage() {
 							</TextField>
 						</Grid>
 						<Grid item xs={12} lg="auto" sx={{ ml: { lg: 'auto' } }}>
-							<Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
+							<Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ flexWrap: 'wrap' }}>
+								<Stack
+									direction="row"
+									spacing={1}
+									alignItems="center"
+									sx={{ minWidth: { lg: 320 }, justifyContent: 'flex-end' }}
+								>
+									<Typography
+										variant="body2"
+										color="text.secondary"
+										sx={{
+											whiteSpace: 'nowrap',
+											visibility: hasSelection ? 'visible' : 'hidden',
+										}}
+									>
+										{selectedRows.length} data dipilih
+									</Typography>
+									<Button
+										variant="outlined"
+										color="secondary"
+										startIcon={<PrintOutlinedIcon />}
+										onClick={handlePrintSelected}
+										sx={{
+											minWidth: 170,
+											whiteSpace: 'nowrap',
+											visibility: hasSelection ? 'visible' : 'hidden',
+										}}
+									>
+										Print A4 Terpilih
+									</Button>
+								</Stack>
 								<Button
 									variant="outlined"
 									startIcon={<DownloadOutlinedIcon />}
@@ -383,6 +473,10 @@ function LembarPengirimanPage() {
 					<DeliverySlipTable
 						rows={filteredRows}
 						loading={loading}
+						selectedRowIds={selectedRowIds}
+						onSelectionChange={(selectionModel) =>
+							setSelectedRowIds(selectionModel.map((id) => Number(id)))
+						}
 						onEdit={(item) => {
 							setSelectedItem(item);
 							setFormOpen(true);
@@ -413,6 +507,26 @@ function LembarPengirimanPage() {
 				onClose={closeDeleteDialog}
 				onConfirm={handleDelete}
 			/>
+			<Dialog open={bulkPrintConfirmOpen} onClose={() => setBulkPrintConfirmOpen(false)} fullWidth maxWidth="xs">
+				<DialogTitle>Cetak Banyak Lembar Pengiriman</DialogTitle>
+				<DialogContent>
+					<Typography variant="body1">
+						Anda akan mencetak{' '}
+						<Typography component="span" fontWeight={700}>
+							{selectedRows.length} lembar pengiriman
+						</Typography>{' '}
+						sekaligus. Setiap lembar dapat memakan lebih dari satu halaman A4.
+					</Typography>
+				</DialogContent>
+				<DialogActions sx={{ px: 3, pb: 3 }}>
+					<Button onClick={() => setBulkPrintConfirmOpen(false)} color="inherit">
+						Batal
+					</Button>
+					<Button onClick={openBulkPrint} variant="contained">
+						Tetap Cetak
+					</Button>
+				</DialogActions>
+			</Dialog>
 		</>
 	);
 }
