@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 
+import { alpha } from '@mui/material/styles';
+
 import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
 import Paper from '@mui/material/Paper';
@@ -30,7 +32,14 @@ function GuidanceTable({ rows, selectedRowIds, onSelectionChange, onView, onEdit
 				renderCell: (params) => {
 					const rowIndex = params.api.getRowIndexRelativeToVisibleRows(params.id);
 					return (
-						<Typography variant="body2" sx={{ fontWeight: 700, color: '#123B66' }}>
+						<Typography
+							variant="body2"
+							sx={{
+								fontWeight: 700,
+								color: (theme) =>
+									theme.palette.mode === 'dark' ? theme.palette.primary[200] : '#123B66',
+							}}
+						>
 							{rowIndex != null ? rowIndex + 1 : params.value}
 						</Typography>
 					);
@@ -247,9 +256,12 @@ function GuidanceTable({ rows, selectedRowIds, onSelectionChange, onView, onEdit
 			sx={{
 				borderRadius: 3,
 				overflow: 'hidden',
-				borderColor: 'rgba(15, 23, 42, 0.12)',
-				boxShadow: '0 12px 30px rgba(15, 23, 42, 0.06)',
-				backgroundColor: '#FFFFFF',
+				borderColor: 'border',
+				boxShadow: (theme) =>
+					theme.palette.mode === 'dark'
+						? '0 12px 30px rgba(0, 0, 0, 0.35)'
+						: '0 12px 30px rgba(15, 23, 42, 0.06)',
+				bgcolor: 'background.paper',
 			}}
 		>
 			<Box
@@ -259,33 +271,52 @@ function GuidanceTable({ rows, selectedRowIds, onSelectionChange, onView, onEdit
 					'& .MuiDataGrid-root': {
 						border: 'none',
 					},
+					'& .MuiDataGrid-root .MuiDataGrid-withBorderColor': {
+						borderColor: 'border',
+					},
+					'& .MuiDataGrid-root .MuiCheckbox-root': {
+						color: (theme) => (theme.palette.mode === 'dark' ? theme.palette.primary[200] : '#1976d2'),
+					},
+					'& .MuiDataGrid-root .MuiCheckbox-root.Mui-checked': {
+						color: (theme) =>
+							theme.palette.mode === 'dark' ? theme.palette.primary[400] : theme.palette.primary.main,
+					},
 					'& .MuiDataGrid-columnHeaders': {
-						backgroundColor: '#F4F7FB',
-						borderBottom: '1px solid rgba(15, 23, 42, 0.12)',
-						borderTop: '1px solid rgba(15, 23, 42, 0.02)',
+						backgroundColor: (theme) =>
+							theme.palette.mode === 'dark' ? alpha(theme.palette.common.white, 0.05) : '#F4F7FB',
+						borderBottom: '1px solid',
+						borderTop: '1px solid',
+						borderColor: 'border',
 					},
 					'& .MuiDataGrid-columnHeaderTitle': {
 						fontWeight: 800,
 						fontSize: '0.78rem',
 						letterSpacing: '0.02em',
-						color: '#20324A',
+						color: (theme) => (theme.palette.mode === 'dark' ? theme.palette.text.primary : '#20324A'),
 					},
 					'& .MuiDataGrid-cell': {
-						borderBottom: '1px solid rgba(15, 23, 42, 0.08)',
+						borderBottom: '1px solid',
+						borderColor: 'divider',
 						alignItems: 'center',
 						py: 1.15,
 					},
-					'& .MuiDataGrid-row:hover': {
-						backgroundColor: 'rgba(25, 118, 210, 0.03)',
-					},
-					'& .MuiDataGrid-row.Mui-selected': {
-						backgroundColor: 'rgba(25, 118, 210, 0.06)',
-					},
+					'& .MuiDataGrid-root .MuiDataGrid-row:hover': (theme) =>
+						theme.palette.mode === 'dark'
+							? { backgroundColor: alpha(theme.palette.common.white, 0.06) }
+							: {},
+					'& .MuiDataGrid-root .MuiDataGrid-row.Mui-selected': (theme) =>
+						theme.palette.mode === 'dark'
+							? { backgroundColor: alpha(theme.palette.primary[200], 0.16) }
+							: {},
+					'& .MuiDataGrid-root .MuiDataGrid-row.Mui-selected:hover': (theme) =>
+						theme.palette.mode === 'dark'
+							? { backgroundColor: alpha(theme.palette.primary[200], 0.24) }
+							: {},
 					'& .MuiDataGrid-cell:focus, & .MuiDataGrid-columnHeader:focus': {
 						outline: 'none',
 					},
 					'& .MuiDataGrid-columnSeparator': {
-						color: 'rgba(15, 23, 42, 0.12)',
+						color: 'border',
 					},
 				}}
 				onMouseDownCapture={handleColumnHeaderMouseDown}
@@ -309,9 +340,6 @@ function GuidanceTable({ rows, selectedRowIds, onSelectionChange, onView, onEdit
 					showCellVerticalBorder
 					showColumnVerticalBorder
 					sx={{
-						'& .MuiDataGrid-columnHeaderCheckbox .MuiCheckbox-root': {
-							color: '#1976d2',
-						},
 						'& .MuiDataGrid-columnHeader': {
 							position: 'relative',
 						},
@@ -327,7 +355,10 @@ function GuidanceTable({ rows, selectedRowIds, onSelectionChange, onView, onEdit
 							transition: 'background-color 0.2s ease',
 						},
 						'& .MuiDataGrid-columnHeader:hover::after': {
-							backgroundColor: 'rgba(25, 118, 210, 0.2)',
+							backgroundColor: (theme) =>
+								theme.palette.mode === 'dark'
+									? alpha(theme.palette.primary[200], 0.45)
+									: alpha(theme.palette.primary.main, 0.2),
 						},
 						'& .MuiDataGrid-row': {
 							cursor: 'context-menu',
@@ -369,8 +400,10 @@ function GuidanceTable({ rows, selectedRowIds, onSelectionChange, onView, onEdit
 					gap: 1,
 					px: 2,
 					py: 1,
-					borderTop: '1px solid rgba(15, 23, 42, 0.08)',
-					backgroundColor: '#FBFCFE',
+					borderTop: '1px solid',
+					borderColor: 'border',
+					bgcolor: (theme) =>
+						theme.palette.mode === 'dark' ? alpha(theme.palette.common.white, 0.02) : '#FBFCFE',
 				}}
 			>
 				<Chip
@@ -380,7 +413,7 @@ function GuidanceTable({ rows, selectedRowIds, onSelectionChange, onView, onEdit
 					variant="outlined"
 					sx={{
 						fontWeight: 700,
-						bgcolor: '#FFFFFF',
+						bgcolor: 'background.paper',
 					}}
 				/>
 				<Typography variant="caption" color="text.secondary">
