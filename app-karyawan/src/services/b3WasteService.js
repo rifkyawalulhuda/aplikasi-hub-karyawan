@@ -62,10 +62,20 @@ export async function deleteWasteOutRecord(siteId, id) {
 
 // --- Export ---
 
-export async function exportWasteRecords(siteId) {
-	const path = appendSiteIdParam('/b3-waste/records/export', siteId);
+export async function exportWasteRecords(siteId, tahun) {
+	let path = appendSiteIdParam('/b3-waste/records/export', siteId);
+	if (tahun) {
+		const separator = path.includes('?') ? '&' : '?';
+		path = `${path}${separator}tahun=${tahun}`;
+	}
 	const url = `${getApiBaseUrl()}${path}`;
-	return downloadFile(url, 'Pencatatan_Limbah_B3.xlsx');
+	const fallbackName = tahun ? `Pencatatan_Limbah_B3_${tahun}.xlsx` : 'Pencatatan_Limbah_B3.xlsx';
+	return downloadFile(url, fallbackName);
+}
+
+export async function getWasteExportYears(siteId) {
+	const path = appendSiteIdParam('/b3-waste/records/export/years', siteId);
+	return apiRequest(path);
 }
 
 // --- Waste Types (Master Data) ---

@@ -7,7 +7,9 @@ import Card from '@mui/material/Card';
 import Chip from '@mui/material/Chip';
 import CircularProgress from '@mui/material/CircularProgress';
 import Link from '@mui/material/Link';
+import MenuItem from '@mui/material/MenuItem';
 import Stack from '@mui/material/Stack';
+import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
@@ -26,7 +28,13 @@ import DeleteConfirmDialog from '@/components/masterData/deleteConfirmDialog';
 import PageHeader from '@/components/pageHeader';
 import { useAuth } from '@/contexts/authContext';
 import { useSite } from '@/contexts/siteContext';
-import { deleteWasteRecord, exportWasteRecords, getSiteProfile, getWasteRecords } from '@/services/b3WasteService';
+import {
+	deleteWasteRecord,
+	exportWasteRecords,
+	getSiteProfile,
+	getWasteExportYears,
+	getWasteRecords,
+} from '@/services/b3WasteService';
 
 import CetakPencatatanDialog from './CetakPencatatanDialog';
 import WasteOutRecordForm from './WasteOutRecordForm';
@@ -85,6 +93,8 @@ function PencatatanLimbahB3({ hideHeader = false }) {
 	const [deleteOpen, setDeleteOpen] = useState(false);
 	const [cetakOpen, setCetakOpen] = useState(false);
 	const [responsibleName, setResponsibleName] = useState('');
+	const [exportYears, setExportYears] = useState([]);
+	const [exportYear, setExportYear] = useState('all');
 	const [selectedRecord, setSelectedRecord] = useState(null);
 	const [submitting, setSubmitting] = useState(false);
 
@@ -126,6 +136,25 @@ function PencatatanLimbahB3({ hideHeader = false }) {
 	useEffect(() => {
 		fetchData();
 	}, [fetchData]);
+
+	const fetchExportYears = useCallback(async () => {
+		if (!currentSiteId) {
+			setExportYears([]);
+			setExportYear('all');
+			return;
+		}
+
+		try {
+			const result = await getWasteExportYears(currentSiteId);
+			setExportYears(result?.years || []);
+		} catch {
+			setExportYears([]);
+		}
+	}, [currentSiteId]);
+
+	useEffect(() => {
+		fetchExportYears();
+	}, [fetchExportYears]);
 
 	// --- Event Handlers ---
 
@@ -183,7 +212,7 @@ function PencatatanLimbahB3({ hideHeader = false }) {
 	const handleExportExcel = async () => {
 		try {
 			enqueueSnackbar('Menyiapkan file export Excel...', { variant: 'info' });
-			await exportWasteRecords(currentSiteId);
+			await exportWasteRecords(currentSiteId, exportYear === 'all' ? null : exportYear);
 		} catch (err) {
 			enqueueSnackbar(err.message || 'Gagal mengekspor data', { variant: 'error' });
 		}
@@ -201,12 +230,17 @@ function PencatatanLimbahB3({ hideHeader = false }) {
 		fetchData();
 	};
 
-	const handleOpenCetak = () => {
+	const handleOpenCetak = async () => {
 		if (!currentSiteId) return;
+
+		try {
+			const profile = await getSiteProfile(currentSiteId);
+			setResponsibleName(profile?.responsibleName || '');
+		} catch {
+			setResponsibleName('');
+		}
+
 		setCetakOpen(true);
-		getSiteProfile(currentSiteId)
-			.then((profile) => setResponsibleName(profile?.responsibleName || ''))
-			.catch(() => setResponsibleName(''));
 	};
 
 	// --- Columns ---
@@ -532,7 +566,22 @@ function PencatatanLimbahB3({ hideHeader = false }) {
 						mb: 2.5,
 					}}
 				>
-					<Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5}>
+					<Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5} alignItems={{ md: 'center' }}>
+						<TextField
+							select
+							size="small"
+							label="Tahun Export"
+							value={exportYear}
+							onChange={(event) => setExportYear(event.target.value)}
+							sx={{ minWidth: 150 }}
+						>
+							<MenuItem value="all">Semua Tahun</MenuItem>
+							{exportYears.map((year) => (
+								<MenuItem key={year} value={year}>
+									{year}
+								</MenuItem>
+							))}
+						</TextField>
 						<Button
 							variant="outlined"
 							startIcon={<DownloadOutlinedIcon />}

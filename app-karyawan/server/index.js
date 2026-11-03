@@ -41,6 +41,8 @@ import siteProfileRouter from './routes/siteProfile.js';
 import sitesRouter from './routes/sites.js';
 import b3WasteRecordsRouter from './routes/b3WasteRecords.js';
 import b3WasteTypesRouter from './routes/b3WasteTypes.js';
+import nonB3WasteRecordsRouter from './routes/nonB3WasteRecords.js';
+import nonB3WasteTypesRouter from './routes/nonB3WasteTypes.js';
 import dashboardRouter from './routes/dashboard.js';
 import deliverySlipsRouter from './routes/deliverySlips.js';
 import emailNotificationSettingsRouter from './routes/emailNotificationSettings.js';
@@ -233,6 +235,8 @@ app.use('/api/data-karyawan/license-certifications', requireAdminAuth, requireWr
 app.use('/api/data-unit/license-certifications', requireAdminAuth, requireWriteRole, unitLicenseCertificationsRouter);
 app.use('/api/b3-waste/records', requireAdminAuth, requireWriteRole, b3WasteRecordsRouter);
 app.use('/api/b3-waste/types', requireAdminAuth, requireWriteRole, b3WasteTypesRouter);
+app.use('/api/non-b3-waste/records', requireAdminAuth, requireWriteRole, nonB3WasteRecordsRouter);
+app.use('/api/non-b3-waste/types', requireAdminAuth, requireWriteRole, nonB3WasteTypesRouter);
 app.use('/api/dokumen/lembar-pengiriman', requireAdminAuth, requireWriteRole, deliverySlipsRouter);
 app.use('/api/admin/email-notification-settings', requireAdminAuth, requireWriteRole, emailNotificationSettingsRouter);
 

@@ -1135,6 +1135,19 @@ Yang sudah selesai:
   - `B3WasteType` (`b3_waste_types`): id, siteId, kode (VarChar 20), nama (VarChar 200), unique [siteId, kode]
   - `B3WasteRecord` (`b3_waste_records`): id, siteId, jenisLimbahId, tanggalMasuk (Date), sumberLimbah, jumlahMasuk (Decimal 10,2), maksimalPenyimpanan (90/180), tanggalBatas (Date, computed), petugasPenanggungJawab
   - `B3WasteOutRecord` (`b3_waste_out_records`): id, siteId, wasteRecordId, tanggalKeluar (Date), jumlahKeluar (Decimal 10,2), tujuanPenyerahan, nomorSuratJalan, nomorEManifest (nullable), nopolKendaraan (nullable), vendorId (nullable, FK ke MasterVendor), petugasPenanggungJawab
+- Limbah Non-B3:
+  - `NonB3WasteType` (`non_b3_waste_types`): id, siteId, kode (unik per site), nama
+  - `NonB3WasteRecord` (`non_b3_waste_records`): id, siteId, jenisLimbahId, tanggalMasuk, tanggalKeluar, jumlahKg (Decimal 10,2), nopolKendaraan?, nomorDokumen?, nomorSuratJalan, petugasPenanggungJawab?, vendorId? (MasterVendor)
+  - 1 baris = 1 transaksi lengkap (masuk + keluar), tanpa monitoring penyimpanan/perlakuan/tujuan penyerahan
+  - Backend: `server/routes/nonB3WasteTypes.js`, `server/routes/nonB3WasteRecords.js` (CRUD + `/neraca` + `/pencatatan-print`)
+  - Ekspor Excel: `GET /api/non-b3-waste/records/export?tahun=` (`server/lib/nonB3WasteExport.js`), 10 kolom + baris TOTAL, format angka Indonesia; filter opsional per tahun (dari `tanggalMasuk`), nama file memuat tahun bila dipilih, tahun tanpa data tetap menghasilkan file berisi header saja
+  - Daftar tahun dropdown export: `GET /api/non-b3-waste/records/export/years`; untuk B3: `GET /api/b3-waste/records/export/years` dan `GET /api/b3-waste/records/export?tahun=`
+  - Export B3 per tahun memuat SEMUA pengiriman (out-record) dari catatan yang tanggal masuknya di tahun itu; `sisaLimbah`/`sisaHari` tetap dihitung per hari ini
+  - Neraca dihitung **per bulan**: `GET /api/non-b3-waste/records/neraca?tahun=&bulan=` (bulan 1-12), masuk difilter dari `tanggalMasuk`, keluar dari `tanggalKeluar`
+  - Mount: `/api/non-b3-waste/types` dan `/api/non-b3-waste/records`
+  - Route frontend: `/limbah-non-b3/pencatatan`, `/limbah-non-b3/neraca`, print `/print/limbah-non-b3/pencatatan`
+  - Master jenis limbah non-B3 ada di tab Master Data Dokumen: `/data-master/master-data-dokumen/jenis-limbah-non-b3`
+  - Cetak memakai komponen bersama `src/components/dokumen/catatanPengelolaanLimbahDocument.jsx` (dipakai juga oleh B3), label dokumen `No. Dokumen` + `SURAT JALAN`
 - Backend routes:
   - `server/routes/b3WasteRecords.js` — CRUD limbah masuk + limbah keluar + export Excel
   - `server/routes/b3WasteTypes.js` — CRUD master jenis limbah B3

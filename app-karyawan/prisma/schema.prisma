@@ -122,6 +122,7 @@ model MasterVendor {
   updatedAt       DateTime                   @updatedAt
   siteId          Int
   wasteOutRecords B3WasteOutRecord[]
+  nonB3WasteRecords NonB3WasteRecord[]
   site            MasterSite                 @relation(fields: [siteId], references: [id])
   certifications  UnitLicenseCertification[]
 
@@ -822,6 +823,40 @@ model B3WasteOutRecord {
   wasteRecord            B3WasteRecord    @relation(fields: [wasteRecordId], references: [id])
 
   @@map("b3_waste_out_records")
+}
+
+model NonB3WasteType {
+  id           Int                @id @default(autoincrement())
+  siteId       Int
+  kode         String             @db.VarChar(20)
+  nama         String             @db.VarChar(200)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  wasteRecords NonB3WasteRecord[]
+
+  @@unique([siteId, kode])
+  @@map("non_b3_waste_types")
+}
+
+model NonB3WasteRecord {
+  id                     Int           @id @default(autoincrement())
+  siteId                 Int
+  jenisLimbahId          Int
+  tanggalMasuk           DateTime      @db.Date
+  tanggalKeluar          DateTime      @db.Date
+  jumlahKg               Decimal       @db.Decimal(10, 2)
+  nopolKendaraan         String?       @db.VarChar(20)
+  nomorDokumen           String?       @db.VarChar(100)
+  nomorSuratJalan        String        @db.VarChar(100)
+  petugasPenanggungJawab String?       @db.VarChar(100)
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @updatedAt
+  jenisLimbah            NonB3WasteType @relation(fields: [jenisLimbahId], references: [id])
+  vendorId               Int?
+  vendor                 MasterVendor?  @relation(fields: [vendorId], references: [id])
+
+  @@index([siteId, tanggalMasuk])
+  @@map("non_b3_waste_records")
 }
 
 model SiteProfile {

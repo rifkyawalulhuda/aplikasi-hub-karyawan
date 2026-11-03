@@ -64,6 +64,12 @@ const MasterDataKaryawanCombinedPage = withLazyLoadably(
 const LimbahB3CombinedPage = withLazyLoadably(
 	lazy(() => import('@/pages/employeeData/pencatatanLimbahB3/LimbahB3Combined')),
 );
+const LimbahNonB3CombinedPage = withLazyLoadably(
+	lazy(() => import('@/pages/employeeData/pencatatanLimbahNonB3/LimbahNonB3Combined')),
+);
+const PencatatanLimbahNonB3PrintPage = withLazyLoadably(
+	lazy(() => import('@/pages/employeeData/pencatatanLimbahNonB3/PencatatanLimbahNonB3Print')),
+);
 const NeracaLimbahB3PrintPage = withLazyLoadably(
 	lazy(() => import('@/pages/employeeData/pencatatanLimbahB3/NeracaLimbahB3Print')),
 );
@@ -123,6 +129,7 @@ function Router() {
 						/>
 						<Route path="/print/limbah-b3/neraca" element={<NeracaLimbahB3PrintPage />} />
 						<Route path="/print/limbah-b3/pencatatan" element={<PencatatanLimbahB3PrintPage />} />
+						<Route path="/print/limbah-non-b3/pencatatan" element={<PencatatanLimbahNonB3PrintPage />} />
 						<Route
 							path="/print/dokumen/lembar-pengiriman-massal"
 							element={<LembarPengirimanBulkPrintPage />}
@@ -187,6 +194,10 @@ function Router() {
 								path="data-master/master-data-dokumen/jenis-limbah-b3"
 								element={<MasterDataDokumenCombinedPage />}
 							/>
+							<Route
+								path="data-master/master-data-dokumen/jenis-limbah-non-b3"
+								element={<MasterDataDokumenCombinedPage />}
+							/>
 							<Route path="data-karyawan/bimbingan-pengarahan" element={<GuidanceRecordsPage />} />
 							<Route
 								path="data-karyawan/bimbingan-pengarahan/:id"
@@ -202,6 +213,8 @@ function Router() {
 							<Route path="data-karyawan/cuti-karyawan/flow" element={<LeaveCombinedPage />} />
 							<Route path="limbah-b3/pencatatan" element={<LimbahB3CombinedPage />} />
 							<Route path="limbah-b3/neraca" element={<LimbahB3CombinedPage />} />
+							<Route path="limbah-non-b3/pencatatan" element={<LimbahNonB3CombinedPage />} />
+							<Route path="limbah-non-b3/neraca" element={<LimbahNonB3CombinedPage />} />
 							<Route path="dokumen/lembar-pengiriman" element={<LembarPengirimanPage />} />
 							<Route
 								path="data-unit/lisensi-sertifikasi-unit"

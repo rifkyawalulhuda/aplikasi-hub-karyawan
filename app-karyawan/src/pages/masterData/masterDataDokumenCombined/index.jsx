@@ -14,6 +14,7 @@ import MasterDokKaryawanPage from '@/pages/masterData/masterDokKaryawan';
 import MasterCutiKaryawanPage from '@/pages/masterData/masterCutiKaryawan';
 import MasterHolidayPage from '@/pages/masterData/masterHoliday';
 import JenisLimbahB3Tab from '@/pages/masterData/masterDokumen/JenisLimbahB3Tab';
+import JenisLimbahNonB3Tab from '@/pages/masterData/masterDokumen/JenisLimbahNonB3Tab';
 
 const TAB_CONFIG = [
 	{ label: 'Master Dok PKB', path: '/data-master/master-data-dokumen/master-dok-pkb' },
@@ -21,6 +22,7 @@ const TAB_CONFIG = [
 	{ label: 'Master Cuti Karyawan', path: '/data-master/master-data-dokumen/master-cuti-karyawan' },
 	{ label: 'Master Hari Libur', path: '/data-master/master-data-dokumen/master-hari-libur' },
 	{ label: 'Jenis Limbah B3', path: '/data-master/master-data-dokumen/jenis-limbah-b3' },
+	{ label: 'Jenis Limbah Non-B3', path: '/data-master/master-data-dokumen/jenis-limbah-non-b3' },
 ];
 
 const TAB_PATHS = TAB_CONFIG.map((tab) => tab.path);
@@ -71,6 +73,9 @@ function MasterDataDokumenCombinedPage() {
 			</Box>
 			<Box sx={{ display: activeTab === 4 ? 'block' : 'none' }}>
 				<JenisLimbahB3Tab />
+			</Box>
+			<Box sx={{ display: activeTab === 5 ? 'block' : 'none' }}>
+				<JenisLimbahNonB3Tab />
 			</Box>
 		</>
 	);

@@ -1464,13 +1464,49 @@ router.get(
 	}),
 );
 
+// GET /export/years — daftar tahun (dari tanggalMasuk) yang memiliki data
 router.get(
-	'/export',
+	'/export/years',
 	withAsync(async (req, res) => {
 		const siteId = getSiteId(req);
 
 		const records = await prisma.b3WasteRecord.findMany({
 			where: { siteId },
+			select: { tanggalMasuk: true },
+		});
+
+		const years = Array.from(new Set(records.map((record) => new Date(record.tanggalMasuk).getUTCFullYear())))
+			.filter((year) => !Number.isNaN(year))
+			.sort((left, right) => right - left);
+
+		res.json({ years });
+	}),
+);
+
+router.get(
+	'/export',
+	withAsync(async (req, res) => {
+		const siteId = getSiteId(req);
+		const tahunParam = req.query.tahun;
+		let tahun = null;
+
+		if (tahunParam !== undefined && tahunParam !== '') {
+			tahun = parseInt(tahunParam, 10);
+			if (Number.isNaN(tahun)) {
+				return res.status(400).json({ message: 'Parameter tahun tidak valid' });
+			}
+		}
+
+		const where = { siteId };
+		if (tahun) {
+			where.tanggalMasuk = {
+				gte: new Date(Date.UTC(tahun, 0, 1, 0, 0, 0)),
+				lte: new Date(Date.UTC(tahun, 11, 31, 23, 59, 59)),
+			};
+		}
+
+		const records = await prisma.b3WasteRecord.findMany({
+			where,
 			orderBy: { tanggalMasuk: 'desc' },
 			include: {
 				jenisLimbah: { select: { id: true, kode: true, nama: true } },
@@ -1490,10 +1526,6 @@ router.get(
 			},
 		});
 
-		if (records.length === 0) {
-			return res.status(400).json({ message: 'Tidak ada data untuk diekspor' });
-		}
-
 		const recordsWithComputed = records.map((record) => {
 			const { sisaLimbah, sisaHari, statusPenyimpanan } = computeFields(record);
 			return { ...record, sisaLimbah, sisaHari, statusPenyimpanan };
@@ -1503,7 +1535,9 @@ router.get(
 
 		const today = new Date();
 		const dateStr = today.toISOString().split('T')[0];
-		const filename = `Pencatatan_Limbah_B3_${dateStr}.xlsx`;
+		const filename = tahun
+			? `Pencatatan_Limbah_B3_${tahun}.xlsx`
+			: `Pencatatan_Limbah_B3_${dateStr}.xlsx`;
 
 		res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
 		res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
@@ -70,20 +70,24 @@ export default function CetakPencatatanDialog({
 	const [catatan, setCatatan] = useState('');
 	const [error, setError] = useState('');
 	const [opening, setOpening] = useState(false);
+	const wasOpenRef = useRef(false);
 
 	useEffect(() => {
-		if (!open) return;
-		const period = getInitialPeriod();
-		setFrom(period.from);
-		setTo(period.to);
-		setLokasiKerja(siteName);
-		setPenanggungJawab(adminName);
-		setDibuatOleh(adminName);
-		setDiperiksaOleh('');
-		setDiketahuiOleh(responsibleName);
-		setCatatan('');
-		setError('');
-		setOpening(false);
+		if (open && !wasOpenRef.current) {
+			const period = getInitialPeriod();
+			setFrom(period.from);
+			setTo(period.to);
+			setLokasiKerja(siteName);
+			setPenanggungJawab(adminName);
+			setDibuatOleh(adminName);
+			setDiperiksaOleh('');
+			setDiketahuiOleh(responsibleName);
+			setCatatan('');
+			setError('');
+			setOpening(false);
+		}
+
+		wasOpenRef.current = open;
 	}, [open, siteName, adminName, responsibleName]);
 
 	const handleSubmit = (event) => {
