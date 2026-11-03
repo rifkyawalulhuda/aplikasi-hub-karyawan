@@ -241,6 +241,7 @@ model Employee {
   pushSubscriptions                  EmployeePushSubscription[]
   selfServiceChangeLogs              EmployeeSelfServiceChangeLog[]
   trainingParticipants               EmployeeTrainingParticipant[]
+  skillAssessments                   EmployeeSkillAssessment[]
   department                         Department                         @relation(fields: [departmentId], references: [id])
   groupShift                         MasterGroupShift?                  @relation(fields: [groupShiftId], references: [id])
   jobLevel                           JobLevel                           @relation(fields: [jobLevelId], references: [id])
@@ -598,6 +599,7 @@ model MasterAdmin {
   siteId       Int?
   employee     Employee    @relation(fields: [employeeId], references: [id])
   site         MasterSite? @relation(fields: [siteId], references: [id])
+  skillAssessments EmployeeSkillAssessment[]
 
   @@index([employeeId])
   @@index([siteId])
@@ -692,13 +694,16 @@ model EmployeeTraining {
   createdAt          DateTime                      @default(now())
   updatedAt          DateTime                      @updatedAt
   siteId             Int
+  masterTrainingId   Int?
   participants       EmployeeTrainingParticipant[]
   site               MasterSite                    @relation(fields: [siteId], references: [id])
+  masterTraining     MasterTraining?               @relation(fields: [masterTrainingId], references: [id], onDelete: SetNull)
 
   @@index([siteId])
   @@index([trainingType])
   @@index([startDate])
   @@index([endDate])
+  @@index([masterTrainingId])
   @@map("employee_trainings")
 }
 
@@ -927,6 +932,8 @@ enum GradeRank {
   RANK_7
   RANK_8
   RANK_9
+  RANK_10
+  RANK_11
 }
 
 enum GuidanceRecordCategory {
@@ -1049,4 +1056,88 @@ model DeliverySlipItem {
 
   @@index([deliverySlipId])
   @@map("delivery_slip_items")
+}
+
+model MasterTraining {
+  id                      Int                      @id @default(autoincrement())
+  name                    String                   @unique @db.VarChar(255)
+  category                String?                  @db.VarChar(100)
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+  employeeTrainings       EmployeeTraining[]
+  jobRequirementTrainings JobRequirementTraining[]
+
+  @@index([category])
+  @@map("master_trainings")
+}
+
+model JobRequirementProfile {
+  id                     Int                      @id @default(autoincrement())
+  grade                  GradeRank                @unique
+  minEducation           EducationLevel?
+  educationOther         String?                  @db.VarChar(255)
+  minExperienceYears     Int?
+  allowedEmploymentTypes EmploymentType[]
+  allowedGenders         Gender[]
+  sourceFormNo           String?                  @db.VarChar(100)
+  sourceRev              String?                  @db.VarChar(20)
+  effectiveDate          DateTime?                @db.Date
+  notes                  String?
+  createdAt              DateTime                 @default(now())
+  updatedAt              DateTime                 @updatedAt
+  skills                 JobRequirementSkill[]
+  trainings              JobRequirementTraining[]
+
+  @@map("job_requirement_profiles")
+}
+
+model JobRequirementSkill {
+  id        Int                   @id @default(autoincrement())
+  profileId Int
+  category  String                @db.VarChar(30)
+  name      String                @db.VarChar(255)
+  sortOrder Int                   @default(0)
+  createdAt DateTime              @default(now())
+  updatedAt DateTime              @updatedAt
+  profile   JobRequirementProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, category, name])
+  @@index([profileId])
+  @@map("job_requirement_skills")
+}
+
+model JobRequirementTraining {
+  id               Int                   @id @default(autoincrement())
+  profileId        Int
+  masterTrainingId Int
+  sortOrder        Int                   @default(0)
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+  profile          JobRequirementProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  masterTraining   MasterTraining        @relation(fields: [masterTrainingId], references: [id], onDelete: Restrict)
+
+  @@unique([profileId, masterTrainingId])
+  @@index([profileId])
+  @@index([masterTrainingId])
+  @@map("job_requirement_trainings")
+}
+
+model EmployeeSkillAssessment {
+  id                Int          @id @default(autoincrement())
+  employeeId        Int
+  category          String       @db.VarChar(30)
+  skillName         String       @db.VarChar(255)
+  level             Int
+  assessedByAdminId Int?
+  assessedAt        DateTime     @default(now())
+  notes             String?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  employee          Employee     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  assessedByAdmin   MasterAdmin? @relation(fields: [assessedByAdminId], references: [id], onDelete: SetNull)
+
+  @@unique([employeeId, category, skillName])
+  @@index([employeeId])
+  @@index([assessedByAdminId])
+  @@map("employee_skill_assessments")
 }

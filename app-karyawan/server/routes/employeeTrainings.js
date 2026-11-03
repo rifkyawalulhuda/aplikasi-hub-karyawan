@@ -24,6 +24,7 @@ const upload = multer({
 const TEMPLATE_MAX_ROWS = 500;
 const IMPORT_HEADERS = [
 	'Jenis Pelatihan',
+	'Master Training',
 	'Nama Peserta',
 	'Materi Pelatihan',
 	'Lembaga Trainer',
@@ -240,6 +241,8 @@ function mapTrainingRecord(record) {
 	return {
 		id: record.id,
 		trainingType: formatTrainingTypeLabel(record.trainingType),
+		masterTrainingId: record.masterTrainingId || null,
+		masterTrainingName: record.masterTraining?.name || '',
 		participants,
 		participantNames: participantDisplayNames,
 		participantEmployeeIds,
@@ -260,6 +263,7 @@ async function getTrainingRecordOrThrow(db, id) {
 	const record = await db.employeeTraining.findUnique({
 		where: { id },
 		include: {
+			masterTraining: true,
 			participants: {
 				include: {
 					employee: true,
@@ -278,6 +282,7 @@ async function getTrainingRecordOrThrow(db, id) {
 
 function validatePayload(payload = {}) {
 	const trainingType = normalizeEnumValue(payload.trainingType);
+	const masterTrainingId = Number(payload.masterTrainingId);
 	const participantEmployeeIds = (
 		Array.isArray(payload.participantEmployeeIds)
 			? payload.participantEmployeeIds
@@ -298,6 +303,10 @@ function validatePayload(payload = {}) {
 
 	if (!['INTERNAL', 'EXTERNAL'].includes(trainingType)) {
 		throw Object.assign(new Error('Jenis Pelatihan wajib dipilih.'), { statusCode: 400 });
+	}
+
+	if (!Number.isInteger(masterTrainingId) || masterTrainingId <= 0) {
+		throw Object.assign(new Error('Master Training wajib dipilih.'), { statusCode: 400 });
 	}
 
 	if (participantEmployeeIds.length === 0 && participantNames.length === 0) {
@@ -338,6 +347,7 @@ function validatePayload(payload = {}) {
 
 	return {
 		trainingType,
+		masterTrainingId,
 		participantEmployeeIds,
 		participantNames,
 		material,
@@ -406,11 +416,21 @@ async function saveTrainingRecord(db, id, payload, siteId = null) {
 	const effectiveSiteId = siteId != null ? siteId : payload.siteId ?? null;
 
 	return db.$transaction(async (tx) => {
+		const masterTraining = await tx.masterTraining.findUnique({
+			where: { id: payload.masterTrainingId },
+			select: { id: true },
+		});
+
+		if (!masterTraining) {
+			throw Object.assign(new Error('Master Training tidak ditemukan.'), { statusCode: 400 });
+		}
+
 		if (id) {
 			await tx.employeeTraining.update({
 				where: { id },
 				data: {
 					trainingType: payload.trainingType,
+					masterTrainingId: payload.masterTrainingId,
 					material: payload.material,
 					trainerInstitution: payload.trainerInstitution,
 					trainerName: payload.trainerName,
@@ -429,6 +449,7 @@ async function saveTrainingRecord(db, id, payload, siteId = null) {
 
 		const createData = {
 			trainingType: payload.trainingType,
+			masterTrainingId: payload.masterTrainingId,
 			material: payload.material,
 			trainerInstitution: payload.trainerInstitution,
 			trainerName: payload.trainerName,
@@ -465,6 +486,7 @@ function createErrorReport(rows) {
 			worksheet.addRow([
 				row.rowNumber,
 				row.raw['Jenis Pelatihan'] || '',
+				row.raw['Master Training'] || '',
 				row.raw['Nama Peserta'] || '',
 				row.raw['Materi Pelatihan'] || '',
 				row.raw['Lembaga Trainer'] || '',
@@ -496,6 +518,23 @@ function createErrorReport(rows) {
 async function buildImportPayload(rawPayload, siteId = null) {
 	const participantNames = normalizeParticipantNames(rawPayload['Nama Peserta']);
 	const participantEmployeeIds = [];
+	const masterTrainingName = normalizeString(rawPayload['Master Training']);
+
+	if (!masterTrainingName) {
+		throw Object.assign(new Error('Kolom Master Training wajib diisi.'), { statusCode: 400 });
+	}
+
+	const masterTraining = await prisma.masterTraining.findFirst({
+		where: { name: { equals: masterTrainingName, mode: 'insensitive' } },
+		select: { id: true },
+	});
+
+	if (!masterTraining) {
+		throw Object.assign(
+			new Error(`Master Training "${masterTrainingName}" tidak ditemukan di Master Training.`),
+			{ statusCode: 400 },
+		);
+	}
 
 	for (const participantName of participantNames) {
 		const searchTerms = extractEmployeeSearchTerms(participantName);
@@ -544,6 +583,7 @@ async function buildImportPayload(rawPayload, siteId = null) {
 
 	return {
 		trainingType: rawPayload['Jenis Pelatihan'],
+		masterTrainingId: masterTraining.id,
 		participantNames,
 		participantEmployeeIds,
 		material: rawPayload['Materi Pelatihan'],
@@ -594,12 +634,25 @@ function parseExcelDate(value) {
 router.get(
 	'/import-template',
 	withAsync(async (_req, res) => {
+		const masterTrainings = await prisma.masterTraining.findMany({
+			orderBy: [{ category: 'asc' }, { name: 'asc' }],
+			select: { name: true },
+		});
+
 		const workbook = new ExcelJS.Workbook();
 		const dataSheet = workbook.addWorksheet('Data Import');
-		const guideSheet = workbook.addWorksheet('Petunjuk');
+		const masterSheet = workbook.addWorksheet('MasterTraining');
+
+		masterSheet.state = 'hidden';
+		masterSheet.columns = [{ header: 'Master Training', key: 'name', width: 40 }];
+		masterTrainings.forEach((training) => masterSheet.addRow([training.name]));
+
+		const masterLastRow = Math.max(masterTrainings.length + 1, 2);
+		const masterRange = `MasterTraining!$A$2:$A$${masterLastRow}`;
 
 		dataSheet.columns = [
 			{ header: 'Jenis Pelatihan', key: 'trainingType', width: 20 },
+			{ header: 'Master Training', key: 'masterTraining', width: 32 },
 			{ header: 'Nama Peserta', key: 'participantNames', width: 34 },
 			{ header: 'Materi Pelatihan', key: 'material', width: 30 },
 			{ header: 'Lembaga Trainer', key: 'trainerInstitution', width: 24 },
@@ -616,52 +669,42 @@ router.get(
 		headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
 		headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1565C0' } };
 		headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
-		dataSheet.getRow(2).values = [
-			'Pilih Internal atau External',
-			'Boleh isi banyak nama peserta dengan pemisah ;',
-			'Wajib diisi',
-			'Wajib diisi',
-			'Wajib diisi',
-			'Format tanggal DD/MM/YYYY',
-			'Format tanggal DD/MM/YYYY',
-			'Otomatis dari rentang tanggal',
-			'Opsional',
-			'Opsional',
-		];
-		dataSheet.getRow(2).font = { italic: true, color: { argb: 'FF546E7A' } };
-		dataSheet.getRow(2).alignment = { vertical: 'top', wrapText: true };
-		dataSheet.views = [{ state: 'frozen', ySplit: 2 }];
+		dataSheet.views = [{ state: 'frozen', ySplit: 1 }];
 		dataSheet.autoFilter = {
 			from: 'A1',
-			to: 'J1',
+			to: 'K1',
 		};
 
-		for (let rowNumber = 3; rowNumber <= TEMPLATE_MAX_ROWS + 2; rowNumber += 1) {
-			dataSheet.getCell(`A${rowNumber}`).dataValidation = {
-				type: 'list',
-				allowBlank: false,
-				showErrorMessage: true,
-				errorTitle: 'Jenis Pelatihan tidak valid',
-				error: 'Pilih Internal atau External.',
-				formulae: ['"Internal,External"'],
-			};
+		const lastRow = TEMPLATE_MAX_ROWS + 1;
 
-			dataSheet.getCell(`F${rowNumber}`).dataValidation = {
-				type: 'date',
-				operator: 'greaterThanOrEqual',
-				showErrorMessage: true,
-				errorTitle: 'Tanggal tidak valid',
-				error: 'Gunakan format tanggal yang benar.',
-				formulae: [new Date(1960, 0, 1)],
-			};
-			dataSheet.getCell(`G${rowNumber}`).dataValidation = {
-				type: 'date',
-				operator: 'greaterThanOrEqual',
-				showErrorMessage: true,
-				errorTitle: 'Tanggal tidak valid',
-				error: 'Gunakan format tanggal yang benar.',
-				formulae: [new Date(1960, 0, 1)],
-			};
+		dataSheet.dataValidations.add(`A2:A${lastRow}`, {
+			type: 'list',
+			allowBlank: false,
+			showErrorMessage: true,
+			errorTitle: 'Jenis Pelatihan tidak valid',
+			error: 'Pilih Internal atau External.',
+			formulae: ['"Internal,External"'],
+		});
+
+		dataSheet.dataValidations.add(`B2:B${lastRow}`, {
+			type: 'list',
+			allowBlank: false,
+			showErrorMessage: true,
+			errorTitle: 'Master Training tidak valid',
+			error: 'Pilih nama training dari daftar. Unduh ulang template jika daftar belum memuat training terbaru.',
+			formulae: [masterRange],
+		});
+
+		dataSheet.dataValidations.add(`F2:G${lastRow}`, {
+			type: 'date',
+			operator: 'greaterThanOrEqual',
+			showErrorMessage: true,
+			errorTitle: 'Tanggal tidak valid',
+			error: 'Gunakan format tanggal yang benar.',
+			formulae: [new Date(Date.UTC(1960, 0, 1))],
+		});
+
+		for (let rowNumber = 2; rowNumber <= lastRow; rowNumber += 1) {
 			dataSheet.getCell(`F${rowNumber}`).numFmt = 'dd/mm/yyyy';
 			dataSheet.getCell(`G${rowNumber}`).numFmt = 'dd/mm/yyyy';
 			dataSheet.getCell(`H${rowNumber}`).value = {
@@ -677,20 +720,6 @@ router.get(
 				color: { argb: 'FF455A64' },
 			};
 		}
-
-		guideSheet.columns = [{ width: 120 }];
-		[
-			'Template ini dipakai untuk import data Pelatihan Karyawan.',
-			'Isi data mulai dari baris 3 pada sheet "Data Import".',
-			'Kolom "Nama Peserta" menerima banyak nama dalam satu sel dengan pemisah titik koma (;).',
-			'Kolom "Jumlah Hari" dihitung otomatis dari Dari Tanggal dan Sampai Tanggal.',
-			'Jika ada baris gagal saat import, sistem akan mengunduh file error report.',
-		].forEach((text) => guideSheet.addRow([text]));
-
-		guideSheet.getCell('A1').font = { bold: true };
-		guideSheet.eachRow((row) => {
-			row.alignment = { vertical: 'top', wrapText: true };
-		});
 
 		res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
 		res.setHeader('Content-Disposition', 'attachment; filename="pelatihan-karyawan-import-template.xlsx"');
@@ -751,7 +780,7 @@ router.post(
 		const importedRows = [];
 		const errorRows = [];
 
-		for (let rowNumber = 3; rowNumber <= worksheet.rowCount; rowNumber += 1) {
+		for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber += 1) {
 			const row = worksheet.getRow(rowNumber);
 			const raw = worksheetRowToPayload(row, headerMap);
 			const isEmpty = IMPORT_HEADERS.every((header) => !normalizeString(raw[header] || ''));
@@ -820,6 +849,7 @@ router.get(
 		const records = await prisma.employeeTraining.findMany({
 			where: { ...req.siteFilter },
 			include: {
+				masterTraining: true,
 				participants: {
 					orderBy: { id: 'asc' },
 				},

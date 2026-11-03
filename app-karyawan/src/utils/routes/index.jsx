@@ -50,6 +50,8 @@ const LicenseCertificationsPage = withLazyLoadably(lazy(() => import('@/pages/em
 const TrainingRecordsPage = withLazyLoadably(lazy(() => import('@/pages/employeeData/trainingRecords')));
 const EmployeeDetailListPage = withLazyLoadably(lazy(() => import('@/pages/employeeData/employeeDetail')));
 const EmployeeDetailPage = withLazyLoadably(lazy(() => import('@/pages/employeeData/employeeDetail/detail')));
+const JobRequirementRecapPage = withLazyLoadably(lazy(() => import('@/pages/employeeData/jobRequirement')));
+const MasterTrainingPage = withLazyLoadably(lazy(() => import('@/pages/masterData/masterTraining')));
 const LeaveCombinedPage = withLazyLoadably(lazy(() => import('@/pages/employeeData/leaveCombined')));
 const EmployeeLeavePrintAdminPage = withLazyLoadably(lazy(() => import('@/pages/employeeData/leaveFlow/print')));
 const UnitLicenseCertificationsPage = withLazyLoadably(lazy(() => import('@/pages/unitData/licenseCertifications')));
@@ -206,6 +208,11 @@ function Router() {
 							<Route path="data-karyawan/data-surat-peringatan" element={<WarningLettersPage />} />
 							<Route path="data-karyawan/detail-karyawan" element={<EmployeeDetailListPage />} />
 							<Route path="data-karyawan/detail-karyawan/:id" element={<EmployeeDetailPage />} />
+							<Route path="data-karyawan/job-requirement" element={<JobRequirementRecapPage />} />
+							<Route
+								path="data-master/master-data-karyawan/master-training"
+								element={<MasterTrainingPage />}
+							/>
 							<Route path="data-karyawan/lisensi-sertifikasi" element={<LicenseCertificationsPage />} />
 							<Route path="data-karyawan/pelatihan-karyawan" element={<TrainingRecordsPage />} />
 							<Route path="notifikasi" element={<AdminNotificationsPage />} />

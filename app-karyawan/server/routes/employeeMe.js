@@ -33,6 +33,7 @@ import {
 	getLeaveDatabaseBalance,
 	listLeaveTypeBalancesForEmployeeYear,
 } from '../lib/leaveDatabase.js';
+import { evaluateJobRequirement } from '../lib/jobRequirement.js';
 import {
 	getPushConfig,
 	removeEmployeePushSubscription,
@@ -1148,8 +1149,72 @@ router.get('/warning-letters', async (req, res, next) => {
 	}
 });
 
-router.get('/training-records', async (req, res, next) => {
+router.get('/job-requirement', async (req, res, next) => {
 	try {
+		const [profile, assessments, trainingParticipants] = await Promise.all([
+			prisma.jobRequirementProfile.findUnique({
+				where: { grade: req.employee.grade },
+				include: {
+					skills: { orderBy: [{ category: 'asc' }, { sortOrder: 'asc' }] },
+					trainings: {
+						include: { masterTraining: true },
+						orderBy: { sortOrder: 'asc' },
+					},
+				},
+			}),
+			prisma.employeeSkillAssessment.findMany({
+				where: { employeeId: req.employee.id },
+			}),
+			prisma.employeeTrainingParticipant.findMany({
+				where: buildEmployeeTrainingParticipantFilter(req.employee),
+				include: { employeeTraining: { include: { masterTraining: true } } },
+			}),
+		]);
+
+		const evaluation = evaluateJobRequirement({
+			employee: req.employee,
+			profile,
+			assessments,
+			employeeTrainings: trainingParticipants.map((participant) => ({
+				material: participant.employeeTraining?.material || '',
+				masterTraining: participant.employeeTraining?.masterTraining || null,
+			})),
+		});
+
+		return res.json({
+			gradeLabel: evaluation.gradeLabel,
+			status: evaluation.status,
+			statusLabel: evaluation.statusLabel,
+			mandatoryMet: evaluation.mandatoryMet,
+			percentOverall: evaluation.percentOverall,
+			categories: evaluation.categories.map(({ key, label, mandatory, total, met, percent }) => ({
+				key,
+				label,
+				mandatory,
+				total,
+				met,
+				percent,
+			})),
+			unmetItems: evaluation.unmetItems.map(
+				({ categoryLabel, label, required, actual, result, mandatory }) => ({
+					categoryLabel,
+					label,
+					required,
+					actual,
+					result,
+					mandatory,
+				}),
+			),
+			sourceFormNo: profile?.sourceFormNo || null,
+			sourceRev: profile?.sourceRev || null,
+			effectiveDate: profile?.effectiveDate || null,
+		});
+	} catch (error) {
+		return next(error);
+	}
+});
+
+router.get('/training-records', async (req, res, next) => {	try {
 		const records = await prisma.employeeTraining.findMany({
 			where: {
 				participants: {

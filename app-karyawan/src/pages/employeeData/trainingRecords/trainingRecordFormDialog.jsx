@@ -33,6 +33,7 @@ function toDefaultParticipantIds(initialValue) {
 function toDefaultValues(initialValue) {
 	return {
 		trainingType: initialValue?.trainingType || 'Internal',
+		masterTrainingId: initialValue?.masterTrainingId || '',
 		participantEmployeeIds: toDefaultParticipantIds(initialValue),
 		material: initialValue?.material || '',
 		trainerInstitution: initialValue?.trainerInstitution || '',
@@ -56,7 +57,15 @@ function getEmployeeSearchLabel(employee) {
 	return `${employee.fullName} (${employee.employeeNo})`;
 }
 
-function TrainingRecordFormDialog({ open, loading, initialValue, employeeOptions, onClose, onSubmit }) {
+function TrainingRecordFormDialog({
+	open,
+	loading,
+	initialValue,
+	employeeOptions,
+	masterTrainingOptions,
+	onClose,
+	onSubmit,
+}) {
 	const isEditMode = Boolean(initialValue);
 	const defaultValues = useMemo(() => toDefaultValues(initialValue), [initialValue]);
 	const {
@@ -238,6 +247,39 @@ function TrainingRecordFormDialog({ open, loading, initialValue, employeeOptions
 								))}
 							</Stack>
 						</Stack>
+					</Grid>
+
+					<Grid item xs={12}>
+						<Controller
+							name="masterTrainingId"
+							control={control}
+							rules={{ required: 'Master Training wajib dipilih.' }}
+							render={({ field }) => (
+								<Autocomplete
+									options={masterTrainingOptions}
+									value={
+										masterTrainingOptions.find((option) => option.id === Number(field.value)) ||
+										null
+									}
+									onChange={(_, selectedOption) => {
+										field.onChange(selectedOption?.id || '');
+									}}
+									isOptionEqualToValue={(option, value) => option.id === value.id}
+									getOptionLabel={(option) => option?.name || ''}
+									noOptionsText="Master training tidak ditemukan"
+									renderInput={(params) => (
+										<TextField
+											{...params}
+											label="Master Training"
+											placeholder="Pilih master training"
+											error={Boolean(errors.masterTrainingId)}
+											helperText={errors.masterTrainingId?.message || ' '}
+										/>
+									)}
+									fullWidth
+								/>
+							)}
+						/>
 					</Grid>
 
 					<Grid item xs={12}>

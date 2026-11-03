@@ -35,6 +35,7 @@ import VerifiedOutlinedIcon from '@mui/icons-material/VerifiedOutlined';
 import WorkOutlineOutlinedIcon from '@mui/icons-material/WorkOutlineOutlined';
 
 import PageHeader from '@/components/pageHeader';
+import EmployeeJobRequirementCard from '@/components/jobRequirement/employeeJobRequirementCard';
 import apiRequest from '@/services/api';
 import { formatEmployeeTrainingParticipantCount, formatEmployeeTrainingPeriod } from './utils';
 
@@ -342,6 +343,11 @@ function EmployeeDetailPage() {
 
 				{/* ── Section Grid ── */}
 				<Grid container spacing={2.5}>
+					{/* Job Requirement */}
+					<Grid item xs={12} lg={6}>
+						<EmployeeJobRequirementCard employeeId={id} />
+					</Grid>
+
 					{/* Bimbingan & Pengarahan */}
 					<Grid item xs={12} lg={6}>
 						<SectionCard title="Bimbingan & Pengarahan" icon={ReceiptLongOutlinedIcon} color="info.main">

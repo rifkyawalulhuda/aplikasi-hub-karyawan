@@ -24,6 +24,7 @@ import ModeEditOutlineOutlinedIcon from '@mui/icons-material/ModeEditOutlineOutl
 import ChangePasswordDialog from '@/components/employeePortal/changePasswordDialog';
 import EditContactDialog from '@/components/employeePortal/editContactDialog';
 import FeedbackState from '@/components/employeePortal/feedbackState';
+import EmployeeJobRequirementStatusCard from '@/components/employeePortal/jobRequirementStatusCard';
 import { useEmployeeAuth } from '@/contexts/employeeAuthContext';
 import { changeEmployeePassword, employeeMeRequest, updateEmployeeContactInfo } from '@/services/employeeApi';
 import { formatLongDate, getEmployeePortalErrorMessage, handleEmployeeUnauthorized } from '@/utils/employeePortal';
@@ -263,6 +264,8 @@ function EmployeeProfilePage() {
 						</AccordionDetails>
 					</Accordion>
 				</Paper>
+
+				<EmployeeJobRequirementStatusCard />
 
 				<Paper
 					sx={{

@@ -31,6 +31,7 @@ import CardHeader from '@/components/cardHeader';
 import PageHeader from '@/components/pageHeader';
 import useUrlSearchKeyword from '@/hooks/useUrlSearchKeyword';
 import apiRequest from '@/services/api';
+import { fetchJobRequirementEmployees, getJobRequirementStatusColor } from '@/services/jobRequirement';
 
 const ROWS_PER_PAGE_OPTIONS = [15, 30, 50, 100];
 const SORTABLE_COLUMNS = [
@@ -41,10 +42,26 @@ const SORTABLE_COLUMNS = [
 	{ id: 'jobLevelName', label: 'JOB LEVEL' },
 	{ id: 'jobRoleName', label: 'JOB ROLE' },
 	{ id: 'employmentType', label: 'TIPE' },
+	{ id: 'jobRequirementStatusLabel', label: 'STATUS JR' },
 ];
 
 async function fetchEmployees() {
 	return apiRequest('/master/employees');
+}
+
+function buildJobRequirementMap(payload) {
+	const rows = Array.isArray(payload?.rows) ? payload.rows : [];
+
+	return new Map(
+		rows.map((row) => [
+			row.employeeId,
+			{
+				status: row.status,
+				statusLabel: row.statusLabel,
+				percentOverall: row.percentOverall,
+			},
+		]),
+	);
 }
 
 function getInitials(fullName = '') {
@@ -72,8 +89,24 @@ function EmployeeDetailListPage() {
 		const init = async () => {
 			setLoading(true);
 			try {
-				const data = await fetchEmployees();
-				setRows(data);
+				const [employees, jobRequirementPayload] = await Promise.all([
+					fetchEmployees(),
+					fetchJobRequirementEmployees().catch(() => null),
+				]);
+				const jobRequirementMap = buildJobRequirementMap(jobRequirementPayload);
+
+				setRows(
+					employees.map((employee) => {
+						const jobRequirement = jobRequirementMap.get(employee.id);
+
+						return {
+							...employee,
+							jobRequirementStatus: jobRequirement?.status || 'TIDAK_ADA_PROFIL',
+							jobRequirementStatusLabel: jobRequirement?.statusLabel || 'Tanpa Profil',
+							jobRequirementPercent: jobRequirement?.percentOverall ?? 0,
+						};
+					}),
+				);
 			} catch (error) {
 				enqueueSnackbar(error.message, { variant: 'error' });
 			} finally {
@@ -240,7 +273,7 @@ function EmployeeDetailListPage() {
 									{paginatedRows.length === 0 ? (
 										<TableRow>
 											<TableCell
-												colSpan={8}
+												colSpan={9}
 												align="center"
 												sx={{ py: 6, color: 'text.secondary' }}
 											>
@@ -289,6 +322,18 @@ function EmployeeDetailListPage() {
 														}
 														variant="outlined"
 													/>
+												</TableCell>
+												<TableCell>
+													<Tooltip title={`${row.jobRequirementPercent}% item terpenuhi`}>
+														<Chip
+															size="small"
+															label={row.jobRequirementStatusLabel}
+															color={getJobRequirementStatusColor(
+																row.jobRequirementStatus,
+															)}
+															variant="outlined"
+														/>
+													</Tooltip>
 												</TableCell>
 												<TableCell align="center">
 													<Tooltip title="Lihat Detail">

@@ -10,6 +10,7 @@ import SettingsApplicationsOutlinedIcon from '@mui/icons-material/SettingsApplic
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import CastForEducationOutlinedIcon from '@mui/icons-material/CastForEducationOutlined';
 import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined';
+import RuleOutlinedIcon from '@mui/icons-material/RuleOutlined';
 
 import DashboardOutlinedIcon from '@mui/icons-material/DashboardOutlined';
 import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
@@ -97,6 +98,15 @@ const NAV_LINKS_CONFIG = [
 				Icon: DescriptionOutlinedIcon,
 				href: '/data-master/master-data-dokumen/master-dok-pkb',
 			},
+			{
+				id: uuid(),
+				type: 'item',
+				title: 'Master Training',
+				section: 'Kompetensi',
+				description: 'Daftar training dan pemetaan grade',
+				Icon: CastForEducationOutlinedIcon,
+				href: '/data-master/master-data-karyawan/master-training',
+			},
 		],
 	},
 	{
@@ -149,6 +159,15 @@ const NAV_LINKS_CONFIG = [
 				description: 'Riwayat pelatihan',
 				Icon: CastForEducationOutlinedIcon,
 				href: '/data-karyawan/pelatihan-karyawan',
+			},
+			{
+				id: uuid(),
+				type: 'item',
+				title: 'Rekap Job Requirement',
+				section: 'Kompetensi',
+				description: 'Kesesuaian syarat jabatan',
+				Icon: RuleOutlinedIcon,
+				href: '/data-karyawan/job-requirement',
 			},
 			{
 				id: uuid(),

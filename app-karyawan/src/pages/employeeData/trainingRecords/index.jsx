@@ -23,6 +23,7 @@ import PageHeader from '@/components/pageHeader';
 import { useSite } from '@/contexts/siteContext';
 import useUrlSearchKeyword from '@/hooks/useUrlSearchKeyword';
 import apiRequest, { downloadFile, getApiBaseUrl } from '@/services/api';
+import { fetchMasterTrainings } from '@/services/masterTraining';
 
 import TrainingRecordDetailDialog from './trainingRecordDetailDialog';
 import TrainingRecordFormDialog from './trainingRecordFormDialog';
@@ -59,6 +60,7 @@ function TrainingRecordsPage() {
 	const { currentSiteId, isSuperAdmin } = useSite();
 	const [rows, setRows] = useState([]);
 	const [employeeOptions, setEmployeeOptions] = useState([]);
+	const [masterTrainingOptions, setMasterTrainingOptions] = useState([]);
 	const [loading, setLoading] = useState(true);
 	const [submitting, setSubmitting] = useState(false);
 	const [formOpen, setFormOpen] = useState(false);
@@ -73,9 +75,14 @@ function TrainingRecordsPage() {
 		setLoading(true);
 
 		try {
-			const [data, employees] = await Promise.all([fetchTrainingRecords(), fetchEmployeeOptions()]);
+			const [data, employees, masterTrainings] = await Promise.all([
+				fetchTrainingRecords(),
+				fetchEmployeeOptions(),
+				fetchMasterTrainings(),
+			]);
 			setRows(data);
 			setEmployeeOptions(employees);
+			setMasterTrainingOptions(masterTrainings);
 		} catch (error) {
 			enqueueSnackbar(error.message, { variant: 'error' });
 		} finally {
@@ -418,6 +425,7 @@ function TrainingRecordsPage() {
 				loading={submitting}
 				initialValue={selectedItem}
 				employeeOptions={employeeOptions}
+				masterTrainingOptions={masterTrainingOptions}
 				onClose={closeFormDialog}
 				onSubmit={handleSubmit}
 			/>
