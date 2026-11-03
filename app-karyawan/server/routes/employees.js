@@ -13,6 +13,7 @@ import prisma from '../lib/prisma.js';
 import { hashPassword } from '../lib/password.js';
 import { buildSiteWhere, siteNotFound } from '../lib/siteScope.js';
 import { isWarningLetterActive } from '../lib/warningLetterEscalation.js';
+import { evaluateJobRequirement } from '../lib/jobRequirement.js';
 import requireSiteIsolation from '../middleware/requireSiteIsolation.js';
 
 const router = Router();
@@ -974,8 +975,17 @@ router.get(
 		const soonThreshold = new Date(today);
 		soonThreshold.setDate(soonThreshold.getDate() + 25);
 
-		const [guidanceRecords, warningLetters, licenseCertifications, leaveDatabases, leaveFlows, trainingRecords] =
-			await Promise.all([
+		const [
+			guidanceRecords,
+			warningLetters,
+			licenseCertifications,
+			leaveDatabases,
+			leaveFlows,
+			trainingRecords,
+			jobRequirementProfile,
+			skillAssessments,
+			trainingParticipants,
+		] = await Promise.all([
 				prisma.guidanceRecord.findMany({
 					where: { employeeId: id },
 					orderBy: { meetingDate: 'desc' },
@@ -1021,6 +1031,24 @@ router.get(
 					orderBy: [{ startDate: 'desc' }, { endDate: 'desc' }, { createdAt: 'desc' }],
 					take: 5,
 				}),
+				prisma.jobRequirementProfile.findUnique({
+					where: { grade: employee.grade },
+					include: {
+						skills: { orderBy: [{ category: 'asc' }, { sortOrder: 'asc' }] },
+						trainings: {
+							include: { masterTraining: true },
+							orderBy: { sortOrder: 'asc' },
+						},
+					},
+				}),
+				prisma.employeeSkillAssessment.findMany({
+					where: { employeeId: id },
+					orderBy: [{ category: 'asc' }, { skillName: 'asc' }],
+				}),
+				prisma.employeeTrainingParticipant.findMany({
+					where: { employeeId: id },
+					include: { employeeTraining: { include: { masterTraining: true } } },
+				}),
 			]);
 
 		const licenseExpiredCount = licenseCertifications.filter(
@@ -1031,6 +1059,16 @@ router.get(
 		).length;
 
 		const activeWarningLetters = warningLetters.filter((w) => isWarningLetterActive(w, today));
+
+		const jobRequirementEvaluation = evaluateJobRequirement({
+			employee,
+			profile: jobRequirementProfile,
+			assessments: skillAssessments,
+			employeeTrainings: trainingParticipants.map((participant) => ({
+				material: participant.employeeTraining?.material || '',
+				masterTraining: participant.employeeTraining?.masterTraining || null,
+			})),
+		});
 
 		return res.json({
 			profile: mapEmployee(employee, { includeSite: req.isSuperAdmin }),
@@ -1100,6 +1138,42 @@ router.get(
 				leaveDays: lf.leaveDays,
 			})),
 			recentTrainingRecords: trainingRecords.map(mapTrainingRecord),
+			jobRequirement: {
+				grade: jobRequirementEvaluation.grade,
+				gradeLabel: jobRequirementEvaluation.gradeLabel,
+				status: jobRequirementEvaluation.status,
+				statusLabel: jobRequirementEvaluation.statusLabel,
+				mandatoryMet: jobRequirementEvaluation.mandatoryMet,
+				percentOverall: jobRequirementEvaluation.percentOverall,
+				categories: jobRequirementEvaluation.categories,
+				unmetItems: jobRequirementEvaluation.unmetItems,
+				assessments: skillAssessments.map((assessment) => ({
+					id: assessment.id,
+					category: assessment.category,
+					skillName: assessment.skillName,
+					level: assessment.level,
+					assessedAt: assessment.assessedAt,
+					notes: assessment.notes,
+				})),
+				profile: jobRequirementProfile
+					? {
+							grade: jobRequirementProfile.grade,
+							minEducation: jobRequirementProfile.minEducation,
+							educationOther: jobRequirementProfile.educationOther,
+							minExperienceYears: jobRequirementProfile.minExperienceYears,
+							sourceFormNo: jobRequirementProfile.sourceFormNo,
+							sourceRev: jobRequirementProfile.sourceRev,
+							effectiveDate: jobRequirementProfile.effectiveDate,
+							notes: jobRequirementProfile.notes,
+							skills: jobRequirementProfile.skills.map((skill) => ({
+								id: skill.id,
+								category: skill.category,
+								name: skill.name,
+								sortOrder: skill.sortOrder,
+							})),
+					  }
+					: null,
+			},
 		});
 	}),
 );
