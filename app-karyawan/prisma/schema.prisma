@@ -1071,6 +1071,19 @@ model MasterTraining {
   @@map("master_trainings")
 }
 
+model MasterSkill {
+  id                   Int                   @id @default(autoincrement())
+  category             String                @db.VarChar(30)
+  name                 String                @db.VarChar(255)
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  jobRequirementSkills JobRequirementSkill[]
+
+  @@unique([category, name])
+  @@index([category])
+  @@map("master_skills")
+}
+
 model JobRequirementProfile {
   id                     Int                      @id @default(autoincrement())
   grade                  GradeRank                @unique
@@ -1092,17 +1105,20 @@ model JobRequirementProfile {
 }
 
 model JobRequirementSkill {
-  id        Int                   @id @default(autoincrement())
-  profileId Int
-  category  String                @db.VarChar(30)
-  name      String                @db.VarChar(255)
-  sortOrder Int                   @default(0)
-  createdAt DateTime              @default(now())
-  updatedAt DateTime              @updatedAt
-  profile   JobRequirementProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  id             Int                   @id @default(autoincrement())
+  profileId      Int
+  category       String                @db.VarChar(30)
+  name           String                @db.VarChar(255)
+  masterSkillId  Int?
+  sortOrder      Int                   @default(0)
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+  profile        JobRequirementProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  masterSkill    MasterSkill?          @relation(fields: [masterSkillId], references: [id], onDelete: Restrict)
 
   @@unique([profileId, category, name])
   @@index([profileId])
+  @@index([masterSkillId])
   @@map("job_requirement_skills")
 }
 

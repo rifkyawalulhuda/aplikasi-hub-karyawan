@@ -41,6 +41,8 @@ import {
 	updateMasterTraining,
 } from '@/services/masterTraining';
 
+import SkillTab from './skillTab';
+
 function getGradeLabel(grade = '') {
 	const match = String(grade).match(/^RANK_(\d+)$/);
 	return match ? `Rank ${match[1]}` : grade;
@@ -240,6 +242,7 @@ function MasterTrainingPage() {
 					<Tabs value={activeTab} onChange={(_event, value) => setActiveTab(value)}>
 						<Tab value="LIST" label="Daftar Training" />
 						<Tab value="MAP" label="Pemetaan Grade" />
+						<Tab value="SKILL" label="Skill" />
 					</Tabs>
 
 					{activeTab === 'LIST' ? (
@@ -292,7 +295,9 @@ function MasterTrainingPage() {
 								/>
 							)}
 						</>
-					) : (
+					) : null}
+
+					{activeTab === 'MAP' ? (
 						<>
 							<Grid container spacing={1.5}>
 								<Grid item xs={12} md={4}>
@@ -396,7 +401,11 @@ function MasterTrainingPage() {
 								</Stack>
 							)}
 						</>
-					)}
+					) : null}
+
+					{activeTab === 'SKILL' ? (
+						<SkillTab profiles={profiles} grade={grade} onGradeChange={setGrade} />
+					) : null}
 				</Stack>
 			</Card>
 

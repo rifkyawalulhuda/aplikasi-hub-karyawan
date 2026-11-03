@@ -76,16 +76,27 @@ function SkillAssessmentDialog({ open, onClose, employeeId, profile, assessments
 		setSaving(true);
 
 		try {
+			const initialKeys = new Set(
+				assessments.map((assessment) => buildKey(assessment.category, assessment.skillName)),
+			);
 			const payload = [...softSkills, ...hardSkills]
-				.map((skill) => ({
-					category: skill.category,
-					skillName: skill.name,
-					level: Number(levels[buildKey(skill.category, skill.name)] || 0),
-				}))
-				.filter((item) => item.level > 0);
+				.map((skill) => {
+					const key = buildKey(skill.category, skill.name);
+
+					return {
+						category: skill.category,
+						skillName: skill.name,
+						level: Number(levels[key] || 0),
+						wasAssessed: initialKeys.has(key),
+					};
+				})
+				.filter((item) => item.level > 0 || item.wasAssessed)
+				.map(({ wasAssessed, ...item }) => item);
 
 			const result = await saveEmployeeSkillAssessments(employeeId, payload);
-			enqueueSnackbar(`Asesmen tersimpan (${result.updated} item).`, { variant: 'success' });
+			enqueueSnackbar(`Asesmen tersimpan (${result.updated} disimpan, ${result.deleted || 0} dihapus).`, {
+				variant: 'success',
+			});
 
 			if (typeof onSaved === 'function') {
 				onSaved(result);

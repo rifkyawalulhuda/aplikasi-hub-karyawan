@@ -47,6 +47,17 @@ function TrainingRecordTable({ rows, onDetail, onEdit, onDelete }) {
 				flex: 1,
 				renderCell: (params) => params.value || '-',
 			},
+			{
+				field: 'masterTrainingName',
+				headerName: 'MASTER TRAINING',
+				minWidth: 220,
+				renderCell: (params) =>
+					params.value ? (
+						<Chip size="small" label={params.value} color="primary" variant="outlined" />
+					) : (
+						<Chip size="small" label="Belum dipetakan" color="warning" variant="outlined" />
+					),
+			},
 			{ field: 'material', headerName: 'MATERI PELATIHAN', minWidth: 220, flex: 1 },
 			{ field: 'trainerInstitution', headerName: 'LEMBAGA TRAINER', minWidth: 210 },
 			{ field: 'trainerName', headerName: 'NAMA TRAINER', minWidth: 180 },

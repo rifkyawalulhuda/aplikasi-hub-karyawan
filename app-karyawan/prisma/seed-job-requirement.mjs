@@ -294,7 +294,39 @@ async function seedMasterTrainings() {
 	return ids;
 }
 
-async function seedProfiles(trainingIds) {
+function buildSkillCatalog() {
+	const catalog = new Map();
+
+	PROFILES.forEach((profile) => {
+		profile.soft.forEach((name) => {
+			catalog.set(`${SOFT_SKILL}:${name}`, { category: SOFT_SKILL, name });
+		});
+		profile.hard.forEach((name) => {
+			catalog.set(`${HARD_SKILL}:${name}`, { category: HARD_SKILL, name });
+		});
+	});
+
+	return [...catalog.values()];
+}
+
+async function seedMasterSkills() {
+	const catalog = buildSkillCatalog();
+	const ids = new Map();
+
+	for (const skill of catalog) {
+		const record = await prisma.masterSkill.upsert({
+			where: { category_name: { category: skill.category, name: skill.name } },
+			update: {},
+			create: { category: skill.category, name: skill.name },
+		});
+
+		ids.set(`${skill.category}:${skill.name}`, record.id);
+	}
+
+	return ids;
+}
+
+async function seedProfiles(trainingIds, skillIds) {
 	for (const profile of PROFILES) {
 		const savedProfile = await prisma.jobRequirementProfile.upsert({
 			where: { grade: profile.grade },
@@ -331,12 +363,14 @@ async function seedProfiles(trainingIds) {
 					profileId: savedProfile.id,
 					category: SOFT_SKILL,
 					name,
+					masterSkillId: skillIds.get(`${SOFT_SKILL}:${name}`) || null,
 					sortOrder: index,
 				})),
 				...profile.hard.map((name, index) => ({
 					profileId: savedProfile.id,
 					category: HARD_SKILL,
 					name,
+					masterSkillId: skillIds.get(`${HARD_SKILL}:${name}`) || null,
 					sortOrder: index,
 				})),
 			],
@@ -363,8 +397,10 @@ async function seedProfiles(trainingIds) {
 async function main() {
 	console.log('Seed Job Requirement (SII-QSHE-002-03)');
 	const trainingIds = await seedMasterTrainings();
+	const skillIds = await seedMasterSkills();
 	console.log(`Master training: ${trainingIds.size} item`);
-	await seedProfiles(trainingIds);
+	console.log(`Master skill: ${skillIds.size} item`);
+	await seedProfiles(trainingIds, skillIds);
 	console.log('Selesai. Matriks perlu diverifikasi HR sebelum dipakai produksi.');
 }
 

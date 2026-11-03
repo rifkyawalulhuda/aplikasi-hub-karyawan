@@ -50,7 +50,15 @@ function TrainingRecordDetailDialog({ open, data, onClose }) {
 								)}
 							</Stack>
 						</Grid>
-						<Grid item xs={12} md={12}>
+						<Grid item xs={12} md={6}>
+							<TextField
+								label="Master Training"
+								value={data?.masterTrainingName || 'Belum dipetakan'}
+								fullWidth
+								disabled
+							/>
+						</Grid>
+						<Grid item xs={12} md={6}>
 							<TextField label="Materi Pelatihan" value={data?.material || '-'} fullWidth disabled />
 						</Grid>
 					</Grid>

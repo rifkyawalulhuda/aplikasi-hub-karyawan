@@ -230,6 +230,7 @@ function TrainingRecordsPage() {
 		try {
 			const payload = {
 				trainingType: values.trainingType,
+				masterTrainingId: values.masterTrainingId,
 				participantEmployeeIds: values.participantEmployeeIds,
 				material: values.material,
 				trainerInstitution: values.trainerInstitution,

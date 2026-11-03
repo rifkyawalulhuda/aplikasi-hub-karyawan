@@ -34,6 +34,7 @@ import vendorsRouter from './routes/vendors.js';
 import employeesRouter from './routes/employees.js';
 import masterDataRouter from './routes/masterData.js';
 import masterTrainingsRouter from './routes/masterTrainings.js';
+import masterSkillsRouter from './routes/masterSkills.js';
 import warningLettersRouter from './routes/warningLetters.js';
 import requireAdminAuth from './middleware/requireAdminAuth.js';
 import requireSuperAdmin from './middleware/requireSuperAdmin.js';
@@ -227,6 +228,7 @@ app.use('/api/master/site-approval-configs', requireAdminAuth, requireWriteRole,
 app.use('/api/master/site-profile', requireAdminAuth, requireWriteRole, siteProfileRouter);
 app.use('/api/master/sites', requireAdminAuth, requireSuperAdmin, sitesRouter);
 app.use('/api/master/master-trainings', requireAdminAuth, requireWriteRole, masterTrainingsRouter);
+app.use('/api/master/master-skills', requireAdminAuth, requireWriteRole, masterSkillsRouter);
 app.use('/api/master', requireAdminAuth, requireWriteRole, masterDataRouter);
 app.use('/api/data-karyawan/guidance-records', requireAdminAuth, requireWriteRole, guidanceRecordsRouter);
 app.use('/api/data-karyawan/job-requirement', requireAdminAuth, requireWriteRole, jobRequirementsRouter);

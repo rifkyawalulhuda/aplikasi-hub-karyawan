@@ -307,15 +307,31 @@ router.put(
 				return res.status(400).json({ message: 'Nama skill wajib diisi.' });
 			}
 
-			if (!Number.isInteger(level) || level < 1 || level > 5) {
-				return res.status(400).json({ message: `Level skill ${skillName} harus 1 sampai 5.` });
+			if (!Number.isInteger(level) || level < 0 || level > 5) {
+				return res.status(400).json({ message: `Level skill ${skillName} harus 0 sampai 5.` });
 			}
 
 			normalized.push({ category, skillName, level, notes });
 		}
 
-		await prisma.$transaction(
-			normalized.map((item) =>
+		const toUpsert = normalized.filter((item) => item.level > 0);
+		const toDelete = normalized.filter((item) => item.level === 0);
+
+		await prisma.$transaction([
+			...(toDelete.length > 0
+				? [
+						prisma.employeeSkillAssessment.deleteMany({
+							where: {
+								employeeId: id,
+								OR: toDelete.map((item) => ({
+									category: item.category,
+									skillName: item.skillName,
+								})),
+							},
+						}),
+				  ]
+				: []),
+			...toUpsert.map((item) =>
 				prisma.employeeSkillAssessment.upsert({
 					where: {
 						employeeId_category_skillName: {
@@ -341,13 +357,13 @@ router.put(
 					},
 				}),
 			),
-		);
+		]);
 
 		const context = await safeEvaluationContext([id]);
 		const employees = await prisma.employee.findMany({ where: { id }, include: employeeInclude() });
 		const evaluation = evaluateForEmployee(employees[0], context);
 
-		return res.json({ updated: normalized.length, evaluation });
+		return res.json({ updated: toUpsert.length, deleted: toDelete.length, evaluation });
 	}),
 );
 
