@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSnackbar } from 'notistack';
 
@@ -42,10 +42,43 @@ function getGradeLabel(grade = '') {
 	return match ? `Rank ${match[1]}` : grade;
 }
 
-function downloadCsv(fileName, headers, rows) {
-	const escapeCell = (value) => `"${String(value ?? '').replace(/"/g, '""')}"`;
-	const lines = [headers.map(escapeCell).join(';'), ...rows.map((row) => row.map(escapeCell).join(';'))];
-	const blob = new Blob([`\uFEFF${lines.join('\r\n')}`], { type: 'text/csv;charset=utf-8;' });
+async function downloadExcel({ fileName, sheetName, columns, rows }) {
+	const ExcelJS = await import('exceljs');
+	const Workbook = ExcelJS.Workbook || ExcelJS.default?.Workbook;
+	const workbook = new Workbook();
+	const worksheet = workbook.addWorksheet(sheetName);
+
+	worksheet.columns = columns;
+
+	worksheet.getRow(1).font = { bold: true };
+	worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
+
+	rows.forEach((row) => {
+		worksheet.addRow(row);
+	});
+
+	worksheet.eachRow((row, rowNumber) => {
+		const targetRow = row;
+
+		targetRow.alignment = {
+			vertical: rowNumber === 1 ? 'middle' : 'top',
+			horizontal: rowNumber === 1 ? 'center' : 'left',
+			wrapText: true,
+		};
+
+		if (rowNumber === 1) {
+			targetRow.fill = {
+				type: 'pattern',
+				pattern: 'solid',
+				fgColor: { argb: 'DDE4EE' },
+			};
+		}
+	});
+
+	const buffer = await workbook.xlsx.writeBuffer();
+	const blob = new Blob([buffer], {
+		type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+	});
 	const url = window.URL.createObjectURL(blob);
 	const link = document.createElement('a');
 
@@ -221,34 +254,58 @@ function JobRequirementRecapPage() {
 		[],
 	);
 
-	const handleExportGap = () => {
-		downloadCsv(
-			`rekap-job-requirement-${new Date().toISOString().slice(0, 10)}.csv`,
-			['Nama', 'NIK', 'Departemen', 'Job Level', 'Grade', 'Status', '% Item', 'Wajib Kurang', 'Total Kurang'],
-			filteredRows.map((row) => [
-				row.fullName,
-				row.employeeNo,
-				row.departmentName,
-				row.jobLevelName,
-				getGradeLabel(row.grade),
-				row.statusLabel,
-				`${row.percentOverall ?? 0}%`,
-				row.unmetMandatoryCount,
-				row.unmetTotalCount,
-			]),
-		);
+	const handleExportGap = async () => {
+		try {
+			await downloadExcel({
+				fileName: `rekap-job-requirement-${new Date().toISOString().slice(0, 10)}.xlsx`,
+				sheetName: 'Rekap Gap',
+				columns: [
+					{ header: 'NAMA', key: 'fullName', width: 30 },
+					{ header: 'NIK', key: 'employeeNo', width: 16 },
+					{ header: 'DEPARTEMEN', key: 'departmentName', width: 22 },
+					{ header: 'JOB LEVEL', key: 'jobLevelName', width: 26 },
+					{ header: 'GRADE', key: 'grade', width: 12 },
+					{ header: 'STATUS', key: 'status', width: 18 },
+					{ header: '% ITEM', key: 'percent', width: 10 },
+					{ header: 'WAJIB KURANG', key: 'unmetMandatory', width: 15 },
+					{ header: 'TOTAL KURANG', key: 'unmetTotal', width: 15 },
+				],
+				rows: filteredRows.map((row) => ({
+					fullName: row.fullName,
+					employeeNo: row.employeeNo,
+					departmentName: row.departmentName,
+					jobLevelName: row.jobLevelName,
+					grade: getGradeLabel(row.grade),
+					status: row.statusLabel,
+					percent: `${row.percentOverall ?? 0}%`,
+					unmetMandatory: row.unmetMandatoryCount,
+					unmetTotal: row.unmetTotalCount,
+				})),
+			});
+		} catch (error) {
+			enqueueSnackbar(error.message || 'Gagal membuat file Excel.', { variant: 'error' });
+		}
 	};
 
-	const handleExportTraining = () => {
-		downloadCsv(
-			`kebutuhan-training-${new Date().toISOString().slice(0, 10)}.csv`,
-			['Training', 'Jumlah Karyawan', 'Daftar Karyawan'],
-			trainingNeeds.map((row) => [
-				row.trainingName,
-				row.employeeCount,
-				(row.employees || []).map((employee) => employee.fullName).join(', '),
-			]),
-		);
+	const handleExportTraining = async () => {
+		try {
+			await downloadExcel({
+				fileName: `kebutuhan-training-${new Date().toISOString().slice(0, 10)}.xlsx`,
+				sheetName: 'Kebutuhan Training',
+				columns: [
+					{ header: 'TRAINING', key: 'trainingName', width: 36 },
+					{ header: 'JUMLAH KARYAWAN', key: 'employeeCount', width: 18 },
+					{ header: 'DAFTAR KARYAWAN', key: 'employees', width: 70 },
+				],
+				rows: trainingNeeds.map((row) => ({
+					trainingName: row.trainingName,
+					employeeCount: row.employeeCount,
+					employees: (row.employees || []).map((employee) => employee.fullName).join(', '),
+				})),
+			});
+		} catch (error) {
+			enqueueSnackbar(error.message || 'Gagal membuat file Excel.', { variant: 'error' });
+		}
 	};
 
 	return (
@@ -348,7 +405,7 @@ function JobRequirementRecapPage() {
 									onClick={handleExportGap}
 									disabled={filteredRows.length === 0}
 								>
-									Export CSV
+									Export Excel
 								</Button>
 							</Stack>
 
@@ -384,7 +441,7 @@ function JobRequirementRecapPage() {
 									onClick={handleExportTraining}
 									disabled={trainingNeeds.length === 0}
 								>
-									Export CSV
+									Export Excel
 								</Button>
 							</Stack>
 
