@@ -110,21 +110,21 @@ model MasterUnit {
 }
 
 model MasterVendor {
-  id              Int                        @id @default(autoincrement())
-  vendorName      String                     @db.VarChar(255)
-  vendorType      String                     @db.VarChar(100)
-  address         String                     @db.VarChar(255)
-  picName         String                     @db.VarChar(255)
-  phoneNumber     String                     @db.VarChar(100)
-  email           String                     @db.VarChar(255)
-  detailLainnya   String                     @db.VarChar(255)
-  createdAt       DateTime                   @default(now())
-  updatedAt       DateTime                   @updatedAt
-  siteId          Int
-  wasteOutRecords B3WasteOutRecord[]
+  id                Int                        @id @default(autoincrement())
+  vendorName        String                     @db.VarChar(255)
+  vendorType        String                     @db.VarChar(100)
+  address           String                     @db.VarChar(255)
+  picName           String                     @db.VarChar(255)
+  phoneNumber       String                     @db.VarChar(100)
+  email             String                     @db.VarChar(255)
+  detailLainnya     String                     @db.VarChar(255)
+  createdAt         DateTime                   @default(now())
+  updatedAt         DateTime                   @updatedAt
+  siteId            Int
+  wasteOutRecords   B3WasteOutRecord[]
   nonB3WasteRecords NonB3WasteRecord[]
-  site            MasterSite                 @relation(fields: [siteId], references: [id])
-  certifications  UnitLicenseCertification[]
+  site              MasterSite                 @relation(fields: [siteId], references: [id])
+  certifications    UnitLicenseCertification[]
 
   @@index([siteId])
   @@map("master_vendors")
@@ -589,16 +589,16 @@ model EmployeePushSubscription {
 }
 
 model MasterAdmin {
-  id           Int         @id @default(autoincrement())
-  employeeId   Int         @unique
-  password     String      @db.VarChar(255)
-  role         String      @db.VarChar(20)
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
-  tokenVersion Int         @default(0)
-  siteId       Int?
-  employee     Employee    @relation(fields: [employeeId], references: [id])
-  site         MasterSite? @relation(fields: [siteId], references: [id])
+  id               Int                       @id @default(autoincrement())
+  employeeId       Int                       @unique
+  password         String                    @db.VarChar(255)
+  role             String                    @db.VarChar(20)
+  createdAt        DateTime                  @default(now())
+  updatedAt        DateTime                  @updatedAt
+  tokenVersion     Int                       @default(0)
+  siteId           Int?
+  employee         Employee                  @relation(fields: [employeeId], references: [id])
+  site             MasterSite?               @relation(fields: [siteId], references: [id])
   skillAssessments EmployeeSkillAssessment[]
 
   @@index([employeeId])
@@ -844,18 +844,18 @@ model NonB3WasteType {
 }
 
 model NonB3WasteRecord {
-  id                     Int           @id @default(autoincrement())
+  id                     Int            @id @default(autoincrement())
   siteId                 Int
   jenisLimbahId          Int
-  tanggalMasuk           DateTime      @db.Date
-  tanggalKeluar          DateTime      @db.Date
-  jumlahKg               Decimal       @db.Decimal(10, 2)
-  nopolKendaraan         String?       @db.VarChar(20)
-  nomorDokumen           String?       @db.VarChar(100)
-  nomorSuratJalan        String        @db.VarChar(100)
-  petugasPenanggungJawab String?       @db.VarChar(100)
-  createdAt              DateTime      @default(now())
-  updatedAt              DateTime      @updatedAt
+  tanggalMasuk           DateTime       @db.Date
+  tanggalKeluar          DateTime       @db.Date
+  jumlahKg               Decimal        @db.Decimal(10, 2)
+  nopolKendaraan         String?        @db.VarChar(20)
+  nomorDokumen           String?        @db.VarChar(100)
+  nomorSuratJalan        String         @db.VarChar(100)
+  petugasPenanggungJawab String?        @db.VarChar(100)
+  createdAt              DateTime       @default(now())
+  updatedAt              DateTime       @updatedAt
   jenisLimbah            NonB3WasteType @relation(fields: [jenisLimbahId], references: [id])
   vendorId               Int?
   vendor                 MasterVendor?  @relation(fields: [vendorId], references: [id])
@@ -1066,18 +1066,36 @@ model MasterTraining {
   updatedAt               DateTime                 @updatedAt
   employeeTrainings       EmployeeTraining[]
   jobRequirementTrainings JobRequirementTraining[]
+  skillMaps               SkillTrainingMap[]
 
   @@index([category])
   @@map("master_trainings")
 }
 
+model SkillTrainingMap {
+  id               Int            @id @default(autoincrement())
+  masterSkillId    Int
+  masterTrainingId Int
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  masterSkill      MasterSkill    @relation(fields: [masterSkillId], references: [id], onDelete: Cascade)
+  masterTraining   MasterTraining @relation(fields: [masterTrainingId], references: [id], onDelete: Cascade)
+
+  @@unique([masterSkillId, masterTrainingId])
+  @@index([masterSkillId])
+  @@index([masterTrainingId])
+  @@map("skill_training_map")
+}
+
 model MasterSkill {
-  id                   Int                   @id @default(autoincrement())
-  category             String                @db.VarChar(30)
-  name                 String                @db.VarChar(255)
-  createdAt            DateTime              @default(now())
-  updatedAt            DateTime              @updatedAt
+  id                   Int                       @id @default(autoincrement())
+  category             String                    @db.VarChar(30)
+  name                 String                    @db.VarChar(255)
+  createdAt            DateTime                  @default(now())
+  updatedAt            DateTime                  @updatedAt
   jobRequirementSkills JobRequirementSkill[]
+  skillAssessments     EmployeeSkillAssessment[]
+  trainingMaps         SkillTrainingMap[]
 
   @@unique([category, name])
   @@index([category])
@@ -1105,16 +1123,17 @@ model JobRequirementProfile {
 }
 
 model JobRequirementSkill {
-  id             Int                   @id @default(autoincrement())
-  profileId      Int
-  category       String                @db.VarChar(30)
-  name           String                @db.VarChar(255)
-  masterSkillId  Int?
-  sortOrder      Int                   @default(0)
-  createdAt      DateTime              @default(now())
-  updatedAt      DateTime              @updatedAt
-  profile        JobRequirementProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  masterSkill    MasterSkill?          @relation(fields: [masterSkillId], references: [id], onDelete: Restrict)
+  id            Int                   @id @default(autoincrement())
+  profileId     Int
+  category      String                @db.VarChar(30)
+  name          String                @db.VarChar(255)
+  masterSkillId Int?
+  targetLevel   Int?                  @default(3)
+  sortOrder     Int                   @default(0)
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+  profile       JobRequirementProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  masterSkill   MasterSkill?          @relation(fields: [masterSkillId], references: [id], onDelete: Restrict)
 
   @@unique([profileId, category, name])
   @@index([profileId])
@@ -1138,22 +1157,43 @@ model JobRequirementTraining {
   @@map("job_requirement_trainings")
 }
 
+model SkillAssessmentPeriod {
+  id          Int                       @id @default(autoincrement())
+  name        String                    @unique @db.VarChar(100)
+  startDate   DateTime                  @db.Date
+  endDate     DateTime                  @db.Date
+  isActive    Boolean                   @default(false)
+  notes       String?
+  createdAt   DateTime                  @default(now())
+  updatedAt   DateTime                  @updatedAt
+  assessments EmployeeSkillAssessment[]
+
+  @@index([isActive])
+  @@map("skill_assessment_periods")
+}
+
 model EmployeeSkillAssessment {
-  id                Int          @id @default(autoincrement())
+  id                Int                   @id @default(autoincrement())
   employeeId        Int
-  category          String       @db.VarChar(30)
-  skillName         String       @db.VarChar(255)
+  category          String                @db.VarChar(30)
+  skillName         String                @db.VarChar(255)
+  masterSkillId     Int?
+  periodId          Int
   level             Int
   assessedByAdminId Int?
-  assessedAt        DateTime     @default(now())
+  assessedAt        DateTime              @default(now())
   notes             String?
-  createdAt         DateTime     @default(now())
-  updatedAt         DateTime     @updatedAt
-  employee          Employee     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  assessedByAdmin   MasterAdmin? @relation(fields: [assessedByAdminId], references: [id], onDelete: SetNull)
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+  employee          Employee              @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  masterSkill       MasterSkill?          @relation(fields: [masterSkillId], references: [id], onDelete: SetNull)
+  period            SkillAssessmentPeriod @relation(fields: [periodId], references: [id], onDelete: Restrict)
+  assessedByAdmin   MasterAdmin?          @relation(fields: [assessedByAdminId], references: [id], onDelete: SetNull)
 
-  @@unique([employeeId, category, skillName])
+  @@unique([employeeId, category, skillName, periodId])
   @@index([employeeId])
+  @@index([masterSkillId])
+  @@index([periodId])
   @@index([assessedByAdminId])
   @@map("employee_skill_assessments")
 }

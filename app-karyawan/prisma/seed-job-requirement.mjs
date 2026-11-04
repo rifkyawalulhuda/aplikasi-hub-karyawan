@@ -354,27 +354,54 @@ async function seedProfiles(trainingIds, skillIds) {
 			},
 		});
 
-		await prisma.jobRequirementSkill.deleteMany({ where: { profileId: savedProfile.id } });
 		await prisma.jobRequirementTraining.deleteMany({ where: { profileId: savedProfile.id } });
 
-		await prisma.jobRequirementSkill.createMany({
-			data: [
-				...profile.soft.map((name, index) => ({
-					profileId: savedProfile.id,
-					category: SOFT_SKILL,
-					name,
-					masterSkillId: skillIds.get(`${SOFT_SKILL}:${name}`) || null,
-					sortOrder: index,
-				})),
-				...profile.hard.map((name, index) => ({
-					profileId: savedProfile.id,
-					category: HARD_SKILL,
-					name,
-					masterSkillId: skillIds.get(`${HARD_SKILL}:${name}`) || null,
-					sortOrder: index,
-				})),
-			],
+		// Skill rows are upserted, never wiped: HR-maintained targetLevel must survive a re-seed.
+		const desiredSkills = [
+			...profile.soft.map((name, index) => ({
+				profileId: savedProfile.id,
+				category: SOFT_SKILL,
+				name,
+				masterSkillId: skillIds.get(`${SOFT_SKILL}:${name}`) || null,
+				sortOrder: index,
+			})),
+			...profile.hard.map((name, index) => ({
+				profileId: savedProfile.id,
+				category: HARD_SKILL,
+				name,
+				masterSkillId: skillIds.get(`${HARD_SKILL}:${name}`) || null,
+				sortOrder: index,
+			})),
+		];
+
+		const currentSkills = await prisma.jobRequirementSkill.findMany({
+			where: { profileId: savedProfile.id },
+			select: { id: true, category: true, name: true },
 		});
+		const currentKeys = new Set(currentSkills.map((row) => `${row.category}:${row.name}`));
+		const desiredKeys = new Set(desiredSkills.map((row) => `${row.category}:${row.name}`));
+
+		// Never delete on re-seed: requirement rows may have been added by HR through the UI,
+		// and some already carry employee assessments. Only add what is missing.
+		const keptExtra = currentSkills
+			.filter((row) => !desiredKeys.has(`${row.category}:${row.name}`))
+			.map((row) => `${row.category}:${row.name}`);
+
+		if (keptExtra.length > 0) {
+			console.warn(`  ${profile.grade} mempertahankan ${keptExtra.length} skill di luar seed: ${keptExtra.join(', ')}`);
+		}
+
+		for (const row of desiredSkills) {
+			if (currentKeys.has(`${row.category}:${row.name}`)) {
+				await prisma.jobRequirementSkill.updateMany({
+					where: { profileId: row.profileId, category: row.category, name: row.name },
+					data: { masterSkillId: row.masterSkillId, sortOrder: row.sortOrder },
+				});
+				continue;
+			}
+
+			await prisma.jobRequirementSkill.create({ data: row });
+		}
 
 		const trainingRows = profile.trainings
 			.map((training, index) => ({
@@ -394,6 +421,29 @@ async function seedProfiles(trainingIds, skillIds) {
 	}
 }
 
+async function seedAssessmentPeriod() {
+	const existing = await prisma.skillAssessmentPeriod.findFirst({ where: { isActive: true } });
+
+	if (existing) {
+		console.log(`Periode asesmen aktif: ${existing.name}`);
+		return;
+	}
+
+	const period = await prisma.skillAssessmentPeriod.upsert({
+		where: { name: '2026-S1' },
+		update: { isActive: true },
+		create: {
+			name: '2026-S1',
+			startDate: new Date('2026-01-01T00:00:00.000Z'),
+			endDate: new Date('2026-06-30T00:00:00.000Z'),
+			isActive: true,
+			notes: 'Periode awal hasil migrasi asesmen yang sudah ada.',
+		},
+	});
+
+	console.log(`Periode asesmen dibuat: ${period.name}`);
+}
+
 async function main() {
 	console.log('Seed Job Requirement (SII-QSHE-002-03)');
 	const trainingIds = await seedMasterTrainings();
@@ -401,6 +451,7 @@ async function main() {
 	console.log(`Master training: ${trainingIds.size} item`);
 	console.log(`Master skill: ${skillIds.size} item`);
 	await seedProfiles(trainingIds, skillIds);
+	await seedAssessmentPeriod();
 	console.log('Selesai. Matriks perlu diverifikasi HR sebelum dipakai produksi.');
 }
 

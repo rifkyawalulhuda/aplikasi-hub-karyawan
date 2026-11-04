@@ -1151,7 +1151,7 @@ router.get('/warning-letters', async (req, res, next) => {
 
 router.get('/job-requirement', async (req, res, next) => {
 	try {
-		const [profile, assessments, trainingParticipants] = await Promise.all([
+		const [profile, activePeriod, assessments, trainingParticipants] = await Promise.all([
 			prisma.jobRequirementProfile.findUnique({
 				where: { grade: req.employee.grade },
 				include: {
@@ -1162,6 +1162,11 @@ router.get('/job-requirement', async (req, res, next) => {
 					},
 				},
 			}),
+			prisma.skillAssessmentPeriod.findFirst({
+				where: { isActive: true },
+				orderBy: { startDate: 'desc' },
+				select: { id: true, name: true },
+			}),
 			prisma.employeeSkillAssessment.findMany({
 				where: { employeeId: req.employee.id },
 			}),
@@ -1171,10 +1176,16 @@ router.get('/job-requirement', async (req, res, next) => {
 			}),
 		]);
 
+		// Only the active period feeds the status shown to the employee; older
+		// periods are history and would otherwise be mixed into the same grade.
+		const currentAssessments = activePeriod
+			? assessments.filter((assessment) => assessment.periodId === activePeriod.id)
+			: assessments;
+
 		const evaluation = evaluateJobRequirement({
 			employee: req.employee,
 			profile,
-			assessments,
+			assessments: currentAssessments,
 			employeeTrainings: trainingParticipants.map((participant) => ({
 				material: participant.employeeTraining?.material || '',
 				masterTraining: participant.employeeTraining?.masterTraining || null,
@@ -1183,6 +1194,7 @@ router.get('/job-requirement', async (req, res, next) => {
 
 		return res.json({
 			gradeLabel: evaluation.gradeLabel,
+			periodName: activePeriod?.name ?? null,
 			status: evaluation.status,
 			statusLabel: evaluation.statusLabel,
 			mandatoryMet: evaluation.mandatoryMet,

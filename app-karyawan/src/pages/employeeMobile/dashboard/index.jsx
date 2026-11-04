@@ -516,7 +516,7 @@ function EmployeeDashboardPage() {
 							<SummaryCard
 								label={activeLeaveProcess.title}
 								value={activeLeaveProcess.statusLabel}
-								helper={`${activeLeaveProcess.requestNumber} â€¢ ${activeLeaveProcess.description}`}
+								helper={`${activeLeaveProcess.requestNumber} • ${activeLeaveProcess.description}`}
 								icon={
 									activeLeaveProcess.isActionRequired ? (
 										<AssignmentTurnedInRoundedIcon fontSize="small" />

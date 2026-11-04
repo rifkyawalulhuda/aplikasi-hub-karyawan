@@ -4,6 +4,7 @@ import { useSnackbar } from 'notistack';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import Chip from '@mui/material/Chip';
 import CircularProgress from '@mui/material/CircularProgress';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
@@ -14,24 +15,34 @@ import Stack from '@mui/material/Stack';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
 import TextField from '@mui/material/TextField';
+import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 
-import { saveEmployeeSkillAssessments } from '@/services/jobRequirement';
+import { deleteEmployeeSkillAssessment, saveEmployeeSkillAssessments } from '@/services/jobRequirement';
 
-const SKILL_PASS_LEVEL = 3;
 const LEVEL_OPTIONS = [
-	{ value: 1, label: '1 - Sangat Kurang' },
-	{ value: 2, label: '2 - Kurang' },
-	{ value: 3, label: '3 - Cukup (lulus)' },
-	{ value: 4, label: '4 - Baik' },
-	{ value: 5, label: '5 - Sangat Baik' },
+	{ value: 0, label: '0 - Tidak terpapar' },
+	{ value: 1, label: '1 - Memahami konsep' },
+	{ value: 2, label: '2 - Dapat dengan supervisi' },
+	{ value: 3, label: '3 - Mandiri' },
+	{ value: 4, label: '4 - Melatih orang lain' },
+	{ value: 5, label: '5 - Rujukan / penyusun standar' },
 ];
 
 function buildKey(category, name) {
 	return `${category}::${name}`;
 }
 
-function SkillAssessmentDialog({ open, onClose, employeeId, profile, assessments = [], onSaved }) {
+function SkillAssessmentDialog({
+	open,
+	onClose,
+	employeeId,
+	employeeName,
+	periodId,
+	profile,
+	assessments = [],
+	onSaved,
+}) {
 	const { enqueueSnackbar } = useSnackbar();
 	const [activeTab, setActiveTab] = useState('SOFT_SKILL');
 	const [levels, setLevels] = useState({});
@@ -52,51 +63,85 @@ function SkillAssessmentDialog({ open, onClose, employeeId, profile, assessments
 		setActiveTab('SOFT_SKILL');
 	}, [open, assessments]);
 
-	const softSkills = useMemo(
-		() => (profile?.skills || []).filter((skill) => skill.category === 'SOFT_SKILL'),
+	// Skills with target 0 are not a requirement, so they are excluded from the
+	// denominator and from the completeness counter — same rule as readiness.
+	const requiredSkills = useMemo(
+		() => (profile?.skills || []).filter((skill) => (skill.targetLevel ?? 3) > 0),
 		[profile],
 	);
+	const softSkills = useMemo(
+		() => requiredSkills.filter((skill) => skill.category === 'SOFT_SKILL'),
+		[requiredSkills],
+	);
 	const hardSkills = useMemo(
-		() => (profile?.skills || []).filter((skill) => skill.category === 'HARD_SKILL'),
-		[profile],
+		() => requiredSkills.filter((skill) => skill.category === 'HARD_SKILL'),
+		[requiredSkills],
 	);
 
 	const skills = activeTab === 'SOFT_SKILL' ? softSkills : hardSkills;
-	const assessedCount = Object.values(levels).filter((value) => Number(value) > 0).length;
-	const totalSkills = softSkills.length + hardSkills.length;
+	const filledCount = requiredSkills.filter((skill) => {
+		const value = levels[buildKey(skill.category, skill.name)];
+
+		return value !== '' && value != null;
+	}).length;
+	const totalSkills = requiredSkills.length;
 
 	const handleChange = (category, name, value) => {
 		setLevels((current) => ({
 			...current,
-			[buildKey(category, name)]: Number(value),
+			[buildKey(category, name)]: value === '' ? '' : Number(value),
 		}));
+	};
+
+	const handleReset = async (category, name) => {
+		setSaving(true);
+
+		try {
+			await deleteEmployeeSkillAssessment(employeeId, category, name, periodId);
+			setLevels((current) => ({
+				...current,
+				[buildKey(category, name)]: '',
+			}));
+			enqueueSnackbar(`Asesmen "${name}" dihapus.`, { variant: 'success' });
+
+			if (typeof onSaved === 'function') {
+				onSaved();
+			}
+		} catch (error) {
+			enqueueSnackbar(error.message, { variant: 'error' });
+		} finally {
+			setSaving(false);
+		}
 	};
 
 	const handleSave = async () => {
 		setSaving(true);
 
 		try {
-			const initialKeys = new Set(
-				assessments.map((assessment) => buildKey(assessment.category, assessment.skillName)),
-			);
 			const payload = [...softSkills, ...hardSkills]
 				.map((skill) => {
-					const key = buildKey(skill.category, skill.name);
+					const value = levels[buildKey(skill.category, skill.name)];
+
+					if (value === '' || value == null) {
+						return null;
+					}
 
 					return {
 						category: skill.category,
 						skillName: skill.name,
-						level: Number(levels[key] || 0),
-						wasAssessed: initialKeys.has(key),
+						level: Number(value),
 					};
 				})
-				.filter((item) => item.level > 0 || item.wasAssessed)
-				.map(({ wasAssessed, ...item }) => item);
+				.filter(Boolean);
 
-			const result = await saveEmployeeSkillAssessments(employeeId, payload);
-			enqueueSnackbar(`Asesmen tersimpan (${result.updated} disimpan, ${result.deleted || 0} dihapus).`, {
-				variant: 'success',
-			});
+			if (payload.length === 0) {
+				enqueueSnackbar('Tidak ada nilai yang diisi.', { variant: 'warning' });
+				setSaving(false);
+				return;
+			}
+
+			const result = await saveEmployeeSkillAssessments(employeeId, payload, periodId);
+			enqueueSnackbar(`Asesmen tersimpan (${result.updated} item).`, { variant: 'success' });
 
 			if (typeof onSaved === 'function') {
 				onSaved(result);
@@ -112,16 +157,25 @@ function SkillAssessmentDialog({ open, onClose, employeeId, profile, assessments
 
 	return (
 		<Dialog open={open} onClose={saving ? undefined : onClose} maxWidth="sm" fullWidth>
-			<DialogTitle>Input Asesmen Skill</DialogTitle>
+			<DialogTitle>
+				Asesmen Kompetensi
+				{employeeName ? (
+					<Typography variant="body2" color="text.secondary">
+						{employeeName}
+					</Typography>
+				) : null}
+			</DialogTitle>
 			<DialogContent dividers>
 				<Stack spacing={2}>
 					<Alert severity="info">
-						Level lulus adalah {SKILL_PASS_LEVEL} dari 5. Skill yang belum diisi akan dihitung sebagai
-						&quot;Belum Dinilai&quot;.
+						Skala 0-5: 0 tidak terpapar, 3 mandiri, 5 rujukan/penyusun standar. Readiness dihitung dari
+						seluruh skill wajib, sehingga skill yang dibiarkan kosong dihitung 0.
 					</Alert>
-					<Typography variant="body2" color="text.secondary">
-						Terisi {assessedCount} dari {totalSkills} item requirement.
-					</Typography>
+					<Alert severity={filledCount === totalSkills ? 'success' : 'warning'}>
+						{filledCount === totalSkills
+							? `Asesmen lengkap: ${filledCount} dari ${totalSkills} skill terisi.`
+							: `Baru ${filledCount} dari ${totalSkills} skill terisi. Status Siap belum bisa diberikan sampai semua skill dinilai.`}
+					</Alert>
 					<Tabs value={activeTab} onChange={(_event, value) => setActiveTab(value)} variant="fullWidth">
 						<Tab value="SOFT_SKILL" label={`Soft Skill (${softSkills.length})`} />
 						<Tab value="HARD_SKILL" label={`Hard Skill (${hardSkills.length})`} />
@@ -136,29 +190,52 @@ function SkillAssessmentDialog({ open, onClose, employeeId, profile, assessments
 					) : (
 						<Stack spacing={1.5}>
 							{skills.map((skill) => {
-								const value = levels[buildKey(skill.category, skill.name)] || '';
+								const key = buildKey(skill.category, skill.name);
+								const value = levels[key] ?? '';
+								const isBelowTarget =
+									value !== '' && value != null && Number(value) < (skill.targetLevel ?? 3);
 
 								return (
-									<TextField
-										key={skill.id || skill.name}
-										select
-										fullWidth
-										size="small"
-										label={skill.name}
-										value={value}
-										onChange={(event) =>
-											handleChange(skill.category, skill.name, event.target.value)
-										}
-									>
-										<MenuItem value="">
-											<em>Belum dinilai</em>
-										</MenuItem>
-										{LEVEL_OPTIONS.map((option) => (
-											<MenuItem key={option.value} value={option.value}>
-												{option.label}
+									<Stack key={key} direction="row" spacing={1} alignItems="flex-start">
+										<Tooltip title={`Target level ${skill.targetLevel ?? 3}`}>
+											<Chip
+												size="small"
+												variant="outlined"
+												label={`T${skill.targetLevel ?? 3}`}
+												sx={{ mt: 1, flexShrink: 0 }}
+											/>
+										</Tooltip>
+										<TextField
+											select
+											fullWidth
+											size="small"
+											label={skill.name}
+											value={value}
+											onChange={(event) =>
+												handleChange(skill.category, skill.name, event.target.value)
+											}
+											error={isBelowTarget}
+											helperText={isBelowTarget ? 'Di bawah target' : undefined}
+										>
+											<MenuItem value="">
+												<em>Belum dinilai</em>
 											</MenuItem>
-										))}
-									</TextField>
+											{LEVEL_OPTIONS.map((option) => (
+												<MenuItem key={option.value} value={option.value}>
+													{option.label}
+												</MenuItem>
+											))}
+										</TextField>
+										<Button
+											size="small"
+											color="inherit"
+											disabled={saving || value === ''}
+											onClick={() => handleReset(skill.category, skill.name)}
+											sx={{ mt: 0.5, minWidth: 0 }}
+										>
+											Hapus
+										</Button>
+									</Stack>
 								);
 							})}
 						</Stack>

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { useSnackbar } from 'notistack';
 
 import Box from '@mui/material/Box';
@@ -42,6 +42,7 @@ import {
 } from '@/services/masterTraining';
 
 import SkillTab from './skillTab';
+import TrainingMapTab from './trainingMapTab';
 
 function getGradeLabel(grade = '') {
 	const match = String(grade).match(/^RANK_(\d+)$/);
@@ -130,6 +131,7 @@ function MasterTrainingPage() {
 			{ field: 'name', headerName: 'NAMA TRAINING', minWidth: 280, flex: 1 },
 			{ field: 'category', headerName: 'KATEGORI', minWidth: 200 },
 			{ field: 'requirementCount', headerName: 'DIPAKAI DI GRADE', minWidth: 150, type: 'number' },
+			{ field: 'skillMapCount', headerName: 'DIPAKAI DI SKILL', minWidth: 150, type: 'number' },
 			{ field: 'trainingCount', headerName: 'RIWAYAT TRAINING', minWidth: 150, type: 'number' },
 		],
 		[],
@@ -243,6 +245,7 @@ function MasterTrainingPage() {
 						<Tab value="LIST" label="Daftar Training" />
 						<Tab value="MAP" label="Pemetaan Grade" />
 						<Tab value="SKILL" label="Skill" />
+						<Tab value="TRAINING_MAP" label="Pemetaan Training" />
 					</Tabs>
 
 					{activeTab === 'LIST' ? (
@@ -402,6 +405,8 @@ function MasterTrainingPage() {
 							)}
 						</>
 					) : null}
+
+					{activeTab === 'TRAINING_MAP' ? <TrainingMapTab /> : null}
 
 					{activeTab === 'SKILL' ? (
 						<SkillTab profiles={profiles} grade={grade} onGradeChange={setGrade} />

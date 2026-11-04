@@ -1,4 +1,4 @@
-import 'dotenv/config';
+﻿import 'dotenv/config';
 import compression from 'compression';
 import cors from 'cors';
 import express from 'express';
@@ -35,6 +35,7 @@ import employeesRouter from './routes/employees.js';
 import masterDataRouter from './routes/masterData.js';
 import masterTrainingsRouter from './routes/masterTrainings.js';
 import masterSkillsRouter from './routes/masterSkills.js';
+import skillAssessmentPeriodsRouter from './routes/skillAssessmentPeriods.js';
 import warningLettersRouter from './routes/warningLetters.js';
 import requireAdminAuth from './middleware/requireAdminAuth.js';
 import requireSuperAdmin from './middleware/requireSuperAdmin.js';
@@ -229,6 +230,7 @@ app.use('/api/master/site-profile', requireAdminAuth, requireWriteRole, siteProf
 app.use('/api/master/sites', requireAdminAuth, requireSuperAdmin, sitesRouter);
 app.use('/api/master/master-trainings', requireAdminAuth, requireWriteRole, masterTrainingsRouter);
 app.use('/api/master/master-skills', requireAdminAuth, requireWriteRole, masterSkillsRouter);
+app.use('/api/master/skill-assessment-periods', requireAdminAuth, requireWriteRole, skillAssessmentPeriodsRouter);
 app.use('/api/master', requireAdminAuth, requireWriteRole, masterDataRouter);
 app.use('/api/data-karyawan/guidance-records', requireAdminAuth, requireWriteRole, guidanceRecordsRouter);
 app.use('/api/data-karyawan/job-requirement', requireAdminAuth, requireWriteRole, jobRequirementsRouter);
@@ -318,3 +320,4 @@ server.on('error', (error) => {
 server.listen(port, () => {
 	console.log(`API server running on http://localhost:${port}`);
 });
+

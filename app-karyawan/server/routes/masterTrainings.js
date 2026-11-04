@@ -1,4 +1,4 @@
-import { Router } from 'express';
+﻿import { Router } from 'express';
 
 import prisma from '../lib/prisma.js';
 import requireSiteIsolation from '../middleware/requireSiteIsolation.js';
@@ -21,6 +21,11 @@ function normalizeGrade(value = '') {
 	return normalizeString(value).toUpperCase();
 }
 
+function formatGradeLabel(grade = '') {
+	const match = String(grade).match(/^RANK_(\d+)$/);
+	return match ? `Rank ${match[1]}` : String(grade || '');
+}
+
 function parseId(value) {
 	const parsed = Number(value);
 	return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
@@ -33,8 +38,15 @@ function mapTraining(record) {
 		category: record.category || '',
 		requirementCount: record._count?.jobRequirementTrainings ?? 0,
 		trainingCount: record._count?.employeeTrainings ?? 0,
+		skillMapCount: record._count?.skillMaps ?? 0,
 	};
 }
+
+const TRAINING_USAGE_COUNT_SELECT = {
+	jobRequirementTrainings: true,
+	employeeTrainings: true,
+	skillMaps: true,
+};
 
 function validatePayload(payload = {}) {
 	const name = normalizeString(payload.name);
@@ -80,14 +92,7 @@ router.get(
 	'/',
 	withAsync(async (_req, res) => {
 		const records = await prisma.masterTraining.findMany({
-			include: {
-				_count: {
-					select: {
-						jobRequirementTrainings: true,
-						employeeTrainings: true,
-					},
-				},
-			},
+			include: { _count: { select: TRAINING_USAGE_COUNT_SELECT } },
 			orderBy: [{ category: 'asc' }, { name: 'asc' }],
 		});
 
@@ -101,7 +106,7 @@ router.post(
 		const data = validatePayload(req.body);
 		const record = await prisma.masterTraining.create({
 			data,
-			include: { _count: { select: { jobRequirementTrainings: true, employeeTrainings: true } } },
+			include: { _count: { select: TRAINING_USAGE_COUNT_SELECT } },
 		});
 
 		return res.status(201).json(mapTraining(record));
@@ -127,7 +132,7 @@ router.put(
 		const record = await prisma.masterTraining.update({
 			where: { id },
 			data,
-			include: { _count: { select: { jobRequirementTrainings: true, employeeTrainings: true } } },
+			include: { _count: { select: TRAINING_USAGE_COUNT_SELECT } },
 		});
 
 		return res.json(mapTraining(record));
@@ -143,15 +148,96 @@ router.delete(
 			return res.status(400).json({ message: 'ID tidak valid.' });
 		}
 
-		const existing = await prisma.masterTraining.findUnique({ where: { id } });
+		const existing = await prisma.masterTraining.findUnique({
+			where: { id },
+			include: { _count: { select: TRAINING_USAGE_COUNT_SELECT } },
+		});
 
 		if (!existing) {
 			return res.status(404).json({ message: 'Master training tidak ditemukan.' });
 		}
 
+		const usedInGrades = existing._count.jobRequirementTrainings;
+		const usedInSkillMaps = existing._count.skillMaps;
+		const usedInRecords = existing._count.employeeTrainings;
+
+		if (usedInGrades > 0 || usedInSkillMaps > 0 || usedInRecords > 0) {
+			const parts = [];
+
+			if (usedInGrades > 0) {
+				parts.push(`${usedInGrades} syarat grade`);
+			}
+
+			if (usedInSkillMaps > 0) {
+				parts.push(`${usedInSkillMaps} pemetaan skill`);
+			}
+
+			if (usedInRecords > 0) {
+				parts.push(`${usedInRecords} riwayat pelatihan karyawan`);
+			}
+
+			return res.status(409).json({
+				message: `Training "${existing.name}" tidak bisa dihapus karena masih dipakai di ${parts.join(
+					', ',
+				)}. Lepaskan pemakaian tersebut terlebih dahulu.`,
+			});
+		}
+
 		await prisma.masterTraining.delete({ where: { id } });
 
 		return res.status(204).send();
+	}),
+);
+
+router.get(
+	'/:id/usage',
+	withAsync(async (req, res) => {
+		const id = parseId(req.params.id);
+
+		if (!id) {
+			return res.status(400).json({ message: 'ID tidak valid.' });
+		}
+
+		const training = await prisma.masterTraining.findUnique({
+			where: { id },
+			include: {
+				jobRequirementTrainings: {
+					include: { profile: { select: { grade: true } } },
+					orderBy: { sortOrder: 'asc' },
+				},
+				skillMaps: {
+					include: { masterSkill: { select: { id: true, category: true, name: true } } },
+				},
+			},
+		});
+
+		if (!training) {
+			return res.status(404).json({ message: 'Master training tidak ditemukan.' });
+		}
+
+		const [employeeTrainingCount, participantCount] = await Promise.all([
+			prisma.employeeTraining.count({ where: { masterTrainingId: id } }),
+			prisma.employeeTrainingParticipant.count({
+				where: { employeeTraining: { masterTrainingId: id }, employeeId: { not: null } },
+			}),
+		]);
+
+		return res.json({
+			id: training.id,
+			name: training.name,
+			category: training.category || '',
+			requirementGrades: training.jobRequirementTrainings.map((row) => ({
+				grade: row.profile.grade,
+				gradeLabel: formatGradeLabel(row.profile.grade),
+			})),
+			skillMaps: training.skillMaps.map((map) => ({
+				id: map.masterSkill.id,
+				category: map.masterSkill.category,
+				name: map.masterSkill.name,
+			})),
+			employeeTrainingCount,
+			participantCount,
+		});
 	}),
 );
 

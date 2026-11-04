@@ -364,13 +364,36 @@ function AttentionStrip({ items, onJump }) {
 	);
 }
 
+const READINESS_CHIP_COLORS = {
+	SIAP: 'success',
+	DALAM_PENGEMBANGAN: 'warning',
+	BELUM_LENGKAP: 'info',
+	BELUM_DINILAI: 'default',
+};
+
+function getReadinessProgressColor(readiness) {
+	if (!readiness?.isComplete) {
+		return 'info';
+	}
+
+	return (readiness.readinessPercent ?? 0) >= 80 ? 'success' : 'warning';
+}
+
 function ReadinessLedger({ jobRequirement, onAssess }) {
 	const categories = jobRequirement?.categories || [];
+	const readiness = jobRequirement?.readiness || null;
+	const readinessColor = getReadinessProgressColor(readiness);
 
 	return (
 		<Panel
 			title="Readiness Ledger"
-			subtitle="Syarat jabatan per kategori"
+			subtitle={
+				readiness?.totalItems
+					? `Readiness berbobot target — ${readiness.assessedItems}/${readiness.totalItems} skill dinilai${
+							readiness.periodName ? ` (${readiness.periodName})` : ''
+					  }`
+					: 'Syarat jabatan per kategori'
+			}
 			action={
 				<Button
 					size="small"
@@ -384,6 +407,39 @@ function ReadinessLedger({ jobRequirement, onAssess }) {
 			}
 		>
 			<Stack spacing={1.25} sx={{ p: 2.5 }}>
+				{readiness ? (
+					<Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 1.5 }}>
+						<Stack direction="row" alignItems="center" spacing={1}>
+							<Box sx={{ flexGrow: 1, minWidth: 0 }}>
+								<Typography variant="h6" fontWeight={800} lineHeight={1.1}>
+									{readiness.readinessPercent == null ? '—' : `${readiness.readinessPercent}%`}
+								</Typography>
+								<Typography variant="caption" color="text.secondary">
+									Readiness keseluruhan
+								</Typography>
+							</Box>
+							<Chip
+								size="small"
+								variant="outlined"
+								color={READINESS_CHIP_COLORS[readiness.status] || 'default'}
+								label={readiness.statusLabel}
+							/>
+						</Stack>
+						<LinearProgress
+							variant="determinate"
+							value={readiness.readinessPercent ?? 0}
+							color={readinessColor}
+							sx={{ mt: 1, height: 5, borderRadius: 999 }}
+						/>
+						{readiness.isComplete === false ? (
+							<Typography variant="caption" color="info.main" sx={{ mt: 0.75, display: 'block' }}>
+								Asesmen belum lengkap — {readiness.assessedItems} dari {readiness.totalItems} skill.
+								Skill yang belum dinilai dihitung 0.
+							</Typography>
+						) : null}
+					</Box>
+				) : null}
+
 				{categories.length === 0 ? (
 					<EmptySection message="Profil job requirement untuk grade ini belum tersedia." />
 				) : (

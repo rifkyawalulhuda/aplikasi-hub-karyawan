@@ -1,7 +1,13 @@
 import { Router } from 'express';
 
 import prisma from '../lib/prisma.js';
+import {
+	DEFAULT_TARGET_LEVEL,
+	SKILL_LEVEL_MAX,
+	SKILL_LEVEL_MIN,
+} from '../lib/skillMatrix.js';
 import requireSiteIsolation from '../middleware/requireSiteIsolation.js';
+import requireSuperAdminWrite from '../middleware/requireSuperAdminWrite.js';
 
 const router = Router();
 
@@ -40,6 +46,11 @@ function parseId(value) {
 
 function skillKey(category, name) {
 	return `${category}:${normalizeString(name).toLowerCase()}`;
+}
+
+function formatGradeLabel(grade = '') {
+	const match = String(grade).match(/^RANK_(\d+)$/);
+	return match ? `Rank ${match[1]}` : String(grade || '');
 }
 
 function validateName(value) {
@@ -113,18 +124,46 @@ async function buildMapping(grade) {
 
 	const requiredIds = new Set(profileSkills.map((skill) => skill.masterSkillId).filter(Boolean));
 	const requiredKeys = new Set(profileSkills.map((skill) => skillKey(skill.category, skill.name)));
+	const requirementByKey = new Map(
+		profileSkills.map((skill) => [skillKey(skill.category, skill.name), skill]),
+	);
 
 	return {
 		grade: profile.grade,
 		profileId: profile.id,
-		skills: skills.map((skill) => ({
-			id: skill.id,
-			category: skill.category,
-			name: skill.name,
-			required:
-				requiredIds.has(skill.id) || requiredKeys.has(skillKey(skill.category, skill.name)),
-		})),
+		skills: skills.map((skill) => {
+			const requirement =
+				requirementByKey.get(skillKey(skill.category, skill.name)) ||
+				profileSkills.find((row) => row.masterSkillId === skill.id) ||
+				null;
+
+			return {
+				id: skill.id,
+				category: skill.category,
+				name: skill.name,
+				required:
+					requiredIds.has(skill.id) || requiredKeys.has(skillKey(skill.category, skill.name)),
+				targetLevel: requirement?.targetLevel ?? DEFAULT_TARGET_LEVEL,
+			};
+		}),
 	};
+}
+
+function normalizeTargetInput(value, fallback) {
+	if (value == null || value === '') {
+		return fallback;
+	}
+
+	const parsed = Number(value);
+
+	if (!Number.isInteger(parsed) || parsed < SKILL_LEVEL_MIN || parsed > SKILL_LEVEL_MAX) {
+		throw Object.assign(
+			new Error(`Target level harus bilangan bulat ${SKILL_LEVEL_MIN} sampai ${SKILL_LEVEL_MAX}.`),
+			{ statusCode: 400 },
+		);
+	}
+
+	return parsed;
 }
 
 router.get(
@@ -282,7 +321,117 @@ router.get(
 );
 
 router.put(
+	'/mapping/:grade/targets',
+	requireSuperAdminWrite,
+	withAsync(async (req, res) => {
+		const grade = normalizeGrade(req.params.grade);
+		const profile = await getProfileOrThrow(grade);
+		const rawItems = Array.isArray(req.body?.items) ? req.body.items : [];
+
+		if (rawItems.length === 0) {
+			return res.status(400).json({ message: 'Tidak ada target yang dikirim.' });
+		}
+
+		const rows = await prisma.jobRequirementSkill.findMany({ where: { profileId: profile.id } });
+		const byId = new Map(rows.map((row) => [row.id, row]));
+		const byMasterId = new Map(
+			rows.filter((row) => row.masterSkillId).map((row) => [row.masterSkillId, row]),
+		);
+
+		const normalized = [];
+
+		for (const item of rawItems) {
+			const row = byId.get(parseId(item?.id)) || byMasterId.get(parseId(item?.masterSkillId));
+
+			if (!row) {
+				return res
+					.status(400)
+					.json({ message: 'Sebagian skill tidak termasuk requirement grade ini.' });
+			}
+
+			normalized.push({
+				id: row.id,
+				targetLevel: normalizeTargetInput(item?.targetLevel, row.targetLevel),
+			});
+		}
+
+		await prisma.$transaction(
+			normalized.map((item) =>
+				prisma.jobRequirementSkill.update({
+					where: { id: item.id },
+					data: { targetLevel: item.targetLevel },
+				}),
+			),
+		);
+
+		return res.json({ updated: normalized.length, ...(await buildMapping(grade)) });
+	}),
+);
+
+router.post(
+	'/mapping/:grade/copy-from-above',
+	requireSuperAdminWrite,
+	withAsync(async (req, res) => {
+		const grade = normalizeGrade(req.params.grade);
+		const rankMatch = String(grade).match(/^RANK_(\d+)$/);
+
+		if (!rankMatch) {
+			return res.status(400).json({ message: 'Grade tidak valid.' });
+		}
+
+		const rank = Number(rankMatch[1]);
+
+		if (rank >= 11) {
+			return res.status(400).json({ message: 'Rank 11 adalah grade tertinggi.' });
+		}
+
+		const targetProfile = await getProfileOrThrow(grade);
+		const sourceGrade = `RANK_${rank + 1}`;
+		const sourceProfile = await prisma.jobRequirementProfile.findUnique({
+			where: { grade: sourceGrade },
+			include: { skills: { orderBy: { sortOrder: 'asc' } } },
+		});
+
+		if (!sourceProfile) {
+			return res
+				.status(404)
+				.json({ message: `Profil ${formatGradeLabel(sourceGrade)} belum tersedia.` });
+		}
+
+		const existingRows = await prisma.jobRequirementSkill.findMany({
+			where: { profileId: targetProfile.id },
+		});
+		const existingKeys = new Set(existingRows.map((row) => skillKey(row.category, row.name)));
+
+		// Union copy: adds what is missing, never deletes or overwrites existing values.
+		const toCreate = sourceProfile.skills
+			.filter((row) => !existingKeys.has(skillKey(row.category, row.name)))
+			.map((row) => ({
+				profileId: targetProfile.id,
+				category: row.category,
+				name: row.name,
+				masterSkillId: row.masterSkillId,
+				targetLevel: row.targetLevel,
+				sortOrder: row.sortOrder,
+			}));
+
+		if (toCreate.length > 0) {
+			await prisma.jobRequirementSkill.createMany({ data: toCreate });
+		}
+
+		return res.json({
+			copiedFrom: sourceGrade,
+			copiedFromLabel: formatGradeLabel(sourceGrade),
+			added: toCreate.length,
+			skipped: sourceProfile.skills.length - toCreate.length,
+			...(await buildMapping(grade)),
+		});
+	}),
+);
+
+router.put(
 	'/mapping/:grade',
+	requireSuperAdminWrite,
 	withAsync(async (req, res) => {
 		const grade = normalizeGrade(req.params.grade);
 		const category = normalizeCategory(req.body?.category);
@@ -369,6 +518,106 @@ router.put(
 		const mapping = await buildMapping(grade);
 
 		return res.json(mapping);
+	}),
+);
+
+router.get(
+	'/training-map',
+	withAsync(async (_req, res) => {
+		const [skills, trainings, maps] = await Promise.all([
+			prisma.masterSkill.findMany({ orderBy: [{ category: 'asc' }, { name: 'asc' }] }),
+			prisma.masterTraining.findMany({ orderBy: [{ category: 'asc' }, { name: 'asc' }] }),
+			prisma.skillTrainingMap.findMany({ orderBy: { id: 'asc' } }),
+		]);
+
+		const trainingById = new Map(trainings.map((training) => [training.id, training]));
+		const mapBySkill = new Map();
+
+		maps.forEach((map) => {
+			const entry = mapBySkill.get(map.masterSkillId) || [];
+			const training = trainingById.get(map.masterTrainingId);
+
+			if (training) {
+				entry.push({ id: training.id, name: training.name, category: training.category || '' });
+			}
+
+			mapBySkill.set(map.masterSkillId, entry);
+		});
+
+		return res.json({
+			skills: skills.map((skill) => ({
+				id: skill.id,
+				category: skill.category,
+				name: skill.name,
+				trainings: mapBySkill.get(skill.id) || [],
+			})),
+			trainings: trainings.map((training) => ({
+				id: training.id,
+				name: training.name,
+				category: training.category || '',
+			})),
+			totalMappings: maps.length,
+		});
+	}),
+);
+
+router.put(
+	'/training-map/:masterSkillId',
+	requireSuperAdminWrite,
+	withAsync(async (req, res) => {
+		const masterSkillId = parseId(req.params.masterSkillId);
+
+		if (!masterSkillId) {
+			return res.status(400).json({ message: 'ID skill tidak valid.' });
+		}
+
+		const skill = await prisma.masterSkill.findUnique({ where: { id: masterSkillId } });
+
+		if (!skill) {
+			return res.status(404).json({ message: 'Skill tidak ditemukan.' });
+		}
+
+		const rawIds = Array.isArray(req.body?.masterTrainingIds) ? req.body.masterTrainingIds : [];
+		const trainingIds = [
+			...new Set(rawIds.map((value) => Number(value)).filter((value) => Number.isInteger(value) && value > 0)),
+		];
+
+		if (trainingIds.length > 0) {
+			const found = await prisma.masterTraining.findMany({
+				where: { id: { in: trainingIds } },
+				select: { id: true },
+			});
+
+			if (found.length !== trainingIds.length) {
+				return res.status(400).json({ message: 'Sebagian master training tidak ditemukan.' });
+			}
+		}
+
+		await prisma.$transaction([
+			prisma.skillTrainingMap.deleteMany({ where: { masterSkillId } }),
+			...(trainingIds.length > 0
+				? [
+						prisma.skillTrainingMap.createMany({
+							data: trainingIds.map((masterTrainingId) => ({ masterSkillId, masterTrainingId })),
+						}),
+				  ]
+				: []),
+		]);
+
+		const trainings = await prisma.masterTraining.findMany({
+			where: { id: { in: trainingIds } },
+			orderBy: [{ category: 'asc' }, { name: 'asc' }],
+		});
+
+		return res.json({
+			masterSkillId,
+			skillName: skill.name,
+			trainings: trainings.map((training) => ({
+				id: training.id,
+				name: training.name,
+				category: training.category || '',
+			})),
+		});
 	}),
 );
 

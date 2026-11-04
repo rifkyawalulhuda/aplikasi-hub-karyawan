@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+﻿import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSnackbar } from 'notistack';
 
@@ -21,8 +21,13 @@ import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
 import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
 
 import EnhancedTable, { createRowNumberColumn } from '@/components/dataTable';
+import PeriodDialog from '@/components/jobRequirement/periodDialog';
 import PageHeader from '@/components/pageHeader';
+import AssessmentTab from './assessmentTab';
+import MatrixTab from './matrixTab';
+import RecommendationPanel from './recommendationPanel';
 import {
+	fetchActiveAssessmentPeriod,
 	fetchJobRequirementEmployees,
 	fetchJobRequirementProfiles,
 	fetchJobRequirementTrainingNeeds,
@@ -103,6 +108,21 @@ function JobRequirementRecapPage() {
 	const [statusFilter, setStatusFilter] = useState('ALL');
 	const [departmentFilter, setDepartmentFilter] = useState('ALL');
 	const [search, setSearch] = useState('');
+	const [period, setPeriod] = useState(null);
+	const [periodDialogOpen, setPeriodDialogOpen] = useState(false);
+
+	const loadPeriod = useCallback(async () => {
+		try {
+			const active = await fetchActiveAssessmentPeriod();
+			setPeriod(active);
+		} catch (error) {
+			setPeriod(null);
+		}
+	}, []);
+
+	useEffect(() => {
+		loadPeriod();
+	}, [loadPeriod]);
 
 	useEffect(() => {
 		const init = async () => {
@@ -320,10 +340,20 @@ function JobRequirementRecapPage() {
 				<Stack spacing={2.5}>
 					<Tabs value={activeTab} onChange={(_event, value) => setActiveTab(value)}>
 						<Tab value="GAP" label="Rekap Gap" />
+						<Tab value="ASSESSMENT" label="Asesmen Kompetensi" />
+						<Tab value="MATRIX" label="Matriks Kompetensi" />
 						<Tab value="TRAINING" label="Kebutuhan Training" />
 					</Tabs>
 
-					{activeTab === 'GAP' ? (
+					{activeTab === 'MATRIX' ? (
+						<MatrixTab period={period} onOpenPeriodDialog={() => setPeriodDialogOpen(true)} />
+					) : null}
+
+					{activeTab === 'ASSESSMENT' ? (
+						<AssessmentTab period={period} onOpenPeriodDialog={() => setPeriodDialogOpen(true)} />
+					) : null}
+
+					{activeTab === 'GAP' && (
 						<>
 							<Grid container spacing={1.5}>
 								<Grid item xs={12} md={3}>
@@ -428,7 +458,9 @@ function JobRequirementRecapPage() {
 								/>
 							)}
 						</>
-					) : (
+					)}
+
+					{activeTab === 'TRAINING' && (
 						<>
 							<Stack direction="row" justifyContent="space-between" alignItems="center">
 								<Typography variant="body2" color="text.secondary">
@@ -459,10 +491,14 @@ function JobRequirementRecapPage() {
 									/>
 								</Box>
 							)}
+
+							<RecommendationPanel period={period} />
 						</>
 					)}
 				</Stack>
 			</Card>
+
+			<PeriodDialog open={periodDialogOpen} onClose={() => setPeriodDialogOpen(false)} onChanged={loadPeriod} />
 		</>
 	);
 }

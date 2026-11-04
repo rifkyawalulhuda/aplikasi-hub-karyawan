@@ -42,3 +42,27 @@ export function saveSkillMapping(grade, payload) {
 		body: JSON.stringify(payload),
 	});
 }
+
+export function saveSkillTargets(grade, items) {
+	return apiRequest(`${BASE_PATH}/mapping/${encodeURIComponent(grade)}/targets`, {
+		method: 'PUT',
+		body: JSON.stringify({ items }),
+	});
+}
+
+export function copySkillMappingFromAbove(grade) {
+	return apiRequest(`${BASE_PATH}/mapping/${encodeURIComponent(grade)}/copy-from-above`, {
+		method: 'POST',
+	});
+}
+
+export function fetchSkillTrainingMap() {
+	return apiRequest(`${BASE_PATH}/training-map`);
+}
+
+export function saveSkillTrainingMap(masterSkillId, masterTrainingIds) {
+	return apiRequest(`${BASE_PATH}/training-map/${masterSkillId}`, {
+		method: 'PUT',
+		body: JSON.stringify({ masterTrainingIds }),
+	});
+}

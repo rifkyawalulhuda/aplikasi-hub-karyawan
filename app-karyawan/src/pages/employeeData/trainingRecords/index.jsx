@@ -107,6 +107,7 @@ function TrainingRecordsPage() {
 				row.trainingType,
 				row.participantSummary,
 				row.participantNames?.join(' ; '),
+				row.masterTrainingName,
 				row.material,
 				row.trainerInstitution,
 				row.trainerName,

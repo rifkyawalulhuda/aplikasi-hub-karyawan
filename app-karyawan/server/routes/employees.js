@@ -14,6 +14,7 @@ import { hashPassword } from '../lib/password.js';
 import { buildSiteWhere, siteNotFound } from '../lib/siteScope.js';
 import { isWarningLetterActive } from '../lib/warningLetterEscalation.js';
 import { evaluateJobRequirement } from '../lib/jobRequirement.js';
+import { evaluateSkillReadiness } from '../lib/skillMatrix.js';
 import requireSiteIsolation from '../middleware/requireSiteIsolation.js';
 
 const router = Router();
@@ -427,9 +428,7 @@ async function validatePayload(payload, currentEmployeeId = null, siteId = null)
 
 	await Promise.all([
 		ensureLookupExists('department', departmentId, 'Department', siteId),
-		...(groupShiftId !== null
-			? [ensureLookupExists('masterGroupShift', groupShiftId, 'Group Shift', siteId)]
-			: []),
+		...(groupShiftId !== null ? [ensureLookupExists('masterGroupShift', groupShiftId, 'Group Shift', siteId)] : []),
 		ensureLookupExists('workLocation', workLocationId, 'Work Location', siteId),
 		ensureLookupExists('jobRole', jobRoleId, 'Job Role', siteId),
 		ensureLookupExists('jobLevel', jobLevelId, 'Job Level'),
@@ -470,7 +469,13 @@ async function buildImportPayload(rawPayload) {
 	const site = await getLookupByName('masterSite', 'Site / Div', rawPayload['Site / Div']);
 	const department = await getLookupByName('department', 'Department', rawPayload.Department, site.id);
 	const groupShift = normalizeString(rawPayload['Group Shift'] || '')
-		? await getLookupByField('masterGroupShift', 'groupShiftName', 'Group Shift', rawPayload['Group Shift'], site.id)
+		? await getLookupByField(
+				'masterGroupShift',
+				'groupShiftName',
+				'Group Shift',
+				rawPayload['Group Shift'],
+				site.id,
+		  )
 		: null;
 	const workLocation = await getLookupByName('workLocation', 'Work Location', rawPayload['Work Location'], site.id);
 	const jobRole = await getLookupByName('jobRole', 'Job Role', rawPayload['Job Role'], site.id);
@@ -499,7 +504,7 @@ async function buildImportPayload(rawPayload) {
 
 async function createErrorReport(rows) {
 	await pruneImportErrorReports(ERROR_REPORT_DIR);
-		await fs.mkdir(ERROR_REPORT_DIR, { recursive: true });
+	await fs.mkdir(ERROR_REPORT_DIR, { recursive: true });
 
 	const workbook = new ExcelJS.Workbook();
 	const worksheet = workbook.addWorksheet('Import Errors');
@@ -983,73 +988,84 @@ router.get(
 			leaveFlows,
 			trainingRecords,
 			jobRequirementProfile,
-			skillAssessments,
+			skillAssessmentsAllPeriods,
 			trainingParticipants,
+			activePeriod,
 		] = await Promise.all([
-				prisma.guidanceRecord.findMany({
-					where: { employeeId: id },
-					orderBy: { meetingDate: 'desc' },
-					take: 5,
-				}),
-				prisma.warningLetter.findMany({
-					where: { employeeId: id },
-					orderBy: { letterDate: 'desc' },
-					take: 5,
-				}),
-				prisma.employeeLicenseCertification.findMany({
-					where: { employeeId: id },
-					include: { masterDokKaryawan: true },
-					orderBy: { expiryDate: 'asc' },
-				}),
-				prisma.employeeLeaveDatabase.findMany({
-					where: { employeeId: id },
-					include: { masterCutiKaryawan: true },
-					orderBy: { year: 'desc' },
-				}),
-				prisma.employeeLeave.findMany({
-					where: { employeeId: id },
-					include: { masterCutiKaryawan: true },
-					orderBy: { createdAt: 'desc' },
-					take: 5,
-				}),
-				prisma.employeeTraining.findMany({
-					where: {
-						participants: {
-							some: {
-								employeeId: id,
-							},
+			prisma.guidanceRecord.findMany({
+				where: { employeeId: id },
+				orderBy: { meetingDate: 'desc' },
+				take: 5,
+			}),
+			prisma.warningLetter.findMany({
+				where: { employeeId: id },
+				orderBy: { letterDate: 'desc' },
+				take: 5,
+			}),
+			prisma.employeeLicenseCertification.findMany({
+				where: { employeeId: id },
+				include: { masterDokKaryawan: true },
+				orderBy: { expiryDate: 'asc' },
+			}),
+			prisma.employeeLeaveDatabase.findMany({
+				where: { employeeId: id },
+				include: { masterCutiKaryawan: true },
+				orderBy: { year: 'desc' },
+			}),
+			prisma.employeeLeave.findMany({
+				where: { employeeId: id },
+				include: { masterCutiKaryawan: true },
+				orderBy: { createdAt: 'desc' },
+				take: 5,
+			}),
+			prisma.employeeTraining.findMany({
+				where: {
+					participants: {
+						some: {
+							employeeId: id,
 						},
 					},
-					include: {
-						participants: {
-							include: {
-								employee: true,
-							},
-							orderBy: { id: 'asc' },
+				},
+				include: {
+					participants: {
+						include: {
+							employee: true,
 						},
+						orderBy: { id: 'asc' },
 					},
-					orderBy: [{ startDate: 'desc' }, { endDate: 'desc' }, { createdAt: 'desc' }],
-					take: 5,
-				}),
-				prisma.jobRequirementProfile.findUnique({
-					where: { grade: employee.grade },
-					include: {
-						skills: { orderBy: [{ category: 'asc' }, { sortOrder: 'asc' }] },
-						trainings: {
-							include: { masterTraining: true },
-							orderBy: { sortOrder: 'asc' },
-						},
+				},
+				orderBy: [{ startDate: 'desc' }, { endDate: 'desc' }, { createdAt: 'desc' }],
+				take: 5,
+			}),
+			prisma.jobRequirementProfile.findUnique({
+				where: { grade: employee.grade },
+				include: {
+					skills: { orderBy: [{ category: 'asc' }, { sortOrder: 'asc' }] },
+					trainings: {
+						include: { masterTraining: true },
+						orderBy: { sortOrder: 'asc' },
 					},
-				}),
-				prisma.employeeSkillAssessment.findMany({
-					where: { employeeId: id },
-					orderBy: [{ category: 'asc' }, { skillName: 'asc' }],
-				}),
-				prisma.employeeTrainingParticipant.findMany({
-					where: { employeeId: id },
-					include: { employeeTraining: { include: { masterTraining: true } } },
-				}),
-			]);
+				},
+			}),
+			prisma.employeeSkillAssessment.findMany({
+				where: { employeeId: id },
+				orderBy: [{ category: 'asc' }, { skillName: 'asc' }],
+			}),
+			prisma.employeeTrainingParticipant.findMany({
+				where: { employeeId: id },
+				include: { employeeTraining: { include: { masterTraining: true } } },
+			}),
+			prisma.skillAssessmentPeriod.findFirst({
+				where: { isActive: true },
+				orderBy: { startDate: 'desc' },
+				select: { id: true, name: true },
+			}),
+		]);
+
+		// Only the active period counts; older periods are history.
+		const skillAssessments = activePeriod
+			? skillAssessmentsAllPeriods.filter((assessment) => assessment.periodId === activePeriod.id)
+			: skillAssessmentsAllPeriods;
 
 		const licenseExpiredCount = licenseCertifications.filter(
 			(l) => l.expiryDate && new Date(l.expiryDate) < today,
@@ -1068,6 +1084,13 @@ router.get(
 				material: participant.employeeTraining?.material || '',
 				masterTraining: participant.employeeTraining?.masterTraining || null,
 			})),
+		});
+
+		// Same readiness engine as the Job Requirement module, so one employee never
+		// shows two different competence scores on two different pages.
+		const readiness = evaluateSkillReadiness({
+			requirements: jobRequirementProfile?.skills || [],
+			assessments: skillAssessments,
 		});
 
 		return res.json({
@@ -1145,6 +1168,17 @@ router.get(
 				statusLabel: jobRequirementEvaluation.statusLabel,
 				mandatoryMet: jobRequirementEvaluation.mandatoryMet,
 				percentOverall: jobRequirementEvaluation.percentOverall,
+				periodName: activePeriod?.name ?? null,
+				readiness: {
+					status: readiness.status,
+					statusLabel: readiness.statusLabel,
+					readinessPercent: readiness.readinessPercent,
+					isComplete: readiness.isComplete,
+					completionPercent: readiness.completionPercent,
+					assessedItems: readiness.assessedItems,
+					totalItems: readiness.totalItems,
+					metItems: readiness.metItems,
+				},
 				categories: jobRequirementEvaluation.categories,
 				unmetItems: jobRequirementEvaluation.unmetItems,
 				assessments: skillAssessments.map((assessment) => ({

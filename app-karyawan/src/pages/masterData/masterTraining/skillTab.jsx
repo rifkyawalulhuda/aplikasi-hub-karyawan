@@ -28,12 +28,14 @@ import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
 import EnhancedTable, { createRowNumberColumn } from '@/components/dataTable';
 import DeleteConfirmDialog from '@/components/masterData/deleteConfirmDialog';
 import {
+	copySkillMappingFromAbove,
 	createMasterSkill,
 	deleteMasterSkill,
 	deleteSkillAssessments,
 	fetchMasterSkills,
 	fetchSkillMapping,
 	saveSkillMapping,
+	saveSkillTargets,
 	updateMasterSkill,
 } from '@/services/masterSkill';
 
@@ -41,6 +43,8 @@ const CATEGORY_LABELS = {
 	SOFT_SKILL: 'Soft Skill',
 	HARD_SKILL: 'Hard Skill',
 };
+
+const LEVEL_OPTIONS = [0, 1, 2, 3, 4, 5];
 
 function getGradeLabel(grade = '') {
 	const match = String(grade).match(/^RANK_(\d+)$/);
@@ -53,6 +57,7 @@ function SkillTab({ profiles, grade, onGradeChange }) {
 	const [skills, setSkills] = useState([]);
 	const [mapping, setMapping] = useState(null);
 	const [selectedIds, setSelectedIds] = useState([]);
+	const [targetDraft, setTargetDraft] = useState({});
 	const [loading, setLoading] = useState(true);
 	const [saving, setSaving] = useState(false);
 	const [search, setSearch] = useState('');
@@ -106,6 +111,18 @@ function SkillTab({ profiles, grade, onGradeChange }) {
 		setSelectedIds(
 			mapping.skills.filter((skill) => skill.category === category && skill.required).map((skill) => skill.id),
 		);
+
+		const nextDraft = {};
+
+		(mapping.skills || [])
+			.filter((skill) => skill.category === category)
+			.forEach((skill) => {
+				nextDraft[skill.id] = {
+					targetLevel: skill.targetLevel ?? 3,
+				};
+			});
+
+		setTargetDraft(nextDraft);
 	}, [mapping, category]);
 
 	const filteredSkills = useMemo(() => {
@@ -122,14 +139,21 @@ function SkillTab({ profiles, grade, onGradeChange }) {
 		);
 	};
 
+	const updateTargetDraft = (id, patch) => {
+		setTargetDraft((current) => ({
+			...current,
+			[id]: { ...(current[id] || {}), ...patch },
+		}));
+	};
+
 	const columns = useMemo(
 		() => [
 			createRowNumberColumn(),
-			{ field: 'name', headerName: 'NAMA SKILL', minWidth: 240, flex: 1 },
+			{ field: 'name', headerName: 'NAMA SKILL', minWidth: 220, flex: 1 },
 			{
 				field: 'required',
 				headerName: `WAJIB DI ${getGradeLabel(grade).toUpperCase()}`,
-				minWidth: 170,
+				minWidth: 130,
 				sortable: false,
 				renderCell: (params) => (
 					<Checkbox
@@ -141,9 +165,45 @@ function SkillTab({ profiles, grade, onGradeChange }) {
 				),
 			},
 			{
+				field: 'targetLevel',
+				headerName: 'TARGET',
+				minWidth: 110,
+				sortable: false,
+				renderCell: (params) => {
+					if (!selectedIds.includes(params.row.id)) {
+						return (
+							<Typography variant="caption" color="text.disabled">
+								-
+							</Typography>
+						);
+					}
+
+					const draft = targetDraft[params.row.id] || {};
+
+					return (
+						<TextField
+							select
+							size="small"
+							value={draft.targetLevel ?? 3}
+							onChange={(event) =>
+								updateTargetDraft(params.row.id, { targetLevel: Number(event.target.value) })
+							}
+							inputProps={{ 'aria-label': `Target ${params.row.name}` }}
+							sx={{ minWidth: 78 }}
+						>
+							{LEVEL_OPTIONS.map((level) => (
+								<MenuItem key={level} value={level}>
+									{level}
+								</MenuItem>
+							))}
+						</TextField>
+					);
+				},
+			},
+			{
 				field: 'requirementCount',
 				headerName: 'DIPAKAI DI GRADE',
-				minWidth: 150,
+				minWidth: 140,
 				type: 'number',
 				renderCell: (params) =>
 					params.value > 0 ? <Chip size="small" label={`${params.value} grade`} variant="outlined" /> : '-',
@@ -151,7 +211,7 @@ function SkillTab({ profiles, grade, onGradeChange }) {
 			{
 				field: 'assessmentCount',
 				headerName: 'ASESMEN',
-				minWidth: 140,
+				minWidth: 130,
 				type: 'number',
 				renderCell: (params) =>
 					params.value > 0 ? (
@@ -175,7 +235,7 @@ function SkillTab({ profiles, grade, onGradeChange }) {
 					),
 			},
 		],
-		[grade, selectedIds],
+		[grade, selectedIds, targetDraft],
 	);
 
 	const openCreate = () => {
@@ -279,6 +339,69 @@ function SkillTab({ profiles, grade, onGradeChange }) {
 		}
 	};
 
+	const handleSaveTargets = async () => {
+		if (!grade) {
+			return;
+		}
+
+		const items = selectedIds
+			.map((id) => {
+				const draft = targetDraft[id];
+
+				if (!draft) {
+					return null;
+				}
+
+				return {
+					masterSkillId: id,
+					targetLevel: draft.targetLevel,
+				};
+			})
+			.filter(Boolean);
+
+		if (items.length === 0) {
+			enqueueSnackbar('Tidak ada skill wajib untuk disimpan targetnya.', { variant: 'warning' });
+			return;
+		}
+
+		setSaving(true);
+
+		try {
+			const response = await saveSkillTargets(grade, items);
+			setMapping(response);
+			enqueueSnackbar(`Target ${items.length} skill berhasil disimpan.`, {
+				variant: 'success',
+			});
+		} catch (error) {
+			enqueueSnackbar(error.message, { variant: 'error' });
+		} finally {
+			setSaving(false);
+		}
+	};
+
+	const handleCopyFromAbove = async () => {
+		if (!grade) {
+			return;
+		}
+
+		setSaving(true);
+
+		try {
+			const response = await copySkillMappingFromAbove(grade);
+			setMapping(response);
+			enqueueSnackbar(
+				`${response.added} skill disalin dari ${response.copiedFromLabel || response.copiedFrom}. ${
+					response.skipped
+				} skill sudah ada dan tidak ditimpa.`,
+				{ variant: 'success' },
+			);
+		} catch (error) {
+			enqueueSnackbar(error.message, { variant: 'error' });
+		} finally {
+			setSaving(false);
+		}
+	};
+
 	return (
 		<>
 			<Stack spacing={2}>
@@ -332,23 +455,48 @@ function SkillTab({ profiles, grade, onGradeChange }) {
 						/>
 					</Grid>
 					<Grid item xs={12} md={3}>
-						<Stack direction="row" spacing={1} justifyContent="flex-end">
-							<Button variant="outlined" startIcon={<AddOutlinedIcon />} onClick={openCreate}>
+						<Stack direction="row" spacing={1} justifyContent="flex-end" flexWrap="wrap" useFlexGap>
+							<Button
+								variant="outlined"
+								size="small"
+								startIcon={<AddOutlinedIcon />}
+								onClick={openCreate}
+							>
 								Tambah
 							</Button>
 							<Button
+								variant="outlined"
+								size="small"
+								onClick={handleCopyFromAbove}
+								disabled={saving || !grade || grade === 'RANK_11'}
+								title="Tambahkan skill dari grade di atasnya tanpa menimpa data yang sudah ada"
+							>
+								Salin Grade Atas
+							</Button>
+							<Button
 								variant="contained"
+								size="small"
 								startIcon={<SaveOutlinedIcon />}
 								onClick={handleSaveMapping}
 								disabled={saving || !grade}
 							>
-								Simpan
+								Simpan Wajib
+							</Button>
+							<Button
+								variant="contained"
+								size="small"
+								color="secondary"
+								startIcon={<SaveOutlinedIcon />}
+								onClick={handleSaveTargets}
+								disabled={saving || !grade || selectedIds.length === 0}
+							>
+								Simpan Target
 							</Button>
 						</Stack>
 					</Grid>
 				</Grid>
 
-				<Stack direction="row" spacing={1} alignItems="center">
+				<Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
 					<Chip
 						size="small"
 						color="primary"
@@ -356,8 +504,9 @@ function SkillTab({ profiles, grade, onGradeChange }) {
 						label={`${selectedIds.length} ${CATEGORY_LABELS[category]} wajib`}
 					/>
 					<Typography variant="caption" color="text.secondary">
-						Centang skill yang wajib untuk grade terpilih. Katalog bisa ditambah, diedit, atau dihapus lewat
-						menu baris.
+						Centang skill yang wajib, lalu atur target level 0-5. Status Siap tercapai bila minimal 80%
+						target terpenuhi. Tombol &quot;Salin Grade Atas&quot; hanya menambah skill yang belum ada, tidak
+						menimpa nilai yang sudah diisi.
 					</Typography>
 				</Stack>
 

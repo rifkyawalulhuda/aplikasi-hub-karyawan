@@ -26,6 +26,10 @@ export function deleteMasterTraining(id) {
 	});
 }
 
+export function fetchMasterTrainingUsage(id) {
+	return apiRequest(`${BASE_PATH}/${id}/usage`);
+}
+
 export function fetchRequirementTrainingMap(grade) {
 	return apiRequest(`${BASE_PATH}/requirement-map/${encodeURIComponent(grade)}`);
 }
