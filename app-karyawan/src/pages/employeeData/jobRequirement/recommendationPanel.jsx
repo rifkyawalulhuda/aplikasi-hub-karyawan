@@ -207,8 +207,12 @@ function RecommendationPanel({ period }) {
 						{ label: 'Training direkomendasikan', value: payload.total },
 						{ label: 'Karyawan punya gap', value: payload.employeesWithGap },
 						{ label: 'Gap tanpa training terpetakan', value: payload.unmappedGapCount },
+						{
+							label: 'Skill wajib sudah dinilai',
+							value: `${payload.assessedPairs ?? 0}/${payload.requiredPairs ?? 0}`,
+						},
 					].map((item) => (
-						<Grid item xs={12} sm={4} key={item.label}>
+						<Grid item xs={12} sm={6} md={3} key={item.label}>
 							<Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 1.5 }}>
 								<Typography variant="caption" color="text.secondary">
 									{item.label}
@@ -220,9 +224,18 @@ function RecommendationPanel({ period }) {
 				</Grid>
 
 				{(payload.rows || []).length === 0 ? (
-					<Alert severity="success">
-						Tidak ada rekomendasi training dari skill gap pada periode ini. Bisa berarti semua skill yang
-						sudah dinilai memenuhi target, atau belum ada asesmen sama sekali.
+					<Alert severity={payload.assessedPairs > 0 ? 'success' : 'info'}>
+						{(() => {
+							if ((payload.assessedPairs ?? 0) === 0) {
+								return 'Belum ada skill wajib yang dinilai pada periode ini, sehingga gap belum bisa dihitung. Isi asesmen lewat tab Asesmen Kompetensi.';
+							}
+
+							if ((payload.unmappedGapCount ?? 0) > 0) {
+								return `Tidak ada training yang bisa direkomendasikan karena ${payload.unmappedGapCount} gap belum dipetakan ke training. Lengkapi Pemetaan Training.`;
+							}
+
+							return 'Tidak ada rekomendasi training dari skill gap pada periode ini — semua skill yang sudah dinilai memenuhi target.';
+						})()}
 					</Alert>
 				) : (
 					<EnhancedTable

@@ -5,6 +5,7 @@ import { buildSiteWhere, siteNotFound } from '../lib/siteScope.js';
 import {
 	CATEGORY,
 	evaluateJobRequirement,
+	formatGradeLabel,
 	normalizeText,
 } from '../lib/jobRequirement.js';
 import {
@@ -129,12 +130,12 @@ async function safeEvaluationContext(employeeIds, { periodId } = {}) {
 
 	const [profiles, assessments, participants] = await Promise.all([
 		prisma.jobRequirementProfile.findMany({ include: profileInclude() }),
-		employeeIds.length > 0
+		// Measured values always belong to exactly one period. When no period is
+		// active there is no current measurement, so we return none rather than
+		// blending every period into a number that matches no period at all.
+		employeeIds.length > 0 && resolvedPeriodId
 			? prisma.employeeSkillAssessment.findMany({
-					where: {
-						employeeId: { in: employeeIds },
-						...(resolvedPeriodId ? { periodId: resolvedPeriodId } : {}),
-					},
+					where: { employeeId: { in: employeeIds }, periodId: resolvedPeriodId },
 			  })
 			: Promise.resolve([]),
 		employeeIds.length > 0
@@ -355,7 +356,7 @@ router.put(
 
 		const employee = await prisma.employee.findFirst({
 			where: { id, ...buildSiteWhere(req) },
-			select: { id: true },
+			select: { id: true, grade: true },
 		});
 
 		if (!employee) {
@@ -373,6 +374,24 @@ router.put(
 		if (periodId === null) {
 			return undefined;
 		}
+
+		const profile = await prisma.jobRequirementProfile.findUnique({
+			where: { grade: employee.grade },
+			select: { skills: { select: { category: true, name: true } } },
+		});
+
+		if (!profile) {
+			return res.status(400).json({
+				message: `Profil job requirement untuk ${formatGradeLabel(employee.grade)} belum tersedia, sehingga tidak ada skill yang bisa dinilai.`,
+			});
+		}
+
+		// Only skills listed on the employee's own grade may be assessed. Accepting
+		// arbitrary skill names would let an off-requirement assessment exist and
+		// silently inflate or deflate readiness.
+		const allowedKeys = new Set(
+			profile.skills.map((skill) => buildMatrixColumnKey(skill.category, skill.name)),
+		);
 
 		const masterSkills = await prisma.masterSkill.findMany();
 		const masterSkillByKey = new Map(
@@ -397,6 +416,14 @@ router.put(
 
 			if (level === null) {
 				return res.status(400).json({ message: `Level skill ${skillName} harus 0 sampai 5.` });
+			}
+
+			if (!allowedKeys.has(buildMatrixColumnKey(category, skillName))) {
+				return res.status(400).json({
+					message: `Skill "${skillName}" (${category}) tidak termasuk syarat ${formatGradeLabel(
+						employee.grade,
+					)}. Muat ulang halaman agar daftar skill sesuai dengan syarat grade terbaru.`,
+				});
 			}
 
 			normalized.push({
@@ -1042,6 +1069,9 @@ router.get(
 		const employeeDirectory = new Map();
 		let employeesWithGap = 0;
 		let unmappedGapCount = 0;
+		let assessedEmployeeCount = 0;
+		let requiredPairs = 0;
+		let assessedPairs = 0;
 
 		employees.forEach((employee) => {
 			const profile = context.profileByGrade.get(employee.grade);
@@ -1058,14 +1088,22 @@ router.get(
 				]),
 			);
 
+			if (assessments.length > 0) {
+				assessedEmployeeCount += 1;
+			}
+
 			let employeeHasGap = false;
 
 			(profile.skills || []).forEach((skill) => {
+				requiredPairs += 1;
+
 				const assessment = assessmentByKey.get(buildMatrixColumnKey(skill.category, skill.name));
 
 				if (!assessment) {
 					return;
 				}
+
+				assessedPairs += 1;
 
 				const target = skill.targetLevel ?? DEFAULT_TARGET_LEVEL;
 
@@ -1158,6 +1196,13 @@ router.get(
 			total: rows.length,
 			employeesWithGap,
 			unmappedGapCount,
+			// Coverage gives the UI a way to tell "no gap" apart from "nothing assessed
+			// yet". Without it an empty table looks like good news when nobody has
+			// been measured at all.
+			assessedEmployeeCount,
+			employeeCount: employees.length,
+			requiredPairs,
+			assessedPairs,
 			rows,
 		});
 	}),

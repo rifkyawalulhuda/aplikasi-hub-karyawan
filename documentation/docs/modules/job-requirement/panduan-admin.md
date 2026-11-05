@@ -389,8 +389,8 @@ Panel ini menggabungkan dua tampilan:
 
 Tombol **Asesmen** membuka dialog yang sama dengan tab Asesmen Kompetensi — jadi penilaian bisa dilakukan langsung dari profil karyawan.
 
-:::note Potensi angka berbeda
-Bila tidak ada periode aktif, `Detail Karyawan` menghitung dari **seluruh periode**, sedangkan tab Rekap menolak menghitung (409). Saat periode aktif ada, keduanya identik karena memakai mesin `evaluateSkillReadiness` yang sama.
+:::note Karyawan tanpa periode aktif
+Bila tidak ada periode aktif, `Detail Karyawan` menampilkan readiness `—` dengan status `Belum Dinilai` (asesmen periode lama tidak dicampur), dan tombol **Asesmen** dinonaktifkan dengan tooltip yang menjelaskan sebabnya. Tab Rekap pada kondisi yang sama menolak menghitung (409). Saat periode aktif ada, keduanya identik karena memakai mesin `evaluateSkillReadiness` yang sama.
 :::
 
 ### PWA Karyawan

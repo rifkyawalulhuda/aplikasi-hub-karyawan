@@ -171,7 +171,7 @@ Detail satu karyawan: profil, evaluasi, readiness, dan seluruh asesmen periode a
 }
 ```
 
-`periodId` bernilai `null` bila tidak ada periode aktif — pada kondisi itu `assessments` berisi asesmen **semua periode**.
+`periodId` bernilai `null` bila tidak ada periode aktif — pada kondisi itu `assessments` berisi array kosong (periode lama tidak dicampur).
 
 ---
 

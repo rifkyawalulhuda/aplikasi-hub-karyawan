@@ -1178,9 +1178,10 @@ router.get('/job-requirement', async (req, res, next) => {
 
 		// Only the active period feeds the status shown to the employee; older
 		// periods are history and would otherwise be mixed into the same grade.
+		// With no active period there is no current measurement at all.
 		const currentAssessments = activePeriod
 			? assessments.filter((assessment) => assessment.periodId === activePeriod.id)
-			: assessments;
+			: [];
 
 		const evaluation = evaluateJobRequirement({
 			employee: req.employee,

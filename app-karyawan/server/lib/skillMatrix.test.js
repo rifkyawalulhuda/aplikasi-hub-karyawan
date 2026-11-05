@@ -136,6 +136,50 @@ describe('evaluateSkillReadiness - denominator', () => {
 		expect(result.readinessPercent).toBeNull();
 		expect(result.totalItems).toBe(0);
 	});
+
+	it('reports NOT_ASSESSED when assessments exist only for non-required skills', () => {
+		const result = evaluateSkillReadiness({
+			requirements: requirements(3),
+			assessments: [assessment({ skillName: 'Skill Yang Tidak Diwajibkan', level: 4 })],
+		});
+
+		// Off-requirement assessments must not turn "unknown" into "0%".
+		expect(result.readinessPercent).toBeNull();
+		expect(result.status).toBe(READINESS_STATUS.NOT_ASSESSED);
+		expect(result.assessedItems).toBe(0);
+		expect(result.totalItems).toBe(3);
+		expect(result.completionPercent).toBe(0);
+	});
+
+	it('ignores off-requirement assessments when some required skills are assessed', () => {
+		const list = requirements(4);
+
+		const result = evaluateSkillReadiness({
+			requirements: list,
+			assessments: [
+				assessment({ skillName: list[0].name, level: 3 }),
+				assessment({ skillName: 'Skill Lain', level: 5 }),
+			],
+		});
+
+		// Still 1 of 4 required skills assessed, not 2 of 4.
+		expect(result.assessedItems).toBe(1);
+		expect(result.totalItems).toBe(4);
+		expect(result.readinessPercent).toBe(25);
+		expect(result.status).toBe(READINESS_STATUS.INCOMPLETE);
+	});
+
+	it('ignores assessments whose category does not match the requirement', () => {
+		const list = [requirement({ category: 'SOFT_SKILL', name: 'Empati', targetLevel: 3 })];
+
+		const result = evaluateSkillReadiness({
+			requirements: list,
+			assessments: [assessment({ category: 'HARD_SKILL', skillName: 'Empati', level: 5 })],
+		});
+
+		expect(result.readinessPercent).toBeNull();
+		expect(result.status).toBe(READINESS_STATUS.NOT_ASSESSED);
+	});
 });
 
 describe('evaluateSkillReadiness - status', () => {

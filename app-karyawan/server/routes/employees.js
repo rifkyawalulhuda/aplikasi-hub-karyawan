@@ -1063,9 +1063,14 @@ router.get(
 		]);
 
 		// Only the active period counts; older periods are history.
+		//
+		// With no active period there is no current measurement, so we pass an empty
+		// list instead of mixing every period together. Mixing would report a score
+		// that belongs to no period at all, and the Job Requirement module refuses to
+		// compute readiness in that state — the two pages would disagree.
 		const skillAssessments = activePeriod
 			? skillAssessmentsAllPeriods.filter((assessment) => assessment.periodId === activePeriod.id)
-			: skillAssessmentsAllPeriods;
+			: [];
 
 		const licenseExpiredCount = licenseCertifications.filter(
 			(l) => l.expiryDate && new Date(l.expiryDate) < today,
@@ -1168,6 +1173,7 @@ router.get(
 				statusLabel: jobRequirementEvaluation.statusLabel,
 				mandatoryMet: jobRequirementEvaluation.mandatoryMet,
 				percentOverall: jobRequirementEvaluation.percentOverall,
+				periodId: activePeriod?.id ?? null,
 				periodName: activePeriod?.name ?? null,
 				readiness: {
 					status: readiness.status,

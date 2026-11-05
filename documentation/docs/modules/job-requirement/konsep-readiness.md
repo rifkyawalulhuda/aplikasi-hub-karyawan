@@ -212,7 +212,7 @@ Asesmen **tidak** bersifat "nilai terbaru menimpa nilai lama". Setiap penilaian 
   - `server/routes/employeeMe.js:1179-1181` (PWA)
 
 :::caution Tanpa periode aktif
-Tanpa periode aktif, endpoint baca mengembalikan **409** dengan pesan *"Belum ada periode asesmen aktif"*, dan dialog asesmen tidak bisa menyimpan. Satu-satunya pengecualian: `Detail Karyawan` (`/api/master/employees/:id/summary`) melakukan fallback ke **seluruh periode** bila tidak ada periode aktif (`server/routes/employees.js:1071`), sehingga angka di sana bisa berbeda dari Rekap saat periode belum diatur.
+Tanpa periode aktif, endpoint baca mengembalikan **409** dengan pesan *"Belum ada periode asesmen aktif"*, dan dialog asesmen tidak bisa menyimpan. `Detail Karyawan` (`/api/master/employees/:id/summary`) **tidak** melempar 409, tetapi juga tidak menghitung dari periode lama: asesmen diperlakukan kosong sehingga readiness menjadi `null` dan status `BELUM_DINILAI` (`server/routes/employees.js:1071-1079`).
 :::
 
 ### Konsekuensi praktis

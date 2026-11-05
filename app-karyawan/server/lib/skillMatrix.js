@@ -109,10 +109,16 @@ function evaluateSkillReadiness({ requirements = [], assessments = [] }) {
 		};
 	});
 
-	const hasAnyAssessment = assessments.length > 0;
 	const assessedItems = items.filter((item) => item.assessed);
 	const totalItems = items.length;
 	const isComplete = totalItems > 0 && assessedItems.length === totalItems;
+
+	// Assessments may exist for skills that are not required by this grade (for
+	// example after a skill was dropped from the requirement). Those do not count
+	// as "measured" here: only an assessment on a required skill does. Otherwise an
+	// employee whose only assessments are off-requirement would read as 0% instead
+	// of "not assessed".
+	const hasAnyAssessment = assessedItems.length > 0;
 
 	const totalTarget = items.reduce((sum, item) => sum + item.targetLevel, 0);
 	const achievedScore = items.reduce(

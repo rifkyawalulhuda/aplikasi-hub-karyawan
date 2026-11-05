@@ -167,6 +167,11 @@ function SkillAssessmentDialog({
 			</DialogTitle>
 			<DialogContent dividers>
 				<Stack spacing={2}>
+					{!periodId ? (
+						<Alert severity="warning">
+							Belum ada periode asesmen aktif. Penilaian belum bisa disimpan sampai periode diaktifkan.
+						</Alert>
+					) : null}
 					<Alert severity="info">
 						Skala 0-5: 0 tidak terpapar, 3 mandiri, 5 rujukan/penyusun standar. Readiness dihitung dari
 						seluruh skill wajib, sehingga skill yang dibiarkan kosong dihitung 0.
@@ -246,7 +251,7 @@ function SkillAssessmentDialog({
 				<Button onClick={onClose} disabled={saving}>
 					Batal
 				</Button>
-				<Button variant="contained" onClick={handleSave} disabled={saving}>
+				<Button variant="contained" onClick={handleSave} disabled={saving || !periodId}>
 					{saving ? <CircularProgress size={20} color="inherit" /> : 'Simpan Asesmen'}
 				</Button>
 			</DialogActions>

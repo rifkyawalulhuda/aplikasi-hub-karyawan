@@ -26,6 +26,7 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Tabs from '@mui/material/Tabs';
+import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 
 import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined';
@@ -389,21 +390,31 @@ function ReadinessLedger({ jobRequirement, onAssess }) {
 			title="Readiness Ledger"
 			subtitle={
 				readiness?.totalItems
-					? `Readiness berbobot target — ${readiness.assessedItems}/${readiness.totalItems} skill dinilai${
-							readiness.periodName ? ` (${readiness.periodName})` : ''
+					? `Readiness terhadap target — ${readiness.assessedItems}/${readiness.totalItems} skill dinilai${
+							jobRequirement?.periodName ? ` (${jobRequirement.periodName})` : ''
 					  }`
 					: 'Syarat jabatan per kategori'
 			}
 			action={
-				<Button
-					size="small"
-					variant="outlined"
-					startIcon={<RestartAltOutlinedIcon />}
-					onClick={onAssess}
-					disabled={!jobRequirement?.profile}
+				<Tooltip
+					title={
+						jobRequirement?.periodId
+							? 'Isi asesmen kompetensi pada periode aktif'
+							: 'Belum ada periode asesmen aktif. Aktifkan periode lebih dulu di Rekap Job Requirement.'
+					}
 				>
-					Asesmen
-				</Button>
+					<span>
+						<Button
+							size="small"
+							variant="outlined"
+							startIcon={<RestartAltOutlinedIcon />}
+							onClick={onAssess}
+							disabled={!jobRequirement?.profile || !jobRequirement?.periodId}
+						>
+							Asesmen
+						</Button>
+					</span>
+				</Tooltip>
 			}
 		>
 			<Stack spacing={1.25} sx={{ p: 2.5 }}>
@@ -435,6 +446,12 @@ function ReadinessLedger({ jobRequirement, onAssess }) {
 							<Typography variant="caption" color="info.main" sx={{ mt: 0.75, display: 'block' }}>
 								Asesmen belum lengkap — {readiness.assessedItems} dari {readiness.totalItems} skill.
 								Skill yang belum dinilai dihitung 0.
+							</Typography>
+						) : null}
+						{!jobRequirement?.periodId ? (
+							<Typography variant="caption" color="warning.main" sx={{ mt: 0.75, display: 'block' }}>
+								Belum ada periode asesmen aktif. Readiness tidak dihitung sampai periode diaktifkan di
+								Rekap Job Requirement.
 							</Typography>
 						) : null}
 					</Box>
@@ -1218,6 +1235,8 @@ function EmployeeDetailPage() {
 				open={assessOpen}
 				onClose={() => setAssessOpen(false)}
 				employeeId={id}
+				employeeName={profile?.fullName}
+				periodId={jobRequirement?.periodId ?? null}
 				profile={jobRequirement?.profile}
 				assessments={jobRequirement?.assessments || []}
 				onSaved={loadData}
