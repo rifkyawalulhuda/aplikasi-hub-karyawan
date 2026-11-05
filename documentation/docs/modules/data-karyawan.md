@@ -86,6 +86,29 @@ Pencatatan program pelatihan beserta daftar peserta.
 
 ---
 
+## Rekap Job Requirement
+
+**Route:** `/data-karyawan/job-requirement`
+
+Membandingkan kompetensi karyawan dengan syarat jabatan (form `SII-QSHE-002-03`) sesuai grade-nya, lalu menurunkan selisihnya menjadi kebutuhan training.
+
+**Tab:**
+- `Rekap Gap` — daftar karyawan dengan status kelayakan terhadap syarat jabatannya
+- `Asesmen Kompetensi` — pengisian level skill 0–5 per karyawan pada periode aktif
+- `Matriks Kompetensi` — matriks karyawan × skill per departemen (read-only, heatmap)
+- `Kebutuhan Training` — training yang belum diikuti **dan** rekomendasi dari gap skill
+
+**Fitur:** filter grade/status/departemen, pencarian, export Excel (rekap & matriks berwarna), pengelolaan periode asesmen semester.
+
+Dokumentasi lengkap:
+
+- [Konsep & Rumus Readiness](/modules/job-requirement/konsep-readiness)
+- [Panduan Admin & HR](/modules/job-requirement/panduan-admin)
+- [Referensi API](/modules/job-requirement/referensi-api)
+- [Model Data & Seed](/modules/job-requirement/model-data)
+
+---
+
 ## Cuti Karyawan
 
 **Route:** `/data-karyawan/cuti-karyawan`

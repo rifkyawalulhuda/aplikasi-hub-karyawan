@@ -243,7 +243,7 @@ Folder ini dipilih sebagai basis utama pengembangan karena struktur template-nya
    - Menu item: `Master Data Dokumen` → halaman tabbed gabungan:
      - Tab: Master Dok PKB | Master Dok Karyawan | Master Cuti Karyawan | Master Hari Libur
    - Menu item: `Master Training` (section `Kompetensi`) → halaman tabbed:
-     - Tab: Daftar Training | Pemetaan Training per Grade | Skill per Grade
+     - Tab: Daftar Training | Pemetaan Grade | Skill | Pemetaan Training
 - Tab utama: `Data Karyawan`
   - Menu item: `Detail Karyawan`
   - Menu item: `Bimbingan & Pengarahan`
@@ -868,8 +868,9 @@ Modul ini membandingkan kompetensi aktual karyawan dengan syarat jabatan (job re
 - Route frontend: `/data-master/master-data-karyawan/master-training`, menu `Master Training` (section `Kompetensi`).
 - Terdiri dari tab:
   - `Daftar Training` — CRUD `MasterTraining`
-  - `Pemetaan Training` — centang training wajib per `Grade` (batch, punya indikator dirty sebelum disimpan)
+  - `Pemetaan Grade` — centang training wajib per `Grade` (batch, punya indikator dirty sebelum disimpan)
   - `Skill` — daftar skill wajib + target level per `Grade`
+  - `Pemetaan Training` — menghubungkan skill ke training untuk rekomendasi gap
 - Tab `Skill` mendukung:
   - filter kategori `Soft Skill` / `Hard Skill` dan pencarian nama skill
   - `Tambah Skill Baru` — menambah entri ke katalog `MasterSkill`; setelah tersimpan skill otomatis tercentang pada grade aktif dengan target default 3
@@ -1204,7 +1205,7 @@ Yang sudah selesai:
 - Menambahkan modul **Job Requirement & Matriks Kompetensi**:
   - 6 migration baru: `add_job_requirement`, `add_master_skill`, `add_skill_matrix_foundation`, `require_assessment_period`, `add_skill_training_map`, `drop_skill_weight`.
   - Halaman `Rekap Job Requirement` (`/data-karyawan/job-requirement`) dengan 4 tab: Rekap Gap | Asesmen Kompetensi | Matriks Kompetensi | Kebutuhan Training.
-  - Halaman `Master Training` (`/data-master/master-data-karyawan/master-training`) dengan tab Daftar Training | Pemetaan Training | Skill per Grade.
+  - Halaman `Master Training` (`/data-master/master-data-karyawan/master-training`) dengan tab Daftar Training | Pemetaan Grade | Skill | Pemetaan Training.
   - Readiness dihitung tanpa bobot: `Σ min(level, target) / Σ target` atas seluruh skill wajib bertarget > 0; karyawan tanpa asesmen menghasilkan `null` (bukan 0).
   - 4 status readiness: `BELUM_DINILAI`, `BELUM_LENGKAP`, `DALAM_PENGEMBANGAN`, `SIAP` (ambang 80%).
   - Asesmen bersifat snapshot per periode semester (`SkillAssessmentPeriod`), hanya satu periode aktif, dan seluruh pembacaan difilter ke periode aktif.

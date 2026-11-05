@@ -48,12 +48,12 @@ Aplikasi ini terdiri dari tiga area utama:
 
 ```
 aplikasi-hub-karyawan/
-├── Data Master          → Karyawan, Admin, Unit, Vendor, Dokumen
-├── Data Karyawan        → Bimbingan, Surat Peringatan, Lisensi, Pelatihan, Cuti
+├── Data Master          → Karyawan, Admin, Unit, Vendor, Dokumen, Master Training, Skill
+├── Data Karyawan        → Bimbingan, Surat Peringatan, Lisensi, Pelatihan, Cuti, Rekap Job Requirement
 ├── Data Unit            → Lisensi & Sertifikasi Unit
 ├── Portal Mobile        → Dashboard karyawan, Cuti, Profil, Notifikasi
 ├── Notifikasi           → Email, WhatsApp, Push Notification
-└── Pengaturan           → Email Notifikasi Otomatis
+├── Pengaturan           → Email Notifikasi Otomatis
 ```
 
 ## Navigasi Dokumentasi
@@ -61,5 +61,6 @@ aplikasi-hub-karyawan/
 - **[Memulai →](/getting-started/prerequisites)** — prasyarat, setup dev, konfigurasi `.env`
 - **[Arsitektur →](/architecture/overview)** — gambaran sistem, frontend, backend, database
 - **[Modul →](/modules/data-master)** — dokumentasi per fitur/modul
+- **[Job Requirement →](/modules/job-requirement/konsep-readiness)** — matriks kompetensi, asesmen skill, dan rekomendasi training
 - **[API →](/api/endpoints)** — daftar endpoint REST API
 - **[Deployment →](/deployment/production-server)** — panduan deploy ke production

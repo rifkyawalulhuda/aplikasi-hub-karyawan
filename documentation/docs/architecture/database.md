@@ -61,6 +61,39 @@ PostgreSQL
 | `EmailNotificationSettings` | `email_notification_settings` | Pengaturan notifikasi expiry per site |
 | `EmployeePushSubscription` | `employee_push_subscriptions` | Subscription push notification |
 
+### Job Requirement & Kompetensi
+
+| Model | Tabel | Deskripsi |
+|-------|-------|-----------|
+| `JobRequirementProfile` | `job_requirement_profiles` | Syarat jabatan per grade (`RANK_1`–`RANK_11`), unik per grade |
+| `JobRequirementSkill` | `job_requirement_skills` | Skill wajib per grade + `targetLevel` 0–5 |
+| `JobRequirementTraining` | `job_requirement_trainings` | Training wajib per grade |
+| `MasterSkill` | `master_skills` | Katalog skill, unik per `(category, name)` |
+| `SkillTrainingMap` | `skill_training_map` | Pemetaan skill → training untuk rekomendasi gap |
+| `SkillAssessmentPeriod` | `skill_assessment_periods` | Periode asesmen semester, hanya satu `isActive` |
+| `EmployeeSkillAssessment` | `employee_skill_assessments` | Level skill karyawan per periode, unik per `(employee, category, skill, period)` |
+
+Relasi inti:
+
+```text
+job_requirement_profiles ─┬─1..n─ job_requirement_skills ──n..1── master_skills
+                          └─1..n─ job_requirement_trainings ──n..1── master_trainings
+
+master_skills ──1..n── skill_training_map ──n..1── master_trainings
+
+employees ──1..n── employee_skill_assessments ──n..1── skill_assessment_periods
+                              └──n..1── master_skills (opsional, onDelete: SetNull)
+```
+
+Catatan penting:
+
+- `employee_skill_assessments.periodId` bersifat **NOT NULL**; asesmen tanpa periode tidak dapat disimpan.
+- Asesmen menyimpan `category` + `skillName` sebagai teks agar riwayat tetap terbaca walau katalog berubah.
+- **Tidak ada kolom bobot** — bobot dihapus total; readiness dihitung dari target per skill.
+- "Hanya satu periode aktif" dijaga di layer aplikasi, bukan unique partial index.
+
+Rincian lengkap: [Model Data & Seed](/modules/job-requirement/model-data).
+
 ## Enum Penting
 
 ```prisma
@@ -75,6 +108,15 @@ enum LeaveStageType {
 
 enum LeaveApprovalStatus {
   WAITING PENDING APPROVED REJECTED LOCKED CANCELLED
+}
+
+enum GradeRank {
+  RANK_1 RANK_2 RANK_3 RANK_4 RANK_5 RANK_6
+  RANK_7 RANK_8 RANK_9 RANK_10 RANK_11
+}
+
+enum EducationLevel {
+  SMA D3 S1 S2
 }
 ```
 

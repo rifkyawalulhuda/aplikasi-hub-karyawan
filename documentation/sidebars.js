@@ -32,6 +32,17 @@ const sidebars = {
         'modules/data-master',
         'modules/data-karyawan',
         'modules/data-unit',
+        {
+          type: 'category',
+          label: 'Job Requirement',
+          collapsed: true,
+          items: [
+            'modules/job-requirement/konsep-readiness',
+            'modules/job-requirement/panduan-admin',
+            'modules/job-requirement/referensi-api',
+            'modules/job-requirement/model-data',
+          ],
+        },
         'modules/cuti-workflow',
         'modules/portal-mobile',
         'modules/notifikasi',

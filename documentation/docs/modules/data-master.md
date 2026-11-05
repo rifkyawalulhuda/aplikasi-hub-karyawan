@@ -66,6 +66,27 @@ Menentukan `approvalRank` (urutan dalam alur approval) dan `maxApprovalRank` (ba
 
 ---
 
+## Master Training
+
+**Route:** `/data-master/master-data-karyawan/master-training`
+
+Katalog program pelatihan sekaligus tempat menyusun standar kompetensi per grade.
+
+**Tab:**
+
+| Tab | Isi |
+| --- | --- |
+| Daftar Training | CRUD master training beserta jumlah pemakaian |
+| Pemetaan Grade | Centang training wajib untuk tiap grade |
+| Skill | Katalog skill + centang skill wajib dan target level 0–5 per grade |
+| Pemetaan Training | Hubungkan skill dengan training untuk rekomendasi gap |
+
+**Fitur tab Skill:** tambah skill ke katalog, ubah nama (tersinkron ke semua grade & asesmen), salin union skill dari rank di atasnya, serta penguncian pelepasan skill yang sudah memiliki asesmen.
+
+Dokumentasi lengkap modul kompetensi: [Job Requirement](/modules/job-requirement/konsep-readiness).
+
+---
+
 ## Master Data Unit
 
 ### Master Unit

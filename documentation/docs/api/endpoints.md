@@ -63,6 +63,56 @@ Authorization: Bearer <token>
 | `GET/POST/PUT/DELETE` | `/api/data-karyawan/employee-leaves` | Cuti (view admin) |
 | `GET/POST/PUT/DELETE` | `/api/data-karyawan/employee-leave-database` | Database saldo cuti |
 
+## Job Requirement (Admin)
+
+Rincian payload, aturan validasi, dan kode error: [Referensi API Job Requirement](/modules/job-requirement/referensi-api).
+
+| Method | Path | Deskripsi |
+|--------|------|-----------|
+| `GET` | `/api/data-karyawan/job-requirement/profiles` | Daftar profil grade + skill + training |
+| `GET` | `/api/data-karyawan/job-requirement/profiles/:grade` | Profil satu grade |
+| `GET` | `/api/data-karyawan/job-requirement/employees` | Daftar karyawan + evaluasi + readiness |
+| `GET` | `/api/data-karyawan/job-requirement/employees/:id` | Detail evaluasi satu karyawan |
+| `PUT` | `/api/data-karyawan/job-requirement/employees/:id/assessments` | Simpan asesmen (upsert) |
+| `DELETE` | `/api/data-karyawan/job-requirement/employees/:id/assessments/:category/:skillName` | Hapus asesmen satu skill |
+| `GET` | `/api/data-karyawan/job-requirement/assessment-sheet` | Data tab Asesmen Kompetensi |
+| `GET` | `/api/data-karyawan/job-requirement/matrix` | Matriks karyawan × skill per departemen |
+| `GET` | `/api/data-karyawan/job-requirement/training-needs` | Training wajib yang belum diikuti |
+| `GET` | `/api/data-karyawan/job-requirement/skill-training-recommendations` | Rekomendasi training dari gap skill |
+
+## Master Skill & Periode Asesmen (Admin)
+
+| Method | Path | Deskripsi |
+|--------|------|-----------|
+| `GET` | `/api/master/master-skills` | Katalog skill + jumlah pemakaian |
+| `POST` | `/api/master/master-skills` | Tambah skill ke katalog |
+| `PUT` | `/api/master/master-skills/:id` | Ubah nama skill (sinkron ke requirement & asesmen) |
+| `DELETE` | `/api/master/master-skills/:id` | Hapus skill (409 bila masih dipakai) |
+| `DELETE` | `/api/master/master-skills/:id/assessments` | Hapus semua asesmen skill tsb (semua periode) |
+| `GET` | `/api/master/master-skills/mapping/:grade` | Peta katalog skill vs satu grade |
+| `PUT` | `/api/master/master-skills/mapping/:grade` | Simpan daftar skill wajib (Super Admin) |
+| `PUT` | `/api/master/master-skills/mapping/:grade/targets` | Simpan target level (Super Admin) |
+| `POST` | `/api/master/master-skills/mapping/:grade/copy-from-above` | Salin union skill dari rank di atas (Super Admin) |
+| `GET` | `/api/master/master-skills/training-map` | Seluruh relasi skill → training |
+| `PUT` | `/api/master/master-skills/training-map/:masterSkillId` | Ganti pemetaan training satu skill (Super Admin) |
+| `GET` | `/api/master/skill-assessment-periods` | Daftar periode asesmen |
+| `GET` | `/api/master/skill-assessment-periods/active` | Periode aktif (404 bila tidak ada) |
+| `POST` | `/api/master/skill-assessment-periods` | Buat periode (Super Admin) |
+| `PUT` | `/api/master/skill-assessment-periods/:id` | Ubah/aktifkan periode (Super Admin) |
+| `DELETE` | `/api/master/skill-assessment-periods/:id` | Hapus periode kosong (Super Admin) |
+
+## Master Training (Admin)
+
+| Method | Path | Deskripsi |
+|--------|------|-----------|
+| `GET` | `/api/master/master-trainings` | Daftar training + jumlah pemakaian |
+| `POST` | `/api/master/master-trainings` | Tambah training |
+| `PUT` | `/api/master/master-trainings/:id` | Ubah training |
+| `DELETE` | `/api/master/master-trainings/:id` | Hapus training (409 bila masih dipakai) |
+| `GET` | `/api/master/master-trainings/:id/usage` | Rincian pemakaian training |
+| `GET` | `/api/master/master-trainings/requirement-map/:grade` | Training wajib satu grade |
+| `PUT` | `/api/master/master-trainings/requirement-map/:grade` | Simpan training wajib grade |
+
 ## Data Unit (Admin)
 
 | Method | Path | Deskripsi |
@@ -88,7 +138,8 @@ Semua endpoint di bawah ini membutuhkan token karyawan.
 | `GET` | `/api/employee-me/department-leaves` | Cuti karyawan sedepartemen |
 | `GET` | `/api/employee-me/guidance-records` | Riwayat bimbingan |
 | `GET` | `/api/employee-me/warning-letters` | Riwayat SP |
-| `GET` | `/api/employee-me/trainings` | Riwayat pelatihan |
+| `GET` | `/api/employee-me/training-records` | Riwayat pelatihan |
+| `GET` | `/api/employee-me/job-requirement` | Status job requirement milik karyawan login |
 | `POST` | `/api/employee-me/push-subscriptions` | Daftar push notification |
 | `DELETE` | `/api/employee-me/push-subscriptions` | Hapus push subscription |
 
