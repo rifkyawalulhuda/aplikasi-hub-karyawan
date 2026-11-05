@@ -1199,7 +1199,6 @@ router.get(
 					? {
 							grade: jobRequirementProfile.grade,
 							minEducation: jobRequirementProfile.minEducation,
-							educationOther: jobRequirementProfile.educationOther,
 							minExperienceYears: jobRequirementProfile.minExperienceYears,
 							sourceFormNo: jobRequirementProfile.sourceFormNo,
 							sourceRev: jobRequirementProfile.sourceRev,

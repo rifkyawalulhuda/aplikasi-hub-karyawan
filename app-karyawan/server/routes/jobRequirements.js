@@ -13,7 +13,17 @@ import {
 	evaluateSkillReadiness,
 	normalizeLevel,
 } from '../lib/skillMatrix.js';
+import {
+	EDUCATION_OPTIONS,
+	EMPLOYMENT_OPTIONS,
+	GENDER_OPTIONS,
+	MAX_EXPERIENCE_YEARS,
+	MIN_EXPERIENCE_YEARS,
+	evaluateMandatoryComponents,
+	validateProfileInput,
+} from '../lib/jobRequirementProfile.js';
 import requireSiteIsolation from '../middleware/requireSiteIsolation.js';
+import requireSuperAdminWrite from '../middleware/requireSuperAdminWrite.js';
 
 const router = Router();
 
@@ -28,6 +38,12 @@ function withAsync(handler) {
 }
 
 function normalizeString(value = '') {
+	// `String(null)` yields the truthy string "null", which would silently store a
+	// literal "null" instead of an absent value.
+	if (value == null) {
+		return '';
+	}
+
 	return String(value).trim().replace(/\s+/g, ' ');
 }
 
@@ -232,6 +248,61 @@ router.get(
 );
 
 router.get(
+	'/profiles/options',
+	withAsync(async (_req, res) => {
+		return res.json({
+			education: EDUCATION_OPTIONS,
+			employmentTypes: EMPLOYMENT_OPTIONS,
+			genders: GENDER_OPTIONS,
+			minExperienceYears: MIN_EXPERIENCE_YEARS,
+			maxExperienceYears: MAX_EXPERIENCE_YEARS,
+		});
+	}),
+);
+
+router.get(
+	'/profiles/:grade/impact',
+	withAsync(async (req, res) => {
+		const grade = normalizeString(req.params.grade).toUpperCase();
+		const profile = await prisma.jobRequirementProfile.findUnique({ where: { grade } });
+
+		if (!profile) {
+			return res.status(404).json({ message: 'Profil job requirement tidak ditemukan.' });
+		}
+
+		const employees = await prisma.employee.findMany({
+			where: { grade, ...buildSiteWhere(req) },
+			select: {
+				id: true,
+				employeeNo: true,
+				fullName: true,
+				educationLevel: true,
+				joinDate: true,
+				employmentType: true,
+				gender: true,
+			},
+		});
+
+		const current = evaluateMandatoryComponents({ profile, employees });
+
+		return res.json({
+			grade,
+			profile: {
+				minEducation: profile.minEducation,
+				minExperienceYears: profile.minExperienceYears,
+				allowedEmploymentTypes: profile.allowedEmploymentTypes,
+				allowedGenders: profile.allowedGenders,
+				sourceFormNo: profile.sourceFormNo,
+				sourceRev: profile.sourceRev,
+				effectiveDate: profile.effectiveDate,
+				notes: profile.notes,
+			},
+			current,
+		});
+	}),
+);
+
+router.get(
 	'/profiles/:grade',
 	withAsync(async (req, res) => {
 		const grade = normalizeString(req.params.grade).toUpperCase();
@@ -245,6 +316,113 @@ router.get(
 		}
 
 		return res.json(profile);
+	}),
+);
+
+/**
+ * Preview the effect of a not-yet-saved requirement change.
+ *
+ * Compared against the stored profile so the UI can show "N employees will flip
+ * from Memenuhi to Belum Memenuhi" before anything is written.
+ */
+router.post(
+	'/profiles/:grade/impact',
+	requireSuperAdminWrite,
+	withAsync(async (req, res) => {
+		const grade = normalizeString(req.params.grade).toUpperCase();
+		const profile = await prisma.jobRequirementProfile.findUnique({ where: { grade } });
+
+		if (!profile) {
+			return res.status(404).json({ message: 'Profil job requirement tidak ditemukan.' });
+		}
+
+		let candidate;
+
+		try {
+			candidate = validateProfileInput(req.body);
+		} catch (error) {
+			return res.status(error.statusCode || 400).json({ message: error.message });
+		}
+
+		const employees = await prisma.employee.findMany({
+			where: { grade, ...buildSiteWhere(req) },
+			select: {
+				id: true,
+				employeeNo: true,
+				fullName: true,
+				educationLevel: true,
+				joinDate: true,
+				employmentType: true,
+				gender: true,
+			},
+		});
+
+		const current = evaluateMandatoryComponents({ profile, employees });
+		const proposed = evaluateMandatoryComponents({ profile: { ...profile, ...candidate }, employees });
+
+		const currentIds = new Set(current.failingEmployeeIds);
+		const proposedIds = new Set(proposed.failingEmployeeIds);
+
+		const newlyFailing = [...proposedIds]
+			.filter((id) => !currentIds.has(id))
+			.map((id) => proposed.components.flatMap((component) => component.employees).find((item) => item.employeeId === id))
+			.filter(Boolean);
+
+		const newlyPassing = [...currentIds]
+			.filter((id) => !proposedIds.has(id))
+			.map((id) => current.components.flatMap((component) => component.employees).find((item) => item.employeeId === id))
+			.filter(Boolean);
+
+		return res.json({
+			grade,
+			employeeCount: employees.length,
+			current,
+			proposed,
+			diff: {
+				newlyFailingCount: newlyFailing.length,
+				newlyPassingCount: newlyPassing.length,
+				newlyFailing,
+				newlyPassing,
+			},
+		});
+	}),
+);
+
+/**
+ * Update the four mandatory non-skill components plus the source metadata.
+ *
+ * Skill rows are intentionally out of scope: they have their own endpoints, and
+ * accepting them here would let one save silently delete assessments.
+ */
+router.put(
+	'/profiles/:grade',
+	requireSuperAdminWrite,
+	withAsync(async (req, res) => {
+		const grade = normalizeString(req.params.grade).toUpperCase();
+		const profile = await prisma.jobRequirementProfile.findUnique({
+			where: { grade },
+			include: profileInclude(),
+		});
+
+		if (!profile) {
+			return res.status(404).json({ message: 'Profil job requirement tidak ditemukan.' });
+		}
+
+		let data;
+
+		try {
+			data = validateProfileInput(req.body);
+		} catch (error) {
+			return res.status(error.statusCode || 400).json({ message: error.message });
+		}
+
+		const updated = await prisma.jobRequirementProfile.update({
+			where: { grade },
+			data,
+			include: profileInclude(),
+		});
+
+		return res.json(updated);
 	}),
 );
 

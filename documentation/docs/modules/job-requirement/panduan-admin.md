@@ -31,6 +31,9 @@ Hak akses rinci:
 | Menyimpan target level per grade | **Tidak** | Ya | Tidak |
 | **Salin dari Rank N** | **Tidak** | Ya | Tidak |
 | Menyimpan **Pemetaan Training** (skill→training) | **Tidak** | Ya | Tidak |
+| Mengubah **Syarat Grade** (pendidikan, pengalaman, status, gender) | **Tidak** | Ya | Tidak |
+| Pratinjau dampak syarat grade | **Tidak** | Ya | Tidak |
+| Melihat dampak syarat yang tersimpan | Ya | Ya | Ya |
 | CRUD periode asesmen | **Tidak** | Ya | Tidak |
 | Mengisi/menghapus asesmen karyawan | Ya (site sendiri) | Ya | Tidak |
 | Menghapus asesmen satu skill di **semua** periode | Ya | Ya | Tidak |
@@ -39,23 +42,25 @@ Yang khusus Super Admin akan ditolak **403** dengan pesan *"Akses ditolak. Hanya
 
 ```text
 Master Training (menyusun standar)          Rekap Job Requirement (menilai & membaca)
-┌──────────────────────────────┐            ┌─────────────────────────────────────────┐
-│ 1. Daftar Training           │            │ 1. Rekap Gap                            │
-│ 2. Pemetaan Grade            │  standar   │ 2. Asesmen Kompetensi   ◄── input nilai  │
-│ 3. Skill            ◄────────┼──target───►│ 3. Matriks Kompetensi                   │
-│ 4. Pemetaan Training ◄───────┼──gap──────►│ 4. Kebutuhan Training                   │
-└──────────────────────────────┘            └─────────────────────────────────────────┘
++------------------------------+            +-----------------------------------------+
+| 1. Daftar Training           |            | 1. Rekap Gap                            |
+| 2. Syarat Grade              |  syarat    | 2. Asesmen Kompetensi   <-- input nilai |
+| 3. Pemetaan Grade            |  wajib     | 3. Matriks Kompetensi                   |
+| 4. Skill            <--------+--target--->| 4. Kebutuhan Training                   |
+| 5. Pemetaan Training <-------+--gap------>|                                         |
++------------------------------+            +-----------------------------------------+
 ```
 
 Urutan kerja yang disarankan untuk setup awal:
 
 1. Lengkapi **Daftar Training**.
-2. Susun **Skill** per grade (skill wajib + target level).
+2. Atur **Syarat Grade** (pendidikan, pengalaman, status karyawan, jenis kelamin).
 3. Centang **Pemetaan Grade** (training wajib per grade).
-4. Isi **Pemetaan Training** (skill mana ditutup training mana).
-5. Baru lakukan **Asesmen Kompetensi**.
+4. Susun **Skill** per grade (skill wajib + target level).
+5. Isi **Pemetaan Training** (skill mana ditutup training mana).
+6. Baru lakukan **Asesmen Kompetensi**.
 
-Langkah 1–4 sekali saja (lalu direvisi berkala). Langkah 5 berulang setiap periode.
+Langkah 1–5 sekali saja (lalu direvisi berkala). Langkah 6 berulang setiap periode.
 
 ---
 
@@ -252,6 +257,84 @@ Panel ini menampilkan peringatan bila:
 :::caution Tab ini tidak akan berisi rekomendasi bila Pemetaan Training masih kosong
 Pemetaan skill → training sengaja dimulai kosong. Selama belum diisi, hanya tabel 4a yang berisi data.
 :::
+
+---
+
+## Master Training — Tab Syarat Grade
+
+Mengatur **empat komponen wajib non-skill** per grade: Pendidikan, Pengalaman, Status Karyawan, dan Jenis Kelamin.
+
+:::caution Komponen ini tidak memengaruhi readiness
+Keempat komponen hanya mengisi kolom **STATUS** di Rekap Gap. Persentase readiness tetap murni dari target skill.
+:::
+
+Pilih **Grade** di atas, ubah field, lalu **Simpan Syarat**. Tersedia juga **Batalkan Perubahan** dan **Pratinjau Dampak**.
+
+### Field yang bisa diubah
+
+| Field | Aturan |
+| --- | --- |
+| Pendidikan Minimal | **Wajib dipilih** dari daftar jenjang: SLTA (Sederajat), D3, S1, S2 |
+| Pengalaman Minimal | Bilangan bulat `0`–`50` tahun. Kosong = tidak ada syarat |
+| Status Karyawan | Pilih satu atau kedua opsi: Permanen, Kontrak. **Minimal satu** |
+| Jenis Kelamin | Pilih satu atau kedua opsi: Laki-laki, Perempuan. **Minimal satu** |
+| No. Form / Revisi / Tanggal Berlaku | Metadata sumber, maks. 100 / 20 karakter |
+| Catatan Internal | Teks bebas |
+
+Aturan penting:
+
+- Pendidikan **wajib dipilih** dan hanya boleh dari daftar jenjang. Dulu ada opsi teks bebas, tetapi sudah dihapus agar semua grade memakai skala yang sama.
+- Mengosongkan Status Karyawan atau Jenis Kelamin **ditolak**, karena array kosong akan membuat komponen itu hilang dari penilaian secara diam-diam.
+
+### Indikator penyaring
+
+Di bawah tiap pilihan muncul keterangan otomatis:
+
+| Keadaan | Keterangan |
+| --- | --- |
+| Semua opsi terpilih | *"Semua status diterima — komponen ini tidak menyaring siapa pun."* |
+| Sebagian dipilih | *"Hanya status terpilih yang memenuhi syarat."* |
+| Tidak ada dipilih | *"Minimal satu status harus dipilih."* (merah) |
+
+:::note Bawaan seed tidak menyaring
+Seed menulis `PERMANENT + CONTRACT` dan `MALE + FEMALE` untuk kesebelas grade. Artinya secara bawaan kedua komponen ini **tidak pernah menggagalkan siapa pun**. Barulah menyaring setelah Anda membatasinya.
+:::
+
+### Dialog konfirmasi dampak
+
+Menekan **Simpan Syarat** selalu memunculkan dialog pratinjau lebih dulu, berisi:
+
+| Bagian | Isi |
+| --- | --- |
+| Peringatan kuning | Jumlah karyawan yang akan berubah dari **Memenuhi → Belum Memenuhi**, beserta nama, nilai aktual, dan nilai yang dibutuhkan |
+| Peringatan hijau | Jumlah karyawan yang berubah sebaliknya (**Belum Memenuhi → Memenuhi**) |
+| Chip per komponen | Jumlah pelanggar tiap komponen setelah perubahan |
+| Total | `sebelum → sesudah` |
+
+Bila tidak ada yang berubah, dialog menyatakan *"Perubahan ini tidak mengubah status kelayakan karyawan mana pun."* Tombol **Batalkan** menutup dialog tanpa menyimpan.
+
+**Pratinjau Dampak** membuka dialog yang sama tanpa menyimpan — berguna untuk menguji skenario.
+
+### Panel "Dampak Syarat Saat Ini"
+
+Menampilkan kondisi tersimpan:
+
+- empat kartu berisi jumlah pelanggar per komponen
+- daftar karyawan yang tidak memenuhi, dikelompokkan per komponen, format `Nama (aktual → butuh syarat)`
+- peringatan kuning bila pendidikan memakai keterangan bebas (tidak dinilai otomatis)
+- pesan hijau bila seluruh karyawan grade tersebut memenuhi syarat
+
+### Contoh perhitungan dampak
+
+Pada data development, Rank 5 berisi 8 karyawan dengan syarat awal `D3` / `5 tahun`:
+
+| Perubahan | Akibat |
+| --- | --- |
+| Naikkan pengalaman 5 → 20 tahun | 5 karyawan tambahan gagal (masa kerja 8–11 tahun) |
+| Naikkan pendidikan D3 → S1 | 1 karyawan tambahan gagal |
+| Batasi gender ke Laki-laki | 2 karyawan gagal |
+
+Karyawan yang semua syarat wajibnya lolos tetapi belum punya asesmen skill akan berstatus **Belum Dinilai** — bukan **Memenuhi**, karena readiness-nya belum terukur.
 
 ---
 

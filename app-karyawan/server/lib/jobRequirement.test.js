@@ -20,7 +20,6 @@ function buildProfile(overrides = {}) {
 	return {
 		grade: 'RANK_7',
 		minEducation: 'D3',
-		educationOther: null,
 		minExperienceYears: 10,
 		allowedEmploymentTypes: ['PERMANENT', 'CONTRACT'],
 		allowedGenders: ['MALE', 'FEMALE'],

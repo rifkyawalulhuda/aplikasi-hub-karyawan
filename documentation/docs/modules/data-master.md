@@ -77,11 +77,14 @@ Katalog program pelatihan sekaligus tempat menyusun standar kompetensi per grade
 | Tab | Isi |
 | --- | --- |
 | Daftar Training | CRUD master training beserta jumlah pemakaian |
+| Syarat Grade | Pendidikan, pengalaman, status karyawan, jenis kelamin — dengan pratinjau dampak sebelum simpan |
 | Pemetaan Grade | Centang training wajib untuk tiap grade |
 | Skill | Katalog skill + centang skill wajib dan target level 0–5 per grade |
 | Pemetaan Training | Hubungkan skill dengan training untuk rekomendasi gap |
 
 **Fitur tab Skill:** tambah skill ke katalog, ubah nama (tersinkron ke semua grade & asesmen), salin union skill dari rank di atasnya, serta penguncian pelepasan skill yang sudah memiliki asesmen.
+
+**Fitur tab Syarat Grade:** edit empat komponen wajib non-skill + metadata sumber (No. Form, Revisi, Tanggal Berlaku), indikator apakah suatu komponen benar-benar menyaring, serta dialog konfirmasi yang menampilkan karyawan mana saja yang statusnya akan berubah. Hanya Super Admin yang dapat menyimpan.
 
 Dokumentasi lengkap modul kompetensi: [Job Requirement](/modules/job-requirement/konsep-readiness).
 

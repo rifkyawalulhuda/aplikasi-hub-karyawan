@@ -23,7 +23,7 @@ Halaman ini menjelaskan struktur database, relasi, migration, dan perilaku seed 
                   │                              │
   job_requirement_profiles  ◄─────────────────────┘
   ├── id, grade (unique, enum GradeRank)
-  ├── minEducation, educationOther, minExperienceYears
+  ├── minEducation, minExperienceYears
   ├── allowedEmploymentTypes[], allowedGenders[]
   ├── sourceFormNo, sourceRev, effectiveDate, notes
   │
@@ -67,7 +67,6 @@ Tiga hal yang perlu dicatat:
 | `id` | `Int` PK autoincrement | |
 | `grade` | `GradeRank` **unique** | Enum `RANK_1` … `RANK_11` |
 | `minEducation` | `EducationLevel?` | `SMA` / `D3` / `S1` / `S2` |
-| `educationOther` | `String?` @255 | Dipakai bila syarat pendidikan berupa teks bebas |
 | `minExperienceYears` | `Int?` | Dibandingkan dengan masa kerja dari `joinDate` |
 | `allowedEmploymentTypes` | `EmploymentType[]` | `PERMANENT`, `CONTRACT` |
 | `allowedGenders` | `Gender[]` | `MALE`, `FEMALE` |
@@ -181,7 +180,7 @@ Tidak ada enum `SkillWeight` — sudah dihapus pada migration `20261104160000_dr
 
 ## Migration
 
-Enam migration membentuk modul ini, semuanya **additive** kecuali yang terakhir:
+Tujuh migration membentuk modul ini. Dua yang terakhir bersifat destruktif:
 
 | Migration | Isi | Catatan deploy |
 | --- | --- | --- |
@@ -191,6 +190,11 @@ Enam migration membentuk modul ini, semuanya **additive** kecuali yang terakhir:
 | `20261104091000_require_assessment_period` | `employee_skill_assessments.periodId` → `NOT NULL` | **Butuh backfill** bila sudah ada data |
 | `20261104140000_add_skill_training_map` | `skill_training_map` | Additive |
 | `20261104160000_drop_skill_weight` | Hapus enum `SkillWeight` + kolom `weight` | **Destruktif** (data bobot hilang) |
+| `20261105120000_drop_education_other` | Hapus kolom `educationOther` karena pendidikan kini hanya enum | **Destruktif**, tetapi aman: tidak ada baris yang memakai kolom itu |
+
+:::info Mengubah komponen wajib hanya butuh migration saat menghapus kolom
+Pendidikan, pengalaman, status karyawan, dan jenis kelamin sudah ada di `job_requirement_profiles` sejak `20261103100805_add_job_requirement`. Migration `20261105120000_drop_education_other` hanya menghapus kolom teks bebas yang tidak lagi dipakai.
+:::
 
 Verifikasi status tanpa mengubah apa pun:
 
@@ -298,10 +302,10 @@ Karena semua target masih bernilai 3, readiness saat ini secara efektif setara d
 
 ```bash
 cd app-karyawan
-npx vitest run server/lib/skillMatrix.test.js
+npx vitest run server/lib/skillMatrix.test.js server/lib/jobRequirementProfile.test.js
 ```
 
-15 test mencakup:
+18 test `skillMatrix` mencakup:
 
 - 4 status readiness dan transisinya
 - target `0` dikecualikan dari penyebut
@@ -312,7 +316,14 @@ npx vitest run server/lib/skillMatrix.test.js
 - kasus 1 dari 7 dinilai → 14% `BELUM_LENGKAP`
 - ambang 80% untuk `SIAP`
 
-Test terkait evaluasi syarat jabatan ada di `server/lib/jobRequirement.test.js` (9 test).
+Test lain:
+
+| Berkas | Jumlah | Cakupan |
+| --- | --- | --- |
+| `server/lib/jobRequirement.test.js` | 9 | Evaluasi 7 kategori sistem lama |
+| `server/lib/jobRequirementProfile.test.js` | 27 | Validasi syarat grade & evaluasi komponen wajib |
+
+Total: **54 test**.
 
 :::info Catatan lint
 `npm run lint` hanya mencakup `src/**`. Berkas di `server/` tidak masuk cakupan lint, sehingga error ESLint di sana bersifat pre-existing dan bukan indikator regresi modul ini.
@@ -333,5 +344,7 @@ Test terkait evaluasi syarat jabatan ada di `server/lib/jobRequirement.test.js` 
 | Endpoint master training | `app-karyawan/server/routes/masterTrainings.js` |
 | Seed | `app-karyawan/prisma/seed-job-requirement.mjs` |
 | Unit test rumus | `app-karyawan/server/lib/skillMatrix.test.js` |
+| Validasi syarat grade | `app-karyawan/server/lib/jobRequirementProfile.js` |
+| Unit test syarat grade | `app-karyawan/server/lib/jobRequirementProfile.test.js` |
 | Cek status DB | `npx prisma migrate status` |
 | Jalankan seed | `npm run prisma:seed:job-requirement` |

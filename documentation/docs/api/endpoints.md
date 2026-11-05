@@ -70,7 +70,11 @@ Rincian payload, aturan validasi, dan kode error: [Referensi API Job Requirement
 | Method | Path | Deskripsi |
 |--------|------|-----------|
 | `GET` | `/api/data-karyawan/job-requirement/profiles` | Daftar profil grade + skill + training |
+| `GET` | `/api/data-karyawan/job-requirement/profiles/options` | Opsi sah untuk komponen wajib |
 | `GET` | `/api/data-karyawan/job-requirement/profiles/:grade` | Profil satu grade |
+| `GET` | `/api/data-karyawan/job-requirement/profiles/:grade/impact` | Dampak syarat wajib yang tersimpan |
+| `POST` | `/api/data-karyawan/job-requirement/profiles/:grade/impact` | Pratinjau dampak sebelum simpan (Super Admin) |
+| `PUT` | `/api/data-karyawan/job-requirement/profiles/:grade` | Ubah syarat wajib + metadata (Super Admin) |
 | `GET` | `/api/data-karyawan/job-requirement/employees` | Daftar karyawan + evaluasi + readiness |
 | `GET` | `/api/data-karyawan/job-requirement/employees/:id` | Detail evaluasi satu karyawan |
 | `PUT` | `/api/data-karyawan/job-requirement/employees/:id/assessments` | Simpan asesmen (upsert) |

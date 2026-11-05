@@ -25,6 +25,28 @@ export function fetchJobRequirementProfile(grade) {
 	return apiRequest(`${BASE_PATH}/profiles/${encodeURIComponent(grade)}`);
 }
 
+export function fetchProfileOptions() {
+	return apiRequest(`${BASE_PATH}/profiles/options`);
+}
+
+export function fetchProfileImpact(grade) {
+	return apiRequest(`${BASE_PATH}/profiles/${encodeURIComponent(grade)}/impact`);
+}
+
+export function previewProfileImpact(grade, payload) {
+	return apiRequest(`${BASE_PATH}/profiles/${encodeURIComponent(grade)}/impact`, {
+		method: 'POST',
+		body: JSON.stringify(payload),
+	});
+}
+
+export function saveJobRequirementProfile(grade, payload) {
+	return apiRequest(`${BASE_PATH}/profiles/${encodeURIComponent(grade)}`, {
+		method: 'PUT',
+		body: JSON.stringify(payload),
+	});
+}
+
 export function fetchEmployeeJobRequirement(employeeId) {
 	return apiRequest(`${BASE_PATH}/employees/${employeeId}`);
 }

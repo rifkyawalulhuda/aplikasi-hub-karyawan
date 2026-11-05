@@ -41,7 +41,6 @@ Daftar seluruh profil grade beserta skill dan training wajibnya.
     "id": 3,
     "grade": "RANK_3",
     "minEducation": "SMA",
-    "educationOther": null,
     "minExperienceYears": 5,
     "allowedEmploymentTypes": ["PERMANENT", "CONTRACT"],
     "allowedGenders": ["MALE", "FEMALE"],
@@ -64,11 +63,29 @@ Urutan `skills` = `category ASC, sortOrder ASC`; `trainings` = `sortOrder ASC`.
 
 ---
 
+### `GET /api/data-karyawan/job-requirement/profiles/options`
+
+Nilai yang sah untuk komponen wajib. Dipakai tab **Syarat Grade** agar opsi UI tidak di-hardcode.
+
+**Dipakai UI:** Ya
+
+```json
+{
+  "education": ["SMA", "D3", "S1", "S2"],
+  "employmentTypes": ["PERMANENT", "CONTRACT"],
+  "genders": ["MALE", "FEMALE"],
+  "minExperienceYears": 0,
+  "maxExperienceYears": 50
+}
+```
+
+---
+
 ### `GET /api/data-karyawan/job-requirement/profiles/:grade`
 
 Satu profil berdasarkan grade (`RANK_1` … `RANK_11`, case-insensitive).
 
-**Dipakai UI:** Tidak
+**Dipakai UI:** Ya (dialog asesmen mengambil daftar skill dari sini)
 
 ```json
 {
@@ -81,6 +98,137 @@ Satu profil berdasarkan grade (`RANK_1` … `RANK_11`, case-insensitive).
 | Kode | Kondisi |
 | --- | --- |
 | 404 | `{ "message": "Profil job requirement tidak ditemukan." }` |
+
+---
+
+### `GET /api/data-karyawan/job-requirement/profiles/:grade/impact`
+
+Dampak **syarat wajib yang tersimpan** terhadap karyawan grade tersebut.
+
+**Dipakai UI:** Ya (tab Syarat Grade)
+
+```json
+{
+  "grade": "RANK_5",
+  "profile": {
+    "minEducation": "D3", "minExperienceYears": 5,
+    "allowedEmploymentTypes": ["PERMANENT", "CONTRACT"],
+    "allowedGenders": ["MALE", "FEMALE"],
+    "sourceFormNo": "SII-QSHE-002-03", "sourceRev": "00",
+    "effectiveDate": "2024-04-01T00:00:00.000Z", "notes": "..."
+  },
+  "current": {
+    "employeeCount": 8,
+    "failingEmployeeCount": 3,
+    "failingEmployeeIds": [41, 67, 88],
+    "manualComponents": [],
+    "components": [
+      { "key": "education", "label": "Pendidikan", "failCount": 3,
+        "employees": [
+          { "employeeId": 41, "employeeNo": "2301001", "fullName": "EKANDANA RACHMANTO",
+            "actual": "SMA", "required": "D3" }
+        ] },
+      { "key": "experience", "label": "Pengalaman", "failCount": 0, "employees": [] },
+      { "key": "employment", "label": "Status Karyawan", "failCount": 0, "employees": [] },
+      { "key": "gender", "label": "Jenis Kelamin", "failCount": 0, "employees": [] }
+    ]
+  }
+}
+```
+
+| Aturan | Detail |
+| --- | --- |
+| `manualComponents` | Berisi `["education"]` bila syarat pendidikan berupa teks bebas — komponen itu **tidak** dinilai otomatis |
+| `employment` / `gender` | Tidak pernah menghasilkan pelanggaran selama daftar berisi **semua** opsi |
+| Cakupan | Hanya karyawan pada site admin (kecuali Super Admin) |
+| Grade tanpa karyawan | `employeeCount: 0`, semua `failCount: 0` |
+
+| Kode | Kondisi |
+| --- | --- |
+| 404 | Profil grade tidak ada |
+
+---
+
+### `POST /api/data-karyawan/job-requirement/profiles/:grade/impact`
+
+Pratinjau dampak **sebelum** menyimpan. Body sama dengan `PUT`.
+
+**Super Admin saja.** **Dipakai UI:** Ya (selalu dipanggil sebelum menyimpan)
+
+```json
+{
+  "grade": "RANK_5",
+  "employeeCount": 8,
+  "current": { /* objek sama seperti GET impact */ },
+  "proposed": { /* objek yang sama, dihitung dengan syarat baru */ },
+  "diff": {
+    "newlyFailingCount": 5,
+    "newlyPassingCount": 0,
+    "newlyFailing": [
+      { "employeeId": 52, "employeeNo": "1907002", "fullName": "HARRY SABAR",
+        "actual": "9 tahun", "required": "20 tahun" }
+    ],
+    "newlyPassing": []
+  }
+}
+```
+
+`newlyFailing` memuat karyawan yang **sebelumnya lolos** dan akan gagal; `newlyPassing` sebaliknya. Body divalidasi dengan aturan yang sama seperti `PUT`, sehingga pratinjau dan penyimpanan tidak mungkin berbeda aturan.
+
+| Kode | Kondisi |
+| --- | --- |
+| 400 | Validasi body gagal (pesan sama seperti `PUT`) |
+| 403 | Bukan Super Admin |
+| 404 | Profil grade tidak ada |
+
+---
+
+### `PUT /api/data-karyawan/job-requirement/profiles/:grade`
+
+Mengubah **empat komponen wajib non-skill** + metadata sumber.
+
+**Super Admin saja.** **Dipakai UI:** Ya (tab Syarat Grade)
+
+```json
+{
+  "minEducation": "D3",
+  "minExperienceYears": 5,
+  "allowedEmploymentTypes": ["PERMANENT", "CONTRACT"],
+  "allowedGenders": ["MALE", "FEMALE"],
+  "sourceFormNo": "SII-QSHE-002-03",
+  "sourceRev": "01",
+  "effectiveDate": "2026-01-01",
+  "notes": "Revisi batas masa kerja"
+}
+```
+
+| Field | Aturan |
+| --- | --- |
+| `minEducation` | **Wajib**. Salah satu `SMA`/`D3`/`S1`/`S2` |
+| `minExperienceYears` | Bilangan bulat `0`–`50`; kosong/`null` = tanpa syarat |
+| `allowedEmploymentTypes` | Array, minimal 1, hanya `PERMANENT`/`CONTRACT`; kosong/absen = semua |
+| `allowedGenders` | Array, minimal 1, hanya `MALE`/`FEMALE`; kosong/absen = semua |
+| `sourceFormNo` | Maks. 100 karakter |
+| `sourceRev` | Maks. 20 karakter |
+| `effectiveDate` | Tanggal valid atau `null` |
+
+Respons: profil lengkap (termasuk `skills` & `trainings`) setelah diperbarui.
+
+| Kode | Kondisi | Pesan |
+| --- | --- | --- |
+| 400 | Pendidikan kosong / `null` | `Pendidikan minimal wajib dipilih.` |
+| 400 | Enum tidak dikenal | `Pendidikan minimal harus salah satu dari: SMA, D3, S1, S2.` |
+| 400 | Pengalaman di luar 0–50 | `Pengalaman minimal harus 0 sampai 50 tahun.` |
+| 400 | Pengalaman pecahan | `Pengalaman minimal harus bilangan bulat tahun.` |
+| 400 | Array status/gender kosong | `Status Karyawan minimal satu harus dipilih.` |
+| 400 | Anggota array tidak dikenal | `Jenis Kelamin berisi nilai tidak dikenal: OTHER.` |
+| 400 | Tanggal tidak valid | `Tanggal berlaku tidak valid.` |
+| 403 | Bukan Super Admin | `Akses ditolak. Hanya Super Admin yang dapat mengubah data referensi global.` |
+| 404 | Profil grade tidak ada | `Profil job requirement tidak ditemukan.` |
+
+:::warning Endpoint ini tidak menyentuh skill
+Baris skill tidak diterima di sini. Mengubah skill tetap lewat endpoint mapping di bawah, sehingga penyimpanan syarat tidak mungkin menghapus asesmen secara tidak sengaja.
+:::
 
 ---
 

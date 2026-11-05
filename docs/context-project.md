@@ -243,7 +243,7 @@ Folder ini dipilih sebagai basis utama pengembangan karena struktur template-nya
    - Menu item: `Master Data Dokumen` → halaman tabbed gabungan:
      - Tab: Master Dok PKB | Master Dok Karyawan | Master Cuti Karyawan | Master Hari Libur
    - Menu item: `Master Training` (section `Kompetensi`) → halaman tabbed:
-     - Tab: Daftar Training | Pemetaan Grade | Skill | Pemetaan Training
+     - Tab: Daftar Training | Syarat Grade | Pemetaan Grade | Skill | Pemetaan Training
 - Tab utama: `Data Karyawan`
   - Menu item: `Detail Karyawan`
   - Menu item: `Bimbingan & Pengarahan`
@@ -868,9 +868,17 @@ Modul ini membandingkan kompetensi aktual karyawan dengan syarat jabatan (job re
 - Route frontend: `/data-master/master-data-karyawan/master-training`, menu `Master Training` (section `Kompetensi`).
 - Terdiri dari tab:
   - `Daftar Training` — CRUD `MasterTraining`
+  - `Syarat Grade` — edit pendidikan, pengalaman, status karyawan, jenis kelamin + metadata sumber, dengan pratinjau dampak sebelum simpan
   - `Pemetaan Grade` — centang training wajib per `Grade` (batch, punya indikator dirty sebelum disimpan)
   - `Skill` — daftar skill wajib + target level per `Grade`
   - `Pemetaan Training` — menghubungkan skill ke training untuk rekomendasi gap
+- Tab `Syarat Grade` mendukung:
+  - pendidikan wajib dipilih dari daftar jenjang tetap (SLTA/D3/S1/S2); opsi teks bebas sudah dihapus
+  - pengalaman `0`–`50` tahun, kosong berarti tanpa syarat
+  - status karyawan & jenis kelamin: pilih sebagian atau semua, minimal satu
+  - indikator apakah suatu komponen benar-benar menyaring atau masih mengizinkan semua opsi
+  - dialog konfirmasi berisi karyawan yang berubah `Memenuhi → Belum Memenuhi` beserta nilai aktual vs syarat
+  - hanya Super Admin yang boleh menyimpan; Admin dapat melihat dampak
 - Tab `Skill` mendukung:
   - filter kategori `Soft Skill` / `Hard Skill` dan pencarian nama skill
   - `Tambah Skill Baru` — menambah entri ke katalog `MasterSkill`; setelah tersimpan skill otomatis tercentang pada grade aktif dengan target default 3
@@ -1205,7 +1213,7 @@ Yang sudah selesai:
 - Menambahkan modul **Job Requirement & Matriks Kompetensi**:
   - 6 migration baru: `add_job_requirement`, `add_master_skill`, `add_skill_matrix_foundation`, `require_assessment_period`, `add_skill_training_map`, `drop_skill_weight`.
   - Halaman `Rekap Job Requirement` (`/data-karyawan/job-requirement`) dengan 4 tab: Rekap Gap | Asesmen Kompetensi | Matriks Kompetensi | Kebutuhan Training.
-  - Halaman `Master Training` (`/data-master/master-data-karyawan/master-training`) dengan tab Daftar Training | Pemetaan Grade | Skill | Pemetaan Training.
+  - Halaman `Master Training` (`/data-master/master-data-karyawan/master-training`) dengan tab Daftar Training | Syarat Grade | Pemetaan Grade | Skill | Pemetaan Training.
   - Readiness dihitung tanpa bobot: `Σ min(level, target) / Σ target` atas seluruh skill wajib bertarget > 0; karyawan tanpa asesmen menghasilkan `null` (bukan 0).
   - 4 status readiness: `BELUM_DINILAI`, `BELUM_LENGKAP`, `DALAM_PENGEMBANGAN`, `SIAP` (ambang 80%).
   - Asesmen bersifat snapshot per periode semester (`SkillAssessmentPeriod`), hanya satu periode aktif, dan seluruh pembacaan difilter ke periode aktif.
@@ -1328,8 +1336,10 @@ Yang sudah selesai:
 
 - Backend:
   - `server/lib/skillMatrix.js` — mesin readiness tanpa bobot, 4 status, `isComplete`, `completionPercent`, `totalTarget`, `achievedScore`
-  - `server/lib/skillMatrix.test.js` — 15 unit test
-  - `server/routes/jobRequirements.js` — `/profiles`, `/employees`, `/matrix`, `/assessment-sheet`, `/skill-training-recommendations`, `PUT|DELETE` asesmen
+  - `server/lib/skillMatrix.test.js` — 18 unit test
+  - `server/lib/jobRequirementProfile.js` — validasi & evaluasi komponen wajib non-skill (pendidikan, pengalaman, status, gender)
+  - `server/lib/jobRequirementProfile.test.js` — 27 unit test
+  - `server/routes/jobRequirements.js` — `/profiles`, `/profiles/options`, `/profiles/:grade` (GET/PUT), `/profiles/:grade/impact` (GET/POST), `/employees`, `/matrix`, `/assessment-sheet`, `/skill-training-recommendations`, `PUT|DELETE` asesmen
   - `server/routes/masterSkills.js` — CRUD katalog skill, `/mapping/:grade`, `/mapping/:grade/targets`, `/mapping/:grade/copy-from-above`, `/training-map`
   - `server/routes/skillAssessmentPeriods.js` — CRUD periode asesmen (satu aktif)
   - `server/routes/masterTrainings.js` — guard hapus `409`, `GET /:id/usage`, `skillMapCount` pada daftar

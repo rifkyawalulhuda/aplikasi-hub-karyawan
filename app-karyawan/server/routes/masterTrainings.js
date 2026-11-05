@@ -14,6 +14,12 @@ function withAsync(handler) {
 }
 
 function normalizeString(value = '') {
+	// `String(null)` yields the truthy string "null", which would silently store a
+	// literal "null" instead of an absent value.
+	if (value == null) {
+		return '';
+	}
+
 	return String(value).trim().replace(/\s+/g, ' ');
 }
 

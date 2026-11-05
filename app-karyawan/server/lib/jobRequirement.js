@@ -163,6 +163,8 @@ function finalizeCategory(key, items) {
 function buildEducationCategory(profile, employee) {
 	const items = [];
 
+	// Education is always a fixed enum (SMA/D3/S1/S2). The old free-text column was
+	// dropped, so there is no manual branch here any more.
 	if (profile.minEducation) {
 		const requiredRank = EDUCATION_RANK[profile.minEducation] || 0;
 		const actualRank = EDUCATION_RANK[employee.educationLevel] || 0;
@@ -174,17 +176,6 @@ function buildEducationCategory(profile, employee) {
 				required: EDUCATION_LABELS[profile.minEducation] || profile.minEducation,
 				actual: EDUCATION_LABELS[employee.educationLevel] || employee.educationLevel || '-',
 				result: actualRank >= requiredRank ? ITEM_RESULT.MET : ITEM_RESULT.UNMET,
-			}),
-		);
-	} else if (profile.educationOther) {
-		items.push(
-			buildItem({
-				key: 'education',
-				label: 'Pendidikan (lain-lain)',
-				required: profile.educationOther,
-				actual: EDUCATION_LABELS[employee.educationLevel] || employee.educationLevel || '-',
-				result: ITEM_RESULT.MANUAL,
-				note: 'Syarat pendidikan berupa teks bebas, verifikasi manual.',
 			}),
 		);
 	}
@@ -378,7 +369,6 @@ function evaluateJobRequirement({ employee, profile, assessments = [], employeeT
 			grade: profile.grade,
 			gradeLabel: formatGradeLabel(profile.grade),
 			minEducation: profile.minEducation,
-			educationOther: profile.educationOther,
 			minExperienceYears: profile.minExperienceYears,
 			allowedEmploymentTypes: profile.allowedEmploymentTypes || [],
 			allowedGenders: profile.allowedGenders || [],
@@ -394,6 +384,7 @@ export {
 	CATEGORY,
 	CATEGORY_LABELS,
 	EDUCATION_LABELS,
+	EDUCATION_RANK,
 	EMPLOYMENT_LABELS,
 	GENDER_LABELS,
 	ITEM_RESULT,

@@ -332,7 +332,6 @@ async function seedProfiles(trainingIds, skillIds) {
 			where: { grade: profile.grade },
 			update: {
 				minEducation: profile.minEducation,
-				educationOther: null,
 				minExperienceYears: profile.minExperienceYears,
 				allowedEmploymentTypes: ['PERMANENT', 'CONTRACT'],
 				allowedGenders: ['MALE', 'FEMALE'],

@@ -1106,7 +1106,6 @@ model JobRequirementProfile {
   id                     Int                      @id @default(autoincrement())
   grade                  GradeRank                @unique
   minEducation           EducationLevel?
-  educationOther         String?                  @db.VarChar(255)
   minExperienceYears     Int?
   allowedEmploymentTypes EmploymentType[]
   allowedGenders         Gender[]

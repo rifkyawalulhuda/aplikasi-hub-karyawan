@@ -42,6 +42,7 @@ import {
 } from '@/services/masterTraining';
 
 import SkillTab from './skillTab';
+import SyaratGradeTab from './syaratGradeTab';
 import TrainingMapTab from './trainingMapTab';
 
 function getGradeLabel(grade = '') {
@@ -243,6 +244,7 @@ function MasterTrainingPage() {
 				<Stack spacing={2.5}>
 					<Tabs value={activeTab} onChange={(_event, value) => setActiveTab(value)}>
 						<Tab value="LIST" label="Daftar Training" />
+						<Tab value="SYARAT" label="Syarat Grade" />
 						<Tab value="MAP" label="Pemetaan Grade" />
 						<Tab value="SKILL" label="Skill" />
 						<Tab value="TRAINING_MAP" label="Pemetaan Training" />
@@ -407,6 +409,10 @@ function MasterTrainingPage() {
 					) : null}
 
 					{activeTab === 'TRAINING_MAP' ? <TrainingMapTab /> : null}
+
+					{activeTab === 'SYARAT' ? (
+						<SyaratGradeTab profiles={profiles} grade={grade} onGradeChange={setGrade} />
+					) : null}
 
 					{activeTab === 'SKILL' ? (
 						<SkillTab profiles={profiles} grade={grade} onGradeChange={setGrade} />

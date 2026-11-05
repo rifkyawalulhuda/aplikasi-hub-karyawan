@@ -16,17 +16,32 @@ Halaman ini menjelaskan **model konseptual**: sumber syarat, skala penilaian, ru
 
 Syarat jabatan berasal dari form **`SII-QSHE-002-03`**. Isinya diterjemahkan menjadi tabel `job_requirement_profiles` (satu baris per grade) dengan turunan:
 
-| Kelompok syarat | Disimpan di | Dipakai untuk |
-| --- | --- | --- |
-| Pendidikan minimal | `minEducation` / `educationOther` | Status kelayakan (wajib) |
-| Masa kerja minimal | `minExperienceYears` | Status kelayakan (wajib) |
-| Status kepegawaian | `allowedEmploymentTypes[]` | Status kelayakan (wajib) |
-| Jenis kelamin | `allowedGenders[]` | Status kelayakan (wajib) |
-| Soft skill | `job_requirement_skills` (`SOFT_SKILL`) | Readiness + gap |
-| Hard skill | `job_requirement_skills` (`HARD_SKILL`) | Readiness + gap |
-| Training wajib | `job_requirement_trainings` | Status kelayakan |
+| Kelompok syarat | Disimpan di | Dipakai untuk | Bisa diubah lewat UI |
+| --- | --- | --- | --- |
+| Pendidikan minimal | `minEducation` | Status kelayakan (wajib) | **Ya** — tab Syarat Grade |
+| Masa kerja minimal | `minExperienceYears` | Status kelayakan (wajib) | **Ya** — tab Syarat Grade |
+| Status kepegawaian | `allowedEmploymentTypes[]` | Status kelayakan (wajib) | **Ya** — tab Syarat Grade |
+| Jenis kelamin | `allowedGenders[]` | Status kelayakan (wajib) | **Ya** — tab Syarat Grade |
+| Soft skill | `job_requirement_skills` (`SOFT_SKILL`) | Readiness + gap | Ya — tab Skill |
+| Hard skill | `job_requirement_skills` (`HARD_SKILL`) | Readiness + gap | Ya — tab Skill |
+| Training wajib | `job_requirement_trainings` | Status kelayakan | Ya — tab Pemetaan Grade |
 
 Setiap baris skill juga menyimpan **target level** (`targetLevel`, 0–5). Inilah yang membuat satu skill bisa punya standar berbeda antar grade: `Microsoft Excel` boleh bertarget 2 untuk Rank 1 dan 4 untuk Rank 7.
+
+:::note Empat komponen wajib hanya memengaruhi STATUS
+Pendidikan, pengalaman, status karyawan, dan jenis kelamin **tidak** masuk perhitungan readiness. Keempatnya hanya menentukan `status` (`Memenuhi` / `Belum Memenuhi`). Readiness tetap murni dari target skill.
+:::
+
+### Bagaimana keempat komponen dinilai
+
+| Komponen | Aturan penilaian |
+| --- | --- |
+| Pendidikan | Berjenjang: `SMA < D3 < S1 < S2`. Lulus bila tingkat aktual ≥ yang disyaratkan |
+| Pengalaman | `joinDate` sampai hari ini, dibulatkan ke bawah dalam tahun |
+| Status karyawan | Lulus bila tipe kepegawaian ada di `allowedEmploymentTypes` |
+| Jenis kelamin | Lulus bila gender ada di `allowedGenders` |
+
+Dua komponen terakhir hanya menyaring bila daftarnya **dipersempit**. Bawaan seed mengisi keduanya dengan semua opsi, sehingga secara default keduanya tidak pernah menggagalkan siapa pun.
 
 ---
 
@@ -279,4 +294,6 @@ Keduanya bisa menampilkan training yang sama, tetapi berasal dari data berbeda. 
 | `server/lib/jobRequirement.js` | 1 | `SKILL_PASS_LEVEL = 3` |
 | `server/lib/jobRequirement.js` | 23–28 | Kategori wajib (non-skill) |
 | `server/lib/jobRequirement.js` | 296–366 | `evaluateJobRequirement` (sistem lama) |
-| `server/lib/skillMatrix.test.js` | — | 15 unit test rumus & status |
+| `server/lib/skillMatrix.test.js` | — | 18 unit test rumus & status |
+| `server/lib/jobRequirementProfile.js` | 1-260 | Validasi & evaluasi komponen wajib non-skill |
+| `server/lib/jobRequirementProfile.test.js` | — | 27 unit test validasi syarat grade |
