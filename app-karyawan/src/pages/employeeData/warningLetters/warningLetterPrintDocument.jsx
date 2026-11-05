@@ -414,7 +414,7 @@ function IssueMetaBlock({ record }) {
 
 function SignatureBlock({ record }) {
 	return (
-		<Box sx={{ mt: '8mm', display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: '34mm' }}>
+		<Box sx={{ mt: '20mm', display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: '34mm' }}>
 			<Stack alignItems="flex-start">
 				<Box sx={{ width: '58mm', borderTop: '2px dotted #111', mb: 0.7 }} />
 				<Typography sx={{ ...BODY_SX, lineHeight: 1.2 }}>{record.superiorName}</Typography>
