@@ -204,6 +204,13 @@ Folder ini dipilih sebagai basis utama pengembangan karena struktur template-nya
 ### Skema dan Migration Terbaru
 
 - Migration `20260519144643_add_master_admin_token_version` menambahkan kolom `tokenVersion INTEGER NOT NULL DEFAULT 0` pada tabel `master_admins`. Sifatnya additive dan aman dijalankan di production lewat `npx prisma migrate deploy`.
+- Migration modul Job Requirement & Matriks Kompetensi (semua additive):
+  - `20261103100805_add_job_requirement` — `job_requirement_profiles`, `job_requirement_skills`, `job_requirement_trainings`
+  - `20261103130957_add_master_skill` — `master_skills`
+  - `20261104090000_add_skill_matrix_foundation` — `skill_assessment_periods`, `employee_skill_assessments`, kolom `targetLevel`
+  - `20261104091000_require_assessment_period` — `employee_skill_assessments.periodId` menjadi `NOT NULL`
+  - `20261104140000_add_skill_training_map` — `skill_training_map`
+  - `20261104160000_drop_skill_weight` — menghapus enum `SkillWeight` dan kolom `weight` (keputusan: bobot dihapus total)
 - Untuk deploy production, gunakan `prisma migrate deploy` (bukan `migrate dev`). Sebelum deploy disarankan tetap menjalankan backup DB lewat script di bawah.
 
 ### Skrip Backup Database
@@ -233,15 +240,19 @@ Folder ini dipilih sebagai basis utama pengembangan karena struktur template-nya
   - Menu item: `Master Data Unit` (dropdown):
     - `Master Unit`
     - `Master Vendor`
-  - Menu item: `Master Data Dokumen` → halaman tabbed gabungan:
-    - Tab: Master Dok PKB | Master Dok Karyawan | Master Cuti Karyawan | Master Hari Libur
+   - Menu item: `Master Data Dokumen` → halaman tabbed gabungan:
+     - Tab: Master Dok PKB | Master Dok Karyawan | Master Cuti Karyawan | Master Hari Libur
+   - Menu item: `Master Training` (section `Kompetensi`) → halaman tabbed:
+     - Tab: Daftar Training | Pemetaan Training per Grade | Skill per Grade
 - Tab utama: `Data Karyawan`
   - Menu item: `Detail Karyawan`
   - Menu item: `Bimbingan & Pengarahan`
   - Menu item: `Data Surat Peringatan`
   - Menu item: `Lisensi & Sertifikasi`
-  - Menu item: `Pelatihan Karyawan`
-  - Menu item: `Cuti Karyawan` → halaman tabbed gabungan:
+   - Menu item: `Pelatihan Karyawan`
+   - Menu item: `Rekap Job Requirement` (section `Kompetensi`) → halaman tabbed:
+     - Tab: Rekap Gap | Asesmen Kompetensi | Matriks Kompetensi | Kebutuhan Training
+   - Menu item: `Cuti Karyawan` → halaman tabbed gabungan:
     - Tab: Data Cuti Karyawan | Flow Proses Cuti
 - Tab utama: `Data Unit`
   - Menu item: `Lisensi & Sertifikasi Unit`
@@ -838,6 +849,130 @@ Aturan approval yang sudah disebutkan:
     - checkbox selection
     - `NO` berbasis nomor urut tampilan
 
+### 5. Job Requirement & Matriks Kompetensi
+
+Modul ini membandingkan kompetensi aktual karyawan dengan syarat jabatan (job requirement) sesuai `Grade`, lalu menurunkan gap menjadi rekomendasi training.
+
+#### Halaman Rekap Job Requirement
+
+- Route frontend: `/data-karyawan/job-requirement`, menu `Rekap Job Requirement` (section `Kompetensi`).
+- Terdiri dari 4 tab:
+  - `Rekap Gap` — daftar karyawan dengan readiness terhadap syarat jabatannya
+  - `Asesmen Kompetensi` — pengisian level skill per karyawan pada periode aktif
+  - `Matriks Kompetensi` — matriks karyawan x skill (read-only, heatmap)
+  - `Kebutuhan Training` — rekomendasi training dari gap skill
+- Sumber data syarat jabatan adalah form `SII-QSHE-002-03`, dengan seed awal di `prisma/seed-job-requirement.mjs`.
+
+#### Halaman Master Training
+
+- Route frontend: `/data-master/master-data-karyawan/master-training`, menu `Master Training` (section `Kompetensi`).
+- Terdiri dari tab:
+  - `Daftar Training` — CRUD `MasterTraining`
+  - `Pemetaan Training` — centang training wajib per `Grade` (batch, punya indikator dirty sebelum disimpan)
+  - `Skill` — daftar skill wajib + target level per `Grade`
+- Tab `Skill` mendukung:
+  - filter kategori `Soft Skill` / `Hard Skill` dan pencarian nama skill
+  - `Tambah Skill Baru` — menambah entri ke katalog `MasterSkill`; setelah tersimpan skill otomatis tercentang pada grade aktif dengan target default 3
+  - `Edit Nama Skill` — berlaku untuk katalog dan semua grade yang memakainya
+  - `Salin dari Rank N` — menyalin gabungan skill (union) dari grade satu tingkat di atas; tombol nonaktif dengan tooltip penjelasan pada `Rank 11`
+  - input `Target Level` per skill (0–5), disimpan via tombol `Simpan Target Level`
+  - `Simpan Daftar Wajib` terpisah dari `Simpan Target Level`
+  - panel aksi terpisah dengan chip konteks grade/kategori dan penanda dirty (border + titik kuning) sampai disimpan
+  - skill yang sudah punya asesmen karyawan tidak bisa dilepas dari grade (endpoint mengembalikan `409`)
+- Hapus `MasterTraining` diblokir (`409`) jika masih dipakai pada job requirement grade, pemetaan skill, atau riwayat pelatihan karyawan. Dialog `Pemakaian` menampilkan detail pemakaian lewat `GET /api/master/master-trainings/:id/usage`.
+
+#### Skala Level Skill
+
+Skala `0–5` dengan anchor:
+
+- `0` Tidak terpapar
+- `1` Memahami konsep
+- `2` Dapat dengan supervisi
+- `3` Mandiri (target default)
+- `4` Melatih orang lain
+- `5` Rujukan / penyusun standar
+
+#### Rumus Readiness (tanpa bobot)
+
+Implementasi inti ada di `server/lib/skillMatrix.js`:
+
+- Penyebut = **seluruh skill wajib dengan `targetLevel > 0`**; skill `targetLevel = 0` dikecualikan karena bukan syarat.
+- Semua skill dianggap setara — **tidak ada bobot** (kolom `weight` dan enum `SkillWeight` sudah di-drop).
+- `readinessPercent = Σ min(level, targetLevel) / Σ targetLevel × 100`, dibulatkan.
+- Skill wajib yang belum dinilai dihitung **0** pada pembilang, tetapi tetap masuk penyebut.
+- Karyawan dengan **0 asesmen** menghasilkan `readinessPercent = null` (UI menampilkan `—`), bukan `0`. "Belum diukur" berbeda dengan "diukur dan gagal".
+- Target level `null` diperlakukan sebagai `3` (default).
+
+#### Empat Status Readiness
+
+`READY_MIN_PERCENT = 80`.
+
+| Status | Kondisi |
+| --- | --- |
+| `BELUM_DINILAI` | 0 asesmen |
+| `BELUM_LENGKAP` | ada asesmen, tetapi belum semua skill wajib dinilai |
+| `DALAM_PENGEMBANGAN` | semua skill wajib sudah dinilai, `readinessPercent < 80` |
+| `SIAP` | semua skill wajib sudah dinilai **dan** `readinessPercent >= 80` |
+
+Status ini berbeda dan berdampingan dengan status gap lama pada `Rekap Gap`.
+
+#### Periode Asesmen
+
+- Asesmen bersifat **snapshot per periode semester** (`SkillAssessmentPeriod`, contoh `2026-S1`).
+- Hanya boleh ada satu periode aktif.
+- `EmployeeSkillAssessment.periodId` wajib (`NOT NULL`); `UNIQUE(employeeId, category, skillName, periodId)`.
+- Seluruh pembacaan asesmen di `employees`, `employeeMe`, dan `jobRequirements` difilter ke periode aktif.
+- CRUD periode tersedia di `server/routes/skillAssessmentPeriods.js` (termasuk aktivasi periode).
+
+#### Hak Akses
+
+- Mengubah **target level** dan daftar skill wajib per grade: `Super Admin`.
+- Mengisi **asesmen** karyawan: `Admin` pada site masing-masing.
+- Matriks kompetensi bersifat **read-only** pada tahap ini.
+
+#### Endpoint
+
+- `GET  /api/data-karyawan/job-requirement/profiles`
+- `GET  /api/data-karyawan/job-requirement/profiles/:grade`
+- `GET  /api/data-karyawan/job-requirement/employees`
+- `GET  /api/data-karyawan/job-requirement/matrix`
+- `GET  /api/data-karyawan/job-requirement/assessment-sheet`
+- `PUT  /api/data-karyawan/job-requirement/employees/:id/assessments`
+- `DELETE /api/data-karyawan/job-requirement/employees/:id/assessments/:category/:skillName`
+- `GET  /api/data-karyawan/job-requirement/skill-training-recommendations`
+- `GET  /api/master/master-skills`
+- `POST /api/master/master-skills`
+- `PUT  /api/master/master-skills/:id`
+- `DELETE /api/master/master-skills/:id`
+- `GET  /api/master/master-skills/mapping/:grade`
+- `PUT  /api/master/master-skills/mapping/:grade` — simpan daftar skill wajib
+- `PUT  /api/master/master-skills/mapping/:grade/targets` — simpan target level
+- `POST /api/master/master-skills/mapping/:grade/copy-from-above` — salin union dari rank di atasnya
+- `GET  /api/master/master-skills/training-map`
+- `PUT  /api/master/master-skills/training-map`
+- `GET|POST|PUT|DELETE /api/master/skill-assessment-periods`
+- `GET  /api/master/master-trainings/:id/usage`
+
+#### Pemetaan Skill → Training
+
+- Model `SkillTrainingMap` (`skill_training_map`) menghubungkan `MasterSkill` dengan `MasterTraining`.
+- Pemetaan **mulai kosong** dan diisi manual oleh admin lewat dialog `Pemetaan Training` pada baris skill.
+- Rekomendasi training muncul hanya untuk skill yang sudah dipetakan; tanpa pemetaan, tab `Kebutuhan Training` kosong.
+
+#### Data Awal pada Database Development
+
+- Terdapat 11 profil grade (`RANK_1`–`RANK_11`), tetapi karyawan hanya memakai 8 grade: `RANK_1`–`RANK_7` dan `RANK_9`.
+- 28 master skill (18 soft, 10 hard), 266 baris `job_requirement_skills`, 41 master training.
+- Distribusi skill wajib per grade: `RANK_1`=7, `RANK_2`=12, `RANK_3`=26, `RANK_4`–`RANK_8`=28, `RANK_9`–`RANK_11`=27.
+- Karena 113 karyawan berada di grade rendah sementara katalog 28 skill, sekitar 42% sel pada matriks adalah `N/A`.
+
+#### Catatan Seed
+
+- Perintah seed: `npm run prisma:seed:job-requirement`.
+- Seed **idempotent dan non-destruktif untuk skill**: baris requirement hanya di-*upsert*, tidak pernah dihapus, agar target level hasil edit HR dan asesmen karyawan tetap aman. Baris di luar seed hanya diberi peringatan.
+- Seed **menghapus lalu menulis ulang** `job_requirement_trainings` per grade. Menjalankan seed ulang akan mengembalikan centang `Pemetaan Training` ke bawaan form `SII-QSHE-002-03`.
+- Karena itu seed hanya dijalankan pada database baru/kosong, bukan pada database development yang sudah dipakai.
+
 ## Prioritas Implementasi Saat Ini
 
 Prioritas fase awal:
@@ -1066,6 +1201,17 @@ Yang sudah selesai:
   - Tab: Master Dok PKB | Master Dok Karyawan | Master Cuti Karyawan | Master Hari Libur | Jenis Limbah B3.
   - URL-based tab switching, state preserved antar tab.
   - Menu sidebar "Master Data Dokumen" sekarang jadi satu item.
+- Menambahkan modul **Job Requirement & Matriks Kompetensi**:
+  - 6 migration baru: `add_job_requirement`, `add_master_skill`, `add_skill_matrix_foundation`, `require_assessment_period`, `add_skill_training_map`, `drop_skill_weight`.
+  - Halaman `Rekap Job Requirement` (`/data-karyawan/job-requirement`) dengan 4 tab: Rekap Gap | Asesmen Kompetensi | Matriks Kompetensi | Kebutuhan Training.
+  - Halaman `Master Training` (`/data-master/master-data-karyawan/master-training`) dengan tab Daftar Training | Pemetaan Training | Skill per Grade.
+  - Readiness dihitung tanpa bobot: `Σ min(level, target) / Σ target` atas seluruh skill wajib bertarget > 0; karyawan tanpa asesmen menghasilkan `null` (bukan 0).
+  - 4 status readiness: `BELUM_DINILAI`, `BELUM_LENGKAP`, `DALAM_PENGEMBANGAN`, `SIAP` (ambang 80%).
+  - Asesmen bersifat snapshot per periode semester (`SkillAssessmentPeriod`), hanya satu periode aktif, dan seluruh pembacaan difilter ke periode aktif.
+  - Katalog skill master (`MasterSkill`) 28 entri + target level per grade, dengan aksi `Salin dari Rank N` (union) dan penguncian pelepasan skill yang sudah punya asesmen.
+  - Pemetaan `SkillTrainingMap` untuk menurunkan rekomendasi training dari gap skill.
+  - Guard hapus `MasterTraining` (`409`) beserta dialog `Pemakaian`.
+  - `GET /api/master/employees/:id/summary` mengirim `jobRequirement.readiness` + `periodName`; `Detail Karyawan` memakai readiness baru pada `Readiness Ledger`.
 - Menambahkan modul **Pencatatan Limbah B3** dengan:
   - 3 model Prisma baru: `B3WasteType`, `B3WasteRecord`, `B3WasteOutRecord`
   - Backend CRUD routes dengan site isolation, computed fields, dan export Excel
@@ -1177,6 +1323,34 @@ Yang sudah selesai:
 - Field `kode` pada jenis limbah B3 immutable setelah disimpan
 - Referential integrity: delete waste record ditolak jika punya out-records, delete jenis limbah ditolak jika masih digunakan
 
+### Implementasi Job Requirement & Matriks Kompetensi
+
+- Backend:
+  - `server/lib/skillMatrix.js` — mesin readiness tanpa bobot, 4 status, `isComplete`, `completionPercent`, `totalTarget`, `achievedScore`
+  - `server/lib/skillMatrix.test.js` — 15 unit test
+  - `server/routes/jobRequirements.js` — `/profiles`, `/employees`, `/matrix`, `/assessment-sheet`, `/skill-training-recommendations`, `PUT|DELETE` asesmen
+  - `server/routes/masterSkills.js` — CRUD katalog skill, `/mapping/:grade`, `/mapping/:grade/targets`, `/mapping/:grade/copy-from-above`, `/training-map`
+  - `server/routes/skillAssessmentPeriods.js` — CRUD periode asesmen (satu aktif)
+  - `server/routes/masterTrainings.js` — guard hapus `409`, `GET /:id/usage`, `skillMapCount` pada daftar
+  - `server/routes/employees.js` — `GET /:id/summary` mengirim `jobRequirement.readiness` + `periodName`, asesmen difilter periode aktif
+  - Mount: `/api/data-karyawan/job-requirement`, `/api/master/master-skills`, `/api/master/master-trainings`, `/api/master/skill-assessment-periods` (lihat `server/index.js`)
+- Frontend:
+  - `src/pages/employeeData/jobRequirement/` — `index.jsx`, `assessmentTab.jsx`, `matrixTab.jsx`, `recommendationPanel.jsx` (4 tab, heatmap, badge `Asesmen x/y`, export Excel berwarna dengan kolom `Skill Dinilai`)
+  - `src/components/jobRequirement/` — `skillAssessmentDialog.jsx` (level 0–5, banner kelengkapan, hapus asesmen), `periodDialog.jsx`
+  - `src/pages/masterData/masterTraining/` — `index.jsx`, `trainingMapTab.jsx`, `skillTab.jsx`
+  - `src/components/masterData/` — `skillTrainingMapDialog.jsx`, `trainingUsageDialog.jsx`
+  - `src/pages/employeeData/employeeDetail/detail.jsx` — `Readiness Ledger` memakai `jobRequirement.readiness` (bukan skor kategori lama)
+  - `src/pages/employeeData/trainingRecords/index.jsx` — filter `?search=` menyertakan `masterTrainingName`
+  - Service layer: `src/services/jobRequirement.js`, `src/services/masterSkill.js`, `src/services/masterTraining.js`
+- Verifikasi:
+  - Sebelum vs sesudah penghapusan bobot menghasilkan angka identik untuk 134 karyawan (0 selisih)
+  - Contoh hasil: MAHESA 92% (11/12), ABYAZ 14% (1/7), ADE 29% (2/7), KUNCORO 10% (3/26); semuanya `BELUM_LENGKAP`
+  - Uji live: melengkapi 12/12 asesmen MAHESA → 100% `SIAP`; menghapus 1 asesmen → 92% `BELUM_LENGKAP`
+  - `npm run lint` bersih (hanya 1 warning lama `isSuperAdmin`), `npm run build` sukses, 24 unit test lulus
+- Catatan teknis:
+  - `npm run lint` hanya mencakup `src/**`; error ESLint di `server/` bersifat pre-existing
+  - Test B3 Waste (`b3WasteRecords.integration`, `.roundtrip.property`) gagal karena perbedaan timezone, sudah ada sebelum modul ini
+
 ## Struktur Teknis Awal yang Sudah Dibangun
 
 - Frontend:
@@ -1205,6 +1379,8 @@ Yang sudah selesai:
 - Template proyek yang tersedia saat ini sudah cocok dijadikan fondasi aplikasi admin/internal.
 - `docs/llm-mui.md` sekarang menjadi referensi UI utama yang wajib dipakai untuk seluruh implementasi desain pada project ini.
 - Detail final field, format print, dan approval matrix untuk modul bisnis lanjutan masih perlu dipastikan dari form atau dokumen resmi perusahaan.
+- Seed `job_requirement` bersifat non-destruktif untuk skill, tetapi **menghapus dan menulis ulang** pemetaan training per grade. Jangan jalankan `npm run prisma:seed:job-requirement` pada database development yang sedang dipakai, karena centang `Pemetaan Training` akan kembali ke bawaan form `SII-QSHE-002-03`. Seed hanya untuk database baru/kosong.
+- Untuk memeriksa kondisi database tanpa mengubah apa pun: `npx prisma migrate status` di folder `app-karyawan`.
 - File ini adalah dokumen konteks proyek dan harus diperbarui seiring perkembangan implementasi.
 
 ## Aturan Pemeliharaan Dokumen Ini
