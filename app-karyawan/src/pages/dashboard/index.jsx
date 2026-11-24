@@ -1,119 +1,197 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSnackbar } from 'notistack';
-import Chart from 'react-apexcharts';
 
-import Accordion from '@mui/material/Accordion';
-import AccordionSummary from '@mui/material/AccordionSummary';
-import AccordionDetails from '@mui/material/AccordionDetails';
-import Box from '@mui/material/Box';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
+import Alert from '@mui/material/Alert';
+import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
-import CircularProgress from '@mui/material/CircularProgress';
+import FormControl from '@mui/material/FormControl';
 import Grid from '@mui/material/Grid';
+import IconButton from '@mui/material/IconButton';
+import MenuItem from '@mui/material/MenuItem';
+import Select from '@mui/material/Select';
 import Stack from '@mui/material/Stack';
-import Table from '@mui/material/Table';
-import TableBody from '@mui/material/TableBody';
-import TableCell from '@mui/material/TableCell';
-import TableContainer from '@mui/material/TableContainer';
-import TableHead from '@mui/material/TableHead';
-import TableRow from '@mui/material/TableRow';
+import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
-import { useTheme } from '@mui/material/styles';
 
-import ExpandMoreOutlined from '@mui/icons-material/ExpandMoreOutlined';
-import PeopleOutlinedIcon from '@mui/icons-material/PeopleOutlined';
+import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined';
+import AssignmentIndOutlinedIcon from '@mui/icons-material/AssignmentIndOutlined';
 import EventNoteOutlinedIcon from '@mui/icons-material/EventNoteOutlined';
-import WarningAmberOutlinedIcon from '@mui/icons-material/WarningAmberOutlined';
+import PeopleOutlinedIcon from '@mui/icons-material/PeopleOutlined';
 import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined';
+import PlaceOutlinedIcon from '@mui/icons-material/PlaceOutlined';
 import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
+import SyncRoundedIcon from '@mui/icons-material/SyncRounded';
+import WarningAmberOutlinedIcon from '@mui/icons-material/WarningAmberOutlined';
 
 import PageHeader from '@/components/pageHeader';
-import apiRequest from '@/services/api';
 import { useSite } from '@/contexts/siteContext';
 
-const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+import KpiTile from './components/kpiTile';
+import LicenseAlerts from './components/licenseAlerts';
+import ApprovalQueue from './components/approvalQueue';
+import LeaveTrendCard from './components/leaveTrendCard';
+import {
+	DepartmentDistributionCard,
+	JobLevelDistributionCard,
+	SiteDistributionCard,
+} from './components/compositionCards';
+import { B3SummaryCard, B3TrendCard } from './components/b3Cards';
+import RecentLeaveTable from './components/recentLeaveTable';
+import DashboardSkeleton from './components/dashboardSkeleton';
+import useDashboardData from './useDashboardData';
+import { DEFAULT_PERIOD, DRILL_DOWN, PERIOD_OPTIONS, formatNumber, formatTime } from './constants';
 
-const LEAVE_STATUS_MAP = {
-	SUBMITTED: { label: 'Diajukan', color: 'info' },
-	IN_APPROVAL: { label: 'Dalam Approval', color: 'warning' },
-	APPROVED: { label: 'Disetujui', color: 'success' },
-	REJECTED: { label: 'Ditolak', color: 'error' },
-	CANCELLED: { label: 'Dibatalkan', color: 'default' },
-};
+/** Wording + tone for the B3 tile, driven by storage-deadline issues. */
+function describeB3State(overdue, warning) {
+	if (overdue > 0) {
+		return { helper: `${overdue} melewati batas simpan`, tone: 'error.main' };
+	}
 
-const sectionAccordionSx = {
-	border: 1,
-	borderColor: 'divider',
-	borderRadius: 2,
-	mb: 2,
-	'&:before': { display: 'none' },
-	'&.Mui-expanded': { mb: 2 },
-};
+	if (warning > 0) {
+		return { helper: `${warning} mendekati batas simpan`, tone: 'warning.main' };
+	}
 
-function SummaryCard({ icon: Icon, title, value, color = 'primary.main' }) {
-	return (
-		<Card sx={{ height: '100%' }}>
-			<CardContent>
-				<Stack direction="row" alignItems="center" spacing={2}>
-					<Box
-						sx={{
-							width: 48,
-							height: 48,
-							borderRadius: 2,
-							display: 'flex',
-							alignItems: 'center',
-							justifyContent: 'center',
-							bgcolor: `${color}15`,
-						}}
-					>
-						<Icon sx={{ color, fontSize: 28 }} />
-					</Box>
-					<Stack spacing={0.25}>
-						<Typography variant="body2" color="text.secondary">
-							{title}
-						</Typography>
-						<Typography variant="h4" fontWeight={700}>
-							{value}
-						</Typography>
-					</Stack>
-				</Stack>
-			</CardContent>
-		</Card>
-	);
+	return { helper: 'Semua limbah dalam batas simpan', tone: 'success.main' };
 }
 
 function DashboardPage() {
-	const theme = useTheme();
 	const { enqueueSnackbar } = useSnackbar();
-	const { currentSiteId } = useSite();
-	const [data, setData] = useState(null);
-	const [loading, setLoading] = useState(true);
+	const { isSuperAdmin, selectedSiteId, siteName } = useSite();
+	const [period, setPeriod] = useState(DEFAULT_PERIOD);
+
+	const { data, loading, refreshing, error, refresh } = useDashboardData({
+		siteId: isSuperAdmin ? selectedSiteId : null,
+		period,
+	});
 
 	useEffect(() => {
-		const fetchDashboard = async () => {
-			setLoading(true);
-			try {
-				const params = currentSiteId ? `?siteId=${currentSiteId}` : '';
-				const result = await apiRequest(`/dashboard${params}`);
-				setData(result);
-			} catch (error) {
-				enqueueSnackbar(error.message || 'Gagal memuat data dashboard.', { variant: 'error' });
-			} finally {
-				setLoading(false);
-			}
-		};
+		if (error) {
+			enqueueSnackbar(error.message || 'Gagal memuat data dashboard.', { variant: 'error' });
+		}
+	}, [enqueueSnackbar, error]);
 
-		fetchDashboard();
-	}, [enqueueSnackbar, currentSiteId]);
+	const summary = data?.summary || {};
+	const charts = data?.charts || {};
+	const tables = data?.tables || {};
+	const b3Waste = data?.b3Waste;
+	const meta = data?.meta;
 
-	if (loading) {
+	const periodLabel = meta?.period?.label || PERIOD_OPTIONS.find((option) => option.value === period)?.label || '';
+	const scopeLabel =
+		meta?.scope && !meta.scope.isAllSites ? meta.scope.siteName || siteName || 'Site terpilih' : 'Semua site';
+
+	const showSiteChart = Boolean(meta?.scope?.isAllSites) && (charts.bySite?.length || 0) > 1;
+	const hasB3Data = Boolean(
+		b3Waste &&
+			(b3Waste.totalMasuk > 0 ||
+				b3Waste.totalKeluar > 0 ||
+				(b3Waste.trendBulanan || []).some((row) => row.masuk > 0 || row.keluar > 0)),
+	);
+
+	const b3Overdue = b3Waste?.overdueCount || 0;
+	const b3Warning = b3Waste?.warningCount || 0;
+
+	const kpiTiles = useMemo(() => {
+		const b3State = describeB3State(b3Overdue, b3Warning);
+
+		return [
+			{
+				key: 'employees',
+				icon: PeopleOutlinedIcon,
+				label: 'Total karyawan',
+				value: summary.totalEmployees || 0,
+				tone: 'primary',
+				href: DRILL_DOWN.employees,
+				helper:
+					summary.newHiresInPeriod > 0
+						? `+${formatNumber(summary.newHiresInPeriod)} masuk ${periodLabel.toLowerCase()}`
+						: 'Tidak ada penambahan pada periode ini',
+				helperTone: summary.newHiresInPeriod > 0 ? 'success.main' : 'text.secondary',
+			},
+			{
+				key: 'contract',
+				icon: AssignmentIndOutlinedIcon,
+				label: 'Kontrak aktif',
+				value: summary.contractCount || 0,
+				tone: 'secondary',
+				href: DRILL_DOWN.employees,
+				helper: `${
+					summary.totalEmployees > 0
+						? Math.round(((summary.contractCount || 0) / summary.totalEmployees) * 100)
+						: 0
+				}% dari total karyawan`,
+				helperTone: 'text.secondary',
+			},
+			{
+				key: 'leaves',
+				icon: EventNoteOutlinedIcon,
+				label: 'Cuti menunggu',
+				value: summary.activeLeaveRequests || 0,
+				tone: summary.activeLeaveRequests > 0 ? 'warning' : 'success',
+				href: DRILL_DOWN.leaves,
+				helper:
+					summary.activeLeaveRequests > 0
+						? `${formatNumber(summary.submittedLeaveRequests)} diajukan · ${formatNumber(
+								summary.inApprovalLeaveRequests,
+						  )} dalam approval`
+						: `${formatNumber(summary.leaveRequestsInPeriod)} pengajuan pada periode ini`,
+				helperTone: 'text.secondary',
+			},
+			{
+				key: 'licenses',
+				icon: WarningAmberOutlinedIcon,
+				label: 'Lisensi expired',
+				value: summary.expiredLicenses || 0,
+				tone: summary.expiredLicenses > 0 ? 'error' : 'success',
+				href: DRILL_DOWN.licenses,
+				helper:
+					summary.expiringSoonLicenses > 0
+						? `${formatNumber(summary.expiringSoonLicenses)} berakhir dalam ${
+								meta?.licenseSoonDays ?? 25
+						  } hari`
+						: 'Tidak ada lisensi mendekati kedaluwarsa',
+				helperTone: summary.expiringSoonLicenses > 0 ? 'warning.main' : 'text.secondary',
+			},
+			{
+				key: 'b3',
+				icon: ScienceOutlinedIcon,
+				label: 'Sisa limbah B3',
+				value: Math.round(b3Waste?.sisaDiTps || 0),
+				suffix: 'kg',
+				tone: 'info',
+				href: DRILL_DOWN.b3,
+				helper: b3State.helper,
+				helperTone: b3State.tone,
+			},
+			{
+				key: 'sites',
+				icon: BusinessOutlinedIcon,
+				label: 'Site aktif',
+				value: summary.siteCount || 0,
+				tone: 'success',
+				href: DRILL_DOWN.sites,
+				helper: `${formatNumber(charts.byDepartment?.length)} departemen · ${formatNumber(
+					charts.byJobLevel?.length,
+				)} job level`,
+				helperTone: 'text.secondary',
+			},
+		];
+	}, [
+		b3Overdue,
+		b3Warning,
+		b3Waste,
+		charts.byDepartment,
+		charts.byJobLevel,
+		periodLabel,
+		summary,
+		meta?.licenseSoonDays,
+	]);
+
+	if (loading && !data) {
 		return (
 			<>
 				<PageHeader title="Dashboard" />
-				<Stack alignItems="center" justifyContent="center" py={20}>
-					<CircularProgress />
-				</Stack>
+				<DashboardSkeleton />
 			</>
 		);
 	}
@@ -122,415 +200,160 @@ function DashboardPage() {
 		return (
 			<>
 				<PageHeader title="Dashboard" />
-				<Typography color="text.secondary" textAlign="center" py={10}>
-					Gagal memuat data dashboard.
-				</Typography>
+				<Alert
+					severity="error"
+					action={
+						<Button color="inherit" size="small" onClick={refresh}>
+							Coba lagi
+						</Button>
+					}
+				>
+					Data dashboard tidak dapat dimuat. Periksa koneksi lalu coba lagi.
+				</Alert>
 			</>
 		);
 	}
 
-	const { summary, charts, tables, b3Waste } = data;
-	const isDark = theme.palette.mode === 'dark';
-	const chartTextColor = isDark ? '#ccc' : '#555';
-
-	// Bar chart — by department
-	const departmentChartOptions = {
-		chart: { type: 'bar', toolbar: { show: false } },
-		plotOptions: { bar: { horizontal: true, borderRadius: 4 } },
-		xaxis: { categories: charts.byDepartment.map((d) => d.name), labels: { style: { colors: chartTextColor } } },
-		yaxis: { labels: { style: { colors: chartTextColor } } },
-		colors: [theme.palette.primary.main],
-		dataLabels: { enabled: true },
-		tooltip: { theme: isDark ? 'dark' : 'light' },
-	};
-	const departmentChartSeries = [{ name: 'Karyawan', data: charts.byDepartment.map((d) => d.count) }];
-
-	// Donut chart — by job level
-	const jobLevelChartOptions = {
-		chart: { type: 'donut' },
-		labels: charts.byJobLevel.map((d) => d.name),
-		legend: { position: 'bottom', labels: { colors: chartTextColor } },
-		tooltip: { theme: isDark ? 'dark' : 'light' },
-	};
-	const jobLevelChartSeries = charts.byJobLevel.map((d) => d.count);
-
-	// Donut chart — by employment type
-	const employmentTypeChartOptions = {
-		chart: { type: 'donut' },
-		labels: charts.byEmploymentType.map((d) => d.name),
-		colors: [theme.palette.primary.main, theme.palette.warning.main],
-		legend: { position: 'bottom', labels: { colors: chartTextColor } },
-		tooltip: { theme: isDark ? 'dark' : 'light' },
-	};
-	const employmentTypeChartSeries = charts.byEmploymentType.map((d) => d.count);
-
-	// Area chart — monthly leave trend
-	const leaveTrendChartOptions = {
-		chart: { type: 'area', toolbar: { show: false }, sparkline: { enabled: false } },
-		xaxis: { categories: MONTH_LABELS, labels: { style: { colors: chartTextColor } } },
-		yaxis: { labels: { style: { colors: chartTextColor } } },
-		stroke: { curve: 'smooth', width: 2 },
-		fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.1 } },
-		colors: [theme.palette.info.main],
-		dataLabels: { enabled: false },
-		tooltip: { theme: isDark ? 'dark' : 'light' },
-	};
-	const leaveTrendChartSeries = [{ name: 'Pengajuan Cuti', data: charts.monthlyLeaveTrend.map((d) => d.count) }];
-
-	// Bar chart — by site
-	const siteChartOptions = {
-		chart: { type: 'bar', toolbar: { show: false } },
-		plotOptions: { bar: { borderRadius: 4, columnWidth: '50%' } },
-		xaxis: { categories: charts.bySite.map((d) => d.name), labels: { style: { colors: chartTextColor } } },
-		yaxis: { labels: { style: { colors: chartTextColor } } },
-		colors: [theme.palette.success.main],
-		dataLabels: { enabled: true },
-		tooltip: { theme: isDark ? 'dark' : 'light' },
-	};
-	const siteChartSeries = [{ name: 'Karyawan', data: charts.bySite.map((d) => d.count) }];
-
-	// Area chart — B3 waste trend (6 months)
-	const b3TrendChartOptions = {
-		chart: { type: 'area', toolbar: { show: false } },
-		xaxis: {
-			categories: b3Waste?.trendBulanan?.map((d) => d.bulan) || [],
-			labels: { style: { colors: chartTextColor } },
-		},
-		yaxis: { labels: { style: { colors: chartTextColor } } },
-		stroke: { curve: 'smooth', width: 2 },
-		fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.1 } },
-		colors: ['#1976d2', '#2e7d32'],
-		dataLabels: { enabled: false },
-		tooltip: { theme: isDark ? 'dark' : 'light' },
-	};
-	const b3TrendChartSeries = [
-		{ name: 'Masuk', data: b3Waste?.trendBulanan?.map((d) => d.masuk) || [] },
-		{ name: 'Keluar', data: b3Waste?.trendBulanan?.map((d) => d.keluar) || [] },
-	];
-
 	return (
 		<>
-			<PageHeader title="Dashboard" />
-			<Stack spacing={3}>
-				{/* Section 1: Ringkasan — always visible, not collapsible */}
-				<Grid container spacing={2.5}>
-					<Grid item xs={12} sm={6} md={3}>
-						<SummaryCard
-							icon={PeopleOutlinedIcon}
-							title="Total Karyawan"
-							value={summary.totalEmployees}
-							color={theme.palette.primary.main}
-						/>
-					</Grid>
-					<Grid item xs={12} sm={6} md={3}>
-						<SummaryCard
-							icon={BusinessOutlinedIcon}
-							title="Jumlah Site"
-							value={summary.siteCount}
-							color={theme.palette.success.main}
-						/>
-					</Grid>
-					<Grid item xs={12} sm={6} md={3}>
-						<SummaryCard
-							icon={EventNoteOutlinedIcon}
-							title="Cuti Aktif"
-							value={summary.activeLeaveRequests}
-							color={theme.palette.info.main}
-						/>
-					</Grid>
-					<Grid item xs={12} sm={6} md={3}>
-						<SummaryCard
-							icon={WarningAmberOutlinedIcon}
-							title="Lisensi Akan Expired"
-							value={summary.expiringLicenses}
-							color={theme.palette.warning.main}
-						/>
-					</Grid>
-					{b3Waste && (
-						<Grid item xs={12} sm={6} md={3}>
-							<SummaryCard
-								icon={ScienceOutlinedIcon}
-								title="Limbah B3 di TPS"
-								value={`${Number(b3Waste.sisaDiTps).toLocaleString('id-ID')} kg`}
-								color={b3Waste.overdueCount > 0 ? theme.palette.error.main : theme.palette.info.main}
-							/>
+			<PageHeader title="Dashboard">
+				<Stack direction="row" alignItems="center" flexWrap="wrap" textTransform="none" sx={{ gap: 1 }}>
+					<FormControl size="small" sx={{ minWidth: 138 }}>
+						<Select
+							value={period}
+							onChange={(event) => setPeriod(event.target.value)}
+							inputProps={{ 'aria-label': 'Pilih periode tren' }}
+							startAdornment={
+								<CalendarMonthOutlinedIcon fontSize="small" sx={{ mr: 0.5, color: 'primary.main' }} />
+							}
+							sx={{
+								fontSize: '0.82rem',
+								height: 40,
+								'& .MuiSelect-select': { py: 0.75 },
+								'& .MuiOutlinedInput-notchedOutline': { borderColor: 'border' },
+							}}
+						>
+							{PERIOD_OPTIONS.map((option) => (
+								<MenuItem key={option.value} value={option.value}>
+									<Typography variant="body2">{option.label}</Typography>
+								</MenuItem>
+							))}
+						</Select>
+					</FormControl>
+					<Tooltip title="Muat ulang data (otomatis setiap 5 menit)">
+						<span>
+							<IconButton
+								size="small"
+								onClick={refresh}
+								disabled={refreshing}
+								aria-label="Muat ulang data dashboard"
+								sx={{ border: 1, borderColor: 'border', borderRadius: 1.5, width: 40, height: 40 }}
+							>
+								<SyncRoundedIcon
+									fontSize="small"
+									sx={{
+										'@keyframes dashboardSpin': {
+											from: { transform: 'rotate(0deg)' },
+											to: { transform: 'rotate(360deg)' },
+										},
+										animation: refreshing ? 'dashboardSpin 900ms linear infinite' : 'none',
+										'@media (prefers-reduced-motion: reduce)': { animation: 'none' },
+									}}
+								/>
+							</IconButton>
+						</span>
+					</Tooltip>
+				</Stack>
+			</PageHeader>
+
+			<Stack spacing={2.5} sx={{ pb: 4 }}>
+				<Stack direction="row" alignItems="center" flexWrap="wrap" sx={{ gap: 1 }}>
+					<Chip size="small" variant="outlined" icon={<PlaceOutlinedIcon />} label={scopeLabel} />
+					<Typography variant="caption" color="text.secondary">
+						{periodLabel} · diperbarui {formatTime(meta?.generatedAt)} · angkanya mengikuti site aktif dan
+						disegarkan otomatis setiap 5 menit.
+					</Typography>
+				</Stack>
+
+				<Grid container spacing={2}>
+					{kpiTiles.map((tile, index) => (
+						<Grid item xs={6} sm={6} md={4} lg={2} key={tile.key}>
+							<KpiTile {...tile} delay={index * 45} />
 						</Grid>
-					)}
+					))}
 				</Grid>
 
-				{/* Section 2: Karyawan — collapsible, default expanded */}
-				<Accordion defaultExpanded elevation={0} sx={sectionAccordionSx}>
-					<AccordionSummary expandIcon={<ExpandMoreOutlined />}>
-						<Typography variant="h6" fontWeight={700}>
-							Karyawan
-						</Typography>
-					</AccordionSummary>
-					<AccordionDetails sx={{ px: 2, pb: 2 }}>
-						<Grid container spacing={2.5}>
-							<Grid item xs={12} md={7}>
-								<Card sx={{ p: 2.5 }}>
-									<Typography variant="h6" fontWeight={700} gutterBottom>
-										Distribusi Karyawan per Department
-									</Typography>
-									<Chart
-										options={departmentChartOptions}
-										series={departmentChartSeries}
-										type="bar"
-										height={Math.max(charts.byDepartment.length * 42, 200)}
-									/>
-								</Card>
-							</Grid>
-							<Grid item xs={12} md={5}>
-								<Card sx={{ p: 2.5 }}>
-									<Typography variant="h6" fontWeight={700} gutterBottom>
-										Distribusi per Job Level
-									</Typography>
-									<Chart
-										options={jobLevelChartOptions}
-										series={jobLevelChartSeries}
-										type="donut"
-										height={320}
-									/>
-								</Card>
-							</Grid>
-							<Grid item xs={12} md={4}>
-								<Card sx={{ p: 2.5 }}>
-									<Typography variant="h6" fontWeight={700} gutterBottom>
-										Tipe Karyawan
-									</Typography>
-									<Chart
-										options={employmentTypeChartOptions}
-										series={employmentTypeChartSeries}
-										type="donut"
-										height={280}
-									/>
-								</Card>
-							</Grid>
-							<Grid item xs={12} md={8}>
-								<Card sx={{ p: 2.5 }}>
-									<Typography variant="h6" fontWeight={700} gutterBottom>
-										Karyawan per Site
-									</Typography>
-									<Chart
-										options={siteChartOptions}
-										series={siteChartSeries}
-										type="bar"
-										height={280}
-									/>
-								</Card>
-							</Grid>
-						</Grid>
-					</AccordionDetails>
-				</Accordion>
+				<Grid container spacing={2}>
+					<Grid item xs={12} lg={7}>
+						<LicenseAlerts
+							alerts={tables.licenseAlerts}
+							summary={summary}
+							soonDays={meta?.licenseSoonDays ?? 25}
+							delay={240}
+						/>
+					</Grid>
+					<Grid item xs={12} lg={5}>
+						<ApprovalQueue
+							pendingLeaves={tables.pendingLeaves}
+							recentLeaves={tables.recentLeaves}
+							summary={summary}
+							periodLabel={periodLabel}
+							delay={285}
+						/>
+					</Grid>
+				</Grid>
 
-				{/* Section 3: Cuti & Lisensi — collapsible, default expanded */}
-				<Accordion defaultExpanded elevation={0} sx={sectionAccordionSx}>
-					<AccordionSummary expandIcon={<ExpandMoreOutlined />}>
-						<Typography variant="h6" fontWeight={700}>
-							Cuti & Lisensi
-						</Typography>
-					</AccordionSummary>
-					<AccordionDetails sx={{ px: 2, pb: 2 }}>
-						<Grid container spacing={2.5}>
-							<Grid item xs={12}>
-								<Card sx={{ p: 2.5 }}>
-									<Typography variant="h6" fontWeight={700} gutterBottom>
-										Tren Pengajuan Cuti {new Date().getFullYear()}
-									</Typography>
-									<Chart
-										options={leaveTrendChartOptions}
-										series={leaveTrendChartSeries}
-										type="area"
-										height={280}
-									/>
-								</Card>
-							</Grid>
-							<Grid item xs={12} md={6}>
-								<Card sx={{ p: 2.5 }}>
-									<Typography variant="h6" fontWeight={700} gutterBottom>
-										Lisensi & Sertifikasi Akan Expired
-									</Typography>
-									{tables.expiringLicenses.length === 0 ? (
-										<Typography variant="body2" color="text.secondary" py={3} textAlign="center">
-											Tidak ada lisensi yang akan expired.
-										</Typography>
-									) : (
-										<TableContainer>
-											<Table size="small">
-												<TableHead>
-													<TableRow>
-														<TableCell sx={{ fontWeight: 600 }}>Karyawan</TableCell>
-														<TableCell sx={{ fontWeight: 600 }}>Dokumen</TableCell>
-														<TableCell sx={{ fontWeight: 600 }}>Berlaku Sampai</TableCell>
-														<TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
-													</TableRow>
-												</TableHead>
-												<TableBody>
-													{tables.expiringLicenses.map((item) => (
-														<TableRow key={item.id}>
-															<TableCell>
-																{item.employeeName}
-																<br />
-																<Typography variant="caption" color="text.secondary">
-																	{item.employeeNo}
-																</Typography>
-															</TableCell>
-															<TableCell>{item.documentName}</TableCell>
-															<TableCell>{item.validUntil}</TableCell>
-															<TableCell>
-																<Chip
-																	label={item.status}
-																	size="small"
-																	color={
-																		item.status === 'Expired' ? 'error' : 'warning'
-																	}
-																/>
-															</TableCell>
-														</TableRow>
-													))}
-												</TableBody>
-											</Table>
-										</TableContainer>
-									)}
-								</Card>
-							</Grid>
-							<Grid item xs={12} md={6}>
-								<Card sx={{ p: 2.5 }}>
-									<Typography variant="h6" fontWeight={700} gutterBottom>
-										Pengajuan Cuti Terbaru
-									</Typography>
-									{tables.recentLeaves.length === 0 ? (
-										<Typography variant="body2" color="text.secondary" py={3} textAlign="center">
-											Belum ada pengajuan cuti.
-										</Typography>
-									) : (
-										<TableContainer>
-											<Table size="small">
-												<TableHead>
-													<TableRow>
-														<TableCell sx={{ fontWeight: 600 }}>Karyawan</TableCell>
-														<TableCell sx={{ fontWeight: 600 }}>Jenis Cuti</TableCell>
-														<TableCell sx={{ fontWeight: 600 }}>Tanggal</TableCell>
-														<TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
-													</TableRow>
-												</TableHead>
-												<TableBody>
-													{tables.recentLeaves.map((item) => (
-														<TableRow key={item.id}>
-															<TableCell>
-																{item.employeeName}
-																<br />
-																<Typography variant="caption" color="text.secondary">
-																	{item.employeeNo}
-																</Typography>
-															</TableCell>
-															<TableCell>{item.leaveType}</TableCell>
-															<TableCell>{item.createdAt}</TableCell>
-															<TableCell>
-																<Chip
-																	label={
-																		LEAVE_STATUS_MAP[item.status]?.label ||
-																		item.status
-																	}
-																	size="small"
-																	color={
-																		LEAVE_STATUS_MAP[item.status]?.color ||
-																		'default'
-																	}
-																/>
-															</TableCell>
-														</TableRow>
-													))}
-												</TableBody>
-											</Table>
-										</TableContainer>
-									)}
-								</Card>
-							</Grid>
-						</Grid>
-					</AccordionDetails>
-				</Accordion>
+				<Grid container spacing={2}>
+					<Grid item xs={12} lg={7}>
+						<LeaveTrendCard
+							monthlyLeaveTrend={charts.monthlyLeaveTrend}
+							hiresTrend={charts.hiresTrend}
+							periodLabel={periodLabel}
+							delay={330}
+						/>
+					</Grid>
+					<Grid item xs={12} lg={5}>
+						<DepartmentDistributionCard
+							byDepartment={charts.byDepartment}
+							totalEmployees={summary.totalEmployees}
+							delay={375}
+						/>
+					</Grid>
+				</Grid>
 
-				{/* Section 4: Limbah B3 — collapsible, default expanded */}
-				{b3Waste && (
-					<Accordion defaultExpanded elevation={0} sx={sectionAccordionSx}>
-						<AccordionSummary expandIcon={<ExpandMoreOutlined />}>
-							<Typography variant="h6" fontWeight={700}>
-								Limbah B3
-							</Typography>
-						</AccordionSummary>
-						<AccordionDetails sx={{ px: 2, pb: 2 }}>
-							<Grid container spacing={2.5}>
-								<Grid item xs={12} md={6}>
-									<Card sx={{ p: 2.5 }}>
-										<Typography variant="h6" fontWeight={700} gutterBottom>
-											Tren Limbah B3 (6 Bulan)
-										</Typography>
-										<Chart
-											options={b3TrendChartOptions}
-											series={b3TrendChartSeries}
-											type="area"
-											height={300}
-										/>
-									</Card>
-								</Grid>
-								<Grid item xs={12} md={6}>
-									<Card sx={{ p: 2.5 }}>
-										<Typography variant="h6" fontWeight={700} gutterBottom>
-											Ringkasan Limbah B3
-										</Typography>
-										<Stack spacing={2} sx={{ mt: 1 }}>
-											<Stack direction="row" justifyContent="space-between">
-												<Typography variant="body2" color="text.secondary">
-													Total Masuk
-												</Typography>
-												<Typography variant="body1" fontWeight={600}>
-													{Number(b3Waste.totalMasuk).toLocaleString('id-ID')} kg
-												</Typography>
-											</Stack>
-											<Stack direction="row" justifyContent="space-between">
-												<Typography variant="body2" color="text.secondary">
-													Total Keluar
-												</Typography>
-												<Typography variant="body1" fontWeight={600}>
-													{Number(b3Waste.totalKeluar).toLocaleString('id-ID')} kg
-												</Typography>
-											</Stack>
-											<Stack direction="row" justifyContent="space-between">
-												<Typography variant="body2" color="text.secondary">
-													Sisa di TPS
-												</Typography>
-												<Typography variant="body1" fontWeight={700} color="primary">
-													{Number(b3Waste.sisaDiTps).toLocaleString('id-ID')} kg
-												</Typography>
-											</Stack>
-											<Stack direction="row" justifyContent="space-between">
-												<Typography variant="body2" color="text.secondary">
-													Overdue (Melebihi Batas)
-												</Typography>
-												<Chip
-													label={b3Waste.overdueCount}
-													size="small"
-													color={b3Waste.overdueCount > 0 ? 'error' : 'default'}
-												/>
-											</Stack>
-											<Stack direction="row" justifyContent="space-between">
-												<Typography variant="body2" color="text.secondary">
-													Warning (1–14 Hari)
-												</Typography>
-												<Chip
-													label={b3Waste.warningCount}
-													size="small"
-													color={b3Waste.warningCount > 0 ? 'warning' : 'default'}
-												/>
-											</Stack>
-										</Stack>
-									</Card>
-								</Grid>
-							</Grid>
-						</AccordionDetails>
-					</Accordion>
-				)}
+				<Grid container spacing={2}>
+					<Grid item xs={12} lg={showSiteChart ? 5 : 6}>
+						<JobLevelDistributionCard
+							byJobLevel={charts.byJobLevel}
+							byEmploymentType={charts.byEmploymentType}
+							totalEmployees={summary.totalEmployees}
+							delay={420}
+						/>
+					</Grid>
+					{showSiteChart ? (
+						<Grid item xs={12} lg={3}>
+							<SiteDistributionCard
+								bySite={charts.bySite}
+								totalEmployees={summary.totalEmployees}
+								delay={465}
+							/>
+						</Grid>
+					) : null}
+					<Grid item xs={12} lg={showSiteChart ? 4 : 6}>
+						<RecentLeaveTable recentLeaves={tables.recentLeaves} delay={510} />
+					</Grid>
+				</Grid>
+
+				{hasB3Data ? (
+					<Grid container spacing={2}>
+						<Grid item xs={12} lg={7}>
+							<B3TrendCard trend={b3Waste.trendBulanan} delay={555} />
+						</Grid>
+						<Grid item xs={12} lg={5}>
+							<B3SummaryCard b3Waste={b3Waste} delay={600} />
+						</Grid>
+					</Grid>
+				) : null}
 			</Stack>
 		</>
 	);

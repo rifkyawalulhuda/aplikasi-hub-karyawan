@@ -1,8 +1,64 @@
+/* eslint-disable import/extensions, no-underscore-dangle -- server modules use explicit .js and Prisma's _count */
 import { Router } from 'express';
 
 import prisma from '../lib/prisma.js';
+import {
+	buildRelationSiteWhere,
+	buildSiteWhere,
+	getAdminSiteId,
+	isSuperAdmin,
+	parseQuerySiteId,
+} from '../lib/siteScope.js';
+import {
+	ALERT_LIMIT_PER_GROUP,
+	buildB3Trend,
+	buildLicenseAlert,
+	buildMonthBuckets,
+	countByMonth,
+	groupAndSort,
+	LICENSE_SOON_DAYS,
+	mapLeaveRow,
+	periodMonthCount,
+	periodStartDate,
+	resolvePeriod,
+	sortLicenseAlerts,
+	startOfDay,
+	summarizeB3Waste,
+} from '../lib/dashboardMetrics.js';
 
 const router = Router();
+
+const employeeLicenseSelect = {
+	id: true,
+	expiryDate: true,
+	documentNumber: true,
+	employee: { select: { fullName: true, employeeNo: true } },
+	masterDokKaryawan: { select: { documentName: true } },
+};
+
+const unitLicenseSelect = {
+	id: true,
+	expiryDate: true,
+	documentNumber: true,
+	assetNo: true,
+	masterUnit: { select: { unitName: true } },
+};
+
+const leaveRowSelect = {
+	id: true,
+	requestNumber: true,
+	status: true,
+	leaveDays: true,
+	createdAt: true,
+	employee: { select: { fullName: true, employeeNo: true } },
+	masterCutiKaryawan: { select: { leaveType: true } },
+};
+
+/** Order used by the approval-status breakdown in the dashboard UI. */
+const LEAVE_STATUS_ORDER = ['SUBMITTED', 'IN_APPROVAL', 'APPROVED', 'REJECTED', 'CANCELLED'];
+
+/** Rows returned for the "recent leave requests" table. */
+const RECENT_LEAVE_LIMIT = 8;
 
 function withAsync(handler) {
 	return (req, res, next) => {
@@ -14,280 +70,261 @@ router.get(
 	'/',
 	withAsync(async (req, res) => {
 		const today = new Date();
-		const soonThreshold = new Date(today);
-		soonThreshold.setDate(soonThreshold.getDate() + 25);
+		const todayStart = startOfDay(today);
+		const soonThreshold = new Date(todayStart);
+		soonThreshold.setDate(soonThreshold.getDate() + LICENSE_SOON_DAYS);
 
-		const currentYear = today.getFullYear();
-		const yearStart = new Date(Date.UTC(currentYear, 0, 1));
-		const yearEnd = new Date(Date.UTC(currentYear, 11, 31, 23, 59, 59));
+		const period = resolvePeriod(req.query.period);
+		const monthCount = periodMonthCount(period, today);
+		const periodStart = periodStartDate(monthCount, today);
+		const monthBuckets = buildMonthBuckets(monthCount, today);
 
-		const isSuperAdmin = req.admin.role === 'super_admin';
+		// Reuse the shared site-isolation helpers so a site-scoped admin can never
+		// read another site, and a super admin can narrow the view via ?siteId.
+		// A scoped admin without an assigned site resolves to `{ siteId: -1 }`
+		// (deny all) rather than `{}` (all sites).
+		const siteWhere = buildSiteWhere(req);
+		const employeeSiteWhere = buildRelationSiteWhere(req, 'employee');
+		const scopedSiteId = isSuperAdmin(req) ? parseQuerySiteId(req) : getAdminSiteId(req);
 
-		// Super admin can filter by siteId query param; regular admin always uses their own site
-		let filterSiteId = null;
-		if (isSuperAdmin) {
-			const querySiteId = req.query.siteId ? Number(req.query.siteId) : null;
-			filterSiteId = Number.isInteger(querySiteId) ? querySiteId : null;
-		} else {
-			filterSiteId = req.admin.siteId;
-		}
-
-		const siteFilter = filterSiteId ? { siteId: filterSiteId } : {};
-		const employeeRelationFilter = filterSiteId ? { employee: { siteId: filterSiteId } } : {};
+		const employeeExpiredFilter = { ...siteWhere, expiryDate: { lt: todayStart } };
+		const employeeSoonFilter = {
+			...siteWhere,
+			expiryDate: { gte: todayStart, lte: soonThreshold },
+		};
+		const unitExpiredFilter = { ...siteWhere, expiryDate: { lt: todayStart } };
+		const unitSoonFilter = { ...siteWhere, expiryDate: { gte: todayStart, lte: soonThreshold } };
+		const pendingLeaveFilter = {
+			status: { in: ['SUBMITTED', 'IN_APPROVAL'] },
+			...employeeSiteWhere,
+		};
 
 		const [
 			employees,
-			leaveRequests,
-			licenseCertifications,
-			unitLicenseCertifications,
-			monthlyLeaveRequests,
+			activeLeaveRequests,
+			employeeExpiredLicenses,
+			employeeSoonLicenses,
+			unitExpiredLicenses,
+			unitSoonLicenses,
+			employeeExpiredCount,
+			employeeSoonCount,
+			unitExpiredCount,
+			unitSoonCount,
+			periodLeaveRequests,
+			leaveStatusGroups,
+			periodLeaveStatusGroups,
 			recentLeaveRequests,
+			pendingLeaveRequests,
 			b3WasteRecords,
 			b3WasteOutRecords,
+			scopedSite,
 		] = await Promise.all([
-			// All employees with relations
 			prisma.employee.findMany({
-				where: { ...siteFilter },
+				where: { ...siteWhere },
 				select: {
 					id: true,
 					employmentType: true,
-					siteId: true,
-					departmentId: true,
-					jobLevelId: true,
+					joinDate: true,
 					site: { select: { name: true } },
 					department: { select: { name: true } },
 					jobLevel: { select: { name: true } },
 				},
 			}),
-			// Active leave requests
-			prisma.employeeLeave.count({
-				where: {
-					status: { in: ['SUBMITTED', 'IN_APPROVAL'] },
-					...employeeRelationFilter,
-				},
-			}),
-			// Employee license certifications expiring soon
+			prisma.employeeLeave.count({ where: pendingLeaveFilter }),
 			prisma.employeeLicenseCertification.findMany({
-				where: {
-					expiryDate: { lte: soonThreshold },
-					...employeeRelationFilter,
-				},
-				select: {
-					id: true,
-					expiryDate: true,
-					employee: { select: { fullName: true, employeeNo: true } },
-					masterDokKaryawan: { select: { documentName: true } },
-				},
+				where: employeeExpiredFilter,
+				select: employeeLicenseSelect,
+				orderBy: { expiryDate: 'desc' },
+				take: ALERT_LIMIT_PER_GROUP,
+			}),
+			prisma.employeeLicenseCertification.findMany({
+				where: employeeSoonFilter,
+				select: employeeLicenseSelect,
 				orderBy: { expiryDate: 'asc' },
-				take: 5,
+				take: ALERT_LIMIT_PER_GROUP,
 			}),
-			// Unit license certifications expiring soon
-			prisma.unitLicenseCertification.count({
-				where: {
-					expiryDate: { lte: soonThreshold },
-					...siteFilter,
-				},
+			prisma.unitLicenseCertification.findMany({
+				where: unitExpiredFilter,
+				select: unitLicenseSelect,
+				orderBy: { expiryDate: 'desc' },
+				take: ALERT_LIMIT_PER_GROUP,
 			}),
-			// Monthly leave requests for current year (for trend chart)
+			prisma.unitLicenseCertification.findMany({
+				where: unitSoonFilter,
+				select: unitLicenseSelect,
+				orderBy: { expiryDate: 'asc' },
+				take: ALERT_LIMIT_PER_GROUP,
+			}),
+			prisma.employeeLicenseCertification.count({ where: employeeExpiredFilter }),
+			prisma.employeeLicenseCertification.count({ where: employeeSoonFilter }),
+			prisma.unitLicenseCertification.count({ where: unitExpiredFilter }),
+			prisma.unitLicenseCertification.count({ where: unitSoonFilter }),
 			prisma.employeeLeave.findMany({
-				where: {
-					createdAt: { gte: yearStart, lte: yearEnd },
-					...employeeRelationFilter,
-				},
-				select: {
-					createdAt: true,
-				},
+				where: { createdAt: { gte: periodStart, lte: today }, ...employeeSiteWhere },
+				select: { createdAt: true },
 			}),
-			// Recent leave requests
+			prisma.employeeLeave.groupBy({
+				by: ['status'],
+				where: { ...employeeSiteWhere },
+				_count: { _all: true },
+			}),
+			prisma.employeeLeave.groupBy({
+				by: ['status'],
+				where: { createdAt: { gte: periodStart, lte: today }, ...employeeSiteWhere },
+				_count: { _all: true },
+			}),
 			prisma.employeeLeave.findMany({
-				where: {
-					...employeeRelationFilter,
-				},
-				select: {
-					id: true,
-					requestNumber: true,
-					status: true,
-					leaveDays: true,
-					createdAt: true,
-					employee: { select: { fullName: true, employeeNo: true } },
-					masterCutiKaryawan: { select: { leaveType: true } },
-				},
+				where: { ...employeeSiteWhere },
+				select: leaveRowSelect,
 				orderBy: { createdAt: 'desc' },
+				take: RECENT_LEAVE_LIMIT,
+			}),
+			prisma.employeeLeave.findMany({
+				where: pendingLeaveFilter,
+				select: leaveRowSelect,
+				orderBy: { createdAt: 'asc' },
 				take: 5,
 			}),
-			// B3 Waste Records (with outRecords for computing sisaLimbah)
 			prisma.b3WasteRecord.findMany({
-				where: { ...siteFilter },
+				where: { ...siteWhere },
 				select: {
 					id: true,
 					jumlahMasuk: true,
 					tanggalMasuk: true,
 					tanggalBatas: true,
-					outRecords: {
-						select: { jumlahKeluar: true, tanggalKeluar: true },
-					},
+					outRecords: { select: { jumlahKeluar: true, tanggalKeluar: true } },
+					jenisLimbah: { select: { nama: true } },
 				},
 			}),
-			// B3 Waste Out Records (for trend)
 			prisma.b3WasteOutRecord.findMany({
-				where: { ...siteFilter },
-				select: {
-					jumlahKeluar: true,
-					tanggalKeluar: true,
-				},
+				where: { ...siteWhere },
+				select: { jumlahKeluar: true, tanggalKeluar: true },
 			}),
+			scopedSiteId
+				? prisma.masterSite.findUnique({ where: { id: scopedSiteId }, select: { id: true, name: true } })
+				: Promise.resolve(null),
 		]);
 
-		// Summary cards
 		const totalEmployees = employees.length;
-		const activeLeaveRequests = leaveRequests;
-		const expiringLicenses = licenseCertifications.length + unitLicenseCertifications;
+		const permanentCount = employees.filter((emp) => emp.employmentType === 'PERMANENT').length;
+		const contractCount = totalEmployees - permanentCount;
 
-		// Distribution by department
-		const departmentMap = {};
-		employees.forEach((emp) => {
-			const name = emp.department?.name || 'Lainnya';
-			departmentMap[name] = (departmentMap[name] || 0) + 1;
-		});
-		const byDepartment = Object.entries(departmentMap)
-			.map(([name, count]) => ({ name, count }))
-			.sort((a, b) => b.count - a.count);
+		const ninetyDaysAgo = new Date(todayStart);
+		ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+		const newHires90d = employees.filter((emp) => new Date(emp.joinDate) >= ninetyDaysAgo).length;
+		const newHiresInPeriod = employees.filter((emp) => new Date(emp.joinDate) >= periodStart).length;
 
-		// Distribution by job level
-		const jobLevelMap = {};
-		employees.forEach((emp) => {
-			const name = emp.jobLevel?.name || 'Lainnya';
-			jobLevelMap[name] = (jobLevelMap[name] || 0) + 1;
-		});
-		const byJobLevel = Object.entries(jobLevelMap)
-			.map(([name, count]) => ({ name, count }))
-			.sort((a, b) => b.count - a.count);
+		const leaveStatusCounts = leaveStatusGroups.reduce((acc, group) => {
+			acc[group.status] = group._count?._all ?? 0;
+			return acc;
+		}, {});
 
-		// Distribution by employment type
-		const employmentTypeMap = {};
-		employees.forEach((emp) => {
-			const label = emp.employmentType === 'PERMANENT' ? 'Permanent' : 'Contract';
-			employmentTypeMap[label] = (employmentTypeMap[label] || 0) + 1;
-		});
-		const byEmploymentType = Object.entries(employmentTypeMap).map(([name, count]) => ({ name, count }));
+		const periodLeaveStatusCounts = periodLeaveStatusGroups.reduce((acc, group) => {
+			acc[group.status] = group._count?._all ?? 0;
+			return acc;
+		}, {});
 
-		// Distribution by site
-		const siteMap = {};
-		employees.forEach((emp) => {
-			const name = emp.site?.name || 'Lainnya';
-			siteMap[name] = (siteMap[name] || 0) + 1;
-		});
-		const bySite = Object.entries(siteMap)
-			.map(([name, count]) => ({ name, count }))
-			.sort((a, b) => b.count - a.count);
-
-		// Monthly leave trend (current year)
-		const monthlyTrend = Array.from({ length: 12 }, (_, i) => ({ month: i + 1, count: 0 }));
-		monthlyLeaveRequests.forEach((req) => {
-			const month = req.createdAt.getMonth();
-			monthlyTrend[month].count += 1;
-		});
-
-		// Expiring licenses detail
-		const expiringLicensesList = licenseCertifications.map((item) => ({
-			id: item.id,
-			employeeName: item.employee.fullName,
-			employeeNo: item.employee.employeeNo,
-			documentName: item.masterDokKaryawan?.documentName || '-',
-			validUntil: item.expiryDate ? item.expiryDate.toISOString().slice(0, 10) : null,
-			status: item.expiryDate < today ? 'Expired' : 'Akan Expired',
+		const leaveStatusBreakdown = LEAVE_STATUS_ORDER.map((status) => ({
+			status,
+			count: periodLeaveStatusCounts[status] || 0,
 		}));
 
-		// Recent leave requests
-		const recentLeaves = recentLeaveRequests.map((item) => ({
-			id: item.id,
-			requestNumber: item.requestNumber,
-			employeeName: item.employee.fullName,
-			employeeNo: item.employee.employeeNo,
-			leaveType: item.masterCutiKaryawan?.leaveType || '-',
-			leaveDays: item.leaveDays,
-			status: item.status,
-			createdAt: item.createdAt ? item.createdAt.toISOString().slice(0, 10) : null,
+		const byDepartment = groupAndSort(employees, (emp) => emp.department?.name);
+		const byJobLevel = groupAndSort(employees, (emp) => emp.jobLevel?.name);
+		const bySite = groupAndSort(employees, (emp) => emp.site?.name);
+		const byEmploymentType = [
+			{ name: 'Permanent', count: permanentCount },
+			{ name: 'Contract', count: contractCount },
+		].filter((item) => item.count > 0);
+
+		const leaveCountsByMonth = countByMonth(periodLeaveRequests, monthBuckets, (row) => row.createdAt);
+		const monthlyLeaveTrend = monthBuckets.map((bucket, index) => ({
+			month: bucket.month,
+			year: bucket.year,
+			label: bucket.label,
+			count: leaveCountsByMonth[index],
 		}));
 
-		// B3 Waste calculations
-		const totalMasuk = b3WasteRecords.reduce((sum, r) => sum + Number(r.jumlahMasuk), 0);
-		const totalKeluar = b3WasteOutRecords.reduce((sum, r) => sum + Number(r.jumlahKeluar), 0);
-		const sisaDiTps = totalMasuk - totalKeluar;
+		const hireCountsByMonth = countByMonth(employees, monthBuckets, (emp) => emp.joinDate);
+		const hiresTrend = monthBuckets.map((bucket, index) => ({
+			key: bucket.key,
+			label: bucket.label,
+			count: hireCountsByMonth[index],
+		}));
 
-		let overdueCount = 0;
-		let warningCount = 0;
-		b3WasteRecords.forEach((record) => {
-			const masuk = Number(record.jumlahMasuk);
-			const keluar = record.outRecords.reduce((s, o) => s + Number(o.jumlahKeluar), 0);
-			const sisaLimbah = masuk - keluar;
-			if (sisaLimbah <= 0) return;
+		const licenseAlerts = sortLicenseAlerts([
+			...employeeExpiredLicenses.map((item) => buildLicenseAlert(item, 'KARYAWAN', today)),
+			...employeeSoonLicenses.map((item) => buildLicenseAlert(item, 'KARYAWAN', today)),
+			...unitExpiredLicenses.map((item) => buildLicenseAlert(item, 'UNIT', today)),
+			...unitSoonLicenses.map((item) => buildLicenseAlert(item, 'UNIT', today)),
+		]);
 
-			const tanggalBatas = new Date(record.tanggalBatas);
-			const diffMs = tanggalBatas.getTime() - today.getTime();
-			const sisaHari = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+		// Legacy shape kept for older consumers of this endpoint.
+		const expiringLicensesList = licenseAlerts
+			.filter((item) => item.kind === 'KARYAWAN')
+			.slice(0, 5)
+			.map((item) => ({
+				id: item.id,
+				employeeName: item.subjectName,
+				employeeNo: item.subjectNo,
+				documentName: item.documentName,
+				validUntil: item.validUntil,
+				status: item.status,
+			}));
 
-			if (sisaHari < 0) {
-				overdueCount++;
-			} else if (sisaHari >= 1 && sisaHari <= 14) {
-				warningCount++;
-			}
-		});
-
-		// B3 Waste trend (last 6 months)
-		const trendBulanan = [];
-		const bulanLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
-		for (let i = 5; i >= 0; i--) {
-			const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
-			const year = d.getFullYear();
-			const month = d.getMonth();
-			const label = `${bulanLabels[month]} ${year}`;
-
-			const masukBulan = b3WasteRecords
-				.filter((r) => {
-					const t = new Date(r.tanggalMasuk);
-					return t.getFullYear() === year && t.getMonth() === month;
-				})
-				.reduce((s, r) => s + Number(r.jumlahMasuk), 0);
-
-			const keluarBulan = b3WasteOutRecords
-				.filter((r) => {
-					const t = new Date(r.tanggalKeluar);
-					return t.getFullYear() === year && t.getMonth() === month;
-				})
-				.reduce((s, r) => s + Number(r.jumlahKeluar), 0);
-
-			trendBulanan.push({ bulan: label, masuk: masukBulan, keluar: keluarBulan });
-		}
-
+		const b3Summary = summarizeB3Waste({ records: b3WasteRecords, outRecords: b3WasteOutRecords, today });
 		const b3Waste = {
-			totalMasuk,
-			totalKeluar,
-			sisaDiTps,
-			overdueCount,
-			warningCount,
-			trendBulanan,
+			...b3Summary,
+			trendBulanan: buildB3Trend(b3WasteRecords, b3WasteOutRecords, monthBuckets),
 		};
 
 		return res.json({
 			summary: {
 				totalEmployees,
 				activeLeaveRequests,
-				expiringLicenses,
-				siteCount: Object.keys(siteMap).length,
+				expiringLicenses: employeeExpiredCount + employeeSoonCount + unitExpiredCount + unitSoonCount,
+				expiredLicenses: employeeExpiredCount + unitExpiredCount,
+				expiringSoonLicenses: employeeSoonCount + unitSoonCount,
+				expiredEmployeeLicenses: employeeExpiredCount,
+				expiredUnitLicenses: unitExpiredCount,
+				expiringSoonEmployeeLicenses: employeeSoonCount,
+				expiringSoonUnitLicenses: unitSoonCount,
+				siteCount: bySite.length,
+				newHires90d,
+				newHiresInPeriod,
+				permanentCount,
+				contractCount,
+				submittedLeaveRequests: leaveStatusCounts.SUBMITTED || 0,
+				inApprovalLeaveRequests: leaveStatusCounts.IN_APPROVAL || 0,
+				leaveRequestsInPeriod: monthlyLeaveTrend.reduce((sum, item) => sum + item.count, 0),
+				leaveStatusBreakdown,
 			},
 			charts: {
 				byDepartment,
 				byJobLevel,
 				byEmploymentType,
 				bySite,
-				monthlyLeaveTrend: monthlyTrend,
+				monthlyLeaveTrend,
+				hiresTrend,
 			},
 			tables: {
 				expiringLicenses: expiringLicensesList,
-				recentLeaves,
+				licenseAlerts,
+				recentLeaves: recentLeaveRequests.map(mapLeaveRow),
+				pendingLeaves: pendingLeaveRequests.map(mapLeaveRow),
 			},
 			b3Waste,
+			meta: {
+				generatedAt: new Date().toISOString(),
+				year: today.getFullYear(),
+				licenseSoonDays: LICENSE_SOON_DAYS,
+				period: { key: period.key, label: period.label, months: monthCount },
+				scope: {
+					siteId: scopedSiteId,
+					siteName: scopedSite?.name || null,
+					isAllSites: !scopedSiteId,
+				},
+			},
 		});
 	}),
 );
