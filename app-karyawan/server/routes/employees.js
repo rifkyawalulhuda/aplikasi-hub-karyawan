@@ -292,6 +292,8 @@ function mapTrainingRecord(record) {
 	return {
 		id: record.id,
 		trainingType: formatTrainingTypeLabel(record.trainingType),
+		masterTrainingId: record.masterTrainingId || null,
+		masterTrainingName: record.masterTraining?.name || '',
 		material: record.material || '',
 		trainerInstitution: record.trainerInstitution || '',
 		trainerName: record.trainerName || '',
@@ -1027,6 +1029,7 @@ router.get(
 					},
 				},
 				include: {
+					masterTraining: true,
 					participants: {
 						include: {
 							employee: true,
