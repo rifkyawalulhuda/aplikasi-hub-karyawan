@@ -17,7 +17,14 @@ function SiteLabel() {
 			size="small"
 			variant="outlined"
 			color="primary"
-			sx={{ fontWeight: 500, maxWidth: 160, fontSize: '0.75rem' }}
+			sx={{
+				height: 32,
+				maxWidth: 180,
+				fontSize: '0.75rem',
+				fontWeight: 600,
+				borderRadius: 2,
+				'& .MuiChip-label': { px: 1 },
+			}}
 		/>
 	);
 }

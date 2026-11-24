@@ -48,7 +48,7 @@ function SiteSelector() {
 	if (!isSuperAdmin) return null;
 
 	return (
-		<FormControl size="small" sx={{ minWidth: 116, maxWidth: 150 }}>
+		<FormControl size="small" sx={{ minWidth: 128, maxWidth: 176 }}>
 			<Select
 				value={selectedSiteId ?? ''}
 				onChange={(e) => {
@@ -57,15 +57,34 @@ function SiteSelector() {
 				}}
 				displayEmpty
 				inputProps={{ 'aria-label': 'Pilih site' }}
-				startAdornment={<LocationOnOutlinedIcon fontSize="small" sx={{ mr: 0.5, color: 'primary.main' }} />}
+				startAdornment={
+					<LocationOnOutlinedIcon
+						fontSize="small"
+						sx={{ ml: 0.25, mr: 0.75, color: 'primary.main', flexShrink: 0 }}
+					/>
+				}
 				sx={{
-					fontSize: '0.82rem',
+					fontSize: '0.8rem',
+					fontWeight: 600,
 					height: 40,
+					borderRadius: 2,
 					'& .MuiSelect-select': {
 						py: 0.75,
+						pl: 0,
+						pr: 4,
 					},
 					'& .MuiOutlinedInput-notchedOutline': {
 						borderColor: 'border',
+						transition: 'border-color 160ms ease',
+					},
+					'&:hover': {
+						bgcolor: 'transparent',
+					},
+					'&:hover .MuiOutlinedInput-notchedOutline': {
+						borderColor: 'primary.main',
+					},
+					'&.Mui-focused': {
+						bgcolor: 'transparent',
 					},
 				}}
 			>

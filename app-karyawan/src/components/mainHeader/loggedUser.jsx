@@ -70,9 +70,11 @@ function LoggedUser() {
 				aria-expanded={Boolean(anchorEl)}
 				aria-label={`Menu pengguna ${user?.name || ''}`.trim()}
 				sx={{
-					ml: 0.5,
-					p: 0.5,
+					width: 40,
+					height: 40,
+					p: 0,
 					borderRadius: '50%',
+					transition: 'background-color 160ms ease, box-shadow 160ms ease',
 					'&:hover': { bgcolor: (theme) => alpha(theme.palette.primary.main, 0.08) },
 					'&:focus-visible': {
 						outline: (theme) => `2px solid ${theme.palette.primary.main}`,
@@ -82,7 +84,14 @@ function LoggedUser() {
 			>
 				<Avatar
 					alt={user?.name || 'User'}
-					sx={{ width: 34, height: 34, bgcolor: 'primary.main', fontSize: '0.78rem', fontWeight: 600 }}
+					sx={{
+						width: 34,
+						height: 34,
+						bgcolor: 'primary.main',
+						fontSize: '0.78rem',
+						fontWeight: 700,
+						letterSpacing: 0.3,
+					}}
 				>
 					{getInitials(user?.name)}
 				</Avatar>

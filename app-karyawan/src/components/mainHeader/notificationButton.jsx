@@ -4,9 +4,9 @@ import { alpha } from '@mui/material/styles';
 
 import Alert from '@mui/material/Alert';
 import Avatar from '@mui/material/Avatar';
-import Badge from '@mui/material/Badge';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import Chip from '@mui/material/Chip';
 import CircularProgress from '@mui/material/CircularProgress';
 import Divider from '@mui/material/Divider';
 import IconButton from '@mui/material/IconButton';
@@ -36,44 +36,62 @@ const PANEL_LIMIT = 10;
 
 function NotificationMenuItem({ item, onOpen }) {
 	const visual = getAdminNotificationVisual(item);
+	const statusLabel = getAdminNotificationStatusLabel(item.isRead);
+	const categoryLabel = getAdminNotificationCategoryLabel(item.category);
 
 	return (
 		<Box
+			component="button"
+			type="button"
 			onClick={() => onOpen(item)}
+			aria-label={`${item.title}. ${categoryLabel}. ${item.dateLabel}. ${statusLabel}`}
 			sx={{
-				px: 1.5,
-				py: 1.25,
+				appearance: 'none',
+				width: '100%',
+				m: 0,
+				border: 0,
+				textAlign: 'left',
+				font: 'inherit',
+				color: 'inherit',
+				px: 1.25,
+				py: 1.1,
+				borderRadius: 2,
 				cursor: 'pointer',
-				borderRadius: 3,
-				backgroundColor: item.isRead ? 'transparent' : alpha('#F5F9FF', 0.92),
-				transition: 'background-color 0.2s ease',
+				bgcolor: item.isRead ? 'transparent' : (theme) => alpha(theme.palette.primary.main, 0.06),
+				transition: 'background-color 160ms ease',
 				'&:hover': {
-					backgroundColor: alpha('#F1F6FC', 0.98),
+					bgcolor: (theme) => alpha(theme.palette.primary.main, item.isRead ? 0.07 : 0.12),
+				},
+				'&:focus-visible': {
+					outline: (theme) => `2px solid ${theme.palette.primary.main}`,
+					outlineOffset: -2,
 				},
 			}}
 		>
-			<Stack direction="row" spacing={1.1} alignItems="flex-start">
+			<Stack direction="row" spacing={1.25} alignItems="flex-start">
 				<Avatar
 					variant="rounded"
+					aria-hidden
 					sx={{
 						width: 30,
 						height: 30,
 						bgcolor: visual.tint,
 						color: visual.color,
-						borderRadius: 2.5,
+						borderRadius: 2,
 						flexShrink: 0,
+						mt: 0.25,
 					}}
 				>
 					{visual.icon}
 				</Avatar>
-				<Stack spacing={0.45} sx={{ minWidth: 0, flex: 1 }}>
-					<Stack direction="row" spacing={0.75} alignItems="center" justifyContent="space-between">
+				<Stack spacing={0.4} sx={{ minWidth: 0, flex: 1 }}>
+					<Stack direction="row" spacing={1} alignItems="flex-start">
 						<Typography
 							variant="body2"
 							sx={{
-								color: '#123B66',
-								fontWeight: item.isRead ? 700 : 800,
-								lineHeight: 1.3,
+								color: 'text.primary',
+								fontWeight: item.isRead ? 600 : 700,
+								lineHeight: 1.35,
 								minWidth: 0,
 								flex: 1,
 								display: '-webkit-box',
@@ -85,27 +103,30 @@ function NotificationMenuItem({ item, onOpen }) {
 							{item.title}
 						</Typography>
 						<Box
+							aria-hidden
 							sx={{
-								width: 7,
-								height: 7,
+								width: 6,
+								height: 6,
+								mt: 0.75,
 								borderRadius: '50%',
-								bgcolor: item.isRead ? 'rgba(18,59,102,0.16)' : '#2F74BC',
+								bgcolor: item.isRead ? 'divider' : 'primary.main',
 								flexShrink: 0,
 							}}
 						/>
 					</Stack>
-					<Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
+					<Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap alignItems="center">
 						<Typography variant="caption" sx={{ color: visual.color, fontWeight: 700 }}>
-							{getAdminNotificationCategoryLabel(item.category)}
+							{categoryLabel}
 						</Typography>
-						<Typography variant="caption" sx={{ color: '#8CA0B4' }}>
+						<Box aria-hidden sx={{ width: 3, height: 3, borderRadius: '50%', bgcolor: 'text.disabled' }} />
+						<Typography variant="caption" sx={{ color: 'text.secondary' }}>
 							{item.dateLabel}
 						</Typography>
 					</Stack>
 					<Typography
 						variant="caption"
 						sx={{
-							color: '#667D95',
+							color: 'text.secondary',
 							lineHeight: 1.45,
 							display: '-webkit-box',
 							overflow: 'hidden',
@@ -114,9 +135,6 @@ function NotificationMenuItem({ item, onOpen }) {
 						}}
 					>
 						{item.description}
-					</Typography>
-					<Typography variant="caption" sx={{ color: '#96A7BA' }}>
-						{getAdminNotificationStatusLabel(item.isRead)}
 					</Typography>
 				</Stack>
 			</Stack>
@@ -136,6 +154,7 @@ function NotificationsButton() {
 
 	const open = Boolean(anchorEl);
 	const badgeCount = useMemo(() => Math.min(unreadCount, 99), [unreadCount]);
+	const badgeLabel = unreadCount > 99 ? '99+' : String(badgeCount);
 
 	const loadNotifications = useCallback(
 		async ({ silent = false } = {}) => {
@@ -248,7 +267,7 @@ function NotificationsButton() {
 	}, [unreadCount, user]);
 
 	let content = (
-		<Stack spacing={0.5} sx={{ px: 1, py: 1, maxHeight: 392, overflowY: 'auto' }}>
+		<Stack spacing={0.25} sx={{ p: 1, maxHeight: 400, overflowY: 'auto' }}>
 			{items.map((item) => (
 				<NotificationMenuItem key={item.id} item={item} onOpen={handleNotificationOpen} />
 			))}
@@ -264,15 +283,28 @@ function NotificationsButton() {
 	} else if (errorMessage) {
 		content = (
 			<Stack sx={{ p: 1.5 }}>
-				<Alert severity="error" sx={{ borderRadius: 2.5 }}>
+				<Alert severity="error" sx={{ borderRadius: 2 }}>
 					{errorMessage}
 				</Alert>
 			</Stack>
 		);
 	} else if (items.length === 0) {
 		content = (
-			<Stack spacing={0.85} alignItems="center" justifyContent="center" sx={{ py: 6, px: 3 }}>
-				<NotificationsOutlinedIcon sx={{ color: '#A9B8C9', fontSize: 22 }} />
+			<Stack spacing={1} alignItems="center" justifyContent="center" sx={{ py: 6, px: 3 }}>
+				<Box
+					aria-hidden
+					sx={{
+						width: 44,
+						height: 44,
+						borderRadius: '50%',
+						display: 'grid',
+						placeItems: 'center',
+						bgcolor: 'action.hover',
+						color: 'text.disabled',
+					}}
+				>
+					<NotificationsOutlinedIcon sx={{ fontSize: 22 }} />
+				</Box>
 				<Typography variant="body2" color="text.secondary" textAlign="center">
 					Belum ada notifikasi aktif.
 				</Typography>
@@ -283,15 +315,42 @@ function NotificationsButton() {
 	return (
 		<>
 			<Tooltip title="Notifikasi">
-				<IconButton size="small" onClick={handleOpen}>
-					<Badge
-						color="error"
-						overlap="rectangular"
-						badgeContent={badgeCount > 0 ? badgeCount : null}
-						max={99}
-					>
-						<NotificationsOutlinedIcon color="primary" fontSize="small" />
-					</Badge>
+				<IconButton
+					onClick={handleOpen}
+					aria-label={unreadCount > 0 ? `Notifikasi, ${unreadCount} belum dibaca` : 'Notifikasi'}
+					aria-haspopup="true"
+					aria-expanded={open}
+					sx={{ width: 40, height: 40 }}
+				>
+					<Box sx={{ position: 'relative', display: 'inline-flex' }}>
+						<NotificationsOutlinedIcon sx={{ fontSize: 20 }} />
+						{badgeCount > 0 ? (
+							<Box
+								component="span"
+								aria-hidden
+								sx={{
+									position: 'absolute',
+									top: -5,
+									right: -6,
+									minWidth: 15,
+									height: 15,
+									px: '4px',
+									borderRadius: 8,
+									bgcolor: 'error.main',
+									color: 'error.contrastText',
+									fontSize: '0.625rem',
+									fontWeight: 700,
+									lineHeight: '15px',
+									textAlign: 'center',
+									fontVariantNumeric: 'tabular-nums',
+									boxShadow: (theme) => `0 0 0 2px ${theme.palette.background.paper}`,
+									pointerEvents: 'none',
+								}}
+							>
+								{badgeLabel}
+							</Box>
+						) : null}
+					</Box>
 				</IconButton>
 			</Tooltip>
 			<Menu
@@ -306,48 +365,72 @@ function NotificationsButton() {
 					vertical: 'top',
 					horizontal: 'right',
 				}}
-				slotProps={{
-					paper: {
-						sx: {
-							width: 360,
-							maxWidth: 'calc(100vw - 24px)',
-							mt: 1,
-							borderRadius: 3.5,
-							overflow: 'hidden',
-							border: '1px solid rgba(18,59,102,0.08)',
-							boxShadow: '0 18px 38px rgba(18, 59, 102, 0.12)',
-						},
+				PaperProps={{
+					sx: {
+						width: 384,
+						maxWidth: 'calc(100vw - 32px)',
+						mt: 1,
+						borderRadius: 2,
+						overflow: 'hidden',
+						border: 1,
+						borderColor: 'divider',
+						boxShadow: (theme) => theme.shadows[8],
 					},
 				}}
 			>
 				<Stack spacing={0}>
-					<Stack sx={{ px: 1.75, py: 1.5 }}>
-						<Stack direction="row" alignItems="flex-start" justifyContent="space-between" spacing={1.5}>
-							<Box>
-								<Typography
-									variant="subtitle1"
-									sx={{ fontWeight: 800, color: '#123B66', lineHeight: 1.2 }}
-								>
+					<Stack
+						direction="row"
+						alignItems="flex-start"
+						justifyContent="space-between"
+						spacing={1.5}
+						sx={{ px: 2, pt: 1.75, pb: 1.25 }}
+					>
+						<Box sx={{ minWidth: 0 }}>
+							<Stack direction="row" alignItems="center" spacing={0.75}>
+								<Typography variant="subtitle1" sx={{ fontWeight: 700, lineHeight: 1.25 }}>
 									Notifikasi
 								</Typography>
-								<Typography variant="caption" sx={{ color: '#7B8FA5' }}>
-									{unreadCount} belum dibaca dari {totalCount} alert aktif
-								</Typography>
-							</Box>
-							<Stack direction="row" spacing={0.5}>
-								<Tooltip title="Tandai semua dibaca">
-									<span>
-										<IconButton size="small" onClick={handleMarkAll} disabled={!unreadCount}>
-											<DoneAllRoundedIcon fontSize="small" />
-										</IconButton>
-									</span>
-								</Tooltip>
-								<Tooltip title="Refresh">
-									<IconButton size="small" onClick={() => loadNotifications()}>
-										<RefreshOutlinedIcon fontSize="small" />
-									</IconButton>
-								</Tooltip>
+								{unreadCount > 0 ? (
+									<Chip
+										size="small"
+										color="error"
+										label={badgeLabel}
+										sx={{
+											height: 18,
+											fontSize: '0.6875rem',
+											fontWeight: 700,
+											'& .MuiChip-label': { px: 0.75 },
+										}}
+									/>
+								) : null}
 							</Stack>
+							<Typography variant="caption" color="text.secondary">
+								{unreadCount} belum dibaca dari {totalCount} alert aktif
+							</Typography>
+						</Box>
+						<Stack direction="row" spacing={0.25} sx={{ mt: -0.5, mr: -0.5 }}>
+							<Tooltip title="Tandai semua dibaca">
+								<span>
+									<IconButton
+										size="small"
+										onClick={handleMarkAll}
+										disabled={!unreadCount}
+										aria-label="Tandai semua notifikasi dibaca"
+									>
+										<DoneAllRoundedIcon fontSize="small" />
+									</IconButton>
+								</span>
+							</Tooltip>
+							<Tooltip title="Muat ulang notifikasi">
+								<IconButton
+									size="small"
+									onClick={() => loadNotifications()}
+									aria-label="Muat ulang notifikasi"
+								>
+									<RefreshOutlinedIcon fontSize="small" />
+								</IconButton>
+							</Tooltip>
 						</Stack>
 					</Stack>
 
@@ -355,7 +438,7 @@ function NotificationsButton() {
 					{content}
 					<Divider />
 
-					<Box sx={{ p: 1 }}>
+					<Box sx={{ p: 0.75 }}>
 						<Button
 							fullWidth
 							variant="text"
@@ -364,10 +447,9 @@ function NotificationsButton() {
 							sx={{
 								justifyContent: 'space-between',
 								px: 1.25,
-								py: 0.9,
-								borderRadius: 2.5,
-								color: '#123B66',
-								fontWeight: 700,
+								py: 0.85,
+								borderRadius: 1.5,
+								fontWeight: 600,
 							}}
 						>
 							Lihat semua notifikasi

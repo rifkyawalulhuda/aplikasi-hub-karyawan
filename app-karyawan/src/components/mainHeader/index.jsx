@@ -4,6 +4,7 @@ import { Link as RouterLink } from 'react-router-dom';
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
+import Divider from '@mui/material/Divider';
 import Stack from '@mui/material/Stack';
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
@@ -69,17 +70,36 @@ function MainHeader({ navItems = [], sticky = false, onOpenPalette }) {
 						<NavLinks navItems={navItems} />
 					</Box>
 
-					<Stack direction="row" alignItems="center" spacing={0.5} sx={{ flexShrink: 0 }}>
+					<Stack direction="row" alignItems="center" spacing={{ xs: 1, sm: 1, md: 2 }} sx={{ flexShrink: 0 }}>
 						<Tooltip title={SEARCH_HINT}>
 							<IconButton onClick={onOpenPalette} aria-label={SEARCH_HINT} sx={{ width: 40, height: 40 }}>
-								<SearchRoundedIcon sx={{ fontSize: 21 }} />
+								<SearchRoundedIcon sx={{ fontSize: 20 }} />
 							</IconButton>
 						</Tooltip>
 
-						<Box sx={{ display: { xs: 'none', sm: 'flex' }, alignItems: 'center', gap: 1 }}>
+						<Divider
+							orientation="vertical"
+							flexItem
+							sx={{ display: { xs: 'none', sm: 'block' }, height: 20, my: 'auto' }}
+						/>
+
+						<Box
+							sx={{
+								display: { xs: 'none', sm: 'flex' },
+								alignItems: 'center',
+								gap: 1,
+								minWidth: 0,
+							}}
+						>
 							<SiteSelector />
 							<SiteLabel />
 						</Box>
+
+						<Divider
+							orientation="vertical"
+							flexItem
+							sx={{ display: { xs: 'none', sm: 'block' }, height: 20, my: 'auto' }}
+						/>
 
 						<NotificationsButton />
 
