@@ -32,12 +32,12 @@ function normalizeString(value = '') {
 	return String(value).trim().replace(/\s+/g, ' ').toLowerCase();
 }
 
-function PaletteRow({ item, active, onHover, onRun }) {
+function PaletteRow({ item, domId, active, onHover, onRun }) {
 	const ItemIcon = item.Icon;
 
 	return (
 		<ButtonBase
-			id={`palette-option-${item.key}`}
+			id={domId}
 			role="option"
 			aria-selected={active}
 			onMouseMove={onHover}
@@ -204,6 +204,21 @@ function CommandPalette({ open, onClose, navItems, recent }) {
 
 	const flatItems = useMemo(() => groups.flatMap((group) => group.items), [groups]);
 
+	// Option ids must be valid CSS selectors: recent pages key off their href,
+	// which contains slashes. Use the flat position instead of the raw key.
+	const indexedGroups = useMemo(() => {
+		let cursor = 0;
+
+		return groups.map((group) => ({
+			label: group.label,
+			items: group.items.map((item) => {
+				const index = cursor;
+				cursor += 1;
+				return { item, index };
+			}),
+		}));
+	}, [groups]);
+
 	useEffect(() => {
 		setActiveIndex(0);
 	}, [normalizedQuery, groups.length]);
@@ -213,7 +228,7 @@ function CommandPalette({ open, onClose, navItems, recent }) {
 			return;
 		}
 
-		const node = listRef.current?.querySelector(`#palette-option-${flatItems[activeIndex]?.key}`);
+		const node = listRef.current?.querySelector(`#palette-option-${activeIndex}`);
 
 		node?.scrollIntoView({ block: 'nearest' });
 	}, [activeIndex, flatItems, open]);
@@ -295,9 +310,7 @@ function CommandPalette({ open, onClose, navItems, recent }) {
 					aria-expanded
 					aria-controls="command-palette-list"
 					aria-autocomplete="list"
-					aria-activedescendant={
-						flatItems[activeIndex] ? `palette-option-${flatItems[activeIndex].key}` : undefined
-					}
+					aria-activedescendant={flatItems[activeIndex] ? `palette-option-${activeIndex}` : undefined}
 					inputProps={{ 'aria-label': 'Cari halaman, data, atau aksi', id: 'command-palette-title' }}
 					sx={{ fontSize: '0.9rem' }}
 				/>
@@ -319,7 +332,7 @@ function CommandPalette({ open, onClose, navItems, recent }) {
 					</Typography>
 				) : null}
 
-				{groups.map((group) => (
+				{indexedGroups.map((group) => (
 					<Box key={group.label} sx={{ mb: 0.5 }}>
 						<Typography
 							sx={{
@@ -335,19 +348,16 @@ function CommandPalette({ open, onClose, navItems, recent }) {
 						>
 							{group.label}
 						</Typography>
-						{group.items.map((item) => {
-							const index = flatItems.findIndex((entry) => entry.key === item.key);
-
-							return (
-								<PaletteRow
-									key={item.key}
-									item={item}
-									active={index === activeIndex}
-									onHover={() => setActiveIndex(index)}
-									onRun={() => runItem(item)}
-								/>
-							);
-						})}
+						{group.items.map(({ item, index }) => (
+							<PaletteRow
+								key={item.key}
+								item={item}
+								domId={`palette-option-${index}`}
+								active={index === activeIndex}
+								onHover={() => setActiveIndex(index)}
+								onRun={() => runItem(item)}
+							/>
+						))}
 					</Box>
 				))}
 			</Box>
